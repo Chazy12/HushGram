@@ -65,7 +65,7 @@ class SettingsRowTest {
         val failure = assertThrows(PatchException::class.java) {
             PatchContexts.of(SettingsPatchHosts.all().filter { it.type != SettingsPatchHosts.SETTINGS_SCREEN }).addSettingsRow()
         }
-        assertTrue(failure.message, failure.message!!.contains("expected exactly one settings screen factory"))
+        assertTrue(failure.message, failure.message!!.contains("expected a settings screen factory in this Instagram build, found none"))
     }
 
     /**
