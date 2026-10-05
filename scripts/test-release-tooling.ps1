@@ -791,20 +791,23 @@ try {
     $unknown = Test-TargetCoverage -Coverage @($partial) @arguments
     Assert-True ($unknown.Valid -and -not $unknown.Reviewed) 'Another version code claimed reviewed fixture coverage.'
 
-    # Exercise the receipt validator itself with the real reviewed fixture and target labels.
+    # Exercise the receipt validator itself with the real reviewed fixture and target labels. The
+    # build comes from the expectations file, so moving the target moves this case with it.
+    $reviewedFixture = @((Get-Content (Join-Path $PSScriptRoot 'patch-coverage-expectations.json') -Raw | ConvertFrom-Json).fixtures)[0]
+    $reviewedName = [string]$reviewedFixture.versionName; $reviewedCode = [string]$reviewedFixture.versionCode
     $coverageReceipt = New-TestReceipt
     $coverageReceipt.release.patchCount = 1
     $coverageReceipt.targets = @($coverageReceipt.targets[0])
     $coverageTarget = $coverageReceipt.targets[0]
     $coverageTarget.source.package = 'com.instagram.android'
-    $coverageTarget.source.versionName = '449.0.0.52.84'
-    $coverageTarget.source.versionCode = '385511871'
+    $coverageTarget.source.versionName = $reviewedName
+    $coverageTarget.source.versionCode = $reviewedCode
     $coverageTarget.patches = @([pscustomobject]@{ name = 'Disable analytics'; applied = $true; reason = $null })
     $coverageTarget.coverage = @([pscustomobject]@{ family = 'disableAnalytics'; matched = 7; expected = 7
         targets = @('builder', 'graph', 'mqtt', 'reports', 'pings', 'stream', 'setup'); missing = @() })
     $receiptArguments = @{ ExpectedVersion = '9.9.9'; ExpectedPatchNames = @('Disable analytics')
         ExpectedPatcherVersion = '1.12.0'; ExpectedManagerFloor = '1.29.0'; ExpectedPackageName = 'com.instagram.android'
-        ExpectedPackageVersions = @('449.0.0.52.84'); ExpectedPackageVersionCodes = @{ '449.0.0.52.84' = @('385511871') }
+        ExpectedPackageVersions = @($reviewedName); ExpectedPackageVersionCodes = @{ $reviewedName = @($reviewedCode) }
         BundlePath = $bundle }
     $certified = Test-ReleaseReceipt -Receipt $coverageReceipt @receiptArguments
     Assert-True $certified.Valid "The reviewed coverage receipt failed: $($certified.Reason)"
