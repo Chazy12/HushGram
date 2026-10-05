@@ -90,14 +90,15 @@ val friendshipStatusPatch = bytecodePatch(
         requireStatusMethod(FOLLOWING_LIST_STATUS)
         // Everything is found before anything changes, so a build missing any part is left untouched.
         val found = findProfileName()
-        val row = followRowOrWarn()
+        val mark = followRowOrWarn()
         val stubs = friendshipStubs()
         val rowStubs = followingStubs()
         labelProfileName(found)
         stubs.fill(found)
-        if (row != null) {
-            markFollowRow(row)
-            rowStubs.fill(row)
+        if (mark != null) {
+            markFollowRow(mark.row)
+            askFollowAnswers(mark.answers)
+            rowStubs.fill(mark.row, mark.answers)
             enableStatus(FOLLOWING_LIST_STATUS)
         }
         enableStatus("friendshipStatus")
@@ -107,13 +108,18 @@ val friendshipStatusPatch = bytecodePatch(
 /** The status of the second switch, which a build can lack while the profile label goes in. */
 internal const val FOLLOWING_LIST_STATUS = "followingListMark"
 
+/** The Following list mark's parts: the row binder, and where Instagram asks the server and hears back. */
+internal class FollowMark(val row: FollowRow, val answers: FollowAnswers)
+
 /**
- * The follow list's row binder, or null with a warning in the patch log when this build's list
- * doesn't match. Marking the list is a second switch, off to start, so a list that moved leaves it
- * out rather than taking the profile label down too; settings then don't offer the switch.
+ * The follow list's row binder and the places its answers come from, or null with a warning in the
+ * patch log when this build's list doesn't match. A row is only marked on the server's answer, so
+ * the binder without them would mark nothing. Marking the list is a second switch, off to start, so
+ * a list that moved leaves it out rather than taking the profile label down too; settings then
+ * don't offer the switch.
  */
-internal fun BytecodePatchContext.followRowOrWarn(): FollowRow? = try {
-    findFollowRow()
+internal fun BytecodePatchContext.followRowOrWarn(): FollowMark? = try {
+    FollowMark(findFollowRow(), findFollowAnswers())
 } catch (moved: PatchException) {
     patchLog.warning("${moved.message}. The profile label goes in without Mark who doesn't follow you back.")
     null

@@ -667,6 +667,15 @@ once-call Lapp/hushgram/extension/instagram/profile/FriendshipStatus;->inPlaceOf
 # Following list gets no marks; twice or elsewhere, it isn't the hook the patch wrote.
 # FollowingListHookTest checks on the 449 fixture that it lands right after the call.
 once-call Lapp/hushgram/extension/instagram/profile/FollowingList;->row(Ljava/lang/Object;ILandroid/view/View;Ljava/lang/Object;)V in instance (ILandroid/view/View;Ljava/lang/Object;Ljava/lang/Object;)V holding null\scannot\sbe\scast\sto\snon-null\stype\scom.instagram.user.userlist.adapter.FollowRowState
+# A row is marked only on the server's answer (#40), so the same switch has the follow list's page
+# fetch ask about every row of your own Following list rather than only the ones its cache knows
+# nothing about (0dtp.invoke on 450, the one ()Object method loading non_recip_followers, whose
+# batch request already asks for followed_by), and hands each answer the batch parser reads to
+# FollowingList right after it finds the account cached (0KET.A00). Each is called once there and
+# nowhere else. Left out, the list marks nothing; twice or elsewhere, it isn't the hook the patch
+# wrote. FollowingListHookTest checks on the 450 fixture where each lands.
+once-call Lapp/hushgram/extension/instagram/profile/FollowingList;->known(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object; in instance ()Ljava/lang/Object; holding non_recip_followers
+once-call Lapp/hushgram/extension/instagram/profile/FollowingList;->answered(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V in static (LX/*;Lcom/instagram/common/session/UserSession;Z)LX/*; holding friendship_statuses
 
 # Copy comment and Save comment photo share one call, added after the common renderer's popup
 # guards, once before its stock list iteration. Whichever patch runs first writes it and the other
