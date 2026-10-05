@@ -328,7 +328,7 @@ Couldn't export overrides. The selected file may be incomplete. Native overrides
 Allow importing overrides	Izinkan impor nilai pengganti
 Shows Import and Restore for overrides. An import changes Instagram's native flags for this signed-in session.	Menampilkan Impor dan Pulihkan untuk nilai pengganti. Impor mengubah flag bawaan Instagram untuk sesi yang sudah masuk ini.
 Import overrides	Impor nilai pengganti
-Apply a file exported from this session and build through Instagram's own override editor. The current overrides are saved for Restore first.	Terapkan berkas yang diekspor dari sesi dan versi ini melalui editor nilai pengganti milik Instagram. Nilai pengganti saat ini disimpan dulu untuk Pulihkan.
+Apply a HushGram export from this session and build, or Instagram's own overrides file, through Instagram's own override editor. The current overrides are saved for Restore first.	Terapkan ekspor HushGram dari sesi dan versi ini, atau berkas nilai pengganti milik Instagram sendiri, melalui editor nilai pengganti milik Instagram. Nilai pengganti saat ini disimpan dulu untuk Pulihkan.
 Restore previous overrides	Pulihkan nilai pengganti sebelumnya
 Put back the overrides saved before the last import for this session and build.	Kembalikan nilai pengganti yang disimpan sebelum impor terakhir untuk sesi dan versi ini.
 An earlier import still needs Restore previous overrides, or Discard saved overrides if Restore can't run. Nothing changed.	Impor sebelumnya masih perlu Pulihkan nilai pengganti sebelumnya, atau Buang nilai pengganti tersimpan jika Pulihkan tidak bisa dijalankan. Tidak ada yang berubah.

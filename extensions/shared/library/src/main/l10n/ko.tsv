@@ -329,7 +329,7 @@ Couldn't export overrides. The selected file may be incomplete. Native overrides
 Allow importing overrides	재정의 가져오기 허용
 Shows Import and Restore for overrides. An import changes Instagram's native flags for this signed-in session.	재정의의 가져오기 및 복원 기능을 표시합니다. 가져오기를 실행하면 현재 로그인된 세션에서 Instagram의 기본 플래그들이 변경됩니다
 Import overrides	재정의 가져오기
-Apply a file exported from this session and build through Instagram's own override editor. The current overrides are saved for Restore first.	현재 세션 및 빌드에서 내보낸 파일을 적용하고, Instagram 자체 재정의 편집기를 통해 설정을 반영합니다. 먼저 현재 재정의 설정을 복원을 위해 저장합니다
+Apply a HushGram export from this session and build, or Instagram's own overrides file, through Instagram's own override editor. The current overrides are saved for Restore first.	현재 세션 및 빌드에서 내보낸 HushGram 파일이나 Instagram 자체 재정의 파일을 Instagram 자체 재정의 편집기를 통해 적용합니다. 먼저 현재 재정의 설정을 복원을 위해 저장합니다
 Restore previous overrides	이전 재정의 복원
 Put back the overrides saved before the last import for this session and build.	현재 세션 및 빌드에서 마지막으로 가져오기 전에 저장해 둔 재정의 설정을 복원합니다
 An earlier import still needs Restore previous overrides, or Discard saved overrides if Restore can't run. Nothing changed.	이전에 가져온 설정이 아직 적용된 상태입니다. '이전 재정의 복원’을 실행하거나, 복원이 불가능한 경우 '저장된 재정의 삭제'를 실행해야 합니다. 변경된 사항은 없습니다

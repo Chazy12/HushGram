@@ -134,8 +134,8 @@ public final class L10nTranslations {
                 "\u201eImport von \u00dcberschreibungen erlauben\u201c ist aus oder HushGram ist pausiert. Es wurde nichts ge\u00e4ndert.");
         table.put("An earlier import still needs Restore previous overrides, or Discard saved overrides if Restore can't run. Nothing changed.",
                 "Ein fr\u00fcherer Import braucht noch \u201eVorherige \u00dcberschreibungen wiederherstellen\u201c oder \u201eGespeicherte \u00dcberschreibungen verwerfen\u201c, falls die Wiederherstellung nicht klappt. Es wurde nichts ge\u00e4ndert.");
-        table.put("Apply a file exported from this session and build through Instagram's own override editor. The current overrides are saved for Restore first.",
-                "\u00dcbernimm eine aus dieser Sitzung und Version exportierte Datei \u00fcber Instagrams eigenen \u00dcberschreibungseditor. Die aktuellen \u00dcberschreibungen werden vorher f\u00fcr die Wiederherstellung gespeichert.");
+        table.put("Apply a HushGram export from this session and build, or Instagram's own overrides file, through Instagram's own override editor. The current overrides are saved for Restore first.",
+                "\u00dcbernimm einen HushGram-Export aus dieser Sitzung und Version oder Instagrams eigene \u00dcberschreibungsdatei \u00fcber Instagrams eigenen \u00dcberschreibungseditor. Die aktuellen \u00dcberschreibungen werden vorher f\u00fcr die Wiederherstellung gespeichert.");
         table.put("Auto",
                 "Automatisch");
         table.put("Back",
@@ -935,8 +935,8 @@ public final class L10nTranslations {
                 "Permitir importar valores personalizados est\u00e1 desactivado o HushGram est\u00e1 en pausa. Nada ha cambiado.");
         table.put("An earlier import still needs Restore previous overrides, or Discard saved overrides if Restore can't run. Nothing changed.",
                 "Una importaci\u00f3n anterior todav\u00eda necesita Restaurar valores anteriores, o Descartar valores guardados si Restaurar no puede hacerse. Nada ha cambiado.");
-        table.put("Apply a file exported from this session and build through Instagram's own override editor. The current overrides are saved for Restore first.",
-                "Aplica un archivo exportado desde esta sesi\u00f3n y versi\u00f3n con el propio editor de Instagram. Antes se guardan los valores actuales para poder restaurarlos.");
+        table.put("Apply a HushGram export from this session and build, or Instagram's own overrides file, through Instagram's own override editor. The current overrides are saved for Restore first.",
+                "Aplica una exportaci\u00f3n de HushGram desde esta sesi\u00f3n y versi\u00f3n, o el propio archivo de valores personalizados de Instagram, con el propio editor de Instagram. Antes se guardan los valores actuales para poder restaurarlos.");
         table.put("Auto",
                 "Autom\u00e1tica");
         table.put("Back",
@@ -1736,8 +1736,8 @@ public final class L10nTranslations {
                 "Izinkan impor nilai pengganti nonaktif atau HushGram sedang dijeda. Tidak ada yang berubah.");
         table.put("An earlier import still needs Restore previous overrides, or Discard saved overrides if Restore can't run. Nothing changed.",
                 "Impor sebelumnya masih perlu Pulihkan nilai pengganti sebelumnya, atau Buang nilai pengganti tersimpan jika Pulihkan tidak bisa dijalankan. Tidak ada yang berubah.");
-        table.put("Apply a file exported from this session and build through Instagram's own override editor. The current overrides are saved for Restore first.",
-                "Terapkan berkas yang diekspor dari sesi dan versi ini melalui editor nilai pengganti milik Instagram. Nilai pengganti saat ini disimpan dulu untuk Pulihkan.");
+        table.put("Apply a HushGram export from this session and build, or Instagram's own overrides file, through Instagram's own override editor. The current overrides are saved for Restore first.",
+                "Terapkan ekspor HushGram dari sesi dan versi ini, atau berkas nilai pengganti milik Instagram sendiri, melalui editor nilai pengganti milik Instagram. Nilai pengganti saat ini disimpan dulu untuk Pulihkan.");
         table.put("Auto",
                 "Otomatis");
         table.put("Back",
@@ -2537,8 +2537,8 @@ public final class L10nTranslations {
                 "\u2018\uc7ac\uc815\uc758 \uac00\uc838\uc624\uae30 \ud5c8\uc6a9\u2019\uc774 \uaebc\uc838 \uc788\uac70\ub098 HushGram\uc774 \uc77c\uc2dc \uc911\uc9c0\ub418\uc5c8\uc2b5\ub2c8\ub2e4. \ubcc0\uacbd\ub41c \uc0ac\ud56d\uc740 \uc5c6\uc2b5\ub2c8\ub2e4");
         table.put("An earlier import still needs Restore previous overrides, or Discard saved overrides if Restore can't run. Nothing changed.",
                 "\uc774\uc804\uc5d0 \uac00\uc838\uc628 \uc124\uc815\uc774 \uc544\uc9c1 \uc801\uc6a9\ub41c \uc0c1\ud0dc\uc785\ub2c8\ub2e4. '\uc774\uc804 \uc7ac\uc815\uc758 \ubcf5\uc6d0\u2019\uc744 \uc2e4\ud589\ud558\uac70\ub098, \ubcf5\uc6d0\uc774 \ubd88\uac00\ub2a5\ud55c \uacbd\uc6b0 '\uc800\uc7a5\ub41c \uc7ac\uc815\uc758 \uc0ad\uc81c'\ub97c \uc2e4\ud589\ud574\uc57c \ud569\ub2c8\ub2e4. \ubcc0\uacbd\ub41c \uc0ac\ud56d\uc740 \uc5c6\uc2b5\ub2c8\ub2e4");
-        table.put("Apply a file exported from this session and build through Instagram's own override editor. The current overrides are saved for Restore first.",
-                "\ud604\uc7ac \uc138\uc158 \ubc0f \ube4c\ub4dc\uc5d0\uc11c \ub0b4\ubcf4\ub0b8 \ud30c\uc77c\uc744 \uc801\uc6a9\ud558\uace0, Instagram \uc790\uccb4 \uc7ac\uc815\uc758 \ud3b8\uc9d1\uae30\ub97c \ud1b5\ud574 \uc124\uc815\uc744 \ubc18\uc601\ud569\ub2c8\ub2e4. \uba3c\uc800 \ud604\uc7ac \uc7ac\uc815\uc758 \uc124\uc815\uc744 \ubcf5\uc6d0\uc744 \uc704\ud574 \uc800\uc7a5\ud569\ub2c8\ub2e4");
+        table.put("Apply a HushGram export from this session and build, or Instagram's own overrides file, through Instagram's own override editor. The current overrides are saved for Restore first.",
+                "\ud604\uc7ac \uc138\uc158 \ubc0f \ube4c\ub4dc\uc5d0\uc11c \ub0b4\ubcf4\ub0b8 HushGram \ud30c\uc77c\uc774\ub098 Instagram \uc790\uccb4 \uc7ac\uc815\uc758 \ud30c\uc77c\uc744 Instagram \uc790\uccb4 \uc7ac\uc815\uc758 \ud3b8\uc9d1\uae30\ub97c \ud1b5\ud574 \uc801\uc6a9\ud569\ub2c8\ub2e4. \uba3c\uc800 \ud604\uc7ac \uc7ac\uc815\uc758 \uc124\uc815\uc744 \ubcf5\uc6d0\uc744 \uc704\ud574 \uc800\uc7a5\ud569\ub2c8\ub2e4");
         table.put("Auto",
                 "\uc790\ub3d9");
         table.put("Back",
@@ -3338,8 +3338,8 @@ public final class L10nTranslations {
                 "Permitir importar valores personalizados est\u00e1 desativado ou o HushGram est\u00e1 pausado. Nada mudou.");
         table.put("An earlier import still needs Restore previous overrides, or Discard saved overrides if Restore can't run. Nothing changed.",
                 "Uma importa\u00e7\u00e3o anterior ainda precisa de Restaurar valores anteriores, ou de Descartar valores salvos se Restaurar n\u00e3o puder rodar. Nada mudou.");
-        table.put("Apply a file exported from this session and build through Instagram's own override editor. The current overrides are saved for Restore first.",
-                "Aplica um arquivo exportado desta sess\u00e3o e vers\u00e3o pelo pr\u00f3prio editor do Instagram. Os valores atuais s\u00e3o salvos antes para Restaurar.");
+        table.put("Apply a HushGram export from this session and build, or Instagram's own overrides file, through Instagram's own override editor. The current overrides are saved for Restore first.",
+                "Aplica uma exporta\u00e7\u00e3o do HushGram desta sess\u00e3o e vers\u00e3o, ou o pr\u00f3prio arquivo de valores personalizados do Instagram, pelo pr\u00f3prio editor do Instagram. Os valores atuais s\u00e3o salvos antes para Restaurar.");
         table.put("Auto",
                 "Autom\u00e1tica");
         table.put("Back",
@@ -4139,8 +4139,8 @@ public final class L10nTranslations {
                 "Ge\u00e7ersiz k\u0131lmalar\u0131 i\u00e7e aktarmaya izin ver kapal\u0131 ya da HushGram duraklat\u0131ld\u0131. Hi\u00e7bir \u015fey de\u011fi\u015fmedi.");
         table.put("An earlier import still needs Restore previous overrides, or Discard saved overrides if Restore can't run. Nothing changed.",
                 "\u00d6nceki bir i\u00e7e aktarma i\u00e7in h\u00e2l\u00e2 \u00d6nceki ge\u00e7ersiz k\u0131lmalar\u0131 geri y\u00fckle gerekiyor. Geri y\u00fckleme \u00e7al\u0131\u015fam\u0131yorsa Kay\u0131tl\u0131 ge\u00e7ersiz k\u0131lmalar\u0131 at se\u00e7ene\u011fini kullan\u0131n. Hi\u00e7bir \u015fey de\u011fi\u015fmedi.");
-        table.put("Apply a file exported from this session and build through Instagram's own override editor. The current overrides are saved for Restore first.",
-                "Bu oturum ve s\u00fcr\u00fcmden d\u0131\u015fa aktar\u0131lan bir dosyay\u0131 Instagram'\u0131n kendi d\u00fczenleyicisiyle uygulay\u0131n. Ge\u00e7erli ge\u00e7ersiz k\u0131lmalar \u00f6nce Geri y\u00fckleme i\u00e7in kaydedilir.");
+        table.put("Apply a HushGram export from this session and build, or Instagram's own overrides file, through Instagram's own override editor. The current overrides are saved for Restore first.",
+                "Bu oturum ve s\u00fcr\u00fcmden bir HushGram d\u0131\u015fa aktar\u0131m\u0131n\u0131 ya da Instagram'\u0131n kendi ge\u00e7ersiz k\u0131lma dosyas\u0131n\u0131 Instagram'\u0131n kendi d\u00fczenleyicisiyle uygulay\u0131n. Ge\u00e7erli ge\u00e7ersiz k\u0131lmalar \u00f6nce Geri y\u00fckleme i\u00e7in kaydedilir.");
         table.put("Auto",
                 "Otomatik");
         table.put("Back",

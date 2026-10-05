@@ -328,7 +328,7 @@ Couldn't export overrides. The selected file may be incomplete. Native overrides
 Allow importing overrides	Geçersiz kılmaları içe aktarmaya izin ver
 Shows Import and Restore for overrides. An import changes Instagram's native flags for this signed-in session.	Geçersiz kılmalar için İçe aktar ve Geri yükle seçeneklerini gösterir. İçe aktarma, bu açık oturum için Instagram'ın yerel bayraklarını değiştirir.
 Import overrides	Geçersiz kılmaları içe aktar
-Apply a file exported from this session and build through Instagram's own override editor. The current overrides are saved for Restore first.	Bu oturum ve sürümden dışa aktarılan bir dosyayı Instagram'ın kendi düzenleyicisiyle uygulayın. Geçerli geçersiz kılmalar önce Geri yükleme için kaydedilir.
+Apply a HushGram export from this session and build, or Instagram's own overrides file, through Instagram's own override editor. The current overrides are saved for Restore first.	Bu oturum ve sürümden bir HushGram dışa aktarımını ya da Instagram'ın kendi geçersiz kılma dosyasını Instagram'ın kendi düzenleyicisiyle uygulayın. Geçerli geçersiz kılmalar önce Geri yükleme için kaydedilir.
 Restore previous overrides	Önceki geçersiz kılmaları geri yükle
 Put back the overrides saved before the last import for this session and build.	Bu oturum ve sürüm için son içe aktarmadan önce kaydedilen geçersiz kılmaları geri koyar.
 An earlier import still needs Restore previous overrides, or Discard saved overrides if Restore can't run. Nothing changed.	Önceki bir içe aktarma için hâlâ Önceki geçersiz kılmaları geri yükle gerekiyor. Geri yükleme çalışamıyorsa Kayıtlı geçersiz kılmaları at seçeneğini kullanın. Hiçbir şey değişmedi.

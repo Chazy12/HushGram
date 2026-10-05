@@ -669,8 +669,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             importOverrides.setKey("hushgram_import_overrides");
             importOverrides.setPersistent(false);
             importOverrides.setTitle(L10n.t("Import overrides"));
-            importOverrides.setSummary(L10n.t("Apply a file exported from this session and build through Instagram's "
-                    + "own override editor. The current overrides are saved for Restore first."));
+            importOverrides.setSummary(L10n.t("Apply a HushGram export from this session and build, or Instagram's own "
+                    + "overrides file, through Instagram's own override editor. The current overrides are saved for Restore first."));
             importOverrides.setOnPreferenceClickListener(row -> { pickOverrides(IMPORT_OVERRIDES); return true; });
             restoreOverrides = new Row(context);
             restoreOverrides.setKey("hushgram_restore_overrides");
