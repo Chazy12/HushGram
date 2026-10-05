@@ -15,6 +15,7 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
+import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -34,8 +35,8 @@ class OverrideReaderTest {
     private fun type(name: String, prefix: String) = "Lfixture/$prefix$name;"
 
     @Test fun renamedNativeClassesMethodsAndFieldsStillResolveReadOnlyObjects() {
-        for (prefix in listOf("", "Renamed")) {
-            val patch = PatchContexts.of(classes(prefix))
+        for (prefix in listOf("", "Renamed")) for (inlined in listOf(false, true)) {
+            val patch = PatchContexts.of(classes(prefix, inlined = inlined))
             val reader = patch.findOverrideReader(editor())
             patch.fillOverrideReader(reader, editor())
             assertReader(patch, reader)
@@ -64,6 +65,7 @@ class OverrideReaderTest {
             "manager cast to another object" to classes("", wrongCast = true),
             "two session field paths" to classes("", ambiguousPath = true),
             "wrong constructor role" to classes("", wrongRole = true),
+            "wrong inlined name role" to classes("", wrongRole = true, inlined = true),
             "missing schema bridge" to valid.map { clazz -> if (clazz.type != OVERRIDE_BRIDGE) clazz else
                 clazz(OVERRIDE_BRIDGE, methods = clazz.methods.filter { it.name != "getOverrideSchemaNative" }.map(ImmutableMethod::of)) },
         )
@@ -76,7 +78,7 @@ class OverrideReaderTest {
         }
     }
 
-    @Test fun declared449FixtureResolvesTheSessionFileAndTypedSchemaWithoutNativeWrites() {
+    @Test fun eachDeclaredFixtureResolvesTheSessionFileAndTypedSchemaWithoutNativeWrites() {
         val versions = AppCompatibilities.instagram().single().targets.mapNotNull { it.version }.toSet()
         val checked = mutableSetOf<String>()
         for (version in versions) for (bundle in Fixtures.files { it.extension == "apks" && it.name.contains("-$version-") }) {
@@ -90,7 +92,7 @@ class OverrideReaderTest {
                         clazz.methods.any { method -> method.implementation?.instructions?.any {
                             ((it as? ReferenceInstruction)?.reference as? StringReference)?.string in setOf(
                                 OVERRIDE_TITLE, "mc_overrides.json", "MobileConfigIdNameMappingLoader")
-                        } == true }) {
+                        } == true } || clazz.methods.any { it.namesARecord() }) {
                         roots += ImmutableClassDef.of(clazz)
                         clazz.methods.flatMap { it.implementation?.instructions?.toList().orEmpty() }.forEach {
                             when (val reference = (it as? ReferenceInstruction)?.reference) {
@@ -126,10 +128,12 @@ class OverrideReaderTest {
 
     private fun classes(prefix: String, duplicateSchema: Boolean = false, privateField: Boolean = false,
                         wrongReceiver: Boolean = false, overwritten: Boolean = false, wrongRole: Boolean = false,
-                        branch: String? = null, wrongCast: Boolean = false, ambiguousPath: Boolean = false): List<ClassDef> {
+                        branch: String? = null, wrongCast: Boolean = false, ambiguousPath: Boolean = false,
+                        inlined: Boolean = false): List<ClassDef> {
         val factory = type("Factory", prefix); val manager = type("Manager", prefix); val wrapper = type("Wrapper", prefix)
         val model = type("Model", prefix); val schema = type("Schema", prefix); val entry = type("Entry", prefix)
-        val diagnostic = type("Diagnostics", prefix); val callback = type("Callback", prefix)
+        val diagnostic = type("Diagnostics", prefix); val callback = type("Callback", prefix); val names = type("Names", prefix)
+        val configIndex = if (wrongRole) "index" else "config"
         val ctorTypes = listOf("Ljava/lang/String;", "Ljava/lang/String;") + List(7) { "I" } + List(3) { "Z" }
         val ctorFields = listOf("configName", "name", "index", "encodedConfig", "encodedIndex", "bits", "kind", "packageId", "config", "one", "two", "three")
         val ctor = "invoke-direct { p0 }, Ljava/lang/Object;-><init>()V\n" + ctorFields.mapIndexed { i, field ->
@@ -179,17 +183,38 @@ class OverrideReaderTest {
             clazz(entry, fields = ctorFields.mapIndexed { i, name -> field(entry, name, ctorTypes[i], public) }, methods = listOf(
                 method(entry, "<init>", ctorTypes, "V", 13, public or AccessFlags.CONSTRUCTOR.value, ctor),
                 method(entry, "parameterId", emptyList(), "J", 4, public, "iget v0, p0, $entry->kind:I\nconst-wide v0, 0x0\nreturn-wide v0"),
-                method(entry, "configLabel", emptyList(), "Ljava/lang/String;", 3, public, """
-                    iget-object v0, p0, $entry->configName:Ljava/lang/String;
-                    iget v1, p0, $entry->${if (wrongRole) "index" else "config"}:I
-                    const-string v1, "_"
-                    return-object v0
-                """.trimIndent()),
-                method(entry, "parameterLabel", emptyList(), "Ljava/lang/String;", 3, public, "iget-object v0, p0, $entry->name:Ljava/lang/String;\niget v1, p0, $entry->index:I\nconst-string v1, \"_\"\nreturn-object v0")
+            ) + if (inlined) emptyList() else listOf(
+                method(entry, "configLabel", emptyList(), "Ljava/lang/String;", 3, public, label(entry, "configName", configIndex)),
+                method(entry, "parameterLabel", emptyList(), "Ljava/lang/String;", 3, public, label(entry, "name", "index")),
+            )),
+            clazz(names, methods = if (!inlined) emptyList() else listOf(
+                method(names, "configLabel", listOf(entry), "Ljava/lang/String;", 3, static, label(entry, "configName", configIndex)),
+                method(names, "parameterLabel", listOf(entry), "Ljava/lang/String;", 3, static, label(entry, "name", "index")),
             )),
             clazz(callback, interfaces = listOf("Lcom/facebook/mobileconfig/MobileConfigUpdateOverridesTableCallback;"), methods = listOf(method(callback, "onOverridesFileUpdated", emptyList(), "V", 2, public, "const/4 v0, 0x0\ninvoke-static { v0 }, $model->file($model)Ljava/io/File;\nreturn-void"))),
             bridge(), projection()
         )
+    }
+
+    /** A record's name, or "_" and its index when the name is empty: 449's getters, and 450's copies of them where they're used. */
+    private fun label(entry: String, name: String, index: String) = """
+        iget-object v0, p0, $entry->$name:Ljava/lang/String;
+        invoke-virtual { v0 }, Ljava/lang/String;->isEmpty()Z
+        move-result v1
+        if-eqz v1, :named
+        iget v1, p0, $entry->$index:I
+        invoke-static { v1 }, Ljava/lang/String;->valueOf(I)Ljava/lang/String;
+        move-result-object v1
+        const-string v0, "_"
+        :named
+        return-object v0
+    """.trimIndent()
+
+    /** Reads a record's name the way [label] does, wherever that is. */
+    private fun Method.namesARecord(): Boolean {
+        val code = implementation?.instructions?.toList() ?: return false
+        return code.any { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == "_" } &&
+            code.any { ((it as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == "Ljava/lang/String;->isEmpty()Z" }
     }
 
     private fun bridge() = clazz(OVERRIDE_BRIDGE, methods = listOf(

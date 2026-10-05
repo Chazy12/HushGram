@@ -692,7 +692,12 @@ private fun Method.requireOrigin(register: Int, read: Int, definition: Int) {
 
 private class Shape(val method: Method, vararg expected: Opcode) {
     private val code = method.code()
-    init { if (code.map { it.opcode } != expected.toList()) refuseQueue("${method.name} changed its native shape") }
+    // A string's load turns jumbo once the dex holds more strings than a short index reaches, as in 450.
+    init {
+        if (code.map { if (it.opcode == Opcode.CONST_STRING_JUMBO) Opcode.CONST_STRING else it.opcode } != expected.toList()) {
+            refuseQueue("${method.name} changed its native shape")
+        }
+    }
     fun reg(at: Int): Int = code[at].namedRegisters().first()
     fun literal(at: Int, value: Int) {
         if ((code[at] as? NarrowLiteralInstruction)?.narrowLiteral != value) refuseQueue("${method.name} changes its native literal at $at")

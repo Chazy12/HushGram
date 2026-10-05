@@ -29,8 +29,8 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  * while its switch is on, the answer an account without Meta AI gets.
  *
  * <p>A keyword search's results end in an "Ask a follow-up…" bar with topic pills above it. Its flag
- * also gives the results page its header (Back and the query), so it stays on, and the bar's stub
- * goes through {@link #followUpBar} as the page sets the bar up instead.
+ * also gives the results page its header (Back and the query), so it stays on, and the view the
+ * page looks the bar up in goes through {@link #followUpBar} as the page sets the bar up instead.
  *
  * <p>Home's top bar is built from a list of button names the server sends. Meta AI's ("meta_ai")
  * goes through {@link #homeButton}, and a fourth flag, which adds a Meta AI chats button when the
@@ -86,20 +86,20 @@ public final class MetaAi {
     }
 
     /**
-     * Injected where the search results page checks that its "Ask a follow-up…" bar's stub is in
-     * the page, with that stub. Answers null, which Instagram takes as a page without the bar, while
-     * the search switch is on, and the stub otherwise, or when anything goes wrong. Never throws.
+     * Injected where the search results page checks the view it looks its "Ask a follow-up…" bar
+     * up in, with that view. Answers null, which Instagram takes as a page without the bar, while
+     * the search switch is on, and the view otherwise, or when anything goes wrong. Never throws.
      */
-    public static View followUpBar(View stub) {
-        if (stub == null) return null;
+    public static View followUpBar(View view) {
+        if (view == null) return null;
         try {
             HookStatus.invoked(FamilyNames.META_AI);
-            if (!Utils.settingsReady() || !Settings.HIDE_META_AI_SEARCH.get()) return stub;
+            if (!Utils.settingsReady() || !Settings.HIDE_META_AI_SEARCH.get()) return view;
             Logger.printDebug(() -> "Meta AI: left out the Ask a follow-up bar");
             return null;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.META_AI, "follow-up bar", failure);
-            return stub;
+            return view;
         }
     }
 

@@ -9,6 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import app.morphe.patches.instagram.misc.analytics.loadsString
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.handleTargets
@@ -113,7 +114,7 @@ val sanitizeSharingLinksPatch = bytecodePatch(
             coverage = { writeTargetCoverage("sanitizeSharingLinks", it) }) { target ->
             when (target) {
                 "permalink parser" -> sanitizeParsedLink(PermalinkParserFingerprint, PERMALINK_TYPE)
-                "story link parser" -> sanitizeParsedLink(StoryShareUrlParserFingerprint, STORY_SHARE_URL_TYPE)
+                "story link parser" -> sanitizeParsedLink(StoryShareUrlParserFingerprint, STORY_SHARE_URL_TYPE, STORY_SHARE_URL_FIELD)
                 "clipboard copies" -> if (rerouteLinkExits(CLIPBOARD_EXITS) > 0) null
                     else "no code calls ClipboardManager.setPrimaryClip"
                 "share sheets" -> if (rerouteLinkExits(SHARE_SHEET_EXITS) > 0) null
@@ -132,10 +133,11 @@ val sanitizeSharingLinksPatch = bytecodePatch(
  * builds. The model is named by [typeName], loaded right before it's made, and the link is the first
  * String field stored after that. Answers null when done, or why not.
  */
-private fun BytecodePatchContext.sanitizeParsedLink(fingerprint: Fingerprint, typeName: String): String? {
+private fun BytecodePatchContext.sanitizeParsedLink(fingerprint: Fingerprint, typeName: String, field: String? = null): String? {
     val matches = fingerprint.matchAllOrNull().orEmpty()
     if (matches.size != 1) return "expected one parser naming $typeName, found ${matches.size}"
     val parser = matches.single().method
+    if (field != null && !loadsString(parser, field)) return "the parser naming $typeName doesn't read \"$field\""
     val store = parser.linkStore(typeName)
         ?: return "the parser naming $typeName stores no String field after loading its type name"
     val (index, register) = store

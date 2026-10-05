@@ -7,6 +7,7 @@ package app.morphe.patches.instagram.misc.developeroptions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesHolding
 import app.morphe.patches.instagram.misc.extension.originalName
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -22,6 +23,8 @@ internal const val OVERRIDE_PARAMETER = "$EXTENSION_PACKAGE/misc/OverrideExchang
 private const val USER = "Lcom/instagram/common/session/UserSession;"
 private const val CALLBACK = "Lcom/facebook/mobileconfig/MobileConfigUpdateOverridesTableCallback;"
 private const val PARAM_CTOR = "(IILjava/lang/String;Ljava/lang/String;IJ)V"
+private const val STRING_IS_EMPTY = "Ljava/lang/String;->isEmpty()Z"
+private const val STRING_OF_INT = "Ljava/lang/String;->valueOf(I)Ljava/lang/String;"
 private val RECORD_ARGS = listOf("Ljava/lang/String;", "Ljava/lang/String;") + List(7) { "I" } + List(3) { "Z" }
 
 internal data class OverrideReader(
@@ -92,11 +95,10 @@ internal fun BytecodePatchContext.findOverrideReader(editor: OverrideEditor): Ov
     publicMethod(nativeId)
     val firstInteger = nativeId.implementation?.instructions?.mapNotNull { ((it as? ReferenceInstruction)?.reference as? FieldReference)?.takeIf { it.type == "I" } }?.firstOrNull()
     if (firstInteger?.toString() != fields[6].toString()) readerRefuse("encoded parameter type doesn't match its constructor role")
+    val fallbacks = fallbackNames(entry)
     for ((name, index) in listOf(0 to 8, 1 to 2)) {
-        entry.methods.filter { it.parameterTypes.isEmpty() && it.returnType == "Ljava/lang/String;" && "_" in it.text() &&
-            it.implementation?.instructions?.mapNotNull { instruction -> (instruction as? ReferenceInstruction)?.reference?.toString() }
-                ?.containsAll(listOf(fields[name].toString(), fields[index].toString())) == true }
-            .one("schema name/index role")
+        val found = fallbacks[fields[name].toString()].orEmpty()
+        if (found != setOf(fields[index].toString())) readerRefuse("schema name ${fields[name]} falls back to $found, not ${fields[index]}")
     }
     readerStubs()
     val projection = readerClass(OVERRIDE_PARAMETER).methods.filter { it.name == "<init>" &&
@@ -107,6 +109,31 @@ internal fun BytecodePatchContext.findOverrideReader(editor: OverrideEditor): Ov
     return OverrideReader(singleton.toString(), factory.toString(), path[0].toString(), path[1].toString(), model,
         file.toString(), schema.toString(), list.toString(), entry.type, fields[8].toString(), fields[2].toString(),
         fields[0].toString(), fields[1].toString(), fields[6].toString(), nativeId.toString())
+}
+
+/**
+ * The index field each schema record's name field falls back to wherever the name is read: 449's
+ * own getters, or 450's copies of them inlined where they're used. Either way an empty name is
+ * replaced by "_" and the index, so the pairs show which index belongs to which name.
+ */
+private fun BytecodePatchContext.fallbackNames(entry: ClassDef): Map<String, Set<String>> {
+    val found = mutableMapOf<String, MutableSet<String>>()
+    classesHolding("_").forEach { clazz ->
+        clazz.methods.forEach { method ->
+            val code = method.implementation?.instructions?.toList().orEmpty()
+            for (at in 0..code.size - 7) {
+                val name = code[at].takeIf { it.opcode == Opcode.IGET_OBJECT }?.field()?.takeIf { it.definingClass == entry.type } ?: continue
+                val index = code[at + 4].takeIf { it.opcode == Opcode.IGET }?.field()?.takeIf { it.definingClass == entry.type } ?: continue
+                if (code[at + 1].method()?.toString() != STRING_IS_EMPTY || code[at + 3].opcode != Opcode.IF_EQZ ||
+                    code[at + 5].method()?.toString() != STRING_OF_INT ||
+                    (code[at] as TwoRegisterInstruction).registerB != (code[at + 4] as TwoRegisterInstruction).registerB ||
+                    (at + 6..minOf(code.lastIndex, at + 8)).none { ((code[it] as? ReferenceInstruction)?.reference as? StringReference)?.string == "_" }
+                ) continue
+                found.getOrPut(name.toString()) { mutableSetOf() } += index.toString()
+            }
+        }
+    }
+    return found
 }
 
 /** A throwing sibling branch doesn't overwrite registers on the successful branch. Join conservatively. */
@@ -292,6 +319,7 @@ private fun BytecodePatchContext.publicField(reference: FieldReference, static: 
 }
 private fun Method.text() = implementation?.instructions?.mapNotNull { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string }.orEmpty()
 private fun Instruction.method() = (this as? ReferenceInstruction)?.reference as? MethodReference
+private fun Instruction.field() = (this as? ReferenceInstruction)?.reference as? FieldReference
 private fun Instruction.arguments(): List<Int> = when (this) {
     is RegisterRangeInstruction -> (startRegister until startRegister + registerCount).toList()
     is FiveRegisterInstruction -> listOf(registerC, registerD, registerE, registerF, registerG).take(registerCount)

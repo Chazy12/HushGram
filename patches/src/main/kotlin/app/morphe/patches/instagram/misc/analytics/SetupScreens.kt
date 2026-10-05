@@ -116,7 +116,7 @@ private class SetupDiscoveryFailure(message: String) : RuntimeException(message)
 private fun refuseSetup(detail: String): Nothing = throw SetupDiscoveryFailure("alternate setup route: $detail")
 
 /** Join the action's actual app-id argument to its public immutable field and a void presenter. */
-private fun findDirectSetupPresenter(hosts: List<ClassDef>): DirectSetupPresenter {
+private fun BytecodePatchContext.findDirectSetupPresenter(hosts: List<ClassDef>): DirectSetupPresenter {
     val actions = hosts.asSequence().flatMap { it.methods.asSequence() }.filter { method ->
         AccessFlags.STATIC.isSet(method.accessFlags) && method.parameterTypes.size == 2 && method.returnType == "Ljava/lang/Object;" &&
             method.strings().containsAll(DIRECT_SCREEN_ACTION)
@@ -136,7 +136,8 @@ private fun findDirectSetupPresenter(hosts: List<ClassDef>): DirectSetupPresente
         AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" && it.parameterTypes.size == 6 &&
             it.parameterTypes[0].toString() == "Landroid/content/Context;" && it.parameterTypes[2].toString() == SCREEN_CONFIG &&
             it.parameterTypes[5].toString() == "I" && listOf(1, 3, 4).all { index -> it.parameterTypes[index].toString().startsWith("L") } &&
-            it.strings().containsAll(DIRECT_SCREEN_PRESENTER)
+            // 450 asks a pool of shared strings for some of them.
+            DIRECT_SCREEN_PRESENTER.first() in it.strings() && DIRECT_SCREEN_PRESENTER.all { value -> loadsString(it, value) }
     }.toList()
     val presenter = presenters.singleOrNull() ?: refuseSetup("${presenters.size} marked void presenters, not one")
     if (presenter.toString() != reference.toString()) refuseSetup("action calls another presenter")
