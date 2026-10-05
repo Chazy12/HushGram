@@ -59,23 +59,50 @@ public class OverrideExchangeTest {
         refused(() -> OverrideExchange.validate(file, new OverrideExchange.Snapshot("449.0.0.52.84", 385511871, reversed, NATIVE)));
     }
 
-    @Test public void malformedDuplicateOversizedAndUnknownNativeRecordsRefuseBeforeExport() throws Exception {
+    @Test public void malformedDuplicateAndOversizedNativeRecordsRefuseBeforeExport() throws Exception {
         String[] inputs = {
                 "{\"123:config\":[],\"123:config\":[]}",
                 "{\"123:config\":[\"0: enabled: true\",\"0: enabled: false\"]}",
-                "{\"123:other\":[\"0: enabled: true\"]}",
-                "{\"123:config\":[\"0: unknown: true\"]}",
-                "{\"123:config\":[\"0: enabled: 1\"]}",
-                "{\"123:config\":[\"1: count: 9223372036854775808\"]}",
-                "{\"123:config\":[\"3: ratio: NaN\"]}",
-                "{\"123:config\":[\"3: ratio: 1e9999\"]}",
-                "{\"123:config\":[true]}", "{\"123:config\":true}",
-                "{\"0:config\":[]}", "{\"1048576:config\":[]}", "{\"123:config\":[\"16384: enabled: true\"]}",
-                "{\"123:config\":[\"-1: enabled: true\"]}", "{\"123:config\":[\"0: enabled\"]}", "{} {}"
+                "{\"999:\":[\"0: : true\",\"0: : false\"]}",
+                "{\"123:config\":[true]}", "{\"123:config\":true}", "{\"999:\":[true]}", "{\"999:\":true}",
+                "{\"0:config\":[]}", "{\"123:config\":[\"16384: enabled: true\"]}",
+                "{\"123:config\":[\"-1: enabled: true\"]}", "{\"123:config\":[\"0: enabled\"]}", "{\"999:\":[\"0: true\"]}", "{} {}"
         };
         for (String input : inputs) refused(() -> snapshot(bytes(input)));
         refused(() -> snapshot(new byte[OverrideExchange.MAX_BYTES + 1]));
         refused(() -> snapshot(new byte[]{(byte) 0xc3, 0x28}));
+    }
+
+    /**
+     * App data outlives an update, so the store can hold overrides this build has no parameter for,
+     * or types otherwise. They're counted and stay out of the export and the values, and the rest
+     * reads as it did.
+     */
+    @Test public void aStoreHoldingOverridesThisBuildLacksStillCapturesWithoutThem() throws Exception {
+        String[] leftovers = {
+                "{\"123:other\":[\"0: enabled: true\"]}", "{\"123:config\":[\"0: unknown: true\"]}",
+                "{\"123:config\":[\"0: enabled: 1\"]}", "{\"123:config\":[\"1: count: 9223372036854775808\"]}",
+                "{\"123:config\":[\"3: ratio: NaN\"]}", "{\"123:config\":[\"3: ratio: 1e9999\"]}",
+                "{\"123:config\":[\"9: : true\"]}", "{\"999:\":[\"0: : true\"]}", "{\"1048576:config\":[\"0: : true\"]}",
+        };
+        for (String store : leftovers) {
+            OverrideExchange.Snapshot held = snapshot(bytes(store));
+            assertEquals(store, 1, held.leftOut());
+            JSONObject exported = new JSONObject(new String(OverrideExchange.export(held), StandardCharsets.UTF_8));
+            assertEquals(store, 0, exported.getJSONObject("overrides").length());
+            assertTrue(store, OverrideExchange.values(bytes(store), held).isEmpty());
+            assertEquals(store, 0, OverrideExchange.validate(OverrideExchange.export(held), held).fits);
+        }
+        byte[] mixed = bytes("{\"123:\":[\"0: : true\",\"9: : true\",\"1: : x\"],\"999:\":[\"0: : true\"],"
+                + "\"456:\":[],\"_qe_overrides_\":[\"kept as it is\"]}");
+        OverrideExchange.Snapshot current = snapshot(mixed);
+        assertEquals(3, current.leftOut());
+        byte[] export = OverrideExchange.export(current);
+        assertEquals(new JSONObject("{\"123:\":[\"0: : true\"],\"_qe_overrides_\":[\"kept as it is\"]}").toString(),
+                new JSONObject(new String(export, StandardCharsets.UTF_8)).getJSONObject("overrides").toString());
+        assertEquals(1, OverrideExchange.validate(export, current).fits);
+        assertEquals(Collections.singletonMap(OverrideExchange.key(123, 0), "true"), OverrideExchange.values(mixed, current));
+        assertEquals(0, snapshot(NATIVE).leftOut());
     }
 
     @Test public void exactHostSchemaAndEnvelopeAreRequiredDuringValidation() throws Exception {

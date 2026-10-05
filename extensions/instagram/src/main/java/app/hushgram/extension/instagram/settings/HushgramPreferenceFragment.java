@@ -1112,12 +1112,15 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     overrideFeedback(request, checked.leftOut == 0 ? validated : validated + " " + L10n.f("%1$d more are from "
                             + "another Instagram build and aren't in this one, so an import leaves them out.", checked.leftOut));
                 } else {
-                    byte[] bytes = OverrideExchange.export(OverrideExchange.capture(activity));
+                    OverrideExchange.Snapshot snapshot = OverrideExchange.capture(activity);
+                    byte[] bytes = OverrideExchange.export(snapshot);
                     try (java.io.OutputStream output = context.getContentResolver().openOutputStream(uri, "wt")) {
                         if (output == null) throw new java.io.IOException();
                         output.write(bytes);
                     }
-                    overrideFeedback(request, L10n.t("Overrides exported for this Instagram build and schema."));
+                    String exported = L10n.t("Overrides exported for this Instagram build and schema.");
+                    overrideFeedback(request, snapshot.leftOut() == 0 ? exported : exported + " " + L10n.f("%1$d overrides from "
+                            + "another Instagram build aren't in this one and were left out.", snapshot.leftOut()));
                 }
             } catch (OverrideImport.RestoreFirst failure) {
                 Logger.printInfo(() -> "Override import refused until Restore runs");

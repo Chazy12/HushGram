@@ -1099,6 +1099,47 @@ public class OverrideImportTest {
     }
 
     /**
+     * App data outlives an update, so the store can hold overrides this build has no parameter for.
+     * They're left as they are: an import changes only what this build has and Restore puts that
+     * back, whether Instagram's writer keeps the leftovers when it rewrites its file or drops them.
+     */
+    @Test public void aStoreHoldingLeftoversImportsAndRestoresWhenTheWriterKeepsThem() throws Exception { leftovers(false); }
+    @Test public void aStoreHoldingLeftoversImportsAndRestoresWhenTheWriterDropsThem() throws Exception { leftovers(true); }
+
+    private void leftovers(boolean dropped) throws Exception {
+        byte[] store = ("{\"123:config\":[\"0: enabled: true\",\"1: limit: 5\",\"9: : true\"],"
+                + "\"456:other\":[\"1: nullable: __NULL_VALUE__\"],\"999:\":[\"0: : true\"]}").getBytes(StandardCharsets.UTF_8);
+        Files.write(NativeTable.file.toPath(), store);
+        NativeTable.dropForeign = dropped;
+        assertEquals(2, OverrideExchange.capture(activity).leftOut());
+        byte[] before = exported();
+        assertEquals(new JSONObject(new String(NATIVE, StandardCharsets.UTF_8)).toString(),
+                new JSONObject(new String(before, StandardCharsets.UTF_8)).getJSONObject("overrides").toString());
+
+        OverrideImport.Result result = OverrideImport.apply(activity, limit(7));
+        assertEquals(OverrideImport.Outcome.APPLIED, result.outcome);
+        assertEquals(2, result.changes);
+        assertFalse(result.blocked);
+        Map<String, String> imported = semantic(NativeTable.file);
+        assertEquals(dropped ? null : "true", imported.remove("123:config/9/"));
+        assertEquals(dropped ? null : "true", imported.remove("999:/0/"));
+        Map<String, String> expected = original();
+        expected.put("123:config/0/enabled", "false");
+        expected.put("123:config/1/limit", "7");
+        assertEquals(expected, imported);
+        assertArrayEquals(before, bytes(".json"));
+
+        OverrideImport.Result restored = OverrideImport.restore(activity);
+        assertEquals(OverrideImport.Outcome.APPLIED, restored.outcome);
+        assertEquals(2, restored.changes);
+        assertFalse(restored.blocked);
+        Map<String, String> back = semantic(NativeTable.file);
+        assertEquals(dropped ? null : "true", back.remove("123:config/9/"));
+        assertEquals(dropped ? null : "true", back.remove("999:/0/"));
+        assertEquals(original(), back);
+    }
+
+    /**
      * Stands in for the patched bridge: the reader's session store, file and schema, and a native
      * table that persists each typed write into that file the way Instagram's native writer would.
      */
@@ -1121,8 +1162,11 @@ public class OverrideImportTest {
         public static long lagMillis;
         private static long laggedDue;
         public static int captures, writes, tableCalls, throwAt, failFrom, typeShift, changeAt;
-        /** keep: writes reach the file. dropNulls: rewriting a config drops its null overrides. */
-        public static boolean keep, table, dropNulls;
+        /**
+         * keep: writes reach the file. dropNulls: rewriting a config drops its null overrides.
+         * dropForeign: a write leaves the file holding only overrides the schema has.
+         */
+        public static boolean keep, table, dropNulls, dropForeign;
         public static final List<String> log = new ArrayList<>();
 
         public static long id(int type, int serial) { return ((long) type << 48) | serial; }
@@ -1130,7 +1174,7 @@ public class OverrideImportTest {
         public static void reset(File store) {
             file = store; schema = SCHEMA; secondManager = null; onChange = null; lagged = null; lagMillis = 0; laggedDue = 0;
             captures = 0; writes = 0; tableCalls = 0; throwAt = -1; failFrom = -1; typeShift = 0; changeAt = 2;
-            keep = true; table = true; dropNulls = false; log.clear();
+            keep = true; table = true; dropNulls = false; dropForeign = false; log.clear();
         }
 
         private static void land() {
@@ -1193,9 +1237,28 @@ public class OverrideImportTest {
                 if (value != null) after.put(parameter.index + ": " + parameter.name + ": " + value);
                 if (after.length() == 0) root.remove(label);
                 else root.put(label, after);
+                if (dropForeign) dropForeign(root);
                 Files.write(file.toPath(), root.toString().getBytes(StandardCharsets.UTF_8));
                 return 1;
             } catch (Exception failure) { throw new AssertionError(failure); }
+        }
+
+        private static void dropForeign(JSONObject root) throws Exception {
+            List<String> labels = new ArrayList<>();
+            for (java.util.Iterator<String> keys = root.keys(); keys.hasNext();) labels.add(keys.next());
+            for (String label : labels) {
+                int config = Integer.parseInt(label.substring(0, label.indexOf(':')));
+                JSONArray records = root.getJSONArray(label), kept = new JSONArray();
+                for (int i = 0; i < records.length(); i++) {
+                    String record = records.getString(i);
+                    int index = Integer.parseInt(record.substring(0, record.indexOf(':')));
+                    for (OverrideExchange.Parameter candidate : schema) {
+                        if (candidate.config == config && candidate.index == index) { kept.put(record); break; }
+                    }
+                }
+                if (kept.length() == 0) root.remove(label);
+                else root.put(label, kept);
+            }
         }
     }
 }

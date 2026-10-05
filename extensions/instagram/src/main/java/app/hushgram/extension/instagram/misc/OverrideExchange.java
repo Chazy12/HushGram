@@ -50,9 +50,9 @@ public final class OverrideExchange {
     }
 
     /**
-     * What a file holds for this build: the overrides that fit it, and how many overrides of
-     * Instagram's own file it leaves out because this build has no such parameter or types it
-     * otherwise.
+     * What a file or the store holds for this build: the overrides that fit it, and how many
+     * overrides of Instagram's own writing it leaves out because this build has no such parameter
+     * or types it otherwise.
      */
     public static final class Checked {
         public final int fits, leftOut;
@@ -69,9 +69,11 @@ public final class OverrideExchange {
         private final long code;
         private final Map<Long, Parameter> parameters = new TreeMap<>();
         private final Map<Integer, String> configs = new HashMap<>();
+        /** The store's overrides this build has, which is all an export, a plan or a restore point reads. */
         private final String overrides;
         /** The store's experiment section as it reads, "[]" when it has none. */
         private final String experiments;
+        private final int leftOut;
         /** Set by capture only: the resolved store, its manager and its bytes (null when absent). */
         File file;
         Object manager;
@@ -103,12 +105,18 @@ public final class OverrideExchange {
                 for (byte value : digest.digest()) identity.append(String.format(java.util.Locale.ROOT, "%02x", value & 255));
                 hash = identity.toString();
                 JSONObject nativeValues = parse(nativeBytes);
-                checkOverrides(nativeValues, this, null, false, false);
-                overrides = nativeValues.toString();
+                // App data outlives an update, so the store may hold overrides a build before this
+                // one wrote. No typed writer reaches those, so they're counted and left as they are.
+                JSONObject fitting = new JSONObject();
+                leftOut = checkOverrides(nativeValues, this, null, false, true, fitting).leftOut;
+                overrides = leftOut == 0 ? nativeValues.toString() : fitting.toString();
                 JSONArray held = nativeValues.optJSONArray(EXPERIMENTS);
                 experiments = held == null ? "[]" : held.toString();
             } catch (Exception failure) { throw invalid(); }
         }
+
+        /** How many overrides the store holds that this build has no parameter for, or types otherwise. */
+        public int leftOut() { return leftOut; }
     }
 
     /** Obtain only the current signed-in manager, its own file resolver and its typed records. */
@@ -175,7 +183,7 @@ public final class OverrideExchange {
         try {
             JSONObject root = parse(file);
             if (!root.has("project")) {
-                Checked checked = checkOverrides(root, snapshot, values, true, true);
+                Checked checked = checkOverrides(root, snapshot, values, true, true, null);
                 if (checked.fits == 0 && checked.leftOut > 0) throw new NothingFits();
                 return checked;
             }
@@ -187,7 +195,7 @@ public final class OverrideExchange {
                     || !(host.get("code") instanceof Integer || host.get("code") instanceof Long) || host.getLong("code") != snapshot.code
                     || schema.length() != 2 || !snapshot.hash.equals(schema.get("sha256")) || !(schema.get("parameters") instanceof Integer)
                     || schema.getInt("parameters") != snapshot.parameters.size()) throw invalid();
-            return checkOverrides(root.getJSONObject("overrides"), snapshot, values, true, false);
+            return checkOverrides(root.getJSONObject("overrides"), snapshot, values, true, false, null);
         } catch (JSONException | IllegalArgumentException failure) { throw invalid(); }
     }
 
@@ -225,10 +233,10 @@ public final class OverrideExchange {
         }
     }
 
-    /** The native file's override values by parameter key, checked the same way an export is. */
+    /** The native file's override values by parameter key, for the overrides this build has. */
     static Map<Long, String> values(byte[] nativeBytes, Snapshot snapshot) throws IOException {
         Map<Long, String> values = new TreeMap<>();
-        try { checkOverrides(parse(nativeBytes), snapshot, values, false, false); }
+        try { checkOverrides(parse(nativeBytes), snapshot, values, false, true, null); }
         catch (JSONException | RuntimeException failure) { throw invalid(); }
         return values;
     }
@@ -251,9 +259,11 @@ public final class OverrideExchange {
      * one only when it's empty or the same as the store's, as in an export or a restore point; any
      * other is refused rather than imported in part. With leaveOut, an override that's well formed
      * but doesn't fit the schema is counted and left out instead of refusing the whole document.
+     * fitting, when given, receives what's left: the experiment section and each config's overrides
+     * that fit, in their order.
      */
     private static Checked checkOverrides(JSONObject values, Snapshot snapshot, Map<Long, String> collected, boolean document,
-                                          boolean leaveOut) throws IOException, JSONException {
+                                          boolean leaveOut, JSONObject fitting) throws IOException, JSONException {
         Set<Long> seen = new HashSet<>();
         int fits = 0, leftOut = 0;
         for (java.util.Iterator<String> keys = values.keys(); keys.hasNext();) {
@@ -262,6 +272,7 @@ public final class OverrideExchange {
                 if (!(values.get(label) instanceof JSONArray)) throw invalid();
                 JSONArray experiments = values.getJSONArray(label);
                 if (document && experiments.length() > 0 && !experiments.toString().equals(snapshot.experiments)) throw invalid();
+                if (fitting != null) fitting.put(label, experiments);
                 continue;
             }
             if (!label.matches(LABEL) || !(values.get(label) instanceof JSONArray)) throw invalid();
@@ -271,7 +282,7 @@ public final class OverrideExchange {
             boolean known = snapshot.configs.containsKey(config)
                     && (configName.isEmpty() || configName.equals(snapshot.configs.get(config)));
             if (!known && !leaveOut) throw invalid();
-            JSONArray parameters = values.getJSONArray(label);
+            JSONArray parameters = values.getJSONArray(label), kept = new JSONArray();
             for (int i = 0; i < parameters.length(); i++) {
                 if (!(parameters.get(i) instanceof String)) throw invalid();
                 String record = parameters.getString(i);
@@ -287,8 +298,10 @@ public final class OverrideExchange {
                     continue;
                 }
                 if (collected != null) collected.put(key(config, index), value);
+                kept.put(record);
                 fits++;
             }
+            if (fitting != null && known && (kept.length() > 0 || parameters.length() == 0)) fitting.put(label, kept);
         }
         return new Checked(fits, leftOut);
     }
