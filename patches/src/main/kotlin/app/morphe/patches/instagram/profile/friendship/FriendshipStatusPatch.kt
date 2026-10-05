@@ -198,10 +198,15 @@ internal fun BytecodePatchContext.findProfileName(): ProfileName {
     val (shown, field) = shownSites.singleOrNull()
         ?: refuse("expected one slot in $where's $BIND_FULL_NAME section given its text and shown, found ${shownSites.size}")
     val slot = field.type
-    val hiddenSites = section.filter { at ->
-        code[at].opcode == Opcode.IGET_OBJECT && code[at].fieldReference()?.toString() == field.toString() &&
-            code.getOrNull(at + 1)?.isSetVisibility(slot, (code[at] as OneRegisterInstruction).registerA) == true
-    }.map { it + 1 }
+    // 450 moves the visibility into place between the read and the call.
+    val moves = setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16)
+    val hiddenSites = section.mapNotNull { at ->
+        if (code[at].opcode != Opcode.IGET_OBJECT || code[at].fieldReference()?.toString() != field.toString()) return@mapNotNull null
+        val register = (code[at] as OneRegisterInstruction).registerA
+        (at + 1..minOf(at + 3, code.size - 1)).firstOrNull { code[it].isSetVisibility(slot, register) }?.takeIf { call ->
+            (at + 1 until call).all { code[it].opcode in moves && (code[it] as OneRegisterInstruction).registerA != register }
+        }
+    }
     val hidden = hiddenSites.singleOrNull()
         ?: refuse("expected one place in $where's $BIND_FULL_NAME section hiding the slot, found ${hiddenSites.size}")
 

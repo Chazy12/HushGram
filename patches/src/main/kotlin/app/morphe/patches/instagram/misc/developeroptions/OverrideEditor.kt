@@ -6,6 +6,7 @@ package app.morphe.patches.instagram.misc.developeroptions
 
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
+import app.morphe.patches.instagram.misc.analytics.loadsString
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.instagram.misc.extension.originalName
 import app.morphe.patches.instagram.misc.settings.EXTENSION_ROOT
@@ -47,9 +48,11 @@ internal fun BytecodePatchContext.findOverrideEditor(): OverrideEditor {
             val strings = method.implementation?.instructions?.mapNotNull {
                 ((it as? ReferenceInstruction)?.reference as? StringReference)?.string
             }.orEmpty()
-            strings.containsAll(listOf(OVERRIDE_TITLE, "TITLE_KEY", "IS_OVERRIDE_KEY"))
+            strings.containsAll(listOf(OVERRIDE_TITLE, "TITLE_KEY"))
         }
     }
+    // 450 asks a pool of shared strings for the last key.
+    found.retainAll { loadsString(it, "IS_OVERRIDE_KEY") }
     if (!hasBridge) editorRefuse("extension has no override bridge class")
     val branch = found.singleOrNull() ?: editorRefuse("expected one native override branch, found ${found.size}")
     val code = branch.implementation!!.instructions.toList()

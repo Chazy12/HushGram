@@ -11,12 +11,15 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
+import app.morphe.patches.instagram.misc.extension.localRegisterCount
 import app.morphe.patches.instagram.misc.extension.requireStatusMethod
 import app.morphe.patches.instagram.misc.extension.requireLocals
 import app.morphe.patches.instagram.misc.extension.parameterRegisterNumber
 import app.morphe.patches.instagram.misc.settings.EXTENSION_ROOT
 import app.morphe.patches.instagram.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.ControlFlow
+import app.morphe.util.RegisterLiveness
 import app.morphe.util.getFreeRegisterProvider
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -55,10 +58,10 @@ private const val BOOLEAN = "Ljava/lang/Boolean;"
 private const val BOUNCY_UFI_BUTTON = "Lcom/instagram/ui/widget/bouncyufibutton/IgBouncyUfiButtonImageView;"
 private const val UFI_COUNT = "Lcom/instagram/common/ui/base/IgTextView;"
 
-/** Feed's inflated repost icon and count in Instagram 449. */
-internal const val REPOSTS_UFI_ICON_ID = 0x7f0b35bc
-internal const val REPOSTS_UFI_COUNT_ID = 0x7f0b35bb
-internal const val REPOSTS_LABEL_ID = 0x7f136d26
+/** Feed's inflated repost icon and count in Instagram 450, and the Repost button's label. */
+internal const val REPOSTS_UFI_ICON_ID = 0x7f0b3614
+internal const val REPOSTS_UFI_COUNT_ID = 0x7f0b3613
+internal const val REPOSTS_LABEL_ID = 0x7f136e0d
 
 /** How far before a tree read its hash may be loaded, for a branch or two in between. */
 private const val HASH_REACH = 4
@@ -172,8 +175,15 @@ internal fun BytecodePatchContext.findFeedUfiSite(): FeedUfiSite {
         ?: refuse("expected one Feed UFI repost binder, found ${sites.size}")
 }
 
-/** The component-backed Feed row has its own Repost renderer, separate from the view binder. */
-internal fun BytecodePatchContext.findFeedRepostComponent(): Method {
+/**
+ * The component-backed Feed row's Repost renderer, separate from the view binder, and where in it
+ * the hook goes. On 449 the renderer is a method of its own and the hook goes first. 450's Redex
+ * merges it with other Feed components into one method that picks its part by the component's
+ * class, so the hook goes at the start of the one part that reaches the repost icon and label.
+ */
+internal class FeedRepostComponent(val method: Method, val at: Int)
+
+internal fun BytecodePatchContext.findFeedRepostComponent(): FeedRepostComponent {
     val renders = mutableListOf<Method>()
     classDefForEach { classDef ->
         if (classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
@@ -185,24 +195,77 @@ internal fun BytecodePatchContext.findFeedRepostComponent(): Method {
                 code.indexOfLiteral(REPOSTS_LABEL_ID) >= 0) renders += method
         }
     }
-    return renders.singleOrNull() ?: refuse("expected one Feed Repost component renderer, found ${renders.size}")
+    val render = renders.singleOrNull() ?: refuse("expected one Feed Repost component renderer, found ${renders.size}")
+    val parts = mergedParts(render)
+    if (parts.isEmpty()) return FeedRepostComponent(render, 0)
+    val code = render.implementation!!.instructions.toList()
+    val flow = ControlFlow.of(render)
+    fun loads(id: Int) = code.indices.filter { (code[it] as? NarrowLiteralInstruction)?.narrowLiteral == id && code[it].opcode == Opcode.CONST }
+    val icons = loads(REPOSTS_UFI_ICON_ID)
+    val labels = loads(REPOSTS_LABEL_ID)
+    val checks = parts.map { it - 2 }.toSet()
+    val reposts = parts.filter { start ->
+        val seen = mutableSetOf<Int>()
+        val pending = java.util.ArrayDeque<Int>().apply { add(start) }
+        while (pending.isNotEmpty()) {
+            val at = pending.removeFirst()
+            if (at in checks || !seen.add(at)) continue
+            pending.addAll(flow.normal[at]); pending.addAll(flow.exceptional[at])
+        }
+        icons.any { it in seen } && labels.any { it in seen }
+    }
+    val at = reposts.singleOrNull()
+        ?: refuse("expected one part of ${render.definingClass}->${render.name} drawing Repost, found ${reposts.size}")
+    if (flow.normal.indices.any { from -> from != at - 1 && at in flow.normal[from] }) {
+        refuse("${render.definingClass}->${render.name}'s Repost part is reached other than from its class check")
+    }
+    return FeedRepostComponent(render, at)
+}
+
+/**
+ * Where each part of a Redex-merged method starts: right after an instance-of check of the
+ * method's own receiver (or a copy made before the first check) and the if-eqz that skips the part.
+ */
+private fun mergedParts(method: Method): List<Int> {
+    val implementation = method.implementation!!
+    val code = implementation.instructions.toList()
+    val receivers = mutableSetOf(method.localRegisterCount())
+    for (instruction in code) {
+        if (instruction.opcode == Opcode.INSTANCE_OF) break
+        if (instruction.opcode in setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16) &&
+            (instruction as TwoRegisterInstruction).registerB in receivers) receivers += instruction.registerA
+    }
+    return code.indices.filter { at ->
+        val check = code[at]
+        check.opcode == Opcode.INSTANCE_OF && (check as TwoRegisterInstruction).registerB in receivers &&
+            code.getOrNull(at + 1)?.let { skip -> skip.opcode == Opcode.IF_EQZ &&
+                (skip as OneRegisterInstruction).registerA == check.registerA } == true
+    }.map { it + 2 }
 }
 
 /** Native component rendering accepts null for an empty component; neither icon nor count mounts. */
-internal fun BytecodePatchContext.hideFeedComponent(found: Method) {
-    val method = mutableClassDefBy(found.definingClass).methods.single {
-        it.name == found.name && it.parameterTypes.map(CharSequence::toString) == found.parameterTypes.map(CharSequence::toString) &&
-            it.returnType == found.returnType
+internal fun BytecodePatchContext.hideFeedComponent(found: FeedRepostComponent) {
+    val method = mutableClassDefBy(found.method.definingClass).methods.single {
+        it.name == found.method.name && it.returnType == found.method.returnType &&
+            it.parameterTypes.map(CharSequence::toString) == found.method.parameterTypes.map(CharSequence::toString)
     }
-    method.requireLocals(PATCH, 1)
+    val register = if (found.at == 0) {
+        method.requireLocals(PATCH, 1)
+        0
+    } else {
+        // Only a local that no later instruction reads before writing it, low enough for const/4.
+        val live = RegisterLiveness.of(method).liveInto(found.at)
+        (0 until minOf(method.localRegisterCount(), 16)).firstOrNull { it !in live }
+            ?: refuse("${method.definingClass}->${method.name} has no spare register at its Repost part")
+    }
     method.addInstructions(
-        0,
+        found.at,
         """
             invoke-static { }, $REPOSTS_FEED_COMPONENT
-            move-result v0
-            if-eqz v0, :draw
-            const/4 v0, 0x0
-            return-object v0
+            move-result v$register
+            if-eqz v$register, :draw
+            const/4 v$register, 0x0
+            return-object v$register
             :draw
             nop
         """,

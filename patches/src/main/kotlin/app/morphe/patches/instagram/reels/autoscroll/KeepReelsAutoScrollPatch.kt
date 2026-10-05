@@ -9,6 +9,7 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import app.morphe.patches.instagram.misc.analytics.loadsString
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.instagram.misc.extension.classesHolding
 import app.morphe.patches.instagram.misc.extension.enableStatus
@@ -249,7 +250,7 @@ internal fun BytecodePatchContext.findReelAutoScroll(): ReelAutoScrollSites {
     val others = callers.filter { (_, method) -> method.text() != click.text() }
     val pauses = others.filter { (_, method) ->
         method.name == "onPause" && !method.isStatic() && method.parameters().isEmpty() && method.returnType == "V" &&
-            method.holdsString(AUTO_SCROLL_SURFACE)
+            loadsString(method, AUTO_SCROLL_SURFACE)
     }
     val toggles = others - pauses.toSet()
     if (pauses.size != 1 || toggles.size != 1) {

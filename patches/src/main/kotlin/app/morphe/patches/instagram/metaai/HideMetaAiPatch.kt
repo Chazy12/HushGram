@@ -53,13 +53,13 @@ private const val VIEW_STUB = "Landroid/view/ViewStub;"
 private const val CHECK_WITHIN = 6
 
 /**
- * The server flags the search switch answers off on Instagram 449. Three decide whether a search bar
+ * The server flags the search switch answers off on Instagram 450. Three decide whether a search bar
  * offers Meta AI: the Search tab's, which also covers its results and Meta AI's answers there, the
  * messages inbox's "ask Meta AI" bar, and the Meta AI ring at the end of the inbox's bar. The fourth
  * puts a Meta AI chats ("hatch") button in Home's top bar when the server's list has no messages
  * button, and the same item in the bar's settings list.
  */
-internal val SEARCH_FLAGS = listOf(0x81068600111f6bL, 0x8104190006113aL, 0x810417001b1130L, 0x8116ad0001713eL)
+internal val SEARCH_FLAGS = listOf(0x81067f00111f66L, 0x81041600061138L, 0x810414001b112eL, 0x8116a000017225L)
 
 /** Meta AI's feed item kinds: Vibes videos, Meta AI chats and Imagine pictures of you. */
 internal val META_AI_UNITS = listOf("VIBES_IN_FEED_UNIT", "HATCH_IMMERSIVE_IN_FEED_UNIT", "MEMU_IN_FEED_UNIT")

@@ -476,17 +476,18 @@ internal fun jsonReads(input: String, classes: Map<String, ClassDef>): JsonReads
     if (!errorPath(advanceAt + 4, JSON_ROOT_FIELD, nameAt) ||
         !errorPath(nameAt + 5, JSON_ROOT_MISMATCH, next)) refuse("root errors no longer describe the guarded name")
     val parser = classes[input] ?: refuse("missing native JSON input")
-    val values = parser.methods.filter { it.publicInstance() && it.parameters().isEmpty() && it.returnType == STRING &&
-        listOf(fieldName, stringValue).all { field -> it.code().any { instruction ->
-            instruction.field()?.toString() == field.toString() }
-        }
-    }
-    // A coercing accessor delegates to the token's string accessor and is a different boundary.
-    val value = values.filter { method -> method.code().none { instruction ->
-        values.any { other -> other.toString() == instruction.call()?.toString() }
-    } }.one("JSON value-string API")
+    // Jackson's nextTextValue: advance, and on VALUE_STRING answer the value-string accessor. 450 made
+    // that accessor abstract, so it's found by what the base class calls rather than by its body.
+    val value = parser.methods.filter { it.publicInstance() && it.parameters().isEmpty() && it.returnType == STRING }
+        .mapNotNull { method -> method.code().takeIf { body -> body.size == 9 &&
+            body[0].call()?.let { it.definingClass == input && it.parameters().isEmpty() && it.returnType == token.type } == true &&
+            body[2].field()?.toString() == stringValue.toString() && body[3].opcode == Opcode.IF_NE &&
+            body[6].opcode == Opcode.RETURN_OBJECT && body[8].opcode == Opcode.RETURN_OBJECT
+        }?.get(4)?.call()?.takeIf { it.definingClass == input && it.parameters().isEmpty() && it.returnType == STRING } }
+        .distinctBy { it.toString() }.one("JSON value-string API")
     val current = parser.methods.filter { it.publicInstance() && AccessFlags.ABSTRACT.isSet(it.accessFlags) &&
-        it.parameters().isEmpty() && it.returnType == token.type }.one("JSON current-token API")
+        it.parameters().isEmpty() && it.returnType == token.type && !it.matches(code[advanceAt].call()!!)
+    }.one("JSON current-token API")
     for (api in listOf(code[nameAt].call()!!, code[advanceAt].call()!!)) {
         parser.methods.filter { it.matches(api) && it.publicInstance() }.one("anchored JSON API implementation")
     }

@@ -139,8 +139,34 @@ class HideRepostButtonHookTest {
     fun theComponentRendererHidesItsWholeResultBeforeNativeDrawing() {
         val context = PatchContexts.of(listOf(feedComponent()))
         val render = context.findFeedRepostComponent()
+        assertEquals("an unmerged renderer is guarded first thing", 0, render.at)
         context.hideFeedComponent(render)
-        assertComponentGuarded(context.mutableClassDefBy(render.definingClass).methods.single())
+        assertComponentGuarded(context.mutableClassDefBy(render.method.definingClass).methods.single(), 0)
+    }
+
+    /**
+     * Merged with another component the way 450's Redex does it, only the part that draws Repost
+     * returns nothing, and the guard uses a register the part writes before reading.
+     */
+    @Test
+    fun aMergedRendererHidesOnlyItsRepostPart() {
+        val context = PatchContexts.of(listOf(mergedComponent()))
+        val render = context.findFeedRepostComponent()
+        assertEquals("the Repost part starts after its class check", 7, render.at)
+        context.hideFeedComponent(render)
+        val method = context.mutableClassDefBy(render.method.definingClass).methods.single()
+        assertComponentGuarded(method, 7)
+        val code = method.implementation!!.instructions.toList()
+        assertEquals("the other part still draws", Opcode.CONST_4, code[3].opcode)
+        assertEquals("the other part still draws", Opcode.RETURN_OBJECT, code[4].opcode)
+        assertEquals("the Repost part's own code follows", REPOSTS_UFI_ICON_ID, (code[13] as NarrowLiteralInstruction).narrowLiteral)
+    }
+
+    @Test
+    fun aMergedRendererWithTwoRepostPartsFailsThePatch() {
+        assertThrows(PatchException::class.java) {
+            PatchContexts.of(listOf(mergedComponent(otherDrawsRepost = true))).findFeedRepostComponent()
+        }
     }
 
     @Test
@@ -214,7 +240,9 @@ class HideRepostButtonHookTest {
                 assertFeedUfiHidden("${bundle.name} ${feedUfi.type}->${feedUfi.name}", feedMethod, feedUfi.icon, feedUfi.count)
                 val hide = feedMethod.implementation!!.instructions.indexOfFirst { it.names(REPOSTS_FEED_UFI) }
                 branchesToShare.forEach { assertEquals("${bundle.name}: a native branch skipped hiding", hide - 2, it.target.location.index) }
-                assertComponentGuarded(context.mutableClassDefBy(component.definingClass).methods.single { it.name == component.name })
+                assertComponentGuarded(context.mutableClassDefBy(component.method.definingClass).methods.single {
+                    it.name == component.method.name && it.parameterTypes == component.method.parameterTypes
+                }, component.at)
                 checked++
             }
         }
@@ -278,18 +306,22 @@ class HideRepostButtonHookTest {
         assertEquals(what, expected.toString(), ((instruction as ReferenceInstruction).reference as FieldReference).toString())
     }
 
-    private fun assertComponentGuarded(method: Method) {
+    private fun assertComponentGuarded(method: Method, at: Int) {
         val code = method.implementation!!.instructions.toList()
         assertEquals(1, code.count { it.names(REPOSTS_FEED_COMPONENT) })
-        assertTrue(code[0].names(REPOSTS_FEED_COMPONENT))
-        assertEquals(Opcode.MOVE_RESULT, code[1].opcode)
-        assertEquals(Opcode.IF_EQZ, code[2].opcode)
-        assertEquals(0, (code[3] as NarrowLiteralInstruction).narrowLiteral)
-        assertEquals(Opcode.RETURN_OBJECT, code[4].opcode)
-        assertEquals(0, (code[4] as OneRegisterInstruction).registerA)
-        assertEquals(5, (code[2] as BuilderOffsetInstruction).target.location.index)
-        assertEquals(Opcode.NOP, code[5].opcode)
-        assertTrue("Off must reach the untouched native renderer", code.size > 6)
+        assertTrue(code[at].names(REPOSTS_FEED_COMPONENT))
+        assertEquals(Opcode.MOVE_RESULT, code[at + 1].opcode)
+        val register = (code[at + 1] as OneRegisterInstruction).registerA
+        assertEquals(Opcode.IF_EQZ, code[at + 2].opcode)
+        assertEquals(register, (code[at + 2] as OneRegisterInstruction).registerA)
+        assertEquals(0, (code[at + 3] as NarrowLiteralInstruction).narrowLiteral)
+        assertEquals(register, (code[at + 3] as OneRegisterInstruction).registerA)
+        assertEquals(Opcode.RETURN_OBJECT, code[at + 4].opcode)
+        assertEquals(register, (code[at + 4] as OneRegisterInstruction).registerA)
+        if (at == 0) assertEquals(0, register)
+        assertEquals(at + 5, (code[at + 2] as BuilderOffsetInstruction).target.location.index)
+        assertEquals(Opcode.NOP, code[at + 5].opcode)
+        assertTrue("Off must reach the untouched native renderer", code.size > at + 6)
     }
 
     private fun Instruction.names(reference: String) = (this as? ReferenceInstruction)?.reference?.toString() == reference
@@ -371,6 +403,48 @@ class HideRepostButtonHookTest {
                     ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0),
                 ), null, null),
             )),
+        )
+
+        /**
+         * Two components merged into one renderer, picked by the receiver's class:
+         *
+         *     0 move-object v1, v2 (this) | 1 instance-of v0, v1, Other | 2 if-eqz v0 -> 5
+         *     3 const/4 v0, 0 | 4 return-object v0
+         *     5 instance-of v0, v1, Repost | 6 if-eqz v0 -> 12
+         *     7 const v0, icon | 8 const v0, label | 9 const-string v0, Button | 10 const/4 v0, 0 | 11 return-object v0
+         *     12 const/4 v0, 0 | 13 return-object v0
+         */
+        fun mergedComponent(otherDrawsRepost: Boolean = false): ClassDef {
+            val type = "Lfixture/MergedComponent;"
+            val first = if (otherDrawsRepost) repostPart(12) else listOf(
+                ImmutableInstruction22c(Opcode.INSTANCE_OF, 0, 1, ImmutableTypeReference("Lfixture/Other;")),
+                ImmutableInstruction21t(Opcode.IF_EQZ, 0, 4),
+                ImmutableInstruction11n(Opcode.CONST_4, 0, 0),
+                ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0),
+            )
+            val code = listOf(ImmutableInstruction12x(Opcode.MOVE_OBJECT, 1, 2)) + first + repostPart(12) + listOf(
+                ImmutableInstruction11n(Opcode.CONST_4, 0, 0),
+                ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0),
+            )
+            return ImmutableClassDef(
+                type, AccessFlags.PUBLIC.value or AccessFlags.ABSTRACT.value, "Ljava/lang/Object;",
+                null, null, null, null, listOf(ImmutableMethod(
+                    type, "render", listOf(ImmutableMethodParameter("Lfixture/Scope;", null, null)), "Lfixture/Component;",
+                    AccessFlags.PUBLIC.value, null, null,
+                    ImmutableMethodImplementation(4, code, null, null),
+                )),
+            )
+        }
+
+        /** A class check skipping [skip] code units to the next part, then a part drawing Repost. */
+        private fun repostPart(skip: Int) = listOf(
+            ImmutableInstruction22c(Opcode.INSTANCE_OF, 0, 1, ImmutableTypeReference("Lfixture/Repost;")),
+            ImmutableInstruction21t(Opcode.IF_EQZ, 0, skip),
+            ImmutableInstruction31i(Opcode.CONST, 0, REPOSTS_UFI_ICON_ID),
+            ImmutableInstruction31i(Opcode.CONST, 0, REPOSTS_LABEL_ID),
+            ImmutableInstruction21c(Opcode.CONST_STRING, 0, ImmutableStringReference("android.widget.Button")),
+            ImmutableInstruction11n(Opcode.CONST_4, 0, 0),
+            ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0),
         )
 
         /**

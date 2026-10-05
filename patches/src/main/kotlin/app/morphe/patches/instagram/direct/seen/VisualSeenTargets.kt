@@ -195,12 +195,25 @@ internal fun BytecodePatchContext.findVisualSeen(): VisualSeenTargets {
     val dispatch = methods.filter { it.visualCode().any { ins -> ins.visualString() == DISPATCH_ANCHOR } &&
         it.parameterTypes.map(Any::toString) == listOf(handler.parameterTypes[2].toString()) && it.returnType == "Z"
     }.one("native mutation dispatcher")
+    // 450 dispatches through a static (UserSession, mutation) helper that only looks up the
+    // session's manager and hands it the mutation it was given.
+    val helpers = methods.filter { method ->
+        val body = method.visualCode()
+        val at = body.indices.filter { body[it].call()?.key() == dispatch.key() }
+        AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "V" && body.size <= 6 &&
+            method.parameterTypes.map(Any::toString) == listOf(USER_SESSION, dispatch.parameterTypes.single().toString()) &&
+            at.size == 1 && body[at.single()].namedRegisters().lastOrNull() == method.parameterRegisterNumber(1)
+    }
+    helpers.forEach { helper ->
+        helper.requireParameterIntact(PATCH, 1, listOf(helper.visualCode().indexOfFirst { it.call()?.key() == dispatch.key() }))
+    }
+    val sends = (helpers.map { it.key() } + dispatch.key()).toSet()
     val creator = methods.filter { method -> method.visualCode().any { it.opcode == Opcode.NEW_INSTANCE && it.type() == mutation } &&
-        method.visualCode().any { it.call()?.key() == dispatch.key() }
+        method.visualCode().any { it.call()?.key() in sends }
     }.one("live visual mutation creator")
     val created = creator.visualCode()
     val createAt = created.indices.filter { created[it].opcode == Opcode.NEW_INSTANCE && created[it].type() == mutation }.one("live visual mutation allocation")
-    val sendAt = created.indices.filter { created[it].call()?.key() == dispatch.key() &&
+    val sendAt = created.indices.filter { created[it].call()?.key() in sends &&
         created[it].namedRegisters().lastOrNull() == (created[createAt] as OneRegisterInstruction).registerA
     }.one("live visual mutation dispatch call")
     // The viewer's replay branch joins this dispatcher with a different mutation. Only paths
