@@ -35,14 +35,14 @@
 # The optional DM visual guard applies when its patch is explicitly selected. Both strings keep
 # the shared voice endpoint separate. Its source remains excluded from default builds pending
 # sender-side acceptance.
-# Navigation binding fields below are pinned 449 verification data. Production discovery infers
+# Navigation binding fields below are pinned 450 verification data. Production discovery infers
 # both concrete proxies, their shared tab owner and the factory's returned View before mutation.
 # Each native setter calls remember once, before its framework listener binding. The returned
 # factory View binds once, including the original systrace branch to its return.
-start-call Lapp/hushgram/extension/instagram/settings/NavigationSettings;->remember(Landroid/view/View;Ljava/lang/Object;Landroid/view/View$OnLongClickListener;)Landroid/view/View$OnLongClickListener; in instance (Landroid/view/View$OnLongClickListener;)V calling instance Landroid/view/View;->setOnLongClickListener(Landroid/view/View$OnLongClickListener;)V holding LX/09ki;->A09:Landroid/view/View;
-start-call Lapp/hushgram/extension/instagram/settings/NavigationSettings;->remember(Landroid/view/View;Ljava/lang/Object;Landroid/view/View$OnLongClickListener;)Landroid/view/View$OnLongClickListener; in instance (Landroid/view/View$OnLongClickListener;)V calling instance Landroid/view/View;->setOnLongClickListener(Landroid/view/View$OnLongClickListener;)V holding LX/0ZxV;->A00:Lcom/facebook/litho/LithoView;
-shared-call Lapp/hushgram/extension/instagram/settings/NavigationSettings;->remember(Landroid/view/View;Ljava/lang/Object;Landroid/view/View$OnLongClickListener;)Landroid/view/View$OnLongClickListener; in instance (Landroid/view/View$OnLongClickListener;)V calling instance Landroid/view/View;->setOnLongClickListener(Landroid/view/View$OnLongClickListener;)V holding LX/09ki;->A09:Landroid/view/View;
-shared-call Lapp/hushgram/extension/instagram/settings/NavigationSettings;->remember(Landroid/view/View;Ljava/lang/Object;Landroid/view/View$OnLongClickListener;)Landroid/view/View$OnLongClickListener; in instance (Landroid/view/View$OnLongClickListener;)V calling instance Landroid/view/View;->setOnLongClickListener(Landroid/view/View$OnLongClickListener;)V holding LX/0ZxV;->A00:Lcom/facebook/litho/LithoView;
+start-call Lapp/hushgram/extension/instagram/settings/NavigationSettings;->remember(Landroid/view/View;Ljava/lang/Object;Landroid/view/View$OnLongClickListener;)Landroid/view/View$OnLongClickListener; in instance (Landroid/view/View$OnLongClickListener;)V calling instance Landroid/view/View;->setOnLongClickListener(Landroid/view/View$OnLongClickListener;)V holding LX/00OR;->A0A:Landroid/view/View;
+start-call Lapp/hushgram/extension/instagram/settings/NavigationSettings;->remember(Landroid/view/View;Ljava/lang/Object;Landroid/view/View$OnLongClickListener;)Landroid/view/View$OnLongClickListener; in instance (Landroid/view/View$OnLongClickListener;)V calling instance Landroid/view/View;->setOnLongClickListener(Landroid/view/View$OnLongClickListener;)V holding LX/0DsQ;->A00:Lcom/facebook/litho/LithoView;
+shared-call Lapp/hushgram/extension/instagram/settings/NavigationSettings;->remember(Landroid/view/View;Ljava/lang/Object;Landroid/view/View$OnLongClickListener;)Landroid/view/View$OnLongClickListener; in instance (Landroid/view/View$OnLongClickListener;)V calling instance Landroid/view/View;->setOnLongClickListener(Landroid/view/View$OnLongClickListener;)V holding LX/00OR;->A0A:Landroid/view/View;
+shared-call Lapp/hushgram/extension/instagram/settings/NavigationSettings;->remember(Landroid/view/View;Ljava/lang/Object;Landroid/view/View$OnLongClickListener;)Landroid/view/View$OnLongClickListener; in instance (Landroid/view/View$OnLongClickListener;)V calling instance Landroid/view/View;->setOnLongClickListener(Landroid/view/View$OnLongClickListener;)V holding LX/0DsQ;->A00:Lcom/facebook/litho/LithoView;
 once-call Lapp/hushgram/extension/instagram/settings/NavigationSettings;->bind(Landroid/view/View;Ljava/lang/Object;)V in static (Landroid/view/ViewGroup;Lcom/instagram/mainactivity/InstagramMainActivity;L*;L*;Lkotlin/jvm/functions/Function1;IZZ)Landroid/view/View; holding InstagramMainActivity.createTabButton(
 
 start-call Lapp/hushgram/extension/instagram/direct/VisualSeen;->hold()Z in instance (L*;L*;L*;)V holding direct_v2/visual_threads/%s/item_seen/ raven_media
@@ -107,7 +107,7 @@ start-call Lapp/hushgram/extension/instagram/misc/Analytics;->setupScreen(Ljava/
 shared-call Lapp/hushgram/extension/instagram/misc/Analytics;->setupScreen(Ljava/lang/String;)I in instance (Landroid/content/Context;Lcom/instagram/bloks/hosting/IgBloksScreenConfig;)V calling static LX/*;->*(Landroid/content/Context;LX/*;Lcom/instagram/bloks/hosting/IgBloksScreenConfig;LX/*;LX/*;I)V class-holding CacheTTL\smust\sbe\spositive
 # The direct screen presenter needs a null-data bypass before reading its immutable app id.
 # The existing opener routes share this hook, so one call is required here without forbidding them.
-shared-call Lapp/hushgram/extension/instagram/misc/Analytics;->setupScreen(Ljava/lang/String;)I in static (Landroid/content/Context;L*;Lcom/instagram/bloks/hosting/IgBloksScreenConfig;L*;L*;I)V holding FragmentActivity\sis\srequired\sto\sopen\sCDS\sbottom\ssheet foa_bottom_sheet_config cds_bloks
+shared-call Lapp/hushgram/extension/instagram/misc/Analytics;->setupScreen(Ljava/lang/String;)I in static (Landroid/content/Context;L*;Lcom/instagram/bloks/hosting/IgBloksScreenConfig;L*;L*;I)V holding FragmentActivity\sis\srequired\sto\sopen\sCDS\sbottom\ssheet cds_bloks cds_bloks_bottomsheet
 # Open developer options asks open() first in Home's long press, the one onLongClick holding the
 # two values the server can set the press to. Nothing else calls open().
 start-call Lapp/hushgram/extension/instagram/misc/DeveloperOptions;->open()I in instance (Landroid/view/View;)Z holding click activity
@@ -130,14 +130,14 @@ no-call Lcom/facebook/mobileconfig/MobileConfigOverridesTableHolder;->updateOver
 # taking two strings, is the only method of that shape holding the purge flag name below on 449.
 # The other, recording watch progress, holds no string, so its rules pick it by its class's: the
 # batch's request builder holds the path and the name of the error it logs, which the patch finds
-# the batch by and no other class holds, and the progress record is the batch's one instance method
-# taking a string and a long. The extension's holdBack() is called from both, so each pair's second
+# the batch by and no other class holds, and the progress record is the batch's one static taking
+# the batch, a string and two longs on 450 (449's was an instance method taking a string and a long). The extension's holdBack() is called from both, so each pair's second
 # rule is shared-call; the reached record holds neither string, so it doesn't count against the
 # progress record's rules.
 start-call Lapp/hushgram/extension/instagram/reels/ReelWatchHistory;->holdBack()Z in instance (Ljava/lang/String;Ljava/lang/String;)V holding android_purge_26_q2_IgAppCheckImpl_getCurrentAppType
 shared-call Lapp/hushgram/extension/instagram/reels/ReelWatchHistory;->holdBack()Z in instance (Ljava/lang/String;Ljava/lang/String;)V holding android_purge_26_q2_IgAppCheckImpl_getCurrentAppType
-start-call Lapp/hushgram/extension/instagram/reels/ReelWatchHistory;->holdBack()Z in instance (Ljava/lang/String;J)V class-holding clips/write_seen_state/ PendingClipsSeenState#progressImpressionsEncodeFailure
-shared-call Lapp/hushgram/extension/instagram/reels/ReelWatchHistory;->holdBack()Z in instance (Ljava/lang/String;J)V class-holding clips/write_seen_state/ PendingClipsSeenState#progressImpressionsEncodeFailure
+start-call Lapp/hushgram/extension/instagram/reels/ReelWatchHistory;->holdBack()Z in static (LX/*;Ljava/lang/String;JJ)V class-holding clips/write_seen_state/ PendingClipsSeenState#progressImpressionsEncodeFailure
+shared-call Lapp/hushgram/extension/instagram/reels/ReelWatchHistory;->holdBack()Z in static (LX/*;Ljava/lang/String;JJ)V class-holding clips/write_seen_state/ PendingClipsSeenState#progressImpressionsEncodeFailure
 #
 # Clean up Reels asks the extension first thing in each part of the Reels viewer it hides, each the
 # one method holding its marker on 449: the Follow button's render, the render of each creation or
@@ -189,9 +189,9 @@ once-call Lapp/hushgram/extension/instagram/reels/ReelDeclutter;->hideSocialCont
 # Sanitize sharing links passes the link each of Instagram's two share link parsers reads through
 # the extension, once, before the parser stores it: the permalink parser for a post or reel and the
 # parser for a story's share URL. Each is the one instance parser holding its field name and its
-# GraphQL type name. Both call the same filter, so each rule is shared-call.
+# GraphQL type name, or on 450, where the story's field name is pooled, its two type names. Both call the same filter, so each rule is shared-call.
 shared-call Lapp/hushgram/extension/instagram/misc/LinkCleaner;->sanitizeShared(Ljava/lang/String;)Ljava/lang/String; in instance (*)Ljava/lang/Object; holding permalink XDTPermalinkResponse
-shared-call Lapp/hushgram/extension/instagram/misc/LinkCleaner;->sanitizeShared(Ljava/lang/String;)Ljava/lang/String; in instance (*)Ljava/lang/Object; holding story_item_to_share_url XDTStoryItemThirdPartySharingUrlResponse
+shared-call Lapp/hushgram/extension/instagram/misc/LinkCleaner;->sanitizeShared(Ljava/lang/String;)Ljava/lang/String; in instance (*)Ljava/lang/Object; holding XDTStoryItemThirdPartySharingUrlResponse StoryItemThirdPartySharingUrlResponseImpl
 #
 # The extension gets its context first thing in the application's onCreate, and the settings patch
 # calls the extension before each return of that onCreate. 449's onCreate returns once, so each is
@@ -233,9 +233,9 @@ once-call Lapp/hushgram/extension/instagram/stories/StoryAdvance;->hold()Z in in
 # Its guard asks holdUnlessItLoops() once, right after hold(), in the same handler. Left out, the
 # stories Loop a story can't loop move on while both are on.
 once-call Lapp/hushgram/extension/instagram/stories/StoryAdvance;->holdUnlessItLoops()Z in instance (Ljava/lang/Object;)V calling static L*;->*(Lcom/instagram/common/session/UserSession;Lcom/instagram/model/reels/ReelItem;)Z holding userSession Required\svalue\swas\snull.
-# Its native guard call must be invoke-direct/range {p0 .. p1} to A1K on 449. The original
-# handler's A1K call stays too. Source discovery independently proves that method reads Loop's flag.
-story-loop-call Linstagram/features/stories/fragment/ReelViewerFragment;->A1K(Lcom/instagram/model/reels/ReelItem;)Z in instance (Ljava/lang/Object;)V calling static L*;->*(Lcom/instagram/common/session/UserSession;Lcom/instagram/model/reels/ReelItem;)Z holding userSession Required\svalue\swas\snull.
+# Its native guard call must be invoke-direct/range {p0 .. p1} to A1A on 450. The original
+# handler's A1A call stays too. Source discovery independently proves that method reads Loop's flag.
+story-loop-call Linstagram/features/stories/fragment/ReelViewerFragment;->A1A(Lcom/instagram/model/reels/ReelItem;)Z in instance (Ljava/lang/Object;)V calling static L*;->*(Lcom/instagram/common/session/UserSession;Lcom/instagram/model/reels/ReelItem;)Z holding userSession Required\svalue\swas\snull.
 # Show a story's exact time asks label() in front of the long-to-double in the story item's time
 # label, the item's one instance method taking a Context and answering a String. The label holds
 # no string, so the rule names one only ReelItem's methods hold on 449. Left out, every story says
@@ -247,11 +247,11 @@ once-call Lapp/hushgram/extension/instagram/stories/StoryTime;->label(J)Ljava/la
 once-call Lapp/hushgram/extension/instagram/stories/StoryTime;->relativeHeader(I)Z in static (Landroid/content/Context;Lcom/instagram/common/session/UserSession;L*;Lcom/instagram/model/reels/ReelItem;)L*; holding timestamp
 # Loop a story answers the read of Instagram's own story loop flag through loop(), right after it
 # in the story viewer's private check of whether a story item plays again. The check holds no
-# string, so the rule names one only the viewer holds on 449, and of the viewer's three instance
-# methods taking a story item and answering a boolean, it's the one that asks the item whether
-# it's an ad (EWC on 449). Left out, a finished story moves on; twice or elsewhere, it isn't the
+# string, so the rule names one only the viewer holds, and of the viewer's instance methods taking
+# a story item and answering a boolean, it's the one that asks the item whether it's an ad (EZ5
+# on 450, EWC on 449). Left out, a finished story moves on; twice or elsewhere, it isn't the
 # answer the patch wrote.
-once-call Lapp/hushgram/extension/instagram/stories/StoryLoop;->loop(I)Z in instance (Lcom/instagram/model/reels/ReelItem;)Z calling instance Lcom/instagram/model/reels/ReelItem;->EWC()Z class-holding ReelViewerFragment.onCurrentActiveItemBound
+once-call Lapp/hushgram/extension/instagram/stories/StoryLoop;->loop(I)Z in instance (Lcom/instagram/model/reels/ReelItem;)Z calling instance Lcom/instagram/model/reels/ReelItem;->EZ5()Z class-holding ReelViewerFragment.onCurrentActiveItemBound
 # Restore trust on re-signed builds puts its call first in the package signer reader, which its
 # fingerprint picks by the SigningInfo and PackageInfo calls it makes. The reader holds no string,
 # so the rule holds the old signatures array it reads, which 28 methods read on 449. Of
@@ -414,9 +414,10 @@ start-call Lapp/hushgram/extension/instagram/download/StoryDownload;->save(Ljava
 shared-call Lapp/hushgram/extension/instagram/download/StoryDownload;->save(Ljava/lang/CharSequence;Ljava/lang/Object;)Z in static (*Ljava/lang/CharSequence;)V holding manage_highlights
 # Two older dialogs' click listeners look the tapped label up in the labels themselves, and ask
 # save() right after the lookup: the one for a suggested-users card, and a merged listener whose
-# story case sits beside the ones holding the other two strings.
+# story case sits beside the ones holding the other two strings (on 450 the second is the delete-all
+# confirmation's, since the first case's own string is pooled).
 shared-call Lapp/hushgram/extension/instagram/download/StoryDownload;->save(Ljava/lang/CharSequence;Ljava/lang/Object;)Z in instance (Landroid/content/DialogInterface;I)V holding recommended_user_see_fewer_suggestions_tapped
-shared-call Lapp/hushgram/extension/instagram/download/StoryDownload;->save(Ljava/lang/CharSequence;Ljava/lang/Object;)Z in instance (Landroid/content/DialogInterface;I)V holding ig_school_story_spp_remove_story_tapped carrera_pin_to_profile_confirmation_shown
+shared-call Lapp/hushgram/extension/instagram/download/StoryDownload;->save(Ljava/lang/CharSequence;Ljava/lang/Object;)Z in instance (Landroid/content/DialogInterface;I)V holding ig_school_story_spp_remove_story_tapped confirm_delete_all
 #
 # Download any video: the feed menu's builder, one case of a merged lambda holding the feed menu's
 # kept name, calls offer() once, where the rows for anyone else's post start. The feed menu's
@@ -461,18 +462,18 @@ once-call Lapp/hushgram/extension/instagram/media/TapClock;->touch(Landroid/app/
 once-call Lapp/hushgram/extension/instagram/media/TapToPlay;->resumeOnTap(ILjava/lang/Object;)Z in instance (Landroid/view/View;*)V holding android_purge_26_q3_PauseAndMuteNavigator_togglePause clips_pause
 # The story player's resume hands the flag it starts a story on to resumeHeldStory() between reading
 # it and branching on it. The resume holds no string, and every field it touches is its own class's
-# Redex name, so the rule picks it by its class's strings: "reel_video_player" and "already bound"
-# are held together only by the player and a string table on 449. A stub of two instructions in the
+# Redex name, so the rule picks it by its class's strings. On 450 "reel_video_player" is held by
+# the player and a string table only, and the table has no method of the resume's shape. A stub of two instructions in the
 # player has the resume's shape too (a string and a flag in, nothing back). Of the two only the
 # resume reads the clock, so the rule asks for that call as well. resumeHeldStory() is called from
 # the resume and nowhere else, so once-call. Left out, letting go of a press never starts a story Tap
 # to play held; twice or elsewhere, it isn't the hook the patch wrote. TapToPlayHookTest checks it on
 # each declared build too.
-once-call Lapp/hushgram/extension/instagram/media/TapToPlay;->resumeHeldStory(ILjava/lang/Object;)Z in instance (Ljava/lang/String;Z)V calling Ljava/lang/System;->currentTimeMillis()J class-holding reel_video_player already\sbound
+once-call Lapp/hushgram/extension/instagram/media/TapToPlay;->resumeHeldStory(ILjava/lang/Object;)Z in instance (Ljava/lang/String;Z)V calling Ljava/lang/System;->currentTimeMillis()J class-holding reel_video_player
 # The feed's Litho play button tells playButtonTapped() right after its click hands the video to
-# Instagram. The click is one arm of a lambda class's invoke, which holds no string of its own, so
-# the rule holds the call to one site in the whole APK, in an invoke.
-single-call Lapp/hushgram/extension/instagram/media/TapToPlay;->playButtonTapped(Ljava/lang/Object;)V in invoke
+# Instagram. The click is one arm of a merged lambda switch (a static A00 on 450, an invoke on 449),
+# whose arm holds no string of its own, so the rule holds the call to one site in the whole APK, there.
+single-call Lapp/hushgram/extension/instagram/media/TapToPlay;->playButtonTapped(Ljava/lang/Object;)V in A00
 # The Reels auto scroller's move to the next reel tells autoScrolled() right in front of its call
 # that moves the pager on, after its null check of the pager, so the call isn't first and follows no
 # call. The move is the one static method taking the scroller and a flag that carries its
@@ -570,20 +571,17 @@ shared-call Lapp/hushgram/extension/instagram/reels/ReelsTab;->tab(Ljava/lang/Ob
 # method taking a session and a flag and answering a list, so the shape carries the rule, and a
 # second such method in any of them fails it rather than passing.
 once-call Lapp/hushgram/extension/instagram/reels/ReelsTab;->tabs(Ljava/util/List;)Ljava/util/List; in instance (Lcom/instagram/common/session/UserSession;Z)Ljava/util/List; class-holding default
-# The home tab, a static method in the builder's class, asks Instagram's static session check and
-# then returns a tab, and the patch sends the Reels one through ReelsTab.tab. The class holds only
-# "default", so the shape and a call carry this rule too. Among the classes holding "default", four
-# static methods take a session, answer an object and call a method that takes a session and answers
-# a flag on 449: the home tab, the builder's static list (it answers a List), ClipsViewerSource's own
-# (it answers a ClipsViewerSource, a name Redex keeps) and one in another renamed class, whose session
-# check is an invoke-virtual. So the rule asks for a renamed class back (every one lives in LX/) and
-# for a static call taking a session and answering a flag, and the home tab is the one left. The tab
-# constants, the class it answers and the check's own class are Redex names, so the rule names none
-# of them. The tab switch calls ReelsTab.tab as well, so this rule is shared-call like the switch's.
-# Left out, an account that opens on Reels still starts there; twice or elsewhere, it isn't the ask
-# the patch wrote. HideReelsTabHookTest checks on the 449 fixture that each of the three lands once,
-# where it should.
-shared-call Lapp/hushgram/extension/instagram/reels/ReelsTab;->tab(Ljava/lang/Object;)Ljava/lang/Object; in static (Lcom/instagram/common/session/UserSession;)LX/*; calling static L*;->*(Lcom/instagram/common/session/UserSession;)Z class-holding default
+# The home tab, a static method in the builder's class, asks Instagram's session check and then
+# returns a tab, and the patch sends the Reels one through ReelsTab.tab. The class holds only
+# "default", and on 450 two statics in classes holding it take a session, answer a renamed class
+# and ask an instance check about the session: the home tab and one in another renamed class. The
+# home tab is the one reading both tab constants it chooses between, so the rule names those two
+# fields, pinned 450 verification data like the navigation fields above. The tab switch calls
+# ReelsTab.tab as well, so this rule is shared-call like the switch's. Left out, an account that
+# opens on Reels still starts there; twice or elsewhere, it isn't the ask the patch wrote.
+# HideReelsTabHookTest checks on the declared fixture that each of the three lands once, where it
+# should.
+shared-call Lapp/hushgram/extension/instagram/reels/ReelsTab;->tab(Ljava/lang/Object;)Ljava/lang/Object; in static (Lcom/instagram/common/session/UserSession;)LX/*; calling instance LX/*;->*(Lcom/instagram/common/session/UserSession;)Z holding LX/02xk;->A0D:LX/02xk; LX/02xk;->A08:LX/02xk;
 #
 # Keep the reel speed hands the extension each speed first thing in the Reels player controller's
 # setPlaybackSpeed, the one method holding its marker. The hold handler, the one method holding
@@ -625,8 +623,8 @@ start-call Lapp/hushgram/extension/instagram/share/ShareSheet;->hideGroupButton(
 once-call Lapp/hushgram/extension/instagram/share/ShareSheet;->hideGroupButton()Z in instance (Landroid/view/ViewStub;ZZ)V holding Linstagram/features/direct/fragment/sharesheet/DirectShareSheetFragment;->createGroupButton:Landroid/view/View;
 start-call Lapp/hushgram/extension/instagram/share/ShareSheet;->hideGroupAction()Z in instance ()V holding Linstagram/features/direct/fragment/sharesheet/DirectShareSheetFragment;->createGroupButton:Landroid/view/View;
 once-call Lapp/hushgram/extension/instagram/share/ShareSheet;->hideGroupAction()Z in instance ()V holding Linstagram/features/direct/fragment/sharesheet/DirectShareSheetFragment;->createGroupButton:Landroid/view/View;
-start-call Lapp/hushgram/extension/instagram/share/ShareSheet;->hideGroupSend()Z in instance (Ljava/util/List;ZLcom/instagram/common/session/UserSession;)V holding Lcom/instagram/direct/fragment/sharesheet/view/DirectShareSheetFragmentMessageComposerViewBinder;->A02:LX/0JMf;
-once-call Lapp/hushgram/extension/instagram/share/ShareSheet;->hideGroupSend()Z in instance (Ljava/util/List;ZLcom/instagram/common/session/UserSession;)V holding Lcom/instagram/direct/fragment/sharesheet/view/DirectShareSheetFragmentMessageComposerViewBinder;->A02:LX/0JMf;
+start-call Lapp/hushgram/extension/instagram/share/ShareSheet;->hideGroupSend()Z in instance (Ljava/util/List;ZLcom/instagram/common/session/UserSession;)V holding Lcom/instagram/direct/fragment/sharesheet/view/DirectShareSheetFragmentMessageComposerViewBinder;->A02:LX/0Kvb;
+once-call Lapp/hushgram/extension/instagram/share/ShareSheet;->hideGroupSend()Z in instance (Ljava/util/List;ZLcom/instagram/common/session/UserSession;)V holding Lcom/instagram/direct/fragment/sharesheet/view/DirectShareSheetFragmentMessageComposerViewBinder;->A02:LX/0Kvb;
 # Story ring size passes the stories row's item size through StoryRing.size right after each of the
 # three places a method settles it, in the row's dimensions and in two static helpers on 449. It gets
 # no rule: none of the three loads a string or reads a field of its own the others don't, and every
