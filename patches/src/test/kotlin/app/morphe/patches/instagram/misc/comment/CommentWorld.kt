@@ -230,6 +230,19 @@ internal object CommentWorld {
                         :value
                         iget-object v0, p0, $json->value:$STRING
                         return-object v0
+                    """),
+                    // Jackson's nextTextValue, which the patch finds the value accessor through.
+                    method(json, "nextText", emptyList(), STRING, 3, public, """
+                        invoke-virtual { p0 }, $json->next()$token
+                        move-result-object v0
+                        sget-object v1, $token->STRING:$token
+                        if-ne v0, v1, :other
+                        invoke-virtual { p0 }, $json->value()$STRING
+                        move-result-object v0
+                        return-object v0
+                        :other
+                        const/4 v0, 0x0
+                        return-object v0
                     """))),
             clazz(expected, fields = listOf(field(expected, "name", STRING))),
             clazz(t("Root"), methods = listOf(method(t("Root"), "unwrap", listOf(json, expected), OBJECT, 7, static, """

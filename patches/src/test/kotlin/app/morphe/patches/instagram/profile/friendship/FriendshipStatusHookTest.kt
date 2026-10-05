@@ -205,7 +205,9 @@ class FriendshipStatusHookTest {
                 assertEquals("$what: the pronouns set before it's shown", "setText",
                     ((before as ReferenceInstruction).reference as MethodReference).name)
             } else {
-                assertEquals("$what: the slot read right before it's hidden", Opcode.IGET_OBJECT, before.opcode)
+                // 450 copies the slot through up to two plain moves between its read and the hide.
+                val read = (at - 4 downTo maxOf(0, at - 6)).first { code[it].opcode !in PLAIN_MOVES }
+                assertEquals("$what: the slot read right before it's hidden", Opcode.IGET_OBJECT, code[read].opcode)
             }
             for ((index, instruction) in code.withIndex()) {
                 if (instruction !is OffsetInstruction) continue
@@ -220,6 +222,8 @@ class FriendshipStatusHookTest {
     } == true
 
     internal companion object {
+        val PLAIN_MOVES = setOf(Opcode.MOVE, Opcode.MOVE_FROM16, Opcode.MOVE_16)
+
         const val BINDER = "Lfixture/ProfileBinder;"
         const val HOLDER = "Lfixture/ProfileHolder;"
         const val HEADER = "Lfixture/ProfileHeader;"

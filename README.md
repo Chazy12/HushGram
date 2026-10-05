@@ -4,7 +4,7 @@
   <img src="https://img.shields.io/badge/version-0.0.5-E1306C" alt="Version 0.0.5">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License GPL-3.0"></a>
   <img src="https://img.shields.io/badge/platform-Android%209%2B-3DDC84" alt="Platform Android 9+">
-  <img src="https://img.shields.io/badge/Instagram-449.0.0.52.84-E1306C" alt="Instagram 449.0.0.52.84">
+  <img src="https://img.shields.io/badge/Instagram-450.0.0.50.77-E1306C" alt="Instagram 450.0.0.50.77">
   <img src="https://img.shields.io/badge/for-Morphe%20Manager%201.34.0%2B-8A2BE2" alt="For Morphe Manager 1.34.0 or newer">
 </p>
 
@@ -31,11 +31,11 @@ Every feature has its own switch, and one Pause switch turns them all off at onc
 
 1. Install [Morphe Manager](https://github.com/MorpheApp/morphe-manager) 1.34.0 or newer.
 2. Add HushGram as a patch source: https://morphe.software/add-source?github=SysAdminDoc%2FHushGram (or build the bundle yourself, below, and add the `.mpp` file from your phone's storage).
-3. Get Instagram 449.0.0.52.84 from [APKMirror](https://www.apkmirror.com/apk/instagram/instagram-instagram/). Take the variant labelled (arm64-v8a) (640dpi) (Android 9.0+), build 385511871. That's the one these patches are checked against. APKMirror carries other arm64-v8a builds of the same version, and Morphe Manager warns about those because they haven't been checked yet.
+3. Get Instagram 450.0.0.50.77 from [APKMirror](https://www.apkmirror.com/apk/instagram/instagram-instagram/). Take the variant labelled (arm64-v8a) (480dpi) (Android 9.0+), build 385611438. That's the one these patches are checked against. APKMirror carries other arm64-v8a builds of the same version, one of them under the same label, so check the build number. Morphe Manager warns about the others because they haven't been checked yet.
 4. Uninstall the Instagram you got from the Play Store. The patched app is signed with your own key, so Android won't install it over Meta's. Uninstalling signs you out, so have your password (and your two-factor codes) ready.
 5. In Morphe Manager, pick the Instagram file, keep the default patch selection or change it, and patch.
 
-HushGram supports arm64-v8a phones on Android 9 and newer, which is what Instagram 449 itself asks for.
+HushGram supports arm64-v8a phones on Android 9 and newer, which is what Instagram 450 itself asks for.
 
 Instagram ships a new version every week and renames most of its code each time. Each patch finds what it changes by things Instagram keeps from one build to the next (log strings, server field names, manifest components and Android's own calls) rather than by the names that change. When one can't find its target, patching stops with a message saying what's missing, instead of giving you an app that quietly does nothing. Please report a stop like that.
 
@@ -64,7 +64,7 @@ Morphe's own guide is [Backup and keystore](https://github.com/MorpheApp/morphe-
 
 Manager's simple mode includes 25 patches. Copy comment, Save comment photo, Hide highlights, Hide the notes row, Stop swipe to create and Stop Reels scrolling are included with their switches off. Story ring size starts at Instagram's own size. Default playback quality still starts at Auto. Saved settings keep their choices. The existing privacy and startup defaults keep their selections.
 
-There are 48 patches for `com.instagram.android`, checked against Instagram 449.0.0.52.84 (arm64-v8a, build 385511871). The two newest, View DM photos and videos anonymously and Hide the notes row, are new in v0.0.5.
+There are 48 patches for `com.instagram.android`, checked against Instagram 450.0.0.50.77 (arm64-v8a, build 385611438). The two newest, View DM photos and videos anonymously and Hide the notes row, are new in v0.0.5.
 
 | Patch | What it does | Simple mode |
 |---|---|---|
@@ -248,11 +248,11 @@ Android won't replace an installed app with one signed by a different key. For a
 
 ### Unsupported Version
 
-Morphe Manager says this when your Instagram file isn't the build these patches were checked against. Use 449.0.0.52.84, build 385511871. Patching a different build may still work, but no one has checked it.
+Morphe Manager says this when your Instagram file isn't the build these patches were checked against. Use 450.0.0.50.77, build 385611438. Patching a different build may still work, but no one has checked it.
 
 ### Patching stops on one patch
 
-First check that you're patching Instagram 449.0.0.52.84, build 385511871. If several patch sources are enabled, try HushGram alone. In [#11](https://github.com/SysAdminDoc/HushGram/issues/11), Disable analytics, Remove build expired popup and View stories anonymously all applied once the other source was removed.
+First check that you're patching Instagram 450.0.0.50.77, build 385611438. If several patch sources are enabled, try HushGram alone. In [#11](https://github.com/SysAdminDoc/HushGram/issues/11), Disable analytics, Remove build expired popup and View stories anonymously all applied once the other source was removed.
 
 If a patch still fails with HushGram alone on that build, please open an issue naming the patch, your patcher's version and the error. On an unchecked Instagram build, leave the failing patch out until that build has been checked.
 
@@ -323,7 +323,7 @@ Tests: `./gradlew :patches:test :extensions:instagram:testDebugUnitTest`. Set `H
 
 For device builds, use PowerShell 7 and `scripts/patch-for-device.ps1 -Serial <serial> -ExpectedModel <model>`. An emulator also needs `-ExpectedAvd <profile>`. Device installs and `verify-injected-registers.ps1 -Serial` acquire an exclusive lease in the shared folder set by `HUSHGRAM_DEVICE_LEASE_DIR` and verify the serial, model and emulator profile. An occupied marker is left intact, including an expired marker whose test hasn't been confirmed stopped. Installs update with the existing signer and don't grant runtime permissions. `-Replace` refuses without uninstalling. Keep the matching signing key for updates.
 
-Android boundary checks: `./gradlew :extensions:instagram:verifyAndroidBoundaries`. Robolectric 4.17 runs the Android 9 and Android 17 cases with Instagram 449's target SDK 36. They cover settings opening, system bars, large text and right-to-left layout, recovery and diagnostic export, storage and save cancellation. Every required result carries its actual SDK label, including each class's highest SDK. All 20 current-key provider caller cases must also pass, including wrong keys, caller identities, Android users and stale signing history. Android 16 results cannot stand in for Android 17. The check rejects missing platform labels, missing cases and filtered, skipped, failed or duplicate required cases. After the unfiltered tests, `pwsh -File scripts/test-android-boundaries.ps1` exercises those refusals through the actual Gradle task and restores the original report. The push gate runs this self-test in its clean build worktree when the boundary gate changes. These framework checks don't certify a different Instagram build or replace fixture, muxing and phone checks.
+Android boundary checks: `./gradlew :extensions:instagram:verifyAndroidBoundaries`. Robolectric 4.17 runs the Android 9 and Android 17 cases with Instagram 450's target SDK 36. They cover settings opening, system bars, large text and right-to-left layout, recovery and diagnostic export, storage and save cancellation. Every required result carries its actual SDK label, including each class's highest SDK. All 20 current-key provider caller cases must also pass, including wrong keys, caller identities, Android users and stale signing history. Android 16 results cannot stand in for Android 17. The check rejects missing platform labels, missing cases and filtered, skipped, failed or duplicate required cases. After the unfiltered tests, `pwsh -File scripts/test-android-boundaries.ps1` exercises those refusals through the actual Gradle task and restores the original report. The push gate runs this self-test in its clean build worktree when the boundary gate changes. These framework checks don't certify a different Instagram build or replace fixture, muxing and phone checks.
 
 After building, run `pwsh -File scripts/audit-dependencies.ps1` to check the other dependency scopes too. It resolves the settings plugins, project plugins, build and test graphs separately, then checks their exact versions against OSV and reviewed publisher advisories. Unresolved dependencies stop the check. The report is `build/reports/dependencies/advisories.json`, with root-to-module dependency edges for each graph. Its input identity covers the working bytes of tracked repository files, with separate source, catalog and toolchain digests. The SBOM records the same identity when it's built. Missing or stale identities, changed bundle or SBOM bytes, and substituted names or versions refuse certification. Stage new inputs before building. Imported graph reports must match those inputs and carry all five tooling scopes. Current advisory reports also expire after 24 hours. Receipt creation runs the full audit before patching its fixtures. Historical published receipts keep their original reading rules.
 
@@ -353,7 +353,7 @@ pwsh -File scripts/patch-with-sources.ps1 -Apk <original Instagram APK or split 
 
 The local `source-diagnostic.json` contains the selected bundle identities and dependency graph. `-FailureLog <error file>` attributes an existing log against those selected bundles, without claiming they were the original run's bundles. Unknown or ambiguous owners stay unknown. Remove `-InspectOnly` to produce an unsigned APK without forcing compatibility. This is a preflight and local patching check, not proof of installed behavior. The retained [Piko v3.10.0-dev.9](https://github.com/crimera/piko/releases/tag/v3.10.0-dev.9) declares Instagram 439.0.0.37.89 (384510827), so it is refused alongside HushGram on 449.0.0.52.84 (385511871). Other selections are checked on their own. [Morphe's source guide](https://github.com/MorpheApp/morphe-manager/blob/main/docs/patch-sources.md) explains its per-app selections.
 
-Verification reads coverage back from the patched APK and writes a separate coverage report. `scripts/patch-coverage-expectations.json` pins required and optional targets to an exact Instagram version and version code. The 449 fixture requires every reviewed target in those three families. A missing required target stops certification even if the family applied. An explicitly optional absence stays visible. Forced runs on unreviewed builds record counts with `reviewed: false`. Schema 3 receipts carry this same input-derived coverage. Older receipts keep their own schema checks and don't certify these new fields.
+Verification reads coverage back from the patched APK and writes a separate coverage report. `scripts/patch-coverage-expectations.json` pins required and optional targets to an exact Instagram version and version code. The 450 fixture requires every reviewed target in those three families. A missing required target stops certification even if the family applied. An explicitly optional absence stays visible. Forced runs on unreviewed builds record counts with `reviewed: false`. Schema 3 receipts carry this same input-derived coverage. Older receipts keep their own schema checks and don't certify these new fields.
 
 ## Translating HushGram
 

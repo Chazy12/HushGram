@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** HushGram now patches Instagram 450.0.0.50.77. Before patching, get the APKMirror variant labelled (arm64-v8a) (480dpi) (Android 9.0+) with build number 385611438. Another build sits under the same label, so check the number. All 48 patches carry over. Instagram 450 renamed and merged a lot of the code they hook, and each one now finds its spot in the new layout.
+
 * **Tooling:** Moved to Morphe patcher 1.15.1, which fixes a reused patch match handing back stale classes and speeds up signing, DEX output and matching. With it, the patch step for all 48 patches takes 54 seconds on a desktop, down from 147 at v0.0.5. The next release needs Morphe Manager 1.34.0 or newer, the first Manager that carries this patcher. v0.0.5 keeps working in Manager 1.33.0.
 
 * **Instagram:** Patching is quicker. Many patches used to read every one of Instagram's 200,000 classes to find their spot, and now they look it up in the patcher's index first. On a desktop, Hide Meta AI went from 32 seconds to under one, and the patch step for all 48 patches from 147 to 78 seconds. Reported in #60.

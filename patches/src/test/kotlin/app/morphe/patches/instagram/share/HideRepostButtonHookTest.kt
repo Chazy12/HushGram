@@ -159,7 +159,7 @@ class HideRepostButtonHookTest {
         val code = method.implementation!!.instructions.toList()
         assertEquals("the other part still draws", Opcode.CONST_4, code[3].opcode)
         assertEquals("the other part still draws", Opcode.RETURN_OBJECT, code[4].opcode)
-        assertEquals("the Repost part's own code follows", REPOSTS_UFI_ICON_ID, (code[13] as NarrowLiteralInstruction).narrowLiteral)
+        assertEquals("the Repost part's own code follows", REPOSTS_UFI_ICON_ID, (code[12] as NarrowLiteralInstruction).narrowLiteral)
     }
 
     @Test
@@ -190,8 +190,7 @@ class HideRepostButtonHookTest {
 
     /**
      * In each declared build the model's getter is guarded and every tree read of the field is
-     * filtered. On 449 that's Media.A3o and six reads: the feed's UFI state, the repost and clips
-     * button use cases, the repost action and one more button state.
+     * filtered. On 450 there are five reads, two of them in one lambda's invoke; 449 had six.
      */
     @Test
     fun eachDeclaredBuildHidesTheButton() {
@@ -210,7 +209,7 @@ class HideRepostButtonHookTest {
                 val context = PatchContexts.of(holders.distinctBy { it.type })
 
                 val sites = context.findRepostSites()
-                assertEquals("${bundle.name}: tree reads ${sites.reads.map { "${it.type}->${it.name}" }}", 6, sites.reads.size)
+                assertEquals("${bundle.name}: tree reads ${sites.reads.map { "${it.type}->${it.name}" }}", 5, sites.reads.size)
                 val feedUfi = context.findFeedUfiSite()
                 val component = context.findFeedRepostComponent()
                 val branchesToShare = context.mutableClassDefBy(feedUfi.type).methods.single { it.name == feedUfi.name }
@@ -319,9 +318,8 @@ class HideRepostButtonHookTest {
         assertEquals(Opcode.RETURN_OBJECT, code[at + 4].opcode)
         assertEquals(register, (code[at + 4] as OneRegisterInstruction).registerA)
         if (at == 0) assertEquals(0, register)
-        assertEquals(at + 5, (code[at + 2] as BuilderOffsetInstruction).target.location.index)
-        assertEquals(Opcode.NOP, code[at + 5].opcode)
-        assertTrue("Off must reach the untouched native renderer", code.size > at + 6)
+        assertEquals("Off must reach the untouched native renderer", at + 5, (code[at + 2] as BuilderOffsetInstruction).target.location.index)
+        assertTrue("Off must reach the untouched native renderer", code.size > at + 5)
     }
 
     private fun Instruction.names(reference: String) = (this as? ReferenceInstruction)?.reference?.toString() == reference

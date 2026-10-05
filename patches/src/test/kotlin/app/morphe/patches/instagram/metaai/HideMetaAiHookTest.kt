@@ -370,8 +370,9 @@ class HideMetaAiHookTest {
         assertEquals("$what: the call", Opcode.INVOKE_STATIC_RANGE, code[hook].opcode)
         assertEquals("$what: the answer", Opcode.MOVE_RESULT_OBJECT, code[hook + 1].opcode)
         assertEquals("$what: the register", register, (code[hook + 1] as OneRegisterInstruction).registerA)
-        val test = (hook + 2 until code.size).first { code[it].opcode == Opcode.IF_EQZ }
-        assertEquals("$what: the tested register", register, (code[test] as OneRegisterInstruction).registerA)
+        val test = (hook + 2 until code.size).first {
+            code[it].opcode == Opcode.IF_EQZ && (code[it] as OneRegisterInstruction).registerA == register
+        }
         val lookup = (test + 1 until code.size).first { code[it].opcode == Opcode.INVOKE_STATIC }
         assertEquals("$what: the lookup's return", "Landroid/view/ViewStub;", ((code[lookup] as ReferenceInstruction).reference as MethodReference).returnType)
         assertEquals("$what: the searched view", register, (code[lookup] as FiveRegisterInstruction).registerC)

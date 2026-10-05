@@ -131,9 +131,9 @@ no-call Lcom/facebook/mobileconfig/MobileConfigOverridesTableHolder;->updateOver
 # The other, recording watch progress, holds no string, so its rules pick it by its class's: the
 # batch's request builder holds the path and the name of the error it logs, which the patch finds
 # the batch by and no other class holds, and the progress record is the batch's one static taking
-# the batch, a string and two longs on 450 (449's was an instance method taking a string and a long). The extension's holdBack() is called from both, so each pair's second
-# rule is shared-call; the reached record holds neither string, so it doesn't count against the
-# progress record's rules.
+# the batch, a string and two longs on 450 (449's was an instance method taking a string and a
+# long). The extension's holdBack() is called from both, so each pair's second rule is shared-call;
+# the reached record holds neither string, so it doesn't count against the progress record's rules.
 start-call Lapp/hushgram/extension/instagram/reels/ReelWatchHistory;->holdBack()Z in instance (Ljava/lang/String;Ljava/lang/String;)V holding android_purge_26_q2_IgAppCheckImpl_getCurrentAppType
 shared-call Lapp/hushgram/extension/instagram/reels/ReelWatchHistory;->holdBack()Z in instance (Ljava/lang/String;Ljava/lang/String;)V holding android_purge_26_q2_IgAppCheckImpl_getCurrentAppType
 start-call Lapp/hushgram/extension/instagram/reels/ReelWatchHistory;->holdBack()Z in static (LX/*;Ljava/lang/String;JJ)V class-holding clips/write_seen_state/ PendingClipsSeenState#progressImpressionsEncodeFailure
@@ -189,7 +189,8 @@ once-call Lapp/hushgram/extension/instagram/reels/ReelDeclutter;->hideSocialCont
 # Sanitize sharing links passes the link each of Instagram's two share link parsers reads through
 # the extension, once, before the parser stores it: the permalink parser for a post or reel and the
 # parser for a story's share URL. Each is the one instance parser holding its field name and its
-# GraphQL type name, or on 450, where the story's field name is pooled, its two type names. Both call the same filter, so each rule is shared-call.
+# GraphQL type name, or on 450, where the story's field name is pooled, its two type names. Both
+# call the same filter, so each rule is shared-call.
 shared-call Lapp/hushgram/extension/instagram/misc/LinkCleaner;->sanitizeShared(Ljava/lang/String;)Ljava/lang/String; in instance (*)Ljava/lang/Object; holding permalink XDTPermalinkResponse
 shared-call Lapp/hushgram/extension/instagram/misc/LinkCleaner;->sanitizeShared(Ljava/lang/String;)Ljava/lang/String; in instance (*)Ljava/lang/Object; holding XDTStoryItemThirdPartySharingUrlResponse StoryItemThirdPartySharingUrlResponseImpl
 #

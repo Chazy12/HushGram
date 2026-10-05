@@ -135,12 +135,19 @@ class NativeVisualSeenTest {
             val needs = handler.parameterTypes.map(Any::toString).toMutableSet()
             needs += handler.visualCode().calls().single("response factory") { it.parameterTypes.map(Any::toString) == listOf(USER_SESSION, handler.parameterTypes[1].toString()) }.definingClass
             needs += found.getValue(handler.definingClass).methods.single { it.name == "<clinit>" }.visualCode().mapNotNull { (it.visualReference() as? FieldReference)?.definingClass }
+            // 450's creator sends through a static helper, so the dispatcher's callers come too.
+            val dispatch = found.values.flatMap { it.methods }.single("mutation dispatcher") {
+                it.returnType == "Z" && it.parameterTypes.map(Any::toString) == listOf(handler.parameterTypes[2].toString()) &&
+                    it.visualCode().any { ins -> ins.visualString() == DISPATCH_ANCHOR }
+            }.let { "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" }
             FixtureDex.forEach(bundle) { dex ->
                 val hasMutation = dex.typeSection.any { it == mutation }
+                val callsDispatch = dex.methodSection.any { it.toString() == dispatch }
                 for (candidate in dex.classes) {
                     if (candidate.type in needs || hasMutation && candidate.methods.any { method ->
                         method.visualCode().any { it.opcode == Opcode.NEW_INSTANCE && (it.visualReference() as? TypeReference)?.type == mutation }
-                    }) found[candidate.type] = ImmutableClassDef.of(candidate)
+                    } || callsDispatch && candidate.methods.any { method -> method.visualCode().calls().any { it.toString() == dispatch } }
+                    ) found[candidate.type] = ImmutableClassDef.of(candidate)
                 }
             }
             val complete = found.getValue(handler.parameterTypes[1].toString()).methods.toList().single("completion interface") { it.returnType == "V" && it.parameterTypes.size == 2 && it.parameterTypes.last().toString() == STRING }

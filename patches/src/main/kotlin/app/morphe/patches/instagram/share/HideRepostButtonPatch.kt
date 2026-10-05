@@ -5,9 +5,12 @@
 package app.morphe.patches.instagram.share
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
+import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
@@ -258,7 +261,9 @@ internal fun BytecodePatchContext.hideFeedComponent(found: FeedRepostComponent) 
         (0 until minOf(method.localRegisterCount(), 16)).firstOrNull { it !in live }
             ?: refuse("${method.definingClass}->${method.name} has no spare register at its Repost part")
     }
-    method.addInstructions(
+    // Off goes on to the part's own first instruction. An internal label would stay where the block
+    // was assembled, which is only the part's start when the part opens the method.
+    method.addInstructionsWithLabels(
         found.at,
         """
             invoke-static { }, $REPOSTS_FEED_COMPONENT
@@ -266,9 +271,8 @@ internal fun BytecodePatchContext.hideFeedComponent(found: FeedRepostComponent) 
             if-eqz v$register, :draw
             const/4 v$register, 0x0
             return-object v$register
-            :draw
-            nop
         """,
+        ExternalLabel("draw", method.getInstruction(found.at)),
     )
 }
 
