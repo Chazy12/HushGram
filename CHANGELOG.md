@@ -8,7 +8,7 @@ Every HushGram release, newest first.
 
 * **Instagram:** Patching is quicker. Many patches used to read every one of Instagram's 200,000 classes to find their spot, and now they look it up in the patcher's index first. On a desktop, Hide Meta AI went from 32 seconds to under one, and the patch step for all 48 patches from 147 to 78 seconds. Reported in #60.
 
-* **Instagram:** Download any video adds Download to the menu on your own posts too, whenever a tap would save the video or photo. Instagram only lists its own Download on posts it allows outside downloads for, and HushGram's row was only on other people's posts. Reported in #57.
+* **Instagram:** Download any video adds Download to the menu on your own posts too, whenever a tap would save the video or photo. Instagram only lists its own Download on posts it allows outside downloads for, some accounts get it in the share sheet instead of the menu, and HushGram's row was only on other people's posts. Reported in #57.
 
 * **Instagram:** Pure black dark mode now reaches the Direct inbox and the Notifications screen, which kept Instagram's near-black gray because they draw from a second color palette the patch didn't change. On a test phone both screens went from the gray to pure black, and the tab bar icons stayed visible. Reported in #51 and #58.
 

@@ -112,6 +112,20 @@ public class VideoDownloadTest {
         assertEquals("both switches off", 0, VideoDownload.ownPost(0, new Object()));
     }
 
+    /** Instagram's share sheet flag on your own post keeps the row in the menu whenever a tap would save. */
+    @Test
+    public void yourOwnPostKeepsTheRowInTheMenuWhenATapWouldSave() {
+        assertEquals(0, VideoDownload.row(1, VideoDownload.Save.VIDEO));
+        assertEquals(0, VideoDownload.row(1, VideoDownload.Save.PHOTO));
+        assertEquals(1, VideoDownload.row(1, VideoDownload.Save.NONE));
+        assertEquals(0, VideoDownload.row(0, VideoDownload.Save.NONE));
+        assertEquals("an unbridged post", 1, VideoDownload.ownPostRow(1, new Object()));
+        assertEquals("no state", 1, VideoDownload.ownPostRow(1, null));
+        assertEquals("Instagram's row", 0, VideoDownload.ownPostRow(0, null));
+        Settings.DOWNLOAD_VIDEOS.save(false);
+        assertEquals("both switches off", 1, VideoDownload.ownPostRow(1, new Object()));
+    }
+
     /** The photo switch starts off; with it on, a post with nothing to save still gets no row or tap. */
     @Test
     public void thePhotoSwitchStartsOff() {

@@ -97,7 +97,7 @@ class DownloadVideoHookTest {
         assertEquals("anyone else's first row follows", "$state->other:Ljava/lang/Object;", code[offer + 1].referenceText())
         val owner = code.indexOfFirst { it.referenceText() == mine }
         assertEquals("the owner check's jump", offer, code.target(owner + 2))
-        assertEquals("three separate actions in the builder", 3, code.count { it.referenceText()?.startsWith("Lapp/hushgram/") == true })
+        assertEquals("four separate actions in the builder", 4, code.count { it.referenceText()?.startsWith("Lapp/hushgram/") == true })
     }
 
     /**
@@ -120,6 +120,39 @@ class DownloadVideoHookTest {
         assertEquals("the answer goes back where the branch reads it", 1, (code[checked + 3] as OneRegisterInstruction).registerA)
         assertEquals("the branch to the Download row", Opcode.IF_EQZ, code[checked + 4].opcode)
         assertEquals("one ownPost() call", 1, code.count { it.referenceText() == OWN_POST })
+    }
+
+    /**
+     * Past the check's yes, the menu state's flag that sends Instagram's download to the share
+     * sheet goes to ownPostRow() with the state, and its answer goes back where the branch to the
+     * Download row reads it (#57).
+     */
+    @Test
+    fun yourOwnPostsShareSheetFlagAsksOwnPostRow() {
+        val context = PatchContexts.of(classes())
+
+        context.offerDownloadOnEveryVideo()
+
+        val code = context.method(lambda, "invoke").code()
+        val flagged = code.indexOfFirst { it.referenceText() == "$state->flagged:Z" }
+        val row = code[flagged + 1] as Instruction35c
+        assertEquals(OWN_POST_ROW, row.referenceText())
+        assertEquals("ownPostRow()'s arguments: the flag, then the state", listOf(1, 0), listOf(row.registerC, row.registerD))
+        assertEquals(Opcode.MOVE_RESULT, code[flagged + 2].opcode)
+        assertEquals("the answer goes back where the branch reads it", 1, (code[flagged + 2] as OneRegisterInstruction).registerA)
+        val branch = flagged + 4
+        assertEquals("the branch to the Download row", Opcode.IF_EQZ, code[branch].opcode)
+        assertEquals(DOWNLOAD, code[code.target(branch)].referenceText())
+        assertEquals("one ownPostRow() call", 1, code.count { it.referenceText() == OWN_POST_ROW })
+    }
+
+    /** A flag whose 0 doesn't lead to the Download row isn't the one that moves it, and nothing changes. */
+    @Test
+    fun aShareSheetFlagThatSkipsTheRowFailsBeforeAnythingChanges() {
+        val context = PatchContexts.of(classes(flagSkipsRow = true))
+        val failure = assertThrows(PatchException::class.java) { context.offerDownloadOnEveryVideo() }
+        assertTrue(failure.message!!, failure.message!!.contains("doesn't jump ahead to the Download row"))
+        assertUntouched(context)
     }
 
     /** A check handed a post that isn't the menu state's can't be answered for that post, and nothing changes. */
@@ -490,6 +523,7 @@ class DownloadVideoHookTest {
         stateCasts: Int = 1,
         branchBeforeStateCast: Boolean = false,
         ownPostFromState: Boolean = true,
+        flagSkipsRow: Boolean = false,
         optionEnum: Boolean = true,
         optionInitializesIcon: Boolean = true,
     ): List<ClassDef> {
@@ -539,7 +573,7 @@ class DownloadVideoHookTest {
             if-eqz v1, ${if (lateJump) ":others" else ":mine"}
             iget-boolean v1, v0, $state->flagged:Z
             const/4 v5, 0x0
-            if-eqz v1, :row
+            if-eqz v1, ${if (flagSkipsRow) ":mine" else ":row"}
             const-wide v6, 0x81034200060c62L
             invoke-static { v2, v6, v7 }, $flag
             move-result v1
