@@ -1068,6 +1068,37 @@ public class OverrideImportTest {
     }
 
     /**
+     * Instagram's file from an older build: what this build has is imported and the rest is left
+     * out and counted. Restore still puts the store back as it was. A file with nothing this build
+     * has changes nothing.
+     */
+    @Test public void anInstagramFileFromAnotherBuildImportsWhatThisBuildHas() throws Exception {
+        byte[] own = ("{\"123:\":[\"0: : false\",\"1: : 7\",\"9: : true\",\"2: : x\"],\"456:\":[\"1: : __NULL_VALUE__\",\"0: : many\"],"
+                + "\"999:\":[\"0: : true\"],\"_qe_overrides_\":[]}").getBytes(StandardCharsets.UTF_8);
+        NativeTable.captures = 0;
+        OverrideImport.Result result = OverrideImport.apply(activity, own);
+        assertEquals(OverrideImport.Outcome.APPLIED, result.outcome);
+        assertEquals(3, result.changes);
+        assertEquals(3, result.leftOut);
+        Map<String, String> imported = semantic(NativeTable.file);
+        assertEquals("false", imported.get("123:config/0/enabled"));
+        assertEquals("7", imported.get("123:config/1/limit"));
+        assertEquals("x", imported.get("123:config/2/label"));
+        assertFalse(imported.containsKey("456:other/0/ratio"));
+        assertEquals(OverrideImport.Outcome.APPLIED, OverrideImport.restore(activity).outcome);
+        assertEquals(original(), semantic(NativeTable.file));
+
+        byte[] store = Files.readAllBytes(NativeTable.file.toPath());
+        NativeTable.writes = 0;
+        NativeTable.tableCalls = 0;
+        assertThrows(OverrideExchange.NothingFits.class, () -> OverrideImport.apply(activity,
+                "{\"999:\":[\"0: : true\"],\"123:\":[\"9: : true\"]}".getBytes(StandardCharsets.UTF_8)));
+        assertArrayEquals(store, Files.readAllBytes(NativeTable.file.toPath()));
+        assertEquals(0, NativeTable.writes);
+        assertEquals(0, NativeTable.tableCalls);
+    }
+
+    /**
      * Stands in for the patched bridge: the reader's session store, file and schema, and a native
      * table that persists each typed write into that file the way Instagram's native writer would.
      */

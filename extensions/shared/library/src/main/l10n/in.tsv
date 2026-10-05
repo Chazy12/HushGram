@@ -319,6 +319,9 @@ Check a saved file against this session's typed schema. Validation applies nothi
 No document picker is available. Overrides haven't changed.	Pemilih dokumen tidak tersedia. Nilai pengganti tidak berubah.
 Couldn't use that overrides document. Native overrides haven't changed.	Dokumen nilai pengganti itu tidak dapat digunakan. Nilai pengganti Instagram tidak berubah.
 Validated %1$d overrides only. Nothing was applied.	Hanya memvalidasi %1$d nilai pengganti. Tidak ada yang diterapkan.
+%1$d more are from another Instagram build and aren't in this one, so an import leaves them out.	%1$d lainnya berasal dari versi Instagram lain dan tidak ada di versi ini, jadi impor akan melewatinya.
+None of this file's overrides are in this Instagram build. Nothing changed.	Tidak ada nilai pengganti dalam berkas ini yang ada di versi Instagram ini. Tidak ada yang berubah.
+%1$d overrides from another Instagram build aren't in this one and were left out.	%1$d nilai pengganti dari versi Instagram lain tidak ada di versi ini dan dilewati.
 Overrides exported for this Instagram build and schema.	Nilai pengganti diekspor untuk versi dan skema Instagram ini.
 Couldn't validate overrides. Check the file and open settings from Home while signed in. Nothing changed.	Nilai pengganti tidak dapat divalidasi. Periksa berkas dan buka pengaturan dari Beranda saat sudah masuk. Tidak ada yang berubah.
 Couldn't export overrides. The selected file may be incomplete. Native overrides haven't changed.	Nilai pengganti tidak dapat diekspor. Berkas yang dipilih mungkin tidak lengkap. Nilai pengganti Instagram tidak berubah.

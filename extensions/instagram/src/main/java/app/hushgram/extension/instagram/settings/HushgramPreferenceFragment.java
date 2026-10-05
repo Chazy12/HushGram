@@ -1107,8 +1107,10 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     try (java.io.InputStream input = context.getContentResolver().openInputStream(uri)) {
                         bytes = OverrideExchange.read(input);
                     }
-                    int count = OverrideExchange.validate(bytes, OverrideExchange.capture(activity));
-                    overrideFeedback(request, L10n.f("Validated %1$d overrides only. Nothing was applied.", count));
+                    OverrideExchange.Checked checked = OverrideExchange.validate(bytes, OverrideExchange.capture(activity));
+                    String validated = L10n.f("Validated %1$d overrides only. Nothing was applied.", checked.fits);
+                    overrideFeedback(request, checked.leftOut == 0 ? validated : validated + " " + L10n.f("%1$d more are from "
+                            + "another Instagram build and aren't in this one, so an import leaves them out.", checked.leftOut));
                 } else {
                     byte[] bytes = OverrideExchange.export(OverrideExchange.capture(activity));
                     try (java.io.OutputStream output = context.getContentResolver().openOutputStream(uri, "wt")) {
@@ -1129,6 +1131,9 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                 overrideFeedback(request, L10n.t("Instagram is still saving an override change. Wait a moment and try again. Nothing changed."));
             } catch (OverrideImport.NothingSaved failure) {
                 overrideFeedback(request, L10n.t("Couldn't restore overrides. There's no saved copy for this session and build. Nothing changed."));
+            } catch (OverrideExchange.NothingFits failure) {
+                Logger.printInfo(() -> "Override file holds nothing this build has");
+                overrideFeedback(request, L10n.t("None of this file's overrides are in this Instagram build. Nothing changed."));
             } catch (OverrideImport.SavedCopyDoesntFit failure) {
                 Logger.printInfo(() -> "Override restore refused a saved copy from another build or schema");
                 overrideFeedback(request, L10n.t("Couldn't restore overrides. The saved copy doesn't fit this session and "
@@ -1171,6 +1176,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             default: return L10n.t("Instagram didn't keep the change and the overrides couldn't be confirmed. "
                     + "Use Restore previous overrides, then restart Instagram.");
         }
+        if (result.leftOut > 0) message += " " + L10n.f("%1$d overrides from another Instagram build aren't in this one "
+                + "and were left out.", result.leftOut);
         return result.blocked ? message + " " + L10n.t("Recovery cleanup didn't finish. Use Restore previous overrides or Discard saved overrides.") : message;
     }
 

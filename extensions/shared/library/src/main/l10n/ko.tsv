@@ -320,6 +320,9 @@ Check a saved file against this session's typed schema. Validation applies nothi
 No document picker is available. Overrides haven't changed.	문서 선택기를 사용할 수 없습니다. 재정의는 변경되지 않았습니다.
 Couldn't use that overrides document. Native overrides haven't changed.	해당 재정의 문서를 사용할 수 없습니다. 기본 재정의는 변경되지 않았습니다
 Validated %1$d overrides only. Nothing was applied.	%1$d 개의 재정의만 검증하였습니다. 아무것도 적용되지 않았습니다
+%1$d more are from another Instagram build and aren't in this one, so an import leaves them out.	%1$d 개는 다른 Instagram 버전의 재정의로 이 버전에는 없어서 가져오기에서 제외됩니다.
+None of this file's overrides are in this Instagram build. Nothing changed.	이 파일의 재정의 중 이 Instagram 버전에 있는 것이 없습니다. 변경된 사항은 없습니다.
+%1$d overrides from another Instagram build aren't in this one and were left out.	다른 Instagram 버전의 재정의 %1$d 개는 이 버전에 없어서 제외되었습니다.
 Overrides exported for this Instagram build and schema.	이 Instagram 빌드 및 스키마에 대한 재정의를 내보냈습니다
 Couldn't validate overrides. Check the file and open settings from Home while signed in. Nothing changed.	재정의를 검증하지 못하였습니다. 파일을 확인하고 로그인한 상태에서 홈 화면을 통해 설정을 여세요. 변경된 사항은 없습니다
 Couldn't export overrides. The selected file may be incomplete. Native overrides haven't changed.	재정의를 내보내지 못하였습니다. 선택한 파일이 불완전할 수 있습니다. 기본 재정의는 변경되지 않았습니다

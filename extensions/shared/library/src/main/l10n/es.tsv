@@ -319,6 +319,9 @@ Check a saved file against this session's typed schema. Validation applies nothi
 No document picker is available. Overrides haven't changed.	No hay ningún selector de documentos disponible. Los valores personalizados no han cambiado.
 Couldn't use that overrides document. Native overrides haven't changed.	No se pudo usar ese documento de valores personalizados. Los valores de Instagram no han cambiado.
 Validated %1$d overrides only. Nothing was applied.	Solo se validaron %1$d valores personalizados. No se aplicó nada.
+%1$d more are from another Instagram build and aren't in this one, so an import leaves them out.	Otros %1$d son de otra versión de Instagram y no existen en esta, así que una importación los omite.
+None of this file's overrides are in this Instagram build. Nothing changed.	Ninguno de los valores personalizados de este archivo existe en esta versión de Instagram. Nada ha cambiado.
+%1$d overrides from another Instagram build aren't in this one and were left out.	Se omitieron %1$d valores personalizados de otra versión de Instagram que no existen en esta.
 Overrides exported for this Instagram build and schema.	Valores personalizados exportados para esta versión y este esquema de Instagram.
 Couldn't validate overrides. Check the file and open settings from Home while signed in. Nothing changed.	No se pudieron validar los valores personalizados. Comprueba el archivo y abre los ajustes desde Inicio con la sesión iniciada. Nada ha cambiado.
 Couldn't export overrides. The selected file may be incomplete. Native overrides haven't changed.	No se pudieron exportar los valores personalizados. El archivo elegido podría estar incompleto. Los valores de Instagram no han cambiado.
