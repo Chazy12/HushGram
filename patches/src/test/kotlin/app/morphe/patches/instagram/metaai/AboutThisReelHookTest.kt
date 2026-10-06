@@ -162,7 +162,7 @@ class AboutThisReelHookTest {
                         val holdsRowString = code.any { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string in SUMMARY_ROW_STRINGS }
                         val asksAFactory = code.any { instruction ->
                             val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
-                            instruction.opcode == Opcode.INVOKE_STATIC &&
+                            (instruction.opcode == Opcode.INVOKE_STATIC || instruction.opcode == Opcode.INVOKE_STATIC_RANGE) &&
                                 call?.parameterTypes?.map(CharSequence::toString) == FACTORY_SHAPE && call.returnType == call.definingClass
                         }
                         if (loadsFlag || holdsRowString || asksAFactory) kept += ImmutableClassDef.of(classDef)

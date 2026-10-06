@@ -302,7 +302,7 @@
     },
     {
       "name": "Hide Instants",
-      "description": "Hides Instants, Instagram's no-edit camera for friends. Instagram is told your account doesn't have them, so the stack of photos in your messages goes.",
+      "description": "Takes the stack of Instants out of your messages. Instagram is told your account doesn't have Instants, its no-edit camera for friends.",
       "category": "Interface",
       "use": true,
       "dependencies": [

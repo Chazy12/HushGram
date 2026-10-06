@@ -41,8 +41,8 @@ public final class Instants {
     }
 
     static boolean hide(BooleanSupplier on) {
-        HookStatus.invoked(FamilyNames.INSTANTS);
         try {
+            HookStatus.invoked(FamilyNames.INSTANTS);
             boolean hide = on.getAsBoolean();
             if (hide && !logged) {
                 logged = true;

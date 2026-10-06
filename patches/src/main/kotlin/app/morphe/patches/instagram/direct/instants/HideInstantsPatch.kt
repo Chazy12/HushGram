@@ -16,6 +16,7 @@ import app.morphe.patches.instagram.misc.extension.classesLoading
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
 import app.morphe.patches.instagram.misc.extension.requireLocals
+import app.morphe.patches.instagram.misc.extension.requireStatusMethod
 import app.morphe.patches.instagram.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -35,8 +36,8 @@ internal val GATE_PARAMETERS = listOf("Lcom/instagram/common/session/UserSession
 @Suppress("unused")
 val hideInstantsPatch = bytecodePatch(
     name = "Hide Instants",
-    description = "Hides Instants, Instagram's no-edit camera for friends. Instagram is told your account " +
-        "doesn't have them, so the stack of photos in your messages goes.",
+    description = "Takes the stack of Instants out of your messages. Instagram is told your account doesn't " +
+        "have Instants, its no-edit camera for friends.",
     default = true,
 ) {
     category("Interface")
@@ -44,6 +45,7 @@ val hideInstantsPatch = bytecodePatch(
     compatibleWith(*AppCompatibilities.instagram())
 
     execute {
+        requireStatusMethod("instants")
         holdInstantsGate(findInstantsGate())
         enableStatus("instants")
     }
