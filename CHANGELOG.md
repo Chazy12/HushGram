@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Open developer options adds Open Whitehat settings under Developer in HushGram settings. It opens Instagram's own Whitehat screen, whose switch lets Instagram trust the certificates installed on your phone for 24 hours so you can check the app's traffic. Turn it on there and restart Instagram. Instagram turns it back off by itself once the day is up, and HushGram doesn't force or stretch that trust. Asked in #1.
+
 * **Instagram:** New Full resolution photos patch. With its switch on, photos in your feed, in carousels and in posts you open load at the largest size Instagram's server sends, up to 2048 pixels on the longer side, rather than the size Instagram picks for your screen. Stories and Reels load as before. It's in simple mode with its switch off, under Feed in HushGram settings. It can use more data. Asked for in #20.
 
 * **Instagram:** Show a story's exact time has a new How the time shows choice under its switch. Date and time is what it already did, and it's where the choice starts, so nothing changes until you pick. Time left shows how long the story has before it expires, like 18h 14m left. Time posted shows only the time it went up, like 3:45 PM, for a story posted today by your phone's clock, and the date and time for one posted before today. A story that's already a day old shows the date and time in Time left too.

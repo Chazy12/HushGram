@@ -60,7 +60,8 @@ val openDeveloperOptionsPatch = bytecodePatch(
         val editor = findOverrideEditor()
         val reader = findOverrideReader(editor)
         val writer = findOverrideWriter(reader.model)
-        val stubs = listOf(prepareOverrideEditor(editor), prepareOverrideReader(reader, editor), writer.stubs)
+        val whitehat = prepareWhitehatScreen(editor, findWhitehatScreen())
+        val stubs = listOf(prepareOverrideEditor(editor), prepareOverrideReader(reader, editor), writer.stubs, whitehat)
         openOnLongPress(findOptionsOpener())
         stubs.forEach { putStubs(it) }
         enableStatus("developerOptions")

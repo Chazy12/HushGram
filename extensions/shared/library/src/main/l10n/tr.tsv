@@ -341,6 +341,9 @@ Last carousel save	Son çoklu gönderi kaydı
 Open MetaConfig overrides	MetaConfig geçersiz kılmalarını aç
 Opens Instagram's native flag editor. A wrong override can break parts of Instagram.	Instagram'ın kendi bayrak düzenleyicisini açar. Yanlış bir geçersiz kılma Instagram'ın bazı bölümlerini bozabilir.
 MetaConfig is unavailable on this screen. Open HushGram settings from Home while signed in.	MetaConfig bu ekranda kullanılamıyor. Oturum açıkken Ana Sayfa'dan HushGram ayarlarını açın.
+Open Whitehat settings	Whitehat ayarlarını aç
+Opens Instagram's own Whitehat settings. Its switch lets Instagram trust the certificates installed on this phone for 24 hours, so you can check the app's traffic. Restart Instagram after you turn it on.	Instagram'ın kendi Whitehat ayarlarını açar. Buradaki anahtar, Instagram'ın bu telefonda yüklü sertifikalara 24 saat boyunca güvenmesini sağlar, böylece uygulamanın trafiğini inceleyebilirsiniz. Açtıktan sonra Instagram'ı yeniden başlatın.
+Whitehat settings are unavailable on this screen. Open HushGram settings from Home while signed in.	Whitehat ayarları bu ekranda kullanılamıyor. Oturum açıkken Ana Sayfa'dan HushGram ayarlarını açın.
 Comments	Yorumlar
 Copy comment	Yorumu kopyala
 Adds Copy to a selected comment's menu. Copies the original text, including line breaks.	Seçilen yorumun menüsüne Kopyala seçeneğini ekler. Satır sonları dahil özgün metni kopyalar.

@@ -341,6 +341,9 @@ Last carousel save	Último carrusel guardado
 Open MetaConfig overrides	Abrir anulaciones de MetaConfig
 Opens Instagram's native flag editor. A wrong override can break parts of Instagram.	Abre el editor nativo de opciones de Instagram. Una anulación incorrecta puede impedir que funcionen partes de Instagram.
 MetaConfig is unavailable on this screen. Open HushGram settings from Home while signed in.	MetaConfig no está disponible en esta pantalla. Abre los ajustes de HushGram desde Inicio con la sesión iniciada.
+Open Whitehat settings	Abrir ajustes de Whitehat
+Opens Instagram's own Whitehat settings. Its switch lets Instagram trust the certificates installed on this phone for 24 hours, so you can check the app's traffic. Restart Instagram after you turn it on.	Abre los ajustes de Whitehat del propio Instagram. Su interruptor hace que Instagram confíe durante 24 horas en los certificados instalados en este teléfono, para que puedas revisar el tráfico de la app. Reinicia Instagram después de activarlo.
+Whitehat settings are unavailable on this screen. Open HushGram settings from Home while signed in.	Los ajustes de Whitehat no están disponibles en esta pantalla. Abre los ajustes de HushGram desde Inicio con la sesión iniciada.
 Comments	Comentarios
 Copy comment	Copiar comentario
 Adds Copy to a selected comment's menu. Copies the original text, including line breaks.	Añade Copiar al menú de un comentario seleccionado. Copia el texto original, incluidos los saltos de línea.

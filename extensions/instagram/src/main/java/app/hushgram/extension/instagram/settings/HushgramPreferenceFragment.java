@@ -662,26 +662,18 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     L10n.t("Developer options on a long press of Home"),
                     L10n.t("Opens Instagram's own developer options, where its server flags can be looked at and "
                             + "changed. A wrong flag can break parts of Instagram until you reset it there.")));
-            Preference overrides = new Row(context);
-            overrides.setKey("hushgram_open_overrides");
-            overrides.setPersistent(false);
-            overrides.setTitle(L10n.t("Open MetaConfig overrides"));
-            overrides.setSummary(L10n.t("Opens Instagram's native flag editor. A wrong override can break parts of Instagram."));
-            overrides.setOnPreferenceClickListener(row -> {
-                if (app.hushgram.extension.instagram.misc.DeveloperOptions.openOverrides(getActivity())) {
-                    SettingsEntry.onClosedByUser();
-                    if (getParentFragment() instanceof DialogFragment) {
-                        ((DialogFragment) getParentFragment()).dismissAllowingStateLoss();
-                    }
-                } else {
-                    String why = L10n.t("MetaConfig is unavailable on this screen. Open HushGram settings from Home while signed in.");
-                    // Android cuts a toast to two lines, so the row keeps the whole reason.
-                    row.setSummary(why);
-                    Utils.showToastShort(why);
-                }
-                return true;
-            });
-            developer.addPreference(overrides);
+            developer.addPreference(nativeScreenRow(context, "hushgram_open_overrides",
+                    L10n.t("Open MetaConfig overrides"),
+                    L10n.t("Opens Instagram's native flag editor. A wrong override can break parts of Instagram."),
+                    app.hushgram.extension.instagram.misc.DeveloperOptions::openOverrides,
+                    L10n.t("MetaConfig is unavailable on this screen. Open HushGram settings from Home while signed in.")));
+            developer.addPreference(nativeScreenRow(context, "hushgram_open_whitehat",
+                    L10n.t("Open Whitehat settings"),
+                    L10n.t("Opens Instagram's own Whitehat settings. Its switch lets Instagram trust the certificates "
+                            + "installed on this phone for 24 hours, so you can check the app's traffic. Restart "
+                            + "Instagram after you turn it on."),
+                    app.hushgram.extension.instagram.misc.DeveloperOptions::openWhitehat,
+                    L10n.t("Whitehat settings are unavailable on this screen. Open HushGram settings from Home while signed in.")));
             exportOverrides = new Row(context);
             exportOverrides.setKey("hushgram_export_overrides");
             exportOverrides.setPersistent(false);
@@ -2217,6 +2209,33 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         preference.setSummary(summary);
         preference.setSelectable(false);
         preference.setPersistent(false);
+        return preference;
+    }
+
+    /**
+     * A row that opens one of Instagram's own screens over the current host. Settings close only
+     * once it opened; otherwise they stay, and the row keeps the whole reason, since Android cuts
+     * a toast to two lines.
+     */
+    private Preference nativeScreenRow(Context context, String key, String title, String summary,
+                                       java.util.function.Predicate<Activity> open, String unavailable) {
+        Preference preference = new Row(context);
+        preference.setKey(key);
+        preference.setPersistent(false);
+        preference.setTitle(title);
+        preference.setSummary(summary);
+        preference.setOnPreferenceClickListener(row -> {
+            if (open.test(getActivity())) {
+                SettingsEntry.onClosedByUser();
+                if (getParentFragment() instanceof DialogFragment) {
+                    ((DialogFragment) getParentFragment()).dismissAllowingStateLoss();
+                }
+            } else {
+                row.setSummary(unavailable);
+                Utils.showToastShort(unavailable);
+            }
+            return true;
+        });
         return preference;
     }
 

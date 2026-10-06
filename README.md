@@ -167,12 +167,14 @@ At the top, a card says whether HushGram is on or paused. Below it:
 - **Layout** holds the switch for Remove the empty space at the bottom.
 - **Downloads** holds the switches for Download feed videos and Download feed photos, lists each save that's running, with a Cancel button, and holds what every save uses: Save videos other apps can open, Download quality, the save folder and the video file name. Videos go to Movies and photos to Pictures, each in an Instagram folder unless you name another, and a video is named `IG_VID_` with the date and time unless you set a name.
 - **Updates** holds the switch for the build expired screen.
-- **Developer** holds the Home long-press switch for Open developer options.
+- **Developer** holds the Home long-press switch for Open developer options, and rows that open Instagram's MetaConfig overrides and its Whitehat settings.
 - **Set when you patched** lists what was fixed at patch time and can't be switched off here, such as the re-signed build fix, the removed advertising ID and the pure black dark mode.
 - **Pause and diagnostics** has the Pause switch, Debug logging, and the diagnostic report. Copy a quick report, or save the full one to Download/Morphe (on Android 9, a Download/Morphe folder inside Instagram's own folder, and the message says where). Links, IDs, cookies and sign-in tokens are left out, but read it over for other private text before you share it.
 - **About** shows the version and the licenses, with a link to this page.
 
 Developer has **Open MetaConfig overrides**. It opens Instagram's native flag editor without enabling Home long press or changing a flag. It requires a signed-in Home or settings activity. An unavailable screen leaves HushGram settings open and puts the reason under the row (checked signed out on an emulator and a Samsung phone).
+
+Developer also has **Open Whitehat settings**. It opens Instagram's own Whitehat screen, the one Meta gives security researchers. Its switch lets Instagram trust the certificates installed on your phone, such as a debugging proxy's, for 24 hours, so you can check the app's traffic. Restart Instagram after turning it on, as the screen asks. Instagram turns the switch back off by itself once the day is up, and HushGram doesn't force that trust or stretch the day. Like the MetaConfig row, it needs a signed-in Home or settings activity.
 
 The diagnostic report also shows patch-time target coverage for Disable analytics, Sanitize sharing links and Start on x86 devices. Each shows matched/expected counts and fixed labels for missing targets. These describe the code the patch found, not which live requests Instagram sends.
 

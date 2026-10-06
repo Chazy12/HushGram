@@ -341,6 +341,9 @@ Last carousel save	Letzter gespeicherter Karussellbeitrag
 Open MetaConfig overrides	MetaConfig-Überschreibungen öffnen
 Opens Instagram's native flag editor. A wrong override can break parts of Instagram.	Öffnet Instagrams eigenen Flag-Editor. Eine falsche Überschreibung kann Teile von Instagram unbrauchbar machen.
 MetaConfig is unavailable on this screen. Open HushGram settings from Home while signed in.	MetaConfig ist auf diesem Bildschirm nicht verfügbar. Öffne die HushGram-Einstellungen auf der Startseite, während du angemeldet bist.
+Open Whitehat settings	Whitehat-Einstellungen öffnen
+Opens Instagram's own Whitehat settings. Its switch lets Instagram trust the certificates installed on this phone for 24 hours, so you can check the app's traffic. Restart Instagram after you turn it on.	Öffnet Instagrams eigene Whitehat-Einstellungen. Mit dem Schalter dort vertraut Instagram 24 Stunden lang den auf diesem Telefon installierten Zertifikaten, damit du den Datenverkehr der App prüfen kannst. Starte Instagram neu, nachdem du ihn eingeschaltet hast.
+Whitehat settings are unavailable on this screen. Open HushGram settings from Home while signed in.	Die Whitehat-Einstellungen sind auf diesem Bildschirm nicht verfügbar. Öffne die HushGram-Einstellungen auf der Startseite, während du angemeldet bist.
 Comments	Kommentare
 Copy comment	Kommentar kopieren
 Adds Copy to a selected comment's menu. Copies the original text, including line breaks.	Fügt dem Menü eines ausgewählten Kommentars Kopieren hinzu. Kopiert den Originaltext einschließlich Zeilenumbrüchen.

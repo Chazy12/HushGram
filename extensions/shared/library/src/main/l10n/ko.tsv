@@ -342,6 +342,9 @@ Last carousel save	마지막 캐러셀 저장
 Open MetaConfig overrides	MetaConfig 재정의 열기
 Opens Instagram's native flag editor. A wrong override can break parts of Instagram.	Instagram 기본 플래그 편집기를 엽니다. 잘못된 설정을 적용하면 Instagram 일부 기능이 정상적으로 작동하지 않을 수 있습니다
 MetaConfig is unavailable on this screen. Open HushGram settings from Home while signed in.	이 화면에서는 MetaConfig를 사용할 수 없습니다. 로그인한 상태에서 홈 화면을 통해 HushGram 설정을 여세요
+Open Whitehat settings	Whitehat 설정 열기
+Opens Instagram's own Whitehat settings. Its switch lets Instagram trust the certificates installed on this phone for 24 hours, so you can check the app's traffic. Restart Instagram after you turn it on.	Instagram 자체의 Whitehat 설정을 엽니다. 이 스위치를 켜면 Instagram이 24시간 동안 이 휴대전화에 설치된 인증서를 신뢰하므로 앱의 트래픽을 확인할 수 있습니다. 켠 후에는 Instagram을 다시 시작하세요
+Whitehat settings are unavailable on this screen. Open HushGram settings from Home while signed in.	이 화면에서는 Whitehat 설정을 사용할 수 없습니다. 로그인한 상태에서 홈 화면을 통해 HushGram 설정을 여세요
 Comments	댓글
 Copy comment	댓글 복사
 Adds Copy to a selected comment's menu. Copies the original text, including line breaks.	선택한 댓글의 메뉴에 복사를 추가합니다. 줄바꿈을 포함한 원본 텍스트를 그대로 복사합니다

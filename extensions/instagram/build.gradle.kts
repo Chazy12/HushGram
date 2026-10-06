@@ -484,7 +484,11 @@ tasks.register("verifyAndroidBoundaries") {
                 "missingPatchHasNoNativeAction[28]", "missingPatchHasNoNativeAction[37]",
                 "unavailableSessionOrNavigationKeepsTheDialogAndShowsRecovery[28]", "unavailableSessionOrNavigationKeepsTheDialogAndShowsRecovery[37]",
                 "successfulNavigationClosesTheDialogWithoutEnablingLongPress[28]", "successfulNavigationClosesTheDialogWithoutEnablingLongPress[37]",
-                "finishingDestroyedOrSavedHostsNeverCallNativeNavigation[28]", "finishingDestroyedOrSavedHostsNeverCallNativeNavigation[37]"),
+                "finishingDestroyedOrSavedHostsNeverCallNativeNavigation[28]", "finishingDestroyedOrSavedHostsNeverCallNativeNavigation[37]",
+                "missingPatchHasNoWhitehatAction[28]", "missingPatchHasNoWhitehatAction[37]",
+                "unavailableWhitehatKeepsTheDialogAndShowsRecovery[28]", "unavailableWhitehatKeepsTheDialogAndShowsRecovery[37]",
+                "openedWhitehatClosesTheDialogWithoutEnablingLongPress[28]", "openedWhitehatClosesTheDialogWithoutEnablingLongPress[37]",
+                "finishingDestroyedOrSavedHostsNeverOpenWhitehat[28]", "finishingDestroyedOrSavedHostsNeverOpenWhitehat[37]"),
             "app.hushgram.extension.instagram.settings.SettingsDialogBoundaryTest" to listOf(
                 "sdk28DialogKeepsLegacyBarsOutsideLargeTextContent[28]", "sdk37DialogKeepsSystemBarsOutsideLargeTextContent[37]",
                 "sdk28DialogMirrorsItsLargeTextHeader[28]", "sdk37DialogMirrorsItsLargeTextHeader[37]",
