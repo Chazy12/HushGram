@@ -248,6 +248,10 @@ If Instagram crashes within a minute of starting three times in a row, HushGram 
 
 Android won't replace an installed app with one signed by a different key. For an update, use the same signing key as the installed build so its data stays. A Root Mount install keeps the Play Store app's existing sign-in. Switching to a standard re-signed install requires removing the differently signed app, which deletes its local data. Save anything you need and make sure you can sign in again before doing that.
 
+### Play Store keeps offering an Instagram update
+
+Play can list your patched Instagram under its updates and try to install Meta's newer build over it, which costs data and then fails on the signing key. Play has a switch for one app: open Instagram's page in the Play Store, tap the three dots at the top right, and untick **Enable auto update**. Play then leaves that install alone. You'll get HushGram's next Instagram build from the releases here instead.
+
 ### Unsupported Version
 
 Morphe Manager says this when your Instagram file isn't the build these patches were checked against. Use 450.0.0.50.77, build 385611438. Patching a different build may still work, but no one has checked it.

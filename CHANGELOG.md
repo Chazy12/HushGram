@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** The README's troubleshooting now says how to stop the Play Store from offering, and trying to install, Meta's build over a patched Instagram: untick Enable auto update in the three-dot menu of Instagram's Play page. Asked in #68.
+
 * **Instagram:** The Korean settings read more naturally. @BlackGold8282 reworked 121 of them in #66, including the download, notes and Meta AI rows.
 
 * **Instagram:** A photo story with music now has two rows in its menu, Download as video and Download as photo. Instagram serves those stories as a short video with the song, so Download used to save only that. Download as photo saves the picture on its own at its largest size. Every other story keeps its one Download row. Asked for in #53.
