@@ -16,6 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import app.hushgram.extension.instagram.misc.VersionCode;
 import app.hushgram.extension.shared.L10n;
 import app.hushgram.extension.shared.Logger;
 import app.hushgram.extension.shared.diagnostics.HookStatus;
@@ -99,7 +100,8 @@ public enum PatchFamily {
             Settings.DEFAULT_PLAYBACK_QUALITY),
     TRANSLATED_START(FamilyNames.TRANSLATED_START, "translatedStart", "the start-up fix for x86 devices"),
     DEVELOPER_OPTIONS(FamilyNames.DEVELOPER_OPTIONS, "developerOptions", null, Settings.OPEN_DEVELOPER_OPTIONS),
-    PURE_BLACK(FamilyNames.PURE_BLACK, "pureBlack", "the pure black dark mode");
+    PURE_BLACK(FamilyNames.PURE_BLACK, "pureBlack", "the pure black dark mode"),
+    VERSION_CODE(FamilyNames.VERSION_CODE, "versionCode", "the raised version code");
 
     /** The name Morphe Manager lists the patch under. */
     public final String patchName;
@@ -202,6 +204,7 @@ public enum PatchFamily {
                 if (family == FRIENDSHIP_STATUS && !followingListMarkInBuild()) {
                     lines.add("  Mark who doesn't follow you back: not in this build (Instagram's follow list didn't match)");
                 }
+                if (family == VERSION_CODE) lines.add("  " + VersionCode.reportLine());
                 if (family == DISABLE_ANALYTICS || family == SANITIZE_SHARING_LINKS || family == TRANSLATED_START) {
                     try {
                         String encoded = (String) SettingsStatus.class.getMethod(family.statusMethod + "Coverage").invoke(null);

@@ -26,7 +26,7 @@ Before a change goes in:
 
 - `./gradlew :patches:test :extensions:instagram:testDebugUnitTest` with `HUSHGRAM_FIXTURE_DIR` set, so the tests that read real Instagram builds run instead of skipping.
 - `./gradlew :extensions:instagram:lint :extensions:shared:library:lint`. Instagram runs on Android 9, so a call Android added later needs a version check, and lint catches the ones that don't have it.
-- `scripts/verify-all-patches.ps1` on every build the catalog declares. It applies every patch in one run without forcing anything, checks the CLI's own report, and compares the patched manifest to Meta's against `scripts/manifest-delta-allowlist.txt`. The allowlist approves the three advertising permissions `Remove the advertising ID` takes out, and nothing else.
+- `scripts/verify-all-patches.ps1` on every build the catalog declares. It applies every patch in one run without forcing anything, checks the CLI's own report, and compares the patched manifest to Meta's against `scripts/manifest-delta-allowlist.txt`. The allowlist approves the three advertising permissions `Remove the advertising ID` takes out and the version code `Change version code` raises, and nothing else.
 
 `scripts/install-hooks.ps1` installs a pre-push hook that runs those tests and lints when a push changes `extensions/` or `patches/`. A push that changes one of the scripts with a suite runs that suite, and one that changes the README, the CHANGELOG or another file a release states facts from runs `scripts/validate-release-facts.ps1` too. Set `HUSHGRAM_SKIP_PRE_PUSH=1` to push without it.
 

@@ -240,4 +240,8 @@ public final class SettingsStatus {
     public static boolean pureBlack() {
         return false;
     }
+
+    public static boolean versionCode() {
+        return false;
+    }
 }

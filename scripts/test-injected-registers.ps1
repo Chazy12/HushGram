@@ -516,7 +516,7 @@ function Write-StandIn {
 }
 
 function Invoke-VerifierWithStandIns {
-    param([string]$Name, [int]$DexDiffExit, [switch]$JavaGone)
+    param([string]$Name, [int]$DexDiffExit, [switch]$JavaGone, [string]$PatchedCode = '385511871')
     $case = Join-Path $standIns $Name
     New-Item -ItemType Directory -Path $case -Force | Out-Null
     $javaStandIn = Join-Path $case 'java.cmd'
@@ -529,14 +529,17 @@ if "%~1"=="-version" (
 echo [diff] structural findings: 0
 exit /b $DexDiffExit
 "@
-    Write-StandIn (Join-Path $case 'aapt2.cmd') @'
+    # The patched APK can carry another version code, the way Change version code raises it.
+    Write-StandIn (Join-Path $case 'aapt2.cmd') @"
 @echo off
+set "CODE=385511871"
+for %%A in (%*) do if /i "%%~nxA"=="patched.apk" set "CODE=$PatchedCode"
 echo   E: manifest (line=2)
-echo     A: http://schemas.android.com/apk/res/android:versionCode(0x0101021b)=385511871
+echo     A: http://schemas.android.com/apk/res/android:versionCode(0x0101021b)=%CODE%
 echo     A: http://schemas.android.com/apk/res/android:versionName(0x0101021c)="449.0.0.52.84" (Raw: "449.0.0.52.84")
 echo     A: package="com.instagram.android" (Raw: "com.instagram.android")
 exit /b 0
-'@
+"@
     $delete = if ($JavaGone) { "del /f /q `"$javaStandIn`"" } else { 'rem' }
     Write-StandIn (Join-Path $case 'apksigner.bat') @"
 @echo off
@@ -569,6 +572,16 @@ try {
         $refused.Text -match 'FAIL: the dex comparison exited 1' -and
         $refused.Output -notcontains '[registers] success.') `
         "The verifier did not fail a comparison DexDiff failed.`n$($refused.Text)"
+    # The raised code scripts/manifest-delta-allowlist.txt approves is still the same build; another
+    # code is another build, refused before anything is compared.
+    $raised = Invoke-VerifierWithStandIns -Name 'raised' -DexDiffExit 0 -PatchedCode '2147483647'
+    Assert-True ($raised.ExitCode -eq 0 -and $raised.Text -match $reached -and
+        $raised.Output -contains '[registers] success.') `
+        "The verifier refused a patched build with the approved raised version code.`n$($raised.Text)"
+    $otherBuild = Invoke-VerifierWithStandIns -Name 'other-build' -DexDiffExit 0 -PatchedCode '385511872'
+    Assert-True ($otherBuild.ExitCode -ne 0 -and $otherBuild.Text -match 'have to be the same build' -and
+        $otherBuild.Text -notmatch $reached) `
+        "The verifier compared a patched build with a version code nobody approved.`n$($otherBuild.Text)"
     $gone = Invoke-VerifierWithStandIns -Name 'java-gone' -DexDiffExit 0 -JavaGone
     Assert-True ($gone.ExitCode -ne 0 -and $gone.Text -match $reached -and
         $gone.Output -notcontains '[registers] success.' -and $gone.Text -notmatch '\[registers\] static: ') `

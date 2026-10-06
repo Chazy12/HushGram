@@ -721,7 +721,7 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         }
 
         if (build.contains(PatchFamily.RESTORE_TRUST) || build.contains(PatchFamily.REMOVE_AD_ID)
-                || build.contains(PatchFamily.PURE_BLACK)) {
+                || build.contains(PatchFamily.PURE_BLACK) || build.contains(PatchFamily.VERSION_CODE)) {
             PreferenceCategory patched = category(screen, L10n.t("Set when you patched"));
             if (build.contains(PatchFamily.RESTORE_TRUST)) {
                 patched.addPreference(mark(info(context, L10n.t("Re-signed build fix"),
@@ -738,6 +738,14 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                 patched.addPreference(mark(info(context, L10n.t("Pure black dark mode"),
                         L10n.t("Instagram's dark mode uses pure black instead of its near-black gray. Menus, sheets "
                                 + "and buttons keep their own grays.")), SettingsIcons.MOON));
+            }
+            if (build.contains(PatchFamily.VERSION_CODE)) {
+                patched.addPreference(mark(info(context, L10n.t("Version code raised"),
+                        L10n.t("This build's version code is the highest Android allows, so Google Play doesn't offer "
+                                + "Meta's updates over it. Instagram's checks against the version it was built as still "
+                                + "see the real one. To go back to an unpatched Instagram, uninstall this one first, "
+                                + "which deletes Instagram's data on this phone. Later HushGram builds need Change "
+                                + "version code too, or they won't install over this one.")), SettingsIcons.UPDATES));
             }
             patched.addPreference(info(context, L10n.t("Changing these"),
                     L10n.t("They're chosen in Morphe Manager when you patch, and Pause doesn't turn them off. "
@@ -848,6 +856,7 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     belongs |= family == PatchFamily.RESTORE_TRUST && L10n.t("Re-signed build fix").equals(row.getTitle());
                     belongs |= family == PatchFamily.REMOVE_AD_ID && L10n.t("Advertising ID removed").equals(row.getTitle());
                     belongs |= family == PatchFamily.PURE_BLACK && L10n.t("Pure black dark mode").equals(row.getTitle());
+                    belongs |= family == PatchFamily.VERSION_CODE && L10n.t("Version code raised").equals(row.getTitle());
                     if (!belongs) continue;
                     aliases.append(' ').append(family.patchName);
                     if (family == PatchFamily.DISABLE_ANALYTICS) aliases.append(" contacts contact location setup analytics ")

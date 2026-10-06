@@ -255,6 +255,9 @@ Opens Instagram's own developer options, where its server flags can be looked at
 Pure black dark mode	Modo oscuro negro puro
 Instagram's dark mode uses pure black instead of its near-black gray. Menus, sheets and buttons keep their own grays.	El modo oscuro de Instagram usa negro puro en lugar de su gris casi negro. Los menús, las hojas y los botones conservan sus propios grises.
 the pure black dark mode	el modo oscuro negro puro
+Version code raised	Código de versión aumentado
+This build's version code is the highest Android allows, so Google Play doesn't offer Meta's updates over it. Instagram's checks against the version it was built as still see the real one. To go back to an unpatched Instagram, uninstall this one first, which deletes Instagram's data on this phone. Later HushGram builds need Change version code too, or they won't install over this one.	El código de versión de esta compilación es el más alto que permite Android, así que Google Play no ofrece las actualizaciones de Meta sobre ella. Las comprobaciones de Instagram contra la versión con la que se compiló siguen viendo el real. Para volver a un Instagram sin parches, desinstala primero este, lo que borra los datos de Instagram en este teléfono. Las próximas compilaciones de HushGram también necesitan Change version code o no se instalarán sobre esta.
+the raised version code	el código de versión aumentado
 Sharing	Compartir
 Hide group buttons	Ocultar botones de grupo
 Leaves New group out of the share sheet, and the button that sends to the people you picked as a group. Send separately stays, and you can still start a group from your messages.	Quita Nuevo grupo del menú para compartir y el botón que envía a las personas elegidas como grupo. Enviar por separado se queda, y puedes seguir creando un grupo desde tus mensajes.

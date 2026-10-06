@@ -255,6 +255,9 @@ Opens Instagram's own developer options, where its server flags can be looked at
 Pure black dark mode	Saf siyah karanlık mod
 Instagram's dark mode uses pure black instead of its near-black gray. Menus, sheets and buttons keep their own grays.	Instagram'ın karanlık modu, siyaha yakın grisi yerine saf siyah kullanır. Menüler, sayfalar ve düğmeler kendi gri tonlarını korur.
 the pure black dark mode	saf siyah karanlık mod
+Version code raised	Sürüm kodu yükseltildi
+This build's version code is the highest Android allows, so Google Play doesn't offer Meta's updates over it. Instagram's checks against the version it was built as still see the real one. To go back to an unpatched Instagram, uninstall this one first, which deletes Instagram's data on this phone. Later HushGram builds need Change version code too, or they won't install over this one.	Bu derlemenin sürüm kodu Android'in izin verdiği en yüksek değerdir, bu yüzden Google Play bunun üzerine Meta'nın güncellemelerini sunmaz. Instagram'ın derlendiği sürümle yaptığı kontroller gerçek kodu görmeye devam eder. Yamasız bir Instagram'a dönmek için önce bunu kaldırın. Bu, Instagram'ın bu telefondaki verilerini siler. Sonraki HushGram derlemelerinin de Change version code içermesi gerekir, yoksa bunun üzerine yüklenmezler.
+the raised version code	yükseltilmiş sürüm kodu
 Sharing	Paylaşım
 Hide group buttons	Grup düğmelerini gizle
 Leaves New group out of the share sheet, and the button that sends to the people you picked as a group. Send separately stays, and you can still start a group from your messages.	Paylaşım menüsünden Yeni grup düğmesini ve seçtiğin kişilere grup olarak gönderen düğmeyi kaldırır. Ayrı ayrı gönder kalır ve mesajlarından yine grup oluşturabilirsin.

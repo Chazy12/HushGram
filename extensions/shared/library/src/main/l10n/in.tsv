@@ -255,6 +255,9 @@ Opens Instagram's own developer options, where its server flags can be looked at
 Pure black dark mode	Mode gelap hitam pekat
 Instagram's dark mode uses pure black instead of its near-black gray. Menus, sheets and buttons keep their own grays.	Mode gelap Instagram memakai hitam pekat, bukan abu-abu yang hampir hitam. Menu, lembar, dan tombol tetap memakai abu-abunya sendiri.
 the pure black dark mode	mode gelap hitam pekat
+Version code raised	Kode versi dinaikkan
+This build's version code is the highest Android allows, so Google Play doesn't offer Meta's updates over it. Instagram's checks against the version it was built as still see the real one. To go back to an unpatched Instagram, uninstall this one first, which deletes Instagram's data on this phone. Later HushGram builds need Change version code too, or they won't install over this one.	Kode versi build ini adalah yang tertinggi yang diizinkan Android, jadi Google Play tidak menawarkan pembaruan Meta di atasnya. Pemeriksaan Instagram terhadap versi saat ia dibuat tetap melihat kode aslinya. Untuk kembali ke Instagram yang tidak ditambal, copot pemasangan yang ini dulu, yang menghapus data Instagram di ponsel ini. Build HushGram berikutnya juga memerlukan Change version code, atau tidak akan bisa dipasang di atas yang ini.
+the raised version code	kode versi yang dinaikkan
 Sharing	Berbagi
 Hide group buttons	Sembunyikan tombol grup
 Leaves New group out of the share sheet, and the button that sends to the people you picked as a group. Send separately stays, and you can still start a group from your messages.	Menghapus Grup baru dari lembar bagikan, juga tombol yang mengirim ke orang-orang yang kamu pilih sebagai grup. Kirim terpisah tetap ada, dan kamu tetap bisa membuat grup dari pesanmu.

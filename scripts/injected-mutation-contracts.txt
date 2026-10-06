@@ -831,3 +831,10 @@ start-call Lapp/hushgram/extension/instagram/reels/ReelScrolling;->pull()I in in
 shared-call Lapp/hushgram/extension/instagram/reels/ReelScrolling;->pull()I in instance (Landroid/view/MotionEvent;)Z holding android_purge_26_q3_ClipsSwipeRefreshLayout_onInterceptTouchEvent
 start-call Lapp/hushgram/extension/instagram/reels/ReelScrolling;->pull()I in instance (Landroid/view/MotionEvent;)Z holding android_purge_26_q3_ClipsSwipeRefreshLayout_onTouchEvent
 shared-call Lapp/hushgram/extension/instagram/reels/ReelScrolling;->pull()I in instance (Landroid/view/MotionEvent;)Z holding android_purge_26_q3_ClipsSwipeRefreshLayout_onTouchEvent
+# Change version code sends Instagram's reads of its own version code through VersionCode.read. The
+# start-up check of the installed code against the one built into the dex, and the constructor that
+# logs "Error getting app version code.", each read it once, picked by the text they load. Left out,
+# that check sees the raised code; twice, it isn't the hook the patch wrote. ChangeVersionCodeTest
+# checks every read on each declared build.
+shared-call Lapp/hushgram/extension/instagram/misc/VersionCode;->read(Landroid/content/pm/PackageInfo;)I in instance (L*;)V holding Android\sPackageManager\sreturned\sversion\scode:\s%d,\sapk\sversion\scode\sis:\s%d
+shared-call Lapp/hushgram/extension/instagram/misc/VersionCode;->read(Landroid/content/pm/PackageInfo;)I in instance (Landroid/content/Context;L*;L*;)V holding Error\sgetting\sapp\sversion\scode.

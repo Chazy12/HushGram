@@ -142,7 +142,8 @@ public final class OverrideExchange {
             if (present) {
                 try (InputStream input = new FileInputStream(file)) { bytes = read(input); }
             }
-            Snapshot snapshot = new Snapshot(host.versionName, host.getLongVersionCode(), parameters, bytes);
+            // Instagram's own build, under Change version code too, so a file follows the build it fits.
+            Snapshot snapshot = new Snapshot(host.versionName, VersionCode.unraised(host.getLongVersionCode()), parameters, bytes);
             snapshot.file = file;
             snapshot.manager = manager;
             snapshot.raw = present ? bytes : null;

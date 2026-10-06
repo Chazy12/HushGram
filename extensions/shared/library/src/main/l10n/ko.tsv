@@ -256,6 +256,9 @@ Opens Instagram's own developer options, where its server flags can be looked at
 Pure black dark mode	순수 검정 어두운 모드
 Instagram's dark mode uses pure black instead of its near-black gray. Menus, sheets and buttons keep their own grays.	Instagram의 어두운 모드에서 기존의 짙은 회색 대신 순수 검정색을 사용합니다. 메뉴, 시트 및 버튼은 각각 기존의 회색을 유지합니다
 the pure black dark mode	순수 검정 어두운 모드
+Version code raised	버전 코드 높임
+This build's version code is the highest Android allows, so Google Play doesn't offer Meta's updates over it. Instagram's checks against the version it was built as still see the real one. To go back to an unpatched Instagram, uninstall this one first, which deletes Instagram's data on this phone. Later HushGram builds need Change version code too, or they won't install over this one.	이 빌드의 버전 코드는 Android가 허용하는 가장 높은 값이므로 Google Play가 그 위에 Meta의 업데이트를 제공하지 않습니다. Instagram이 빌드된 버전과 비교하는 검사에는 여전히 실제 값이 보입니다. 패치하지 않은 Instagram으로 돌아가려면 먼저 이 앱을 제거해야 하며, 이때 이 휴대전화의 Instagram 데이터가 삭제됩니다. 이후 HushGram 빌드에도 Change version code가 있어야 이 앱 위에 설치할 수 있습니다
+the raised version code	높인 버전 코드
 Sharing	공유
 Hide group buttons	그룹 버튼 숨기기
 Leaves New group out of the share sheet, and the button that sends to the people you picked as a group. Send separately stays, and you can still start a group from your messages.	공유 시트에서 새 그룹과 선택한 사람들에게 그룹으로 보내는 버튼을 제거합니다. 개별적으로 보내는 기능은 그대로 유지되며, 메시지에서는 계속 그룹을 만들 수 있습니다

@@ -255,6 +255,9 @@ Opens Instagram's own developer options, where its server flags can be looked at
 Pure black dark mode	Rein schwarzer Dunkelmodus
 Instagram's dark mode uses pure black instead of its near-black gray. Menus, sheets and buttons keep their own grays.	Der Dunkelmodus von Instagram nutzt reines Schwarz statt seines fast schwarzen Graus. Menüs, Blätter und Schaltflächen behalten ihre eigenen Grautöne.
 the pure black dark mode	der rein schwarze Dunkelmodus
+Version code raised	Versionscode erhöht
+This build's version code is the highest Android allows, so Google Play doesn't offer Meta's updates over it. Instagram's checks against the version it was built as still see the real one. To go back to an unpatched Instagram, uninstall this one first, which deletes Instagram's data on this phone. Later HushGram builds need Change version code too, or they won't install over this one.	Der Versionscode dieses Builds ist der höchste, den Android zulässt, daher bietet Google Play darüber keine Updates von Meta an. Instagrams Prüfungen gegen die Version, als die es gebaut wurde, sehen weiterhin den echten. Um zu einem ungepatchten Instagram zurückzukehren, deinstalliere zuerst dieses, wodurch Instagrams Daten auf diesem Telefon gelöscht werden. Spätere HushGram-Builds brauchen ebenfalls Change version code, sonst lassen sie sich nicht über dieses installieren.
+the raised version code	der erhöhte Versionscode
 Sharing	Teilen
 Hide group buttons	Gruppen-Schaltflächen ausblenden
 Leaves New group out of the share sheet, and the button that sends to the people you picked as a group. Send separately stays, and you can still start a group from your messages.	Blendet „Neue Gruppe“ im Teilen-Menü aus, ebenso die Schaltfläche, die an die ausgewählten Personen als Gruppe sendet. „Einzeln senden“ bleibt, und eine Gruppe kannst du weiterhin in deinen Nachrichten erstellen.

@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** New Change version code patch, off by default. It gives the patched build the highest version code Android allows, so Google Play stops offering Meta's updates over it, and Instagram's own checks of its version still see the real code. Once it's installed, going back to an unpatched Instagram means uninstalling first, which deletes Instagram's data on your phone, and later HushGram builds need the patch too or they won't install over it. Settings lists it under Set when you patched, and the diagnostic report names the code Meta built. Asked in #68.
+
 * **Instagram:** Open developer options adds Open Whitehat settings under Developer in HushGram settings. It opens Instagram's own Whitehat screen, whose switch lets Instagram trust the certificates installed on your phone for 24 hours so you can check the app's traffic. Turn it on there and restart Instagram. Instagram turns it back off by itself once the day is up, and HushGram doesn't force or stretch that trust. Asked in #1.
 
 * **Instagram:** New Full resolution photos patch. With its switch on, photos in your feed, in carousels and in posts you open load at the largest size Instagram's server sends, up to 2048 pixels on the longer side, rather than the size Instagram picks for your screen. Stories and Reels load as before. It's in simple mode with its switch off, under Feed in HushGram settings. It can use more data. Asked for in #20.
