@@ -115,6 +115,12 @@ internal fun BytecodePatchContext.imageBridges(patch: String): () -> Unit {
     ))
 }
 
+/** The same for whether a story is a photo with music, which Instagram serves as a video. */
+internal fun BytecodePatchContext.storyMusicBridges(patch: String): () -> Unit {
+    val photoWithMusic = pandoGetter(patch, MEDIA, "is_story_image_with_music", "Ljava/lang/Boolean;")
+    return bridgeWriter(patch, listOf(Bridge("storyImageWithMusic", MEDIA, virtual(photoWithMusic))))
+}
+
 private fun virtual(getter: Method) = "invoke-virtual {p0}, ${getter.definingClass}->${getter.name}()${getter.returnType}"
 
 /**

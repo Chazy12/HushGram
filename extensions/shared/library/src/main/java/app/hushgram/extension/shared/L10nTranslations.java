@@ -48,7 +48,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildDe() {
-        Map<String, String> table = new HashMap<>(796);
+        Map<String, String> table = new HashMap<>(800);
         fillDe0(table);
         fillDe1(table);
         fillDe2(table);
@@ -275,6 +275,10 @@ public final class L10nTranslations {
                 "Reel-Wiedergabeverlauf nicht senden");
         table.put("Download",
                 "Herunterladen");
+        table.put("Download as photo",
+                "Als Foto herunterladen");
+        table.put("Download as video",
+                "Als Video herunterladen");
         table.put("Download failed",
                 "Download fehlgeschlagen");
         table.put("Download feed photos",
@@ -299,13 +303,13 @@ public final class L10nTranslations {
                 "Jedes Video wird in der besten Qualit\u00e4t gespeichert, die der Player streamt.");
         table.put("Empties the log and the hook counts a report would include.",
                 "Leert das Protokoll und die Hook-Z\u00e4hler, die ein Bericht enthalten w\u00fcrde.");
+    }
+
+    private static void fillDe2(Map<String, String> table) {
         table.put("Every switch but Debug logging acts as if it were off, and what was set when you patched stays in. Your settings stay as they are.",
                 "Jeder Schalter au\u00dfer der Debug-Protokollierung verh\u00e4lt sich, als w\u00e4re er aus, und was beim Patchen festgelegt wurde, bleibt aktiv. Deine Einstellungen bleiben, wie sie sind.");
         table.put("Everywhere",
                 "\u00dcberall");
-    }
-
-    private static void fillDe2(Map<String, String> table) {
         table.put("Everywhere but Reels",
                 "\u00dcberall au\u00dfer in Reels");
         table.put("Example without post details",
@@ -422,13 +426,13 @@ public final class L10nTranslations {
                 "HushGram ist wieder aktiv, sobald Instagram neu startet.");
         table.put("Import HushGram settings",
                 "HushGram-Einstellungen importieren");
+    }
+
+    private static void fillDe3(Map<String, String> table) {
         table.put("Import overrides",
                 "\u00dcberschreibungen importieren");
         table.put("Imported %1$d override changes. Restart Instagram to apply them.",
                 "%1$d \u00c4nderungen an \u00dcberschreibungen importiert. Starte Instagram neu, um sie anzuwenden.");
-    }
-
-    private static void fillDe3(Map<String, String> table) {
         table.put("Imported %1$d settings. Skipped %2$d unsupported keys.",
                 "%1$d Einstellungen importiert. %2$d nicht unterst\u00fctzte Schl\u00fcssel \u00fcbersprungen.");
         table.put("Instagram can leave empty room under its tab bar for a navigation bar that isn't there, when your phone hides its navigation bar or Instagram is in a pop-up window. This takes that room away. Restart Instagram after changing it.",
@@ -545,13 +549,13 @@ public final class L10nTranslations {
                 "Wenn du das automatische Scrollen von Instagram in Reels einschaltest, bleibt es nach einem Neustart und nach dem Verlassen von Reels an, bis du es ausschaltest.");
         table.put("Only accounts you follow",
                 "Nur Konten, denen du folgst");
+    }
+
+    private static void fillDe4(Map<String, String> table) {
         table.put("Only in Reels",
                 "Nur in Reels");
         table.put("Open MetaConfig overrides",
                 "MetaConfig-\u00dcberschreibungen \u00f6ffnen");
-    }
-
-    private static void fillDe4(Map<String, String> table) {
         table.put("Open links in external browser",
                 "Links im externen Browser \u00f6ffnen");
         table.put("Open settings with a tab long press",
@@ -668,13 +672,13 @@ public final class L10nTranslations {
                 "Wird gespeichert \u2026 Abbrechen: Downloads in HushGram.");
         table.put("Search",
                 "Suche");
+    }
+
+    private static void fillDe5(Map<String, String> table) {
         table.put("Search settings",
                 "Einstellungen durchsuchen");
         table.put("Set when you patched",
                 "Beim Patchen festgelegt");
-    }
-
-    private static void fillDe5(Map<String, String> table) {
         table.put("Settings backup",
                 "Einstellungen sichern");
         table.put("Settings couldn't open",
@@ -791,13 +795,13 @@ public final class L10nTranslations {
                 "Diese werden beim Patchen in Morphe Manager ausgew\u00e4hlt, und die Pause schaltet sie nicht aus. Patche erneut, um sie zu \u00e4ndern.");
         table.put("This file matches the current overrides. Nothing changed.",
                 "Diese Datei entspricht den aktuellen \u00dcberschreibungen. Es wurde nichts ge\u00e4ndert.");
+    }
+
+    private static void fillDe6(Map<String, String> table) {
         table.put("Try again, or go back to Instagram.",
                 "Versuche es noch einmal oder kehre zu Instagram zur\u00fcck.");
         table.put("Try another word or clear the search.",
                 "Versuche einen anderen Begriff oder l\u00f6sche die Suche.");
-    }
-
-    private static void fillDe6(Map<String, String> table) {
         table.put("Turn off double tap to like",
                 "Doppeltippen zum Liken ausschalten");
         table.put("Turn on Default playback quality to use this choice.",
@@ -877,7 +881,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildEs() {
-        Map<String, String> table = new HashMap<>(796);
+        Map<String, String> table = new HashMap<>(800);
         fillEs0(table);
         fillEs1(table);
         fillEs2(table);
@@ -1104,6 +1108,10 @@ public final class L10nTranslations {
                 "No enviar el historial de reels vistos");
         table.put("Download",
                 "Descargar");
+        table.put("Download as photo",
+                "Descargar como foto");
+        table.put("Download as video",
+                "Descargar como video");
         table.put("Download failed",
                 "No se pudo descargar");
         table.put("Download feed photos",
@@ -1128,13 +1136,13 @@ public final class L10nTranslations {
                 "Cada video se guarda con la mejor calidad que ofrece el reproductor.");
         table.put("Empties the log and the hook counts a report would include.",
                 "Vac\u00eda el registro y los recuentos de hooks que incluir\u00eda un informe.");
+    }
+
+    private static void fillEs2(Map<String, String> table) {
         table.put("Every switch but Debug logging acts as if it were off, and what was set when you patched stays in. Your settings stay as they are.",
                 "Todos los interruptores, salvo el Registro de depuraci\u00f3n, funcionan como si estuvieran desactivados, y lo que se aplic\u00f3 al parchear se mantiene. Tu configuraci\u00f3n no cambia.");
         table.put("Everywhere",
                 "En todas partes");
-    }
-
-    private static void fillEs2(Map<String, String> table) {
         table.put("Everywhere but Reels",
                 "En todas partes menos en Reels");
         table.put("Example without post details",
@@ -1251,13 +1259,13 @@ public final class L10nTranslations {
                 "HushGram vuelve a activarse cuando Instagram se reinicie.");
         table.put("Import HushGram settings",
                 "Importar los ajustes de HushGram");
+    }
+
+    private static void fillEs3(Map<String, String> table) {
         table.put("Import overrides",
                 "Importar valores personalizados");
         table.put("Imported %1$d override changes. Restart Instagram to apply them.",
                 "Se importaron %1$d cambios. Reinicia Instagram para aplicarlos.");
-    }
-
-    private static void fillEs3(Map<String, String> table) {
         table.put("Imported %1$d settings. Skipped %2$d unsupported keys.",
                 "Se importaron %1$d ajustes. Se omitieron %2$d claves no compatibles.");
         table.put("Instagram can leave empty room under its tab bar for a navigation bar that isn't there, when your phone hides its navigation bar or Instagram is in a pop-up window. This takes that room away. Restart Instagram after changing it.",
@@ -1374,13 +1382,13 @@ public final class L10nTranslations {
                 "Cuando activas el desplazamiento autom\u00e1tico de Instagram en Reels, sigue activado despu\u00e9s de un reinicio o de salir de Reels, hasta que lo desactives.");
         table.put("Only accounts you follow",
                 "Solo cuentas que sigues");
+    }
+
+    private static void fillEs4(Map<String, String> table) {
         table.put("Only in Reels",
                 "Solo en Reels");
         table.put("Open MetaConfig overrides",
                 "Abrir anulaciones de MetaConfig");
-    }
-
-    private static void fillEs4(Map<String, String> table) {
         table.put("Open links in external browser",
                 "Abrir enlaces en el navegador externo");
         table.put("Open settings with a tab long press",
@@ -1497,13 +1505,13 @@ public final class L10nTranslations {
                 "Guardando... Cancelar: Descargas en HushGram.");
         table.put("Search",
                 "Buscar");
+    }
+
+    private static void fillEs5(Map<String, String> table) {
         table.put("Search settings",
                 "Buscar en ajustes");
         table.put("Set when you patched",
                 "Aplicado al parchear");
-    }
-
-    private static void fillEs5(Map<String, String> table) {
         table.put("Settings backup",
                 "Copia de ajustes");
         table.put("Settings couldn't open",
@@ -1620,13 +1628,13 @@ public final class L10nTranslations {
                 "Se eligen en Morphe Manager al parchear, y Pausar no los desactiva. Vuelve a parchear para cambiarlos.");
         table.put("This file matches the current overrides. Nothing changed.",
                 "Este archivo coincide con los valores actuales. Nada ha cambiado.");
+    }
+
+    private static void fillEs6(Map<String, String> table) {
         table.put("Try again, or go back to Instagram.",
                 "Int\u00e9ntalo de nuevo o vuelve a Instagram.");
         table.put("Try another word or clear the search.",
                 "Prueba otra palabra o borra la b\u00fasqueda.");
-    }
-
-    private static void fillEs6(Map<String, String> table) {
         table.put("Turn off double tap to like",
                 "Desactivar tocar dos veces para dar Me gusta");
         table.put("Turn on Default playback quality to use this choice.",
@@ -1706,7 +1714,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildIn() {
-        Map<String, String> table = new HashMap<>(796);
+        Map<String, String> table = new HashMap<>(800);
         fillIn0(table);
         fillIn1(table);
         fillIn2(table);
@@ -1933,6 +1941,10 @@ public final class L10nTranslations {
                 "Jangan kirim riwayat tontonan reel");
         table.put("Download",
                 "Unduh");
+        table.put("Download as photo",
+                "Unduh sebagai foto");
+        table.put("Download as video",
+                "Unduh sebagai video");
         table.put("Download failed",
                 "Unduhan gagal");
         table.put("Download feed photos",
@@ -1957,13 +1969,13 @@ public final class L10nTranslations {
                 "Setiap video disimpan dengan kualitas streaming terbaik dari pemutar.");
         table.put("Empties the log and the hook counts a report would include.",
                 "Mengosongkan log dan hitungan hook yang akan dimasukkan ke laporan.");
+    }
+
+    private static void fillIn2(Map<String, String> table) {
         table.put("Every switch but Debug logging acts as if it were off, and what was set when you patched stays in. Your settings stay as they are.",
                 "Semua sakelar kecuali Pencatatan debug dianggap nonaktif, dan yang diatur saat Anda menambal tetap aktif. Pengaturan Anda tetap seperti semula.");
         table.put("Everywhere",
                 "Di mana saja");
-    }
-
-    private static void fillIn2(Map<String, String> table) {
         table.put("Everywhere but Reels",
                 "Di mana saja kecuali Reels");
         table.put("Example without post details",
@@ -2080,13 +2092,13 @@ public final class L10nTranslations {
                 "HushGram aktif lagi saat Instagram dimulai ulang.");
         table.put("Import HushGram settings",
                 "Impor pengaturan HushGram");
+    }
+
+    private static void fillIn3(Map<String, String> table) {
         table.put("Import overrides",
                 "Impor nilai pengganti");
         table.put("Imported %1$d override changes. Restart Instagram to apply them.",
                 "%1$d perubahan nilai pengganti diimpor. Mulai ulang Instagram untuk menerapkannya.");
-    }
-
-    private static void fillIn3(Map<String, String> table) {
         table.put("Imported %1$d settings. Skipped %2$d unsupported keys.",
                 "%1$d pengaturan diimpor. %2$d kunci yang tidak didukung dilewati.");
         table.put("Instagram can leave empty room under its tab bar for a navigation bar that isn't there, when your phone hides its navigation bar or Instagram is in a pop-up window. This takes that room away. Restart Instagram after changing it.",
@@ -2203,13 +2215,13 @@ public final class L10nTranslations {
                 "Setelah kamu mengaktifkan gulir otomatis Instagram di Reels, fitur itu tetap aktif setelah dimulai ulang atau setelah kamu keluar dari Reels, sampai kamu menonaktifkannya.");
         table.put("Only accounts you follow",
                 "Hanya akun yang kamu ikuti");
+    }
+
+    private static void fillIn4(Map<String, String> table) {
         table.put("Only in Reels",
                 "Hanya di Reels");
         table.put("Open MetaConfig overrides",
                 "Buka penggantian MetaConfig");
-    }
-
-    private static void fillIn4(Map<String, String> table) {
         table.put("Open links in external browser",
                 "Buka tautan di browser eksternal");
         table.put("Open settings with a tab long press",
@@ -2326,13 +2338,13 @@ public final class L10nTranslations {
                 "Menyimpan... Batal: Unduhan di HushGram.");
         table.put("Search",
                 "Cari");
+    }
+
+    private static void fillIn5(Map<String, String> table) {
         table.put("Search settings",
                 "Cari pengaturan");
         table.put("Set when you patched",
                 "Diatur saat Anda menambal");
-    }
-
-    private static void fillIn5(Map<String, String> table) {
         table.put("Settings backup",
                 "Cadangan pengaturan");
         table.put("Settings couldn't open",
@@ -2449,13 +2461,13 @@ public final class L10nTranslations {
                 "Semua ini dipilih di Morphe Manager saat Anda menambal, dan Jeda tidak mematikannya. Tambal ulang untuk mengubahnya.");
         table.put("This file matches the current overrides. Nothing changed.",
                 "Berkas ini sama dengan nilai pengganti saat ini. Tidak ada yang berubah.");
+    }
+
+    private static void fillIn6(Map<String, String> table) {
         table.put("Try again, or go back to Instagram.",
                 "Coba lagi, atau kembali ke Instagram.");
         table.put("Try another word or clear the search.",
                 "Coba kata lain atau hapus pencarian.");
-    }
-
-    private static void fillIn6(Map<String, String> table) {
         table.put("Turn off double tap to like",
                 "Matikan ketuk dua kali untuk menyukai");
         table.put("Turn on Default playback quality to use this choice.",
@@ -2535,7 +2547,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildKo() {
-        Map<String, String> table = new HashMap<>(796);
+        Map<String, String> table = new HashMap<>(800);
         fillKo0(table);
         fillKo1(table);
         fillKo2(table);
@@ -2762,6 +2774,10 @@ public final class L10nTranslations {
                 "\ub9b4\uc2a4 \uc2dc\uccad \uae30\ub85d\uc744 \uc804\uc1a1\ud558\uc9c0 \ub9c8\uc138\uc694");
         table.put("Download",
                 "\ub2e4\uc6b4\ub85c\ub4dc");
+        table.put("Download as photo",
+                "\uc0ac\uc9c4\uc73c\ub85c \ub2e4\uc6b4\ub85c\ub4dc");
+        table.put("Download as video",
+                "\ub3d9\uc601\uc0c1\uc73c\ub85c \ub2e4\uc6b4\ub85c\ub4dc");
         table.put("Download failed",
                 "\ub2e4\uc6b4\ub85c\ub4dc \uc2e4\ud328");
         table.put("Download feed photos",
@@ -2786,13 +2802,13 @@ public final class L10nTranslations {
                 "\uac01 \ub3d9\uc601\uc0c1\uc740 \ud50c\ub808\uc774\uc5b4\uac00 \uc2a4\ud2b8\ub9ac\ubc0d\ud558\ub294 \ucd5c\uace0\uc758 \ud654\uc9c8\ub85c \uc800\uc7a5\ub429\ub2c8\ub2e4");
         table.put("Empties the log and the hook counts a report would include.",
                 "\ub85c\uadf8\ub97c \ube44\uc6b0\uace0, \ubcf4\uace0\uc11c\uc5d0 \ud3ec\ud568\ub420 \ud6c4\ud06c(hook) \uce74\uc6b4\ud2b8\ub97c \ucd08\uae30\ud654\ud569\ub2c8\ub2e4");
+    }
+
+    private static void fillKo2(Map<String, String> table) {
         table.put("Every switch but Debug logging acts as if it were off, and what was set when you patched stays in. Your settings stay as they are.",
                 "\ubaa8\ub4e0 \uc2a4\uc704\uce58\ub294 Debug logging\uc744 \uc81c\uc678\ud558\uace0 \uaebc\uc9c4 \uac83\ucc98\ub7fc \uc791\ub3d9\ud558\uba70, \ud328\uce58\ud560 \ub54c \uc124\uc815\ub418\uc5b4 \uc788\ub358 \uc0c1\ud0dc\uac00 \uadf8\ub300\ub85c \uc720\uc9c0\ub429\ub2c8\ub2e4. \ud604\uc7ac \uc124\uc815\uc740 \ubcc0\uacbd\ub418\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4");
         table.put("Everywhere",
                 "\ubaa8\ub4e0 \uacf3");
-    }
-
-    private static void fillKo2(Map<String, String> table) {
         table.put("Everywhere but Reels",
                 "\ub9b4\uc2a4\ub97c \uc81c\uc678\ud55c \ubaa8\ub4e0 \uacf3");
         table.put("Example without post details",
@@ -2909,13 +2925,13 @@ public final class L10nTranslations {
                 "HushGram\uc744 \ub2e4\uc2dc \uc2dc\uc791\ud558\uba74 HashGram\uc774 \ub2e4\uc2dc \uc2dc\uc791\ub429\ub2c8\ub2e4");
         table.put("Import HushGram settings",
                 "HushGram \uc124\uc815 \uac00\uc838\uc624\uae30");
+    }
+
+    private static void fillKo3(Map<String, String> table) {
         table.put("Import overrides",
                 "\uc7ac\uc815\uc758 \uac00\uc838\uc624\uae30");
         table.put("Imported %1$d override changes. Restart Instagram to apply them.",
                 "%1$d \uac1c\uc758 \uc7ac\uc815\uc758 \ubcc0\uacbd \uc0ac\ud56d\uc744 \uac00\uc838\uc654\uc2b5\ub2c8\ub2e4. \uc801\uc6a9\ud558\ub824\uba74 Instagram\uc744 \ub2e4\uc2dc \uc2dc\uc791\ud558\uc138\uc694");
-    }
-
-    private static void fillKo3(Map<String, String> table) {
         table.put("Imported %1$d settings. Skipped %2$d unsupported keys.",
                 "%1$d \uac1c\uc758 \uc124\uc815\uc744 \uac00\uc838\uc654\uc2b5\ub2c8\ub2e4. %2$d \uac1c\uc758 \uc9c0\uc6d0\ub418\uc9c0 \uc54a\ub294 \ud0a4\ub294 \uac74\ub108\ub6f0\uc5c8\uc2b5\ub2c8\ub2e4.");
         table.put("Instagram can leave empty room under its tab bar for a navigation bar that isn't there, when your phone hides its navigation bar or Instagram is in a pop-up window. This takes that room away. Restart Instagram after changing it.",
@@ -3032,13 +3048,13 @@ public final class L10nTranslations {
                 "\ub9b4\uc2a4\uc5d0\uc11c Instagram\uc758 \uc790\ub3d9 \uc2a4\ud06c\ub864\uc744 \ucf1c\uba74, Instagram\uc744 \ub2e4\uc2dc \uc2dc\uc791\ud558\uac70\ub098 \ub9b4\uc2a4\ub97c \ub098\uac14\ub2e4\uac00 \ub2e4\uc2dc \ub4e4\uc5b4\uc640\ub3c4 \uc9c1\uc811 \ub044\uae30 \uc804\uae4c\uc9c0 \uacc4\uc18d \ucf1c\uc9c4 \uc0c1\ud0dc\ub85c \uc720\uc9c0\ub429\ub2c8\ub2e4");
         table.put("Only accounts you follow",
                 "\ub098\ub97c \ud314\ub85c\uc6b0\ud558\ub294 \uacc4\uc815\ub9cc");
+    }
+
+    private static void fillKo4(Map<String, String> table) {
         table.put("Only in Reels",
                 "\ub9b4\uc2a4\uc5d0\uc11c\ub9cc");
         table.put("Open MetaConfig overrides",
                 "MetaConfig \uc7ac\uc815\uc758 \uc5f4\uae30");
-    }
-
-    private static void fillKo4(Map<String, String> table) {
         table.put("Open links in external browser",
                 "\uc678\ubd80 \ube0c\ub77c\uc6b0\uc800\uc5d0\uc11c \ub9c1\ud06c \uc5f4\uae30");
         table.put("Open settings with a tab long press",
@@ -3155,13 +3171,13 @@ public final class L10nTranslations {
                 "\uc800\uc7a5\ud558\ub294 \uc911\u2026 \ucde8\uc18c: HushGram\uc5d0\uc11c \ub2e4\uc6b4\ub85c\ub4dc");
         table.put("Search",
                 "\uac80\uc0c9");
+    }
+
+    private static void fillKo5(Map<String, String> table) {
         table.put("Search settings",
                 "\uac80\uc0c9 \uc124\uc815");
         table.put("Set when you patched",
                 "\ud328\uce58\ud560 \ub54c \uc124\uc815");
-    }
-
-    private static void fillKo5(Map<String, String> table) {
         table.put("Settings backup",
                 "\uc124\uc815 \ubc31\uc5c5");
         table.put("Settings couldn't open",
@@ -3278,13 +3294,13 @@ public final class L10nTranslations {
                 "\ud328\uce58\ud560 \ub54c Morphe Manager\uc5d0\uc11c \uc120\ud0dd\ub418\uba70, \uc77c\uc2dc \uc815\uc9c0\ud574\ub3c4 \ube44\ud65c\uc131\ud654\ub418\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4. \ubcc0\uacbd\ud558\ub824\uba74 \ub2e4\uc2dc \ud328\uce58\ud558\uc138\uc694");
         table.put("This file matches the current overrides. Nothing changed.",
                 "\uc774 \ud30c\uc77c\uc758 \ub0b4\uc6a9\uc774 \ud604\uc7ac \uc7ac\uc815\uc758 \uc124\uc815\uacfc \ub3d9\uc77c\ud569\ub2c8\ub2e4. \ubcc0\uacbd\ub41c \uc0ac\ud56d\uc740 \uc5c6\uc2b5\ub2c8\ub2e4");
+    }
+
+    private static void fillKo6(Map<String, String> table) {
         table.put("Try again, or go back to Instagram.",
                 "\ub2e4\uc2dc \uc2dc\ub3c4\ud558\uac70\ub098 Instagram\uc73c\ub85c \ub3cc\uc544\uac00\uc138\uc694");
         table.put("Try another word or clear the search.",
                 "\ub2e4\ub978 \ub2e8\uc5b4\ub97c \uc785\ub825\ud558\uac70\ub098 \uac80\uc0c9\uc5b4\ub97c \uc9c0\uc6cc\ubcf4\uc138\uc694");
-    }
-
-    private static void fillKo6(Map<String, String> table) {
         table.put("Turn off double tap to like",
                 "\ub450 \ubc88 \ud0ed\ud558\uc5ec \uc88b\uc544\uc694 \ud45c\uc2dc \ube44\ud65c\uc131\ud654");
         table.put("Turn on Default playback quality to use this choice.",
@@ -3364,7 +3380,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildPt_rBR() {
-        Map<String, String> table = new HashMap<>(796);
+        Map<String, String> table = new HashMap<>(800);
         fillPt_rBR0(table);
         fillPt_rBR1(table);
         fillPt_rBR2(table);
@@ -3591,6 +3607,10 @@ public final class L10nTranslations {
                 "N\u00e3o enviar o hist\u00f3rico de reels assistidos");
         table.put("Download",
                 "Baixar");
+        table.put("Download as photo",
+                "Baixar como foto");
+        table.put("Download as video",
+                "Baixar como v\u00eddeo");
         table.put("Download failed",
                 "Falha no download");
         table.put("Download feed photos",
@@ -3615,13 +3635,13 @@ public final class L10nTranslations {
                 "Cada v\u00eddeo \u00e9 salvo na melhor qualidade que o player reproduz.");
         table.put("Empties the log and the hook counts a report would include.",
                 "Apaga o registro e as contagens dos hooks que seriam inclu\u00eddos em um relat\u00f3rio.");
+    }
+
+    private static void fillPt_rBR2(Map<String, String> table) {
         table.put("Every switch but Debug logging acts as if it were off, and what was set when you patched stays in. Your settings stay as they are.",
                 "Todas as op\u00e7\u00f5es, exceto Registro de depura\u00e7\u00e3o, funcionam como se estivessem desativadas, e o que foi definido ao aplicar os patches permanece ativo. Suas configura\u00e7\u00f5es n\u00e3o s\u00e3o alteradas.");
         table.put("Everywhere",
                 "Em todo lugar");
-    }
-
-    private static void fillPt_rBR2(Map<String, String> table) {
         table.put("Everywhere but Reels",
                 "Em todo lugar, menos nos Reels");
         table.put("Example without post details",
@@ -3738,13 +3758,13 @@ public final class L10nTranslations {
                 "O HushGram ser\u00e1 reativado quando o Instagram for reiniciado.");
         table.put("Import HushGram settings",
                 "Importar configura\u00e7\u00f5es do HushGram");
+    }
+
+    private static void fillPt_rBR3(Map<String, String> table) {
         table.put("Import overrides",
                 "Importar valores personalizados");
         table.put("Imported %1$d override changes. Restart Instagram to apply them.",
                 "%1$d altera\u00e7\u00f5es importadas. Reinicie o Instagram para aplic\u00e1-las.");
-    }
-
-    private static void fillPt_rBR3(Map<String, String> table) {
         table.put("Imported %1$d settings. Skipped %2$d unsupported keys.",
                 "%1$d configura\u00e7\u00f5es importadas. %2$d chaves incompat\u00edveis ignoradas.");
         table.put("Instagram can leave empty room under its tab bar for a navigation bar that isn't there, when your phone hides its navigation bar or Instagram is in a pop-up window. This takes that room away. Restart Instagram after changing it.",
@@ -3861,13 +3881,13 @@ public final class L10nTranslations {
                 "Depois que voc\u00ea ativa a rolagem autom\u00e1tica do Instagram no Reels, ela continua ativada depois de reiniciar ou de sair do Reels, at\u00e9 voc\u00ea desativ\u00e1-la.");
         table.put("Only accounts you follow",
                 "S\u00f3 contas que voc\u00ea segue");
+    }
+
+    private static void fillPt_rBR4(Map<String, String> table) {
         table.put("Only in Reels",
                 "S\u00f3 nos Reels");
         table.put("Open MetaConfig overrides",
                 "Abrir substitui\u00e7\u00f5es do MetaConfig");
-    }
-
-    private static void fillPt_rBR4(Map<String, String> table) {
         table.put("Open links in external browser",
                 "Abrir links no navegador externo");
         table.put("Open settings with a tab long press",
@@ -3984,13 +4004,13 @@ public final class L10nTranslations {
                 "Salvando... Cancelar: Downloads no HushGram.");
         table.put("Search",
                 "Pesquisar");
+    }
+
+    private static void fillPt_rBR5(Map<String, String> table) {
         table.put("Search settings",
                 "Pesquisar configura\u00e7\u00f5es");
         table.put("Set when you patched",
                 "Definido ao aplicar os patches");
-    }
-
-    private static void fillPt_rBR5(Map<String, String> table) {
         table.put("Settings backup",
                 "Backup das configura\u00e7\u00f5es");
         table.put("Settings couldn't open",
@@ -4107,13 +4127,13 @@ public final class L10nTranslations {
                 "Eles s\u00e3o escolhidos no Morphe Manager quando voc\u00ea aplica os patches, e a pausa n\u00e3o os desativa. Aplique os patches novamente para alter\u00e1-los.");
         table.put("This file matches the current overrides. Nothing changed.",
                 "Este arquivo corresponde aos valores atuais. Nada mudou.");
+    }
+
+    private static void fillPt_rBR6(Map<String, String> table) {
         table.put("Try again, or go back to Instagram.",
                 "Tente novamente ou volte para o Instagram.");
         table.put("Try another word or clear the search.",
                 "Tente outra palavra ou limpe a pesquisa.");
-    }
-
-    private static void fillPt_rBR6(Map<String, String> table) {
         table.put("Turn off double tap to like",
                 "Desativar toque duplo para curtir");
         table.put("Turn on Default playback quality to use this choice.",
@@ -4193,7 +4213,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildTr() {
-        Map<String, String> table = new HashMap<>(796);
+        Map<String, String> table = new HashMap<>(800);
         fillTr0(table);
         fillTr1(table);
         fillTr2(table);
@@ -4420,6 +4440,10 @@ public final class L10nTranslations {
                 "Reel izleme ge\u00e7mi\u015fini g\u00f6nderme");
         table.put("Download",
                 "\u0130ndir");
+        table.put("Download as photo",
+                "Foto\u011fraf olarak indir");
+        table.put("Download as video",
+                "Video olarak indir");
         table.put("Download failed",
                 "\u0130ndirme ba\u015far\u0131s\u0131z oldu");
         table.put("Download feed photos",
@@ -4444,13 +4468,13 @@ public final class L10nTranslations {
                 "Her video, oynat\u0131c\u0131n\u0131n sundu\u011fu en iyi kalitede kaydedilir.");
         table.put("Empties the log and the hook counts a report would include.",
                 "Bir raporun i\u00e7erece\u011fi g\u00fcnl\u00fc\u011f\u00fc ve kanca saya\u00e7lar\u0131n\u0131 bo\u015falt\u0131r.");
+    }
+
+    private static void fillTr2(Map<String, String> table) {
         table.put("Every switch but Debug logging acts as if it were off, and what was set when you patched stays in. Your settings stay as they are.",
                 "Hata ay\u0131klama g\u00fcnl\u00fc\u011f\u00fc d\u0131\u015f\u0131ndaki her anahtar kapal\u0131ym\u0131\u015f gibi davran\u0131r, yamalad\u0131\u011f\u0131nda ayarlananlar ise devrede kal\u0131r. Ayarlar\u0131n oldu\u011fu gibi kal\u0131r.");
         table.put("Everywhere",
                 "Her yerde");
-    }
-
-    private static void fillTr2(Map<String, String> table) {
         table.put("Everywhere but Reels",
                 "Reels d\u0131\u015f\u0131nda her yerde");
         table.put("Example without post details",
@@ -4567,13 +4591,13 @@ public final class L10nTranslations {
                 "HushGram, Instagram yeniden ba\u015flad\u0131\u011f\u0131nda tekrar a\u00e7\u0131l\u0131r.");
         table.put("Import HushGram settings",
                 "HushGram ayarlar\u0131n\u0131 i\u00e7e aktar");
+    }
+
+    private static void fillTr3(Map<String, String> table) {
         table.put("Import overrides",
                 "Ge\u00e7ersiz k\u0131lmalar\u0131 i\u00e7e aktar");
         table.put("Imported %1$d override changes. Restart Instagram to apply them.",
                 "%1$d ge\u00e7ersiz k\u0131lma de\u011fi\u015fikli\u011fi i\u00e7e aktar\u0131ld\u0131. Uygulamak i\u00e7in Instagram'\u0131 yeniden ba\u015flat\u0131n.");
-    }
-
-    private static void fillTr3(Map<String, String> table) {
         table.put("Imported %1$d settings. Skipped %2$d unsupported keys.",
                 "%1$d ayar i\u00e7e aktar\u0131ld\u0131. Desteklenmeyen %2$d anahtar atland\u0131.");
         table.put("Instagram can leave empty room under its tab bar for a navigation bar that isn't there, when your phone hides its navigation bar or Instagram is in a pop-up window. This takes that room away. Restart Instagram after changing it.",
@@ -4690,13 +4714,13 @@ public final class L10nTranslations {
                 "Reels'te Instagram'\u0131n otomatik kayd\u0131rmas\u0131n\u0131 a\u00e7t\u0131\u011f\u0131nda, yeniden ba\u015flatmadan veya Reels'ten \u00e7\u0131kt\u0131ktan sonra da sen kapatana kadar a\u00e7\u0131k kal\u0131r.");
         table.put("Only accounts you follow",
                 "Yaln\u0131zca takip etti\u011fin hesaplar");
+    }
+
+    private static void fillTr4(Map<String, String> table) {
         table.put("Only in Reels",
                 "Yaln\u0131zca Reels'te");
         table.put("Open MetaConfig overrides",
                 "MetaConfig ge\u00e7ersiz k\u0131lmalar\u0131n\u0131 a\u00e7");
-    }
-
-    private static void fillTr4(Map<String, String> table) {
         table.put("Open links in external browser",
                 "Ba\u011flant\u0131lar\u0131 harici taray\u0131c\u0131da a\u00e7");
         table.put("Open settings with a tab long press",
@@ -4813,13 +4837,13 @@ public final class L10nTranslations {
                 "Kaydediliyor... \u0130ptal: HushGram'da \u0130ndirmeler.");
         table.put("Search",
                 "Ara");
+    }
+
+    private static void fillTr5(Map<String, String> table) {
         table.put("Search settings",
                 "Ayarlarda ara");
         table.put("Set when you patched",
                 "Yamalad\u0131\u011f\u0131nda ayarlananlar");
-    }
-
-    private static void fillTr5(Map<String, String> table) {
         table.put("Settings backup",
                 "Ayar yede\u011fi");
         table.put("Settings couldn't open",
@@ -4936,13 +4960,13 @@ public final class L10nTranslations {
                 "Bunlar yamalarken Morphe Manager'da se\u00e7ilir ve Duraklatma bunlar\u0131 kapatmaz. De\u011fi\u015ftirmek i\u00e7in yeniden yamala.");
         table.put("This file matches the current overrides. Nothing changed.",
                 "Bu dosya ge\u00e7erli ge\u00e7ersiz k\u0131lmalarla ayn\u0131. Hi\u00e7bir \u015fey de\u011fi\u015fmedi.");
+    }
+
+    private static void fillTr6(Map<String, String> table) {
         table.put("Try again, or go back to Instagram.",
                 "Tekrar dene veya Instagram'a geri d\u00f6n.");
         table.put("Try another word or clear the search.",
                 "Ba\u015fka bir s\u00f6zc\u00fck deneyin veya aramay\u0131 temizleyin.");
-    }
-
-    private static void fillTr6(Map<String, String> table) {
         table.put("Turn off double tap to like",
                 "Be\u011fenmek i\u00e7in \u00e7ift dokunmay\u0131 kapat");
         table.put("Turn on Default playback quality to use this choice.",

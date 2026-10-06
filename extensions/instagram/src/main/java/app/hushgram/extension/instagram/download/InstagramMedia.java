@@ -72,6 +72,14 @@ public final class InstagramMedia {
         return null;
     }
 
+    /**
+     * A Media's {@code is_story_image_with_music}: true for a photo story with music, which
+     * Instagram serves as a video next to the photo's own sizes.
+     */
+    public static Boolean storyImageWithMusic(Object media) {
+        return null;
+    }
+
     /** A Media's {@code image_versions2}: the sizes Instagram lists for its picture. */
     public static Object imageVersions(Object media) {
         return null;
