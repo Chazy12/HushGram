@@ -77,26 +77,26 @@ class AboutThisReelHookTest {
     @Test
     fun aFactoryTheReelsMenuNeverAsksFailsThePatch() {
         val context = PatchContexts.of(listOf(factory(), menu(FEED_MENU, results = listOf(5))))
-        assertThrows(PatchException::class.java) { context.findAboutSummaryCalls() }
+        refuses("the Reels More menu never asks the summary factory") { context.findAboutSummaryCalls() }
     }
 
     @Test
     fun twoFactoriesFailThePatch() {
         val context = PatchContexts.of(listOf(factory(), factory("Lfixture/OtherSummary;"), menu(REELS_MENU, marked = true, results = listOf(5))))
-        assertThrows(PatchException::class.java) { context.findAboutSummaryCalls() }
+        refuses("2 About this reel summary factories") { context.findAboutSummaryCalls() }
     }
 
     /** The flag in a method of another shape (here answering Object) is no factory, so there is none. */
     @Test
     fun aFactoryOfAnotherShapeFailsThePatch() {
         val context = PatchContexts.of(listOf(factory(returns = "Ljava/lang/Object;"), menu(REELS_MENU, marked = true, results = listOf(5))))
-        assertThrows(PatchException::class.java) { context.findAboutSummaryCalls() }
+        refuses("0 About this reel summary factories") { context.findAboutSummaryCalls() }
     }
 
     @Test
     fun aCallThatDropsTheAnswerFailsThePatch() {
         val context = PatchContexts.of(listOf(factory(), menu(REELS_MENU, marked = true, results = listOf(null))))
-        assertThrows(PatchException::class.java) { context.findAboutSummaryCalls() }
+        refuses("drops the summary factory's answer") { context.findAboutSummaryCalls() }
     }
 
     /** The box the composer lambda gets, copied through a move, is the view the row's addView hands the extension. */
@@ -115,26 +115,33 @@ class AboutThisReelHookTest {
     @Test
     fun twoAddViewsFailThePatch() {
         val context = PatchContexts.of(listOf(summaryRow(SUMMARY_ROW, adds = listOf(BOX, BOX))))
-        assertThrows(PatchException::class.java) { context.findAskMetaAiBox() }
+        refuses("adds 2 views without layout params") { context.findAskMetaAiBox() }
     }
 
     @Test
     fun addingAnotherViewFailsThePatch() {
         val context = PatchContexts.of(listOf(summaryRow(SUMMARY_ROW, adds = listOf(BOX + 1))))
-        assertThrows(PatchException::class.java) { context.findAskMetaAiBox() }
+        refuses("adds some other view than the Ask Meta AI box") { context.findAskMetaAiBox() }
+    }
+
+    /** The same register number holding something else by the time it's added isn't the box. */
+    @Test
+    fun aBoxRegisterWrittenBeforeTheAddFailsThePatch() {
+        val context = PatchContexts.of(listOf(summaryRow(SUMMARY_ROW, overwrite = true)))
+        refuses("puts something else in the Ask Meta AI box's register") { context.findAskMetaAiBox() }
     }
 
     /** Without the composer lambda the method is no summary row, so there is none. */
     @Test
     fun aRowWithoutTheComposerLambdaFailsThePatch() {
         val context = PatchContexts.of(listOf(summaryRow(SUMMARY_ROW, lambda = false)))
-        assertThrows(PatchException::class.java) { context.findAskMetaAiBox() }
+        refuses("0 About this reel summary rows") { context.findAskMetaAiBox() }
     }
 
     @Test
     fun twoSummaryRowsFailThePatch() {
         val context = PatchContexts.of(listOf(summaryRow(SUMMARY_ROW), summaryRow("Lfixture/OtherRow;")))
-        assertThrows(PatchException::class.java) { context.findAskMetaAiBox() }
+        refuses("2 About this reel summary rows") { context.findAskMetaAiBox() }
     }
 
     /**
@@ -165,7 +172,18 @@ class AboutThisReelHookTest {
 
                 val summary = context.findAboutSummaryCalls()
                 val site = context.findAskMetaAiBox()
-                assertTrue("${bundle.name}: the menus asking for the summary", summary.calls.size >= 2)
+                // Every call of the factory in the kept classes, counted apart from the patch's own search.
+                val asks = kept.sumOf { classDef ->
+                    classDef.methods.sumOf { method ->
+                        method.instructions().count { instruction ->
+                            val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+                            call != null && call.definingClass == summary.factory && call.returnType == summary.factory &&
+                                call.parameterTypes.map(CharSequence::toString) == FACTORY_SHAPE
+                        }
+                    }
+                }
+                assertTrue("${bundle.name}: the menus asking for the summary", asks >= 3)
+                assertEquals("${bundle.name}: every ask found", asks, summary.calls.size)
                 val callers = summary.calls.map { Triple(it.type, it.name, it.parameters) }.toSet()
                 assertTrue("${bundle.name}: a menu that also adds the Ask box", Triple(site.type, site.name, site.parameters) !in callers)
                 val row = context.mutableClassDefBy(site.type).methods.single {
@@ -208,6 +226,12 @@ class AboutThisReelHookTest {
             assertEquals("$what: the cast's register", register, (code[hook + 2] as OneRegisterInstruction).registerA)
             assertEquals("$what: the cast's class", factory, (code[hook + 2] as ReferenceInstruction).reference.toString())
         }
+    }
+
+    /** The patch refuses, for the reason given. */
+    private fun refuses(reason: String, search: () -> Unit) {
+        val refusal = assertThrows(PatchException::class.java) { search() }
+        assertTrue("refused for another reason: ${refusal.message}", refusal.message.orEmpty().contains(reason))
     }
 
     /** No addView of the box is left, and the one hook call in its place takes the same row and the same box. */
@@ -280,9 +304,10 @@ class AboutThisReelHookTest {
 
         /**
          * Shaped like 450's summary row binder: its two strings, the box inflated into [BOX], copied
-         * to v20 for the composer lambda (when [lambda]), then added to the row in v0 once for each of [adds].
+         * to v20 for the composer lambda (when [lambda]), then added to the row in v0 once for each of
+         * [adds]. [overwrite] puts a zero in [BOX] between the lambda and the add.
          */
-        fun summaryRow(type: String, adds: List<Int> = listOf(BOX), lambda: Boolean = true): ClassDef {
+        fun summaryRow(type: String, adds: List<Int> = listOf(BOX), lambda: Boolean = true, overwrite: Boolean = false): ClassDef {
             val code = mutableListOf<Instruction>()
             for (string in SUMMARY_ROW_STRINGS) code += ImmutableInstruction21c(Opcode.CONST_STRING, 1, ImmutableStringReference(string))
             code += ImmutableInstruction35c(Opcode.INVOKE_STATIC, 0, 0, 0, 0, 0, 0, ImmutableMethodReference("Lfixture/Inflater;", "A00", emptyList(), "Landroid/view/View;"))
@@ -295,6 +320,7 @@ class AboutThisReelHookTest {
                     ImmutableMethodReference(LAMBDA, "<init>", listOf("Landroid/content/Context;", "Landroid/view/View;"), "V"),
                 )
             }
+            if (overwrite) code += ImmutableInstruction11n(Opcode.CONST_4, BOX, 0)
             for (view in adds) {
                 code += ImmutableInstruction35c(
                     Opcode.INVOKE_VIRTUAL, 2, 0, view, 0, 0, 0,

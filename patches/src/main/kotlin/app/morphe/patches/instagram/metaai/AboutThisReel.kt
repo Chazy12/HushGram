@@ -135,7 +135,8 @@ internal class AskBoxSite(val type: String, val name: String, val parameters: Li
  * The summary row's binder (the one method holding [SUMMARY_ROW_STRINGS] that creates a
  * [COMPOSER_LAMBDA]) inflates the Ask Meta AI box, hands it to that lambda as its first View, and
  * adds it to the row with the method's one `ViewGroup.addView(View)`. The box the lambda gets and
- * the view that call adds have to be the same register, or the patch fails.
+ * the view that call adds have to be the same register, with nothing written to it between the
+ * copy the lambda took and the add, or the patch fails.
  */
 internal fun BytecodePatchContext.findAskMetaAiBox(): AskBoxSite {
     val binders = classesHolding(*SUMMARY_ROW_STRINGS.toTypedArray()).flatMap { classDef ->
@@ -158,22 +159,34 @@ internal fun BytecodePatchContext.findAskMetaAiBox(): AskBoxSite {
     if (viewAt < 0) refuseAbout("$where hands the composer lambda no View")
     // The receiver takes the first register, and a long or double takes two.
     val slot = 1 + parameters.take(viewAt).sumOf { if (it == "J" || it == "D") 2 else 1 }
-    val box = sourceOf(code, constructor, code[constructor].arguments()[slot])
+    val (box, copied) = sourceOf(code, constructor, code[constructor].arguments()[slot])
     val adds = code.indices.filter { code[it].methodReference()?.toString() == ADD_VIEW }
     val add = adds.singleOrNull() ?: refuseAbout("$where adds ${adds.size} views without layout params, not one")
     if (code[add].opcode != Opcode.INVOKE_VIRTUAL || code[add].arguments().getOrNull(1) != box) {
         refuseAbout("$where adds some other view than the Ask Meta AI box")
     }
+    if ((minOf(copied, add) + 1 until maxOf(copied, add)).any { code[it].writes(box) }) {
+        refuseAbout("$where puts something else in the Ask Meta AI box's register before adding it")
+    }
     return AskBoxSite(type, method.name, method.parameterTypes.map(CharSequence::toString), method.returnType, add)
 }
 
-/** The register [register] holds a copy of at [at]: the last move-object into it, followed back, or itself. */
-private fun sourceOf(code: List<Instruction>, at: Int, register: Int): Int {
-    val write = (at - 1 downTo 0).firstOrNull { index ->
-        code[index].opcode.setsRegister() && (code[index] as? OneRegisterInstruction)?.registerA == register
-    } ?: return register
+/**
+ * The register [register] was copied from by [at], and the index of that copy: the last move-object
+ * into it, followed back, or [register] itself at [at]. The scan goes by text order, not branches,
+ * so the caller checks the register holds still from the copy to its use.
+ */
+private fun sourceOf(code: List<Instruction>, at: Int, register: Int): Pair<Int, Int> {
+    val write = (at - 1 downTo 0).firstOrNull { code[it].writes(register) } ?: return register to at
     val instruction = code[write]
-    return if (instruction.opcode in MOVES) sourceOf(code, write, (instruction as TwoRegisterInstruction).registerB) else register
+    return if (instruction.opcode in MOVES) sourceOf(code, write, (instruction as TwoRegisterInstruction).registerB) else register to at
+}
+
+/** Whether this instruction writes [register], a wide write's second half included. */
+private fun Instruction.writes(register: Int): Boolean {
+    if (!opcode.setsRegister()) return false
+    val written = (this as? OneRegisterInstruction)?.registerA ?: return false
+    return written == register || (opcode.setsWideRegister() && written + 1 == register)
 }
 
 /**
