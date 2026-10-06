@@ -147,7 +147,15 @@ Download feed videos	Akıştaki videoları indir
 Adds Download to the menu of a post in your feed with a video. Uses the quality below. Off or paused, Instagram's own menu returns.	Akışındaki videolu bir gönderinin menüsüne İndir ekler. Aşağıdaki kaliteyi kullanır. Kapalıyken veya duraklatıldığında Instagram'ın kendi menüsü geri gelir.
 Playback	Oynatma
 Tap to play	Oynatmak için dokun
-Videos, reels and stories wait for your tap. Feed videos show a play button, as they do when you use less mobile data.	Videolar, reels ve hikayeler dokunmanı bekler. Akıştaki videolar, daha az mobil veri kullandığındaki gibi bir oynat düğmesi gösterir.
+Videos wait for your tap where the choice below says. Feed videos show a play button, as they do when you use less mobile data.	Videolar, aşağıdaki seçimin gösterdiği yerlerde dokunmanı bekler. Akıştaki videolar, daha az mobil veri kullandığındaki gibi bir oynat düğmesi gösterir.
+Where videos wait	Videoların beklediği yer
+Everywhere	Her yerde
+Everywhere but Reels	Reels dışında her yerde
+Only in Reels	Yalnızca Reels'te
+Feed videos, reels and stories all wait for your tap.	Akıştaki videolar, reels ve hikayeler dokunmanı bekler.
+Feed videos and stories wait for your tap. Reels play as you swipe to them.	Akıştaki videolar ve hikayeler dokunmanı bekler. Reels, kaydırdığında oynar.
+Reels wait for your tap. Feed videos and stories play as Instagram plays them.	Reels dokunmanı bekler. Akıştaki videolar ve hikayeler Instagram'ın oynattığı gibi oynar.
+Turn on Tap to play to use this choice.	Bu seçimi kullanmak için Oynatmak için dokun seçeneğini açın.
 Resume long videos	Uzun videolara kaldığın yerden devam et
 Videos and reels over two minutes pick up where you left off. Seek to start elsewhere. Live videos and ads start as usual.	İki dakikadan uzun videolar ve reels kaldığın yerden devam eder. Başka bir yerden başlatmak için çubuğu kaydır. Canlı videolar ve reklamlar normal başlar.
 Default playback quality	Varsayılan oynatma kalitesi

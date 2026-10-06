@@ -14,6 +14,7 @@ import app.hushgram.extension.instagram.download.DownloadQuality;
 import app.hushgram.extension.instagram.download.FileNameTemplate;
 import app.hushgram.extension.instagram.download.SaveFolder;
 import app.hushgram.extension.instagram.media.PlaybackQuality;
+import app.hushgram.extension.instagram.media.TapToPlayScope;
 import app.hushgram.extension.instagram.stories.StoryRingSize;
 import app.hushgram.extension.shared.settings.BaseSettings;
 import app.hushgram.extension.shared.settings.BooleanSetting;
@@ -432,6 +433,14 @@ public class Settings extends BaseSettings {
      */
     public static final BooleanSetting TAP_TO_PLAY =
             new BooleanSetting("hushgram_tap_to_play", TRUE);
+
+    /**
+     * Where {@link #TAP_TO_PLAY} holds starts: everywhere, everywhere but the Reels viewer, or only
+     * there (#39). It starts as everywhere, which is what the switch did before the choice, so no
+     * one's Tap to play changes until they pick. It isn't a switch: the switch above it is.
+     */
+    public static final EnumSetting<TapToPlayScope> TAP_TO_PLAY_SCOPE =
+            new EnumSetting<>("hushgram_tap_to_play_scope", TapToPlayScope.EVERYWHERE, parent(TAP_TO_PLAY));
 
     /**
      * A video or reel over two minutes left partway picks up there the next time a player starts

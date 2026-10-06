@@ -148,7 +148,15 @@ Download feed videos	피드 동영상 다운로드
 Adds Download to the menu of a post in your feed with a video. Uses the quality below. Off or paused, Instagram's own menu returns.	피드에서 동영상이 포함된 게시물의 메뉴에 ‘다운로드’를 추가합니다. 아래에 설정된 품질을 사용합니다. 이 기능을 끄거나 일시 중지하면 Instagram의 원래 메뉴가 다시 표시됩니다
 Playback	재생
 Tap to play	탭하여 재생
-Videos, reels and stories wait for your tap. Feed videos show a play button, as they do when you use less mobile data.	동영상, 릴스 및 스토리는 탭할 때까지 재생되지 않고 대기합니다. 피드의 동영상에는 모바일 데이터 사용량을 줄였을 때와 마찬가지로 재생 버튼이 표시됩니다
+Videos wait for your tap where the choice below says. Feed videos show a play button, as they do when you use less mobile data.	아래에서 고른 곳에서는 동영상이 탭할 때까지 대기합니다. 피드의 동영상에는 모바일 데이터 사용량을 줄였을 때와 마찬가지로 재생 버튼이 표시됩니다
+Where videos wait	동영상이 대기하는 곳
+Everywhere	모든 곳
+Everywhere but Reels	릴스를 제외한 모든 곳
+Only in Reels	릴스에서만
+Feed videos, reels and stories all wait for your tap.	피드 동영상, 릴스, 스토리 모두 탭할 때까지 대기합니다
+Feed videos and stories wait for your tap. Reels play as you swipe to them.	피드 동영상과 스토리는 탭할 때까지 대기합니다. 릴스는 스와이프하면 바로 재생됩니다
+Reels wait for your tap. Feed videos and stories play as Instagram plays them.	릴스는 탭할 때까지 대기합니다. 피드 동영상과 스토리는 Instagram 기본 방식대로 재생됩니다
+Turn on Tap to play to use this choice.	이 옵션을 사용하려면 ‘탭하여 재생’을 켜세요
 Resume long videos	긴 동영상 이어보기
 Videos and reels over two minutes pick up where you left off. Seek to start elsewhere. Live videos and ads start as usual.	2분이 넘는 동영상과 릴스는 시청을 중단한 시점부터 이어서 재생됩니다. 다른 부분을 보려면 원하는 지점으로 이동하세요. 라이브 동영상과 광고는 기존과 동일하게 처음부터 재생됩니다
 Default playback quality	기본 재생 화질

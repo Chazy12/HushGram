@@ -68,6 +68,7 @@ import java.util.Set;
 
 import app.hushgram.extension.instagram.download.DownloadQuality;
 import app.hushgram.extension.instagram.media.PlaybackQuality;
+import app.hushgram.extension.instagram.media.TapToPlayScope;
 import app.hushgram.extension.instagram.media.ResumePlayback;
 import app.hushgram.extension.instagram.misc.OverrideExchange;
 import app.hushgram.extension.instagram.misc.OverrideImport;
@@ -509,8 +510,9 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             PreferenceCategory playback = category(screen, L10n.t("Playback"));
             if (build.contains(PatchFamily.TAP_TO_PLAY)) {
                 playback.addPreference(toggle(context, Settings.TAP_TO_PLAY, L10n.t("Tap to play"),
-                        L10n.t("Videos, reels and stories wait for your tap. Feed videos show a play button, as they do "
-                                + "when you use less mobile data.")));
+                        L10n.t("Videos wait for your tap where the choice below says. Feed videos show a play button, "
+                                + "as they do when you use less mobile data.")));
+                playback.addPreference(tapToPlayScopeRow(context));
             }
             if (build.contains(PatchFamily.RESUME_LONG_VIDEOS)) {
                 playback.addPreference(toggle(context, Settings.RESUME_LONG_VIDEOS, L10n.t("Resume long videos"),
@@ -810,6 +812,7 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     boolean belongs = family.switches.stream().anyMatch(setting -> setting.key.equals(key));
                     belongs |= family == PatchFamily.STORY_RING && Settings.STORY_RING_SCALE.key.equals(key);
                     belongs |= family == PatchFamily.PLAYBACK_QUALITY && Settings.PLAYBACK_QUALITY.key.equals(key);
+                    belongs |= family == PatchFamily.TAP_TO_PLAY && Settings.TAP_TO_PLAY_SCOPE.key.equals(key);
                     belongs |= family == PatchFamily.RESUME_LONG_VIDEOS && row == clearPositions;
                     belongs |= (family == PatchFamily.REEL_DOWNLOAD || family == PatchFamily.STORY_DOWNLOAD
                             || family == PatchFamily.VIDEO_DOWNLOAD) && (Settings.DOWNLOAD_QUALITY.key.equals(key)
@@ -1903,6 +1906,53 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
     }
 
     /**
+     * Where Tap to play holds starts. Like the playback quality's row, its values are the setting's
+     * own names and its summary says what the choice does.
+     */
+    static TapToPlayScopeRow tapToPlayScopeRow(Context context) {
+        TapToPlayScopeRow row = new TapToPlayScopeRow(context);
+        row.setKey(Settings.TAP_TO_PLAY_SCOPE.key);
+        row.setTitle(L10n.t("Where videos wait"));
+        row.setDialogTitle(L10n.t("Where videos wait"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        TapToPlayScope[] scopes = TapToPlayScope.values();
+        CharSequence[] entries = new CharSequence[scopes.length];
+        CharSequence[] values = new CharSequence[scopes.length];
+        for (int i = 0; i < scopes.length; i++) {
+            entries[i] = tapToPlayScopeLabel(scopes[i]);
+            values[i] = scopes[i].name();
+        }
+        row.setEntries(entries);
+        row.setEntryValues(values);
+        row.setValue(Settings.TAP_TO_PLAY_SCOPE.savedValue().name());
+        return row;
+    }
+
+    /** What the list calls [scope]. */
+    static String tapToPlayScopeLabel(TapToPlayScope scope) {
+        switch (scope) {
+            case OUTSIDE_REELS:
+                return L10n.t("Everywhere but Reels");
+            case ONLY_REELS:
+                return L10n.t("Only in Reels");
+            default:
+                return L10n.t("Everywhere");
+        }
+    }
+
+    /** What waits for a tap with [scope], for the row's summary. Reels in the feed go with the feed. */
+    static String tapToPlayScopeSummary(TapToPlayScope scope) {
+        switch (scope) {
+            case OUTSIDE_REELS:
+                return L10n.t("Feed videos and stories wait for your tap. Reels play as you swipe to them.");
+            case ONLY_REELS:
+                return L10n.t("Reels wait for your tap. Feed videos and stories play as Instagram plays them.");
+            default:
+                return L10n.t("Feed videos, reels and stories all wait for your tap.");
+        }
+    }
+
+    /**
      * The size the story rings are drawn at. Like the playback quality's row, its values are the
      * setting's own names and its summary says what the choice does.
      */
@@ -1959,6 +2009,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     : L10n.t("Turn on Start Home on Following to use this choice."));
         } else if (preference instanceof PlaybackQualityRow) {
             ((PlaybackQualityRow) preference).showSummary();
+        } else if (preference instanceof TapToPlayScopeRow) {
+            ((TapToPlayScopeRow) preference).showSummary();
         } else if (preference instanceof StoryRingRow) {
             ((StoryRingRow) preference).showSummary();
         }
@@ -1973,6 +2025,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             ((QualityRow) listPreference).showSummary();
         } else if (listPreference instanceof PlaybackQualityRow) {
             ((PlaybackQualityRow) listPreference).showSummary();
+        } else if (listPreference instanceof TapToPlayScopeRow) {
+            ((TapToPlayScopeRow) listPreference).showSummary();
         } else if (listPreference instanceof StoryRingRow) {
             ((StoryRingRow) listPreference).showSummary();
         } else {
@@ -2472,6 +2526,44 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             setSummary(Settings.PLAYBACK_QUALITY.isAvailable()
                     ? playbackQualitySummary(quality)
                     : L10n.t("Turn on Default playback quality to use this choice."));
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setAccessibilityDelegate(new RowSemantics(this, Button.class));
+        }
+
+        /** Its list takes the screen's colours, as the other rows' dialogs do. */
+        @Override
+        protected void showDialog(Bundle state) {
+            super.showDialog(state);
+            if (getDialog() instanceof AlertDialog) ScreenColors.dialog((AlertDialog) getDialog());
+        }
+    }
+
+    /** Tap to play's choice of where. Its summary follows its value, as the playback quality's does. */
+    static final class TapToPlayScopeRow extends ListPreference {
+        TapToPlayScopeRow(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void setValue(String value) {
+            super.setValue(value);
+            showSummary();
+        }
+
+        void showSummary() {
+            TapToPlayScope scope = TapToPlayScope.EVERYWHERE;
+            for (TapToPlayScope candidate : TapToPlayScope.values()) {
+                if (candidate.name().equals(getValue())) scope = candidate;
+            }
+            setSummary(Settings.TAP_TO_PLAY_SCOPE.isAvailable()
+                    ? tapToPlayScopeSummary(scope)
+                    : L10n.t("Turn on Tap to play to use this choice."));
         }
 
         @Override

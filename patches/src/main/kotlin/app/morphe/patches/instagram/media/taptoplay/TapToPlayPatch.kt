@@ -4,8 +4,10 @@
  */
 package app.morphe.patches.instagram.media.taptoplay
 
+import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
+import app.morphe.patcher.fieldAccess
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
@@ -42,7 +44,7 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
 internal const val PATCH = "Tap to play"
 
 internal const val TAP_TO_PLAY = "$EXTENSION_PACKAGE/media/TapToPlay;"
-internal const val ALLOW_START = "$TAP_TO_PLAY->allowStart(Ljava/lang/Object;Ljava/lang/String;)Z"
+internal const val ALLOW_START = "$TAP_TO_PLAY->allowStart(Ljava/lang/Object;Ljava/lang/String;I)Z"
 internal const val ALLOW_DIRECT_START = "$TAP_TO_PLAY->allowDirectStart(Ljava/lang/Object;Ljava/lang/String;)Z"
 internal const val PAUSED = "$TAP_TO_PLAY->paused(Ljava/lang/Object;Ljava/lang/String;)V"
 internal const val REBOUND = "$TAP_TO_PLAY->rebound(Ljava/lang/Object;)V"
@@ -59,6 +61,9 @@ internal const val PLAY_BUTTON_BINDER = "VideoPlayButtonBinder.bindView"
 
 /** The activity every Instagram screen extends, which Redex leaves under its own name. */
 internal const val FRAGMENT_ACTIVITY = "Lcom/instagram/base/activity/IgFragmentActivity;"
+
+/** The Reels viewer's config, which Redex leaves under its own name, and its video logger is made with. */
+internal const val CLIPS_VIEWER_CONFIG = "Lcom/instagram/clips/intf/ClipsViewerConfig;"
 private const val MOTION_EVENT = "Landroid/view/MotionEvent;"
 private const val STRING = "Ljava/lang/String;"
 private const val OBJECT = "Ljava/lang/Object;"
@@ -85,6 +90,8 @@ private const val USER_SESSION = "Lcom/instagram/common/session/UserSession;"
  * Instagram's own auto scroll in Reels moves on to the next reel, the move tells the extension just
  * before the pager moves, and the extension counts it as a tap on the reel it moves to, so auto scroll
  * carries on reel after reel instead of stopping at the first reel the gate held ([hookAutoScroll]).
+ * playInternal also tells the extension whether its player is the Reels viewer's ([findReelsLogger]),
+ * so the extension's choice of where Tap to play holds starts can leave Reels out, or everything else.
  *
  * Everything is found before anything changes, so a build that differs stops the patch naming
  * what it couldn't find, and nothing is half done. The one exception is a build with no auto
@@ -114,6 +121,7 @@ val tapToPlayPatch = bytecodePatch(
 internal class PlayerHooks(
     val playInternal: Method,
     val grootField: FieldReference,
+    val reelsLogger: ReelsLogger,
     val play: Method,
     val pause: Method,
     val prepare: Method,
@@ -135,12 +143,14 @@ internal fun BytecodePatchContext.holdStartsWithoutATap() {
     val autoScroll = findAutoScroll()
 
     mutable(hooks.playInternal).apply {
-        requireLocals(PATCH, 1)
+        requireLocals(PATCH, 2)
         addInstructionsWithLabels(
             0,
             """
                 iget-object v0, p0, ${hooks.grootField}
-                invoke-static { v0, p1 }, $ALLOW_START
+                iget-object v1, p0, ${hooks.reelsLogger.field}
+                instance-of v1, v1, ${hooks.reelsLogger.type}
+                invoke-static { v0, p1, v1 }, $ALLOW_START
                 move-result v0
                 if-nez v0, :start
                 return-void
@@ -263,7 +273,34 @@ internal fun BytecodePatchContext.findPlayerHooks(): PlayerHooks {
             it.implementation != null
     } ?: throw PatchException("$PATCH: $FRAGMENT_ACTIVITY has no dispatchTouchEvent of its own")
 
-    return PlayerHooks(playInternal, grootField, play, pause, prepare, checker, touch, findPlayButtonClick())
+    return PlayerHooks(playInternal, grootField, findReelsLogger(owner), play, pause, prepare, checker, touch, findPlayButtonClick())
+}
+
+/** [player]'s field holding the video logger it was made with, and the class of the Reels viewer's logger. */
+internal class ReelsLogger(val field: FieldReference, val type: String)
+
+/**
+ * The video logger the Reels viewer makes its players with. IgVideoPlayerImpl, [player], keeps the
+ * logger it was made with in a final field, and the Reels viewer's logger is the one subclass of
+ * that field's type whose constructor takes a [CLIPS_VIEWER_CONFIG] first and keeps it. A player
+ * whose logger is one of those, or of a subclass, plays in the Reels viewer, which playInternal's
+ * hook checks with an instance-of. A reel in the feed is the feed's player, with the feed's logger.
+ */
+internal fun BytecodePatchContext.findReelsLogger(player: String): ReelsLogger {
+    val fields = classDefBy(player).fields
+        .filter { !AccessFlags.STATIC.isSet(it.accessFlags) && AccessFlags.FINAL.isSet(it.accessFlags) && it.type.startsWith("L") }
+        .groupBy { it.type }
+    val loggers = Fingerprint(
+        name = "<init>",
+        filters = listOf(fieldAccess(type = CLIPS_VIEWER_CONFIG, opcode = Opcode.IPUT_OBJECT)),
+        custom = { method, classDef -> method.parameterTypes.firstOrNull()?.toString() == CLIPS_VIEWER_CONFIG && classDef.superclass in fields },
+    ).matchAllOrNull().orEmpty().map { it.originalMethod.definingClass }.distinct()
+    val type = loggers.singleOrNull()
+        ?: throw PatchException("$PATCH: expected one class made with $CLIPS_VIEWER_CONFIG extending the type of a final field of $player, found ${loggers.size}: $loggers")
+    val base = classDefBy(type).superclass!!
+    val field = fields.getValue(base).singleOrNull()
+        ?: throw PatchException("$PATCH: $player has more than one final field of $base, the Reels viewer's video logger's type")
+    return ReelsLogger(field, type)
 }
 
 /**
