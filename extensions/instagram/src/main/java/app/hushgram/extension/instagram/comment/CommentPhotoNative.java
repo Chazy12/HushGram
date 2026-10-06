@@ -32,6 +32,12 @@ public final class CommentPhotoNative {
     /** The Media's own GIF (giphy_media_info), or null. */
     public static Object mediaGif(Object media) { return null; }
 
+    /** The Media's video_versions, a List, or null. */
+    public static Object videoVersions(Object media) { return null; }
+
+    /** The Media's video_duration, a Double, or null. */
+    public static Object videoDuration(Object media) { return null; }
+
     /** The media_type value Instagram gives a still photo. */
     public static int photoKind() { return 0; }
 

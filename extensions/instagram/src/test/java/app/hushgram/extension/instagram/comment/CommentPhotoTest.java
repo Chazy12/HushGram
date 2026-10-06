@@ -228,12 +228,12 @@ public class CommentPhotoTest {
                 new Step("comment GIF", 3, reads -> reads.gifAnswer = new Object()),
                 new Step("no media_comment_info", 4, reads -> reads.infoAnswer = null),
                 new Step("no media in media_comment_info", 5, reads -> reads.mediaAnswer = null),
-                new Step("no media_type", 6, reads -> reads.kindAnswer = null),
                 new Step("media_type 2", 7, reads -> reads.kindAnswer = 2),
                 new Step("media_type 8", 7, reads -> reads.kindAnswer = 8),
                 new Step("media_type 0", 7, reads -> reads.kindAnswer = 0),
                 new Step("media_type other", 7, reads -> reads.kindAnswer = 10),
                 new Step("media_type other", 7, reads -> reads.kindAnswer = -1),
+                new Step("media_type other", 7, reads -> reads.kindAnswer = "1"),
                 new Step("media GIF", 8, reads -> reads.mediaGifAnswer = new Object()));
         for (Step step : steps) {
             HookStatus.clear();
@@ -243,6 +243,57 @@ public class CommentPhotoTest {
             assertEquals(step.reason, READS.subList(0, step.reads), reads.made);
             assertEquals(step.reason, counted(step.reason + " 1"), HookStatus.report());
         }
+    }
+
+    /** Without media_type the reads go on to the GIF and the video, never to the photo kind. */
+    private static final List<String> UNTYPED_READS = Arrays.asList(
+            "selected", "raw", "gif", "info", "media", "kind", "mediaGif", "videoVersions", "videoDuration");
+
+    /**
+     * The server leaves media_type out of a comment's own media. That media passes as a still photo
+     * with no GIF and no video, counted as such, and anything that could be a video is refused.
+     */
+    @Test public void withoutMediaTypeOnlyAMediaWithNoVideoPassesAsAStillPhoto() {
+        List<Consumer<FakeReads>> stills = Arrays.asList(
+                reads -> { },
+                reads -> reads.videoVersionsAnswer = Collections.emptyList(),
+                reads -> reads.videoDurationAnswer = 0.0);
+        for (Consumer<FakeReads> still : stills) {
+            HookStatus.clear();
+            FakeReads reads = new FakeReads();
+            reads.kindAnswer = null;
+            still.accept(reads);
+            assertSame(reads.media, CommentPhoto.photoMedia(reads.comment, reads));
+            assertEquals(UNTYPED_READS, reads.made);
+            assertEquals(counted(CommentPhoto.NO_KIND_STILL + " 1"), HookStatus.report());
+        }
+        List<Step> refused = Arrays.asList(
+                new Step("media GIF", 7, reads -> reads.mediaGifAnswer = new Object()),
+                new Step("no media_type, has video", 8, reads -> reads.videoVersionsAnswer = Collections.singletonList(new Object())),
+                new Step("no media_type, has video", 8, reads -> reads.videoVersionsAnswer = new Object()),
+                new Step("no media_type, has video", 9, reads -> reads.videoDurationAnswer = 12.5),
+                new Step("no media_type, has video", 9, reads -> reads.videoDurationAnswer = Double.NaN),
+                new Step("no media_type, has video", 9, reads -> reads.videoDurationAnswer = "12.5"));
+        for (Step step : refused) {
+            HookStatus.clear();
+            FakeReads reads = new FakeReads();
+            reads.kindAnswer = null;
+            step.breaks.accept(reads);
+            assertNull(step.reason, CommentPhoto.photoMedia(reads.comment, reads));
+            assertEquals(step.reason, UNTYPED_READS.subList(0, step.reads), reads.made);
+            assertEquals(step.reason, counted(step.reason + " 1"), HookStatus.report());
+        }
+        assertEquals("no media_type, has video", CommentPhoto.NO_KIND_VIDEO);
+    }
+
+    /** A media_type that isn't a photo's keeps the media out whatever its video reads would say. */
+    @Test public void aMediaTypeThatIsntAPhotosNeverReadsTheVideo() {
+        HookStatus.clear();
+        FakeReads reads = new FakeReads();
+        reads.kindAnswer = 2;
+        assertNull(CommentPhoto.photoMedia(reads.comment, reads));
+        assertFalse(reads.made.contains("videoVersions") || reads.made.contains("videoDuration"));
+        assertEquals(counted("media_type 2 1"), HookStatus.report());
     }
 
     @Test public void aPhotoIsReadInTheBridgesOldOrderAndLeavesItsCountToTheSizes() {
@@ -266,6 +317,7 @@ public class CommentPhotoTest {
         final Object comment = new Object(), raw = new Object(), info = new Object(), media = new Object();
         boolean isSelected = true;
         Object rawAnswer = raw, gifAnswer, infoAnswer = info, mediaAnswer = media, kindAnswer = 1, mediaGifAnswer;
+        Object videoVersionsAnswer, videoDurationAnswer;
         public boolean selected(Object c) { made.add("selected"); assertSame(comment, c); return isSelected; }
         public Object raw(Object c) { made.add("raw"); assertSame(comment, c); return rawAnswer; }
         public Object gif(Object r) { made.add("gif"); assertSame(raw, r); return gifAnswer; }
@@ -274,6 +326,8 @@ public class CommentPhotoTest {
         public Object kind(Object m) { made.add("kind"); assertSame(media, m); return kindAnswer; }
         public int photoKind() { made.add("photoKind"); return 1; }
         public Object mediaGif(Object m) { made.add("mediaGif"); assertSame(media, m); return mediaGifAnswer; }
+        public Object videoVersions(Object m) { made.add("videoVersions"); assertSame(media, m); return videoVersionsAnswer; }
+        public Object videoDuration(Object m) { made.add("videoDuration"); assertSame(media, m); return videoDurationAnswer; }
     }
 
     static final class Row {

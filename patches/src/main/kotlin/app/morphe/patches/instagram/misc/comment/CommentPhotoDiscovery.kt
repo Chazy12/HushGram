@@ -35,8 +35,8 @@ internal const val SAVE_ACTION = "SaveMedia"
  */
 internal data class CommentPhotoPlan(
     val surface: CommentSurface, val gif: MethodReference, val info: MethodReference, val media: MethodReference,
-    val kind: MethodReference, val mediaGif: MethodReference, val photo: Int, val icon: Int, val label: Int,
-    val images: () -> Unit,
+    val kind: MethodReference, val mediaGif: MethodReference, val videoVersions: MethodReference,
+    val videoDuration: MethodReference, val photo: Int, val icon: Int, val label: Int, val images: () -> Unit,
 )
 
 internal fun BytecodePatchContext.findCommentPhoto(): CommentPhotoPlan = discovering(PHOTO_PATCH) {
@@ -115,7 +115,12 @@ internal fun BytecodePatchContext.findCommentPhoto(): CommentPhotoPlan = discove
     requirePublic(mediaType)
     val kind = hashGetter(mediaType, "media_type", INTEGER)
     val mediaGif = hashGetter(mediaType, "giphy_media_info", GIPHY)
-    for (getter in listOf(kind, mediaGif)) if (!getter.publicInstance()) refuse("media getter ${getter.name} isn't public")
+    // The server leaves media_type out of a comment's own media, so a video is told apart by these.
+    val videoVersions = hashGetter(mediaType, "video_versions", LIST)
+    val videoDuration = hashGetter(mediaType, "video_duration", DOUBLE)
+    for (getter in listOf(kind, mediaGif, videoVersions, videoDuration)) {
+        if (!getter.publicInstance()) refuse("media getter ${getter.name} isn't public")
+    }
     val photo = photoKind(mediaType, classes)
 
     // Instagram's own Save action, beside Copy in the same native action family.
@@ -129,7 +134,7 @@ internal fun BytecodePatchContext.findCommentPhoto(): CommentPhotoPlan = discove
     PHOTO_READS.forEach { (name, shape) -> stub(PHOTO_NATIVE, name, shape.first, shape.second) }
     validateActionRow(PHOTO_ROW, PHOTO_NATIVE)
     val images = imageBridges(PHOTO_PATCH)
-    CommentPhotoPlan(surface, gif, info, media, kind, mediaGif, photo, icon, label, images)
+    CommentPhotoPlan(surface, gif, info, media, kind, mediaGif, videoVersions, videoDuration, photo, icon, label, images)
 }
 
 /** Only called after discovery and every accessibility/register/stub check succeeded. */
@@ -160,6 +165,8 @@ internal fun BytecodePatchContext.applyCommentPhoto(plan: CommentPhotoPlan) = di
     read("media", "invoke-interface", plan.media)
     read("kind", "invoke-virtual", plan.kind)
     read("mediaGif", "invoke-virtual", plan.mediaGif)
+    read("videoVersions", "invoke-virtual", plan.videoVersions)
+    read("videoDuration", "invoke-virtual", plan.videoDuration)
     replace(reads.getValue("photoKind"), 1, """
         const v0, ${plan.photo}
         return v0
@@ -177,8 +184,12 @@ internal val PHOTO_READS: List<Pair<String, Pair<List<String>, String>>> = listO
     "media" to (listOf(OBJECT) to OBJECT),
     "kind" to (listOf(OBJECT) to OBJECT),
     "mediaGif" to (listOf(OBJECT) to OBJECT),
+    "videoVersions" to (listOf(OBJECT) to OBJECT),
+    "videoDuration" to (listOf(OBJECT) to OBJECT),
     "photoKind" to (emptyList<String>() to "I"),
 )
+
+private const val DOUBLE = "Ljava/lang/Double;"
 
 private val fieldWrites = setOf(Opcode.IPUT_OBJECT, Opcode.SPUT_OBJECT)
 

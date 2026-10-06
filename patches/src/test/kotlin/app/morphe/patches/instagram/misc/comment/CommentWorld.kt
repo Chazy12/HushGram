@@ -35,6 +35,8 @@ internal data class PhotoWorld(
     val treeMediaKey: String = "media",
     val gifKey: String = "giphy_media_info",
     val mediaGifKey: String = "giphy_media_info",
+    val videoKey: String = "video_versions",
+    val durationKey: String = "video_duration",
     val rawFieldFlags: Int = AccessFlags.PUBLIC.value,
     val kindFlags: Int = AccessFlags.PUBLIC.value,
     val converterRaw: String = "kept",
@@ -497,6 +499,8 @@ internal object CommentWorld {
                 getter(MEDIA, "kind", INTEGER, "media_type", photo.kindFlags),
                 getter(MEDIA, "gif", GIPHY, photo.mediaGifKey),
                 getter(MEDIA, "versions", IMAGE_INFO, "image_versions2"),
+                getter(MEDIA, "videos", "Ljava/util/List;", photo.videoKey),
+                getter(MEDIA, "duration", "Ljava/lang/Double;", photo.durationKey),
                 method(MEDIA, "isPhoto", emptyList(), "Z", 2, public, """
                     const v0, ${"media_type".hashCode()}
                     const/4 v0, 0x0

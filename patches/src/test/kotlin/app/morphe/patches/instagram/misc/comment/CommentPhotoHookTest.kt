@@ -37,8 +37,8 @@ class CommentPhotoHookTest {
             val native = CommentWorld.nativeClasses(salt, photo = PhotoWorld(pooledSave = pooled))
             val patch = PatchContexts.of(native + extension())
             val plan = patch.findCommentPhoto()
-            assertEquals(listOf("gif", "info", "media", "kind", "gif"),
-                listOf(plan.gif, plan.info, plan.media, plan.kind, plan.mediaGif).map { it.name })
+            assertEquals(listOf("gif", "info", "media", "kind", "gif", "videos", "duration"),
+                listOf(plan.gif, plan.info, plan.media, plan.kind, plan.mediaGif, plan.videoVersions, plan.videoDuration).map { it.name })
             assertEquals("Ltest/${salt}Raw;", plan.info.definingClass)
             assertEquals(MEDIA, plan.kind.definingClass)
             assertEquals(1, plan.photo)
@@ -100,6 +100,8 @@ class CommentPhotoHookTest {
             "tree media written from outside" to PhotoWorld(foreignMediaStore = true),
             "GIF getter reads another field" to PhotoWorld(gifKey = "giphy_sticker_info"),
             "media GIF getter missing" to PhotoWorld(mediaGifKey = "sticker_info"),
+            "video versions getter missing" to PhotoWorld(videoKey = "video_url"),
+            "video duration getter missing" to PhotoWorld(durationKey = "video_length"),
             "private raw comment field" to PhotoWorld(rawFieldFlags = private),
             "private media kind getter" to PhotoWorld(kindFlags = private),
             "raw comment not kept" to PhotoWorld(converterRaw = "null"),
@@ -147,6 +149,14 @@ class CommentPhotoHookTest {
                 val plan = patch.findCommentPhoto()
                 assertEquals("media_type 1 is a photo", 1, plan.photo)
                 assertEquals(MEDIA, plan.kind.definingClass)
+                // A video is told apart by these when media_type is missing: each getter names its own field.
+                val media = classes.single { it.type == MEDIA }
+                for ((getter, field) in listOf(plan.videoVersions to "video_versions", plan.videoDuration to "video_duration")) {
+                    val body = media.methods.single { it.name == getter.name && it.parameterTypes.isEmpty() && it.returnType == getter.returnType }
+                    assertTrue("${bundle.name}: $field getter", field in body.strings() &&
+                        body.code().any { it is NarrowLiteralInstruction && it.narrowLiteral == field.hashCode() })
+                }
+                assertEquals(listOf("Ljava/util/List;", "Ljava/lang/Double;"), listOf(plan.videoVersions, plan.videoDuration).map { it.returnType })
                 assertEquals(MEDIA, plan.media.returnType)
                 assertEquals(plan.surface.raw, plan.info.definingClass)
                 assertEquals(plan.surface.raw, plan.gif.definingClass)
@@ -182,19 +192,21 @@ class CommentPhotoHookTest {
         assertEquals(surface.selectedType, (raw[0].reference() as TypeReference).type)
         assertEquals(surface.rawField.toString(), raw[1].field().toString())
         for ((name, getter) in listOf("gif" to plan.gif, "info" to plan.info, "media" to plan.media,
-                "kind" to plan.kind, "mediaGif" to plan.mediaGif)) {
+                "kind" to plan.kind, "mediaGif" to plan.mediaGif, "videoVersions" to plan.videoVersions,
+                "videoDuration" to plan.videoDuration)) {
             val code = read(name)
             val invoke = if (getter.definingClass == MEDIA) Opcode.INVOKE_VIRTUAL else Opcode.INVOKE_INTERFACE
             assertEquals(name, listOf(Opcode.CHECK_CAST, invoke, Opcode.MOVE_RESULT_OBJECT, Opcode.RETURN_OBJECT), code.map { it.opcode })
             assertEquals(name, getter.definingClass, (code[0].reference() as TypeReference).type)
             assertEquals(name, getter.toString(), code[1].call().toString())
         }
-        assertEquals(listOf(surface.raw, surface.raw, plan.media.definingClass, MEDIA, MEDIA),
-            listOf(plan.gif, plan.info, plan.media, plan.kind, plan.mediaGif).map { it.definingClass })
+        assertEquals(listOf(surface.raw, surface.raw, plan.media.definingClass, MEDIA, MEDIA, MEDIA, MEDIA),
+            listOf(plan.gif, plan.info, plan.media, plan.kind, plan.mediaGif, plan.videoVersions, plan.videoDuration)
+                .map { it.definingClass })
         val kind = read("photoKind")
         assertEquals(listOf(Opcode.CONST, Opcode.RETURN), kind.map { it.opcode })
         assertEquals(plan.photo, (kind[0] as NarrowLiteralInstruction).narrowLiteral)
-        for (call in listOf(plan.gif, plan.info, plan.media, plan.kind, plan.mediaGif)) {
+        for (call in listOf(plan.gif, plan.info, plan.media, plan.kind, plan.mediaGif, plan.videoVersions, plan.videoDuration)) {
             assertEquals("$call is read once", 1, native.sumOf { method -> method.code().count { it.call()?.toString() == call.toString() } })
         }
         assertTrue("the old all-in-one bridge is gone", native.none { it.name == "photoMedia" })

@@ -214,10 +214,14 @@ tasks.register("verifyAndroidBoundaries") {
                 "getterRowAndQueueFailuresStayContainedAndRespectALateSwitch[28]", "getterRowAndQueueFailuresStayContainedAndRespectALateSwitch[37]",
                 "eachStepThatFindsNoPhotoCountsItsOwnReasonOnceAndReadsNoFurther[28]", "eachStepThatFindsNoPhotoCountsItsOwnReasonOnceAndReadsNoFurther[37]",
                 "aPhotoIsReadInTheBridgesOldOrderAndLeavesItsCountToTheSizes[28]", "aPhotoIsReadInTheBridgesOldOrderAndLeavesItsCountToTheSizes[37]",
-                "theUnpatchedBridgesCountAnUnselectedComment[28]", "theUnpatchedBridgesCountAnUnselectedComment[37]"),
+                "theUnpatchedBridgesCountAnUnselectedComment[28]", "theUnpatchedBridgesCountAnUnselectedComment[37]",
+                "withoutMediaTypeOnlyAMediaWithNoVideoPassesAsAStillPhoto[28]", "withoutMediaTypeOnlyAMediaWithNoVideoPassesAsAStillPhoto[37]",
+                "aMediaTypeThatIsntAPhotosNeverReadsTheVideo[28]", "aMediaTypeThatIsntAPhotosNeverReadsTheVideo[37]"),
             "app.hushgram.extension.instagram.download.CommentPhotoSaveTest" to listOf(
                 "explicitCommentPhotoTapSavesTheLargestSuppliedRenditionAndCleansUp[28]", "explicitCommentPhotoTapSavesTheLargestSuppliedRenditionAndCleansUp[37]",
                 "commentPhotoCancelUsesTheExistingControlAndRemovesAllTemporaryState[28]", "commentPhotoCancelUsesTheExistingControlAndRemovesAllTemporaryState[37]",
+                "aCommentPhotoWithoutMediaTypeSaves[28]", "aCommentPhotoWithoutMediaTypeSaves[37]",
+                "aCommentMediaWithoutMediaTypeButWithVideoGetsNoRow[28]", "aCommentMediaWithoutMediaTypeButWithVideoGetsNoRow[37]",
                 "deniedLegacyStoragePermissionLeavesNoPendingPhoto[28]"),
             "app.hushgram.extension.instagram.download.CommentPhotoDownloadTest" to listOf(
                 "onlySuppliedMetaPhotoAddressesAreCopiedVerbatim[28]", "onlySuppliedMetaPhotoAddressesAreCopiedVerbatim[37]",

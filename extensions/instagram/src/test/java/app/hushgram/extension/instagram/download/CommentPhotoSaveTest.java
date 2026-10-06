@@ -101,6 +101,8 @@ public class CommentPhotoSaveTest {
         Settings.SAVE_FOLDER.resetToDefault();
         NativePhoto.selected = null;
         NativePhoto.photo = null;
+        NativePhoto.typed = true;
+        NativePhoto.videos = null;
         HookStatus.clear();
         Utils.awaitBackgroundTasksForTests();
         SaveLeftovers.forgetSweepForTests();
@@ -115,6 +117,11 @@ public class CommentPhotoSaveTest {
     }
 
     private Row menu() {
+        return menu("photo found 1");
+    }
+
+    /** Opens the menu on the comment's photo, which reads as [counted] on the report. */
+    private Row menu(String counted) {
         byte[] body = body();
         server.serve("/small.jpg", "image/jpeg", body);
         server.serve("/large.jpg", "image/jpeg", body);
@@ -129,7 +136,7 @@ public class CommentPhotoSaveTest {
         assertSame(stock.get(0), rows.get(0));
         assertEquals("opening the menu starts nothing", 0, MediaSave.savesInFlight());
         assertEquals("every read reached the photo", Collections.singletonList(FamilyNames.COMMENT_PHOTO
-                + ": invoked 1, 0 found, 0 missing. Counted: photo found 1"), HookStatus.report());
+                + ": invoked 1, 0 found, 0 missing. Counted: " + counted), HookStatus.report());
         return (Row) rows.get(1);
     }
 
@@ -171,6 +178,33 @@ public class CommentPhotoSaveTest {
         }
         clean();
         assertEquals(36, context.getApplicationInfo().targetSdkVersion);
+    }
+
+    /** The server leaves media_type out of a comment's own media: with no video there, the photo saves all the same. */
+    @Test public void aCommentPhotoWithoutMediaTypeSaves() throws Exception {
+        NativePhoto.typed = false;
+        NativePhoto.videos = Collections.emptyList();
+        Row row = menu("no media_type, still image 1, photo found 1");
+        assertNull(row.callback.invoke());
+        waitForSave();
+        assertEquals(0, server.hits("/small.jpg"));
+        assertEquals(1, server.hits("/large.jpg"));
+        clean();
+    }
+
+    /** Without media_type, a media with video versions gets no Save row. */
+    @Test public void aCommentMediaWithoutMediaTypeButWithVideoGetsNoRow() {
+        NativePhoto.typed = false;
+        NativePhoto.videos = Collections.singletonList(new Object());
+        NativePhoto.selected = new Object();
+        NativePhoto.photo = new MediaSave.Item(false, Collections.singletonList(
+                new MediaSave.Rendition(server.origin() + "/large.jpg", 1440, 1080, 0)), null, null);
+        List<?> stock = Collections.singletonList(new Object());
+        HookStatus.clear();
+        assertSame(stock, CommentPhoto.rows(stock, NativePhoto.selected, context));
+        assertEquals(Collections.singletonList(FamilyNames.COMMENT_PHOTO
+                + ": invoked 1, 0 found, 0 missing. Counted: no media_type, has video 1"), HookStatus.report());
+        assertEquals(0, server.hits("/large.jpg"));
     }
 
     @Test public void commentPhotoCancelUsesTheExistingControlAndRemovesAllTemporaryState() throws Exception {
@@ -217,15 +251,19 @@ public class CommentPhotoSaveTest {
     public static class NativePhoto {
         static Object selected;
         static MediaSave.Item photo;
+        static boolean typed = true;
+        static List<?> videos;
         private static final Object RAW = new Object(), INFO = new Object();
         @Implementation protected static int selected(Object comment) { return comment != null && comment == selected ? 1 : 0; }
         @Implementation protected static Object raw(Object comment) { return RAW; }
         @Implementation protected static Object gif(Object raw) { return null; }
         @Implementation protected static Object info(Object raw) { return raw == RAW ? INFO : null; }
         @Implementation protected static Object media(Object info) { return info == INFO ? photo : null; }
-        @Implementation protected static Object kind(Object media) { return media instanceof MediaSave.Item ? 1 : null; }
+        @Implementation protected static Object kind(Object media) { return typed && media instanceof MediaSave.Item ? 1 : null; }
         @Implementation protected static int photoKind() { return 1; }
         @Implementation protected static Object mediaGif(Object media) { return null; }
+        @Implementation protected static Object videoVersions(Object media) { return videos; }
+        @Implementation protected static Object videoDuration(Object media) { return null; }
         @Implementation protected static Object newRow(Object callback) { return new Row(callback); }
         @Implementation protected static Object callback(Object row) { return row instanceof Row ? ((Row) row).callback : null; }
     }

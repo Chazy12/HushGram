@@ -39,6 +39,8 @@ public final class CommentPhoto {
         Object kind(Object media);
         int photoKind();
         Object mediaGif(Object media);
+        Object videoVersions(Object media);
+        Object videoDuration(Object media);
     }
 
     private static final PhotoReads READS = new PhotoReads() {
@@ -50,6 +52,8 @@ public final class CommentPhoto {
         public Object kind(Object media) { return CommentPhotoNative.kind(media); }
         public int photoKind() { return CommentPhotoNative.photoKind(); }
         public Object mediaGif(Object media) { return CommentPhotoNative.mediaGif(media); }
+        public Object videoVersions(Object media) { return CommentPhotoNative.videoVersions(media); }
+        public Object videoDuration(Object media) { return CommentPhotoNative.videoDuration(media); }
     };
 
     // What the diagnostic report counts when a read finds no photo, one name per step. The names
@@ -59,7 +63,8 @@ public final class CommentPhoto {
     static final String COMMENT_GIF = "comment GIF";
     static final String NO_INFO = "no media_comment_info";
     static final String NO_MEDIA = "no media in media_comment_info";
-    static final String NO_KIND = "no media_type";
+    static final String NO_KIND_STILL = "no media_type, still image";
+    static final String NO_KIND_VIDEO = "no media_type, has video";
     static final String MEDIA_GIF = "media GIF";
     /**
      * Instagram's media types are single digits (1 photo, 2 video, 8 carousel). Anything else shares
@@ -124,6 +129,10 @@ public final class CommentPhoto {
      * The Media of the selected comment's own still photo, or null for anything else: another
      * object, a comment with no media, a GIF, a video. Each null is counted under the step that
      * found nothing, so a report from a phone says where a photo comment's read stopped.
+     *
+     * <p>The server leaves media_type out of a comment's own media. Without it, the media passes as
+     * a still photo only with no GIF and no video, counted either way, and the sizes read then
+     * decides whether there is a picture to save.
      */
     static Object photoMedia(Object comment, PhotoReads reads) {
         if (!reads.selected(comment)) return refused(NOT_SELECTED);
@@ -135,13 +144,29 @@ public final class CommentPhoto {
         Object media = reads.media(info);
         if (media == null) return refused(NO_MEDIA);
         Object kind = reads.kind(media);
-        if (!(kind instanceof Integer)) return refused(NO_KIND);
-        int value = (Integer) kind;
+        if (kind == null) {
+            if (reads.mediaGif(media) != null) return refused(MEDIA_GIF);
+            if (hasVideo(reads, media)) return refused(NO_KIND_VIDEO);
+            HookStatus.counted(FamilyNames.COMMENT_PHOTO, NO_KIND_STILL);
+            return media;
+        }
+        int value = kind instanceof Integer ? (Integer) kind : -1;
         if (value != reads.photoKind()) {
             return refused(value >= 0 && value < KINDS_NAMED ? "media_type " + value : "media_type other");
         }
         if (reads.mediaGif(media) != null) return refused(MEDIA_GIF);
         return media;
+    }
+
+    /**
+     * Whether [media] has a video: video_versions that aren't an empty list, or a video_duration that
+     * isn't zero or less. Anything else read there counts as a video too, so only plain absence passes.
+     */
+    private static boolean hasVideo(PhotoReads reads, Object media) {
+        Object versions = reads.videoVersions(media);
+        if (versions != null && !(versions instanceof List && ((List<?>) versions).isEmpty())) return true;
+        Object duration = reads.videoDuration(media);
+        return duration != null && !(duration instanceof Number && ((Number) duration).doubleValue() <= 0);
     }
 
     private static Object refused(String step) {

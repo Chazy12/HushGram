@@ -115,8 +115,8 @@ public final class CommentPhotoDownload {
         }
     }
 
-    // The media kind is already a photo. An address that names a GIF or a video file still never
-    // stands in for the picture.
+    // The media is a photo by its kind, or has no kind and no video. An address that names a GIF or
+    // a video file still never stands in for the picture.
     private static boolean animatedOrVideo(String address) {
         try {
             String path = new URL(address).getPath().toLowerCase(Locale.US);
