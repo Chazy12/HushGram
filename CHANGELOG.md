@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Show a story's exact time has a new How the time shows choice under its switch. Date and time is what it already did, and it's where the choice starts, so nothing changes until you pick. Time left shows how long the story has before it expires, like 18h 14m left. Time posted shows only the time it went up, like 3:45 PM. A story that's already a day old shows the date and time either way.
+
 * **Instagram:** New Hide that you're typing patch. With its switch on, the people you're chatting with don't see the dots while you type, and you still see theirs. Instagram's own typing indicator setting turns off both. It's off until you pick it in Manager, and the switch, under Messages in HushGram settings, starts off. Asked for in #13.
 
 * **Instagram:** New Read messages without the seen receipt patch. With its switch on, opening a chat doesn't tell people you've seen their messages, and you still see when they've seen yours. Instagram's own read receipts setting turns off both. It's off until you pick it in Manager, and the switch, under Messages in HushGram settings, starts off. View-once photos and videos keep their own patch. Asked for in #13.

@@ -105,7 +105,17 @@ A finished story stays on screen until you tap or swipe. Turn this off for Insta
 Loop a story	Repetir um story
 A story plays again from the start when it ends, until you tap or swipe to move on. Ads still move on. With Stop Story auto-advance on too, stories loop.	Um story recomeça do início quando termina, até você tocar ou deslizar para seguir. Anúncios continuam passando. Com Parar o avanço automático dos stories ligado também, os stories se repetem.
 Show a story's exact time	Mostrar o horário exato de um story
-A story's header shows the date and time it was posted, like Oct 2, 3:45 PM, instead of how long ago. It follows your phone's language and 12 or 24-hour setting.	O cabeçalho de um story mostra a data e o horário em que ele foi postado, como 2 de out., 15:45, em vez de há quanto tempo. Segue o idioma do seu celular e a configuração de 12 ou 24 horas.
+A story's header shows its time the way the choice below says, instead of how long ago. It follows your phone's language and 12 or 24-hour setting.	O cabeçalho de um story mostra o horário do jeito que a opção abaixo indica, em vez de há quanto tempo. Segue o idioma do seu celular e a configuração de 12 ou 24 horas.
+How the time shows	Como o horário aparece
+Date and time	Data e horário
+Time left	Tempo restante
+Time posted	Horário da postagem
+The date and time the story was posted, like Oct 2, 3:45 PM.	A data e o horário em que o story foi postado, como 2 de out., 15:45.
+How long until the story expires, like 18h 14m left. Older stories show the date and time.	Quanto falta para o story expirar, como faltam 18 h 14 min. Stories mais antigos mostram a data e o horário.
+Only the time the story was posted, like 3:45 PM. Older stories show the date and time.	Só o horário em que o story foi postado, como 15:45. Stories mais antigos mostram a data e o horário.
+Turn on Show a story's exact time to use this choice.	Ative Mostrar o horário exato de um story para usar esta opção.
+%1$dh %2$dm left	faltam %1$d h %2$d min
+%1$dm left	faltam %1$d min
 Stories	Stories
 Hide Reels in the feed	Ocultar reels no feed
 The rows of suggested reels between posts in your home feed. A reel someone you follow posts stays.	As fileiras de reels sugeridos entre os posts do seu feed. Um reel postado por alguém que você segue continua lá.

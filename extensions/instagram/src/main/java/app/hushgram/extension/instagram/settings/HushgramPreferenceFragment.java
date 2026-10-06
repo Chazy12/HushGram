@@ -73,6 +73,7 @@ import app.hushgram.extension.instagram.media.ResumePlayback;
 import app.hushgram.extension.instagram.misc.OverrideExchange;
 import app.hushgram.extension.instagram.misc.OverrideImport;
 import app.hushgram.extension.instagram.stories.StoryRingSize;
+import app.hushgram.extension.instagram.stories.StoryTimeMode;
 import app.hushgram.extension.instagram.download.FileNameTemplate;
 import app.hushgram.extension.instagram.download.SaveControl;
 import app.hushgram.extension.instagram.download.SaveLeftovers;
@@ -510,8 +511,9 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         }
         if (build.contains(PatchFamily.STORY_TIME)) {
             stories.add(toggle(context, Settings.SHOW_STORY_TIME, L10n.t("Show a story's exact time"),
-                    L10n.t("A story's header shows the date and time it was posted, like Oct 2, 3:45 PM, instead of "
-                            + "how long ago. It follows your phone's language and 12 or 24-hour setting.")));
+                    L10n.t("A story's header shows its time the way the choice below says, instead of how long ago. "
+                            + "It follows your phone's language and 12 or 24-hour setting.")));
+            stories.add(storyTimeModeRow(context));
         }
         if (build.contains(PatchFamily.STORY_SEEN)) {
             stories.add(toggle(context, Settings.VIEW_STORIES_ANONYMOUSLY, L10n.t("View stories anonymously"),
@@ -839,6 +841,7 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     belongs |= family == PatchFamily.STORY_RING && Settings.STORY_RING_SCALE.key.equals(key);
                     belongs |= family == PatchFamily.PLAYBACK_QUALITY && Settings.PLAYBACK_QUALITY.key.equals(key);
                     belongs |= family == PatchFamily.TAP_TO_PLAY && Settings.TAP_TO_PLAY_SCOPE.key.equals(key);
+                    belongs |= family == PatchFamily.STORY_TIME && Settings.STORY_TIME_MODE.key.equals(key);
                     belongs |= family == PatchFamily.RESUME_LONG_VIDEOS && row == clearPositions;
                     belongs |= (family == PatchFamily.REEL_DOWNLOAD || family == PatchFamily.STORY_DOWNLOAD
                             || family == PatchFamily.VIDEO_DOWNLOAD) && (Settings.DOWNLOAD_QUALITY.key.equals(key)
@@ -1979,6 +1982,53 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
     }
 
     /**
+     * How a story's time shows. Like Tap to play's choice of where, its values are the setting's own
+     * names and its summary says what the choice does.
+     */
+    static StoryTimeModeRow storyTimeModeRow(Context context) {
+        StoryTimeModeRow row = new StoryTimeModeRow(context);
+        row.setKey(Settings.STORY_TIME_MODE.key);
+        row.setTitle(L10n.t("How the time shows"));
+        row.setDialogTitle(L10n.t("How the time shows"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        StoryTimeMode[] modes = StoryTimeMode.values();
+        CharSequence[] entries = new CharSequence[modes.length];
+        CharSequence[] values = new CharSequence[modes.length];
+        for (int i = 0; i < modes.length; i++) {
+            entries[i] = storyTimeModeLabel(modes[i]);
+            values[i] = modes[i].name();
+        }
+        row.setEntries(entries);
+        row.setEntryValues(values);
+        row.setValue(Settings.STORY_TIME_MODE.savedValue().name());
+        return row;
+    }
+
+    /** What the list calls [mode]. */
+    static String storyTimeModeLabel(StoryTimeMode mode) {
+        switch (mode) {
+            case TIME_LEFT:
+                return L10n.t("Time left");
+            case TIME_POSTED:
+                return L10n.t("Time posted");
+            default:
+                return L10n.t("Date and time");
+        }
+    }
+
+    /** What a story's header says with [mode], for the row's summary. */
+    static String storyTimeModeSummary(StoryTimeMode mode) {
+        switch (mode) {
+            case TIME_LEFT:
+                return L10n.t("How long until the story expires, like 18h 14m left. Older stories show the date and time.");
+            case TIME_POSTED:
+                return L10n.t("Only the time the story was posted, like 3:45 PM. Older stories show the date and time.");
+            default:
+                return L10n.t("The date and time the story was posted, like Oct 2, 3:45 PM.");
+        }
+    }
+
+    /**
      * The size the story rings are drawn at. Like the playback quality's row, its values are the
      * setting's own names and its summary says what the choice does.
      */
@@ -2037,6 +2087,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             ((PlaybackQualityRow) preference).showSummary();
         } else if (preference instanceof TapToPlayScopeRow) {
             ((TapToPlayScopeRow) preference).showSummary();
+        } else if (preference instanceof StoryTimeModeRow) {
+            ((StoryTimeModeRow) preference).showSummary();
         } else if (preference instanceof StoryRingRow) {
             ((StoryRingRow) preference).showSummary();
         }
@@ -2053,6 +2105,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             ((PlaybackQualityRow) listPreference).showSummary();
         } else if (listPreference instanceof TapToPlayScopeRow) {
             ((TapToPlayScopeRow) listPreference).showSummary();
+        } else if (listPreference instanceof StoryTimeModeRow) {
+            ((StoryTimeModeRow) listPreference).showSummary();
         } else if (listPreference instanceof StoryRingRow) {
             ((StoryRingRow) listPreference).showSummary();
         } else {
@@ -2590,6 +2644,44 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             setSummary(Settings.TAP_TO_PLAY_SCOPE.isAvailable()
                     ? tapToPlayScopeSummary(scope)
                     : L10n.t("Turn on Tap to play to use this choice."));
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setAccessibilityDelegate(new RowSemantics(this, Button.class));
+        }
+
+        /** Its list takes the screen's colours, as the other rows' dialogs do. */
+        @Override
+        protected void showDialog(Bundle state) {
+            super.showDialog(state);
+            if (getDialog() instanceof AlertDialog) ScreenColors.dialog((AlertDialog) getDialog());
+        }
+    }
+
+    /** Show a story's exact time's choice of how. Its summary follows its value, as Tap to play's choice does. */
+    static final class StoryTimeModeRow extends ListPreference {
+        StoryTimeModeRow(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void setValue(String value) {
+            super.setValue(value);
+            showSummary();
+        }
+
+        void showSummary() {
+            StoryTimeMode mode = StoryTimeMode.DATE_AND_TIME;
+            for (StoryTimeMode candidate : StoryTimeMode.values()) {
+                if (candidate.name().equals(getValue())) mode = candidate;
+            }
+            setSummary(Settings.STORY_TIME_MODE.isAvailable()
+                    ? storyTimeModeSummary(mode)
+                    : L10n.t("Turn on Show a story's exact time to use this choice."));
         }
 
         @Override

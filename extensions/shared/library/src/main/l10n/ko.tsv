@@ -106,7 +106,17 @@ A finished story stays on screen until you tap or swipe. Turn this off for Insta
 Loop a story	스토리 반복 재생
 A story plays again from the start when it ends, until you tap or swipe to move on. Ads still move on. With Stop Story auto-advance on too, stories loop.	스토리가 끝나면 다시 처음부터 재생되며, 사용자가 탭하거나 스와이프해서 다음으로 넘어갈 때까지 반복됩니다. 광고는 반복되지 않고 다음으로 넘어갑니다. 또한 '스토리 자동 넘김 정지' 기능이 함께 활성화되어 있더라도 스토리가 계속 반복 재생됩니다
 Show a story's exact time	스토리 정확한 시간 표시
-A story's header shows the date and time it was posted, like Oct 2, 3:45 PM, instead of how long ago. It follows your phone's language and 12 or 24-hour setting.	스토리 상단에는 게시된 지 얼마나 지났는지가 아니라 게시된 정확한 날짜와 시간이 표시됩니다. 예를 들어 10월 2일 오후 3:45와 같이 표시되며, 시스템 언어 설정과 12시간제 또는 24시간제 설정을 따릅니다
+A story's header shows its time the way the choice below says, instead of how long ago. It follows your phone's language and 12 or 24-hour setting.	스토리 상단에는 게시된 지 얼마나 지났는지가 아니라 아래에서 고른 방식으로 시간이 표시됩니다. 시스템 언어 설정과 12시간제 또는 24시간제 설정을 따릅니다
+How the time shows	시간 표시 방식
+Date and time	날짜와 시간
+Time left	남은 시간
+Time posted	게시 시간
+The date and time the story was posted, like Oct 2, 3:45 PM.	스토리가 게시된 날짜와 시간입니다. 예: 10월 2일 오후 3:45
+How long until the story expires, like 18h 14m left. Older stories show the date and time.	스토리가 사라지기까지 남은 시간입니다. 예: 18시간 14분 남음. 더 오래된 스토리는 날짜와 시간이 표시됩니다
+Only the time the story was posted, like 3:45 PM. Older stories show the date and time.	스토리가 게시된 시간만 표시합니다. 예: 오후 3:45. 더 오래된 스토리는 날짜와 시간이 표시됩니다
+Turn on Show a story's exact time to use this choice.	이 옵션을 사용하려면 ‘스토리 정확한 시간 표시’를 켜세요
+%1$dh %2$dm left	%1$d시간 %2$d분 남음
+%1$dm left	%1$d분 남음
 Stories	스토리
 Hide Reels in the feed	피드에서 릴스 숨기기
 The rows of suggested reels between posts in your home feed. A reel someone you follow posts stays.	홈 피드에서 게시물 사이에 표시되는 추천 릴스를 숨깁니다. 팔로우하는 사람이 게시한 릴스는 그대로 표시됩니다

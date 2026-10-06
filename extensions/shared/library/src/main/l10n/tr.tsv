@@ -105,7 +105,17 @@ A finished story stays on screen until you tap or swipe. Turn this off for Insta
 Loop a story	Hikayeyi döngüde oynat
 A story plays again from the start when it ends, until you tap or swipe to move on. Ads still move on. With Stop Story auto-advance on too, stories loop.	Bir hikaye bittiğinde, geçmek için dokunana ya da kaydırana kadar baştan yeniden oynar. Reklamlar yine geçer. Hikayelerin otomatik geçişini durdur da açıksa hikayeler döngüde oynar.
 Show a story's exact time	Hikayenin tam zamanını göster
-A story's header shows the date and time it was posted, like Oct 2, 3:45 PM, instead of how long ago. It follows your phone's language and 12 or 24-hour setting.	Hikayenin üst kısmı, ne kadar önce paylaşıldığı yerine paylaşıldığı tarihi ve saati gösterir, örneğin 2 Eki 15:45. Telefonunun dilini ve 12 ya da 24 saat ayarını izler.
+A story's header shows its time the way the choice below says, instead of how long ago. It follows your phone's language and 12 or 24-hour setting.	Hikayenin üst kısmı, ne kadar önce paylaşıldığı yerine zamanını aşağıdaki seçimin gösterdiği gibi gösterir. Telefonunun dilini ve 12 ya da 24 saat ayarını izler.
+How the time shows	Zamanın gösterilme şekli
+Date and time	Tarih ve saat
+Time left	Kalan süre
+Time posted	Paylaşılma saati
+The date and time the story was posted, like Oct 2, 3:45 PM.	Hikayenin paylaşıldığı tarih ve saat, örneğin 2 Eki 15:45.
+How long until the story expires, like 18h 14m left. Older stories show the date and time.	Hikayenin süresinin dolmasına ne kadar kaldığı, örneğin 18 sa 14 dk kaldı. Daha eski hikayeler tarih ve saati gösterir.
+Only the time the story was posted, like 3:45 PM. Older stories show the date and time.	Yalnızca hikayenin paylaşıldığı saat, örneğin 15:45. Daha eski hikayeler tarih ve saati gösterir.
+Turn on Show a story's exact time to use this choice.	Bu seçimi kullanmak için Hikayenin tam zamanını göster seçeneğini açın.
+%1$dh %2$dm left	%1$d sa %2$d dk kaldı
+%1$dm left	%1$d dk kaldı
 Stories	Hikayeler
 Hide Reels in the feed	Akıştaki reelleri gizle
 The rows of suggested reels between posts in your home feed. A reel someone you follow posts stays.	Ana akışındaki gönderiler arasına giren önerilen reel sıraları. Takip ettiğin birinin paylaştığı reel kalır.

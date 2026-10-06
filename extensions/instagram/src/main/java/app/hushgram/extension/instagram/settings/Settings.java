@@ -16,6 +16,7 @@ import app.hushgram.extension.instagram.download.SaveFolder;
 import app.hushgram.extension.instagram.media.PlaybackQuality;
 import app.hushgram.extension.instagram.media.TapToPlayScope;
 import app.hushgram.extension.instagram.stories.StoryRingSize;
+import app.hushgram.extension.instagram.stories.StoryTimeMode;
 import app.hushgram.extension.shared.settings.BaseSettings;
 import app.hushgram.extension.shared.settings.BooleanSetting;
 import app.hushgram.extension.shared.settings.EnumSetting;
@@ -94,14 +95,23 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_block_story_auto_advance", TRUE);
 
     /**
-     * A story's header shows the date and time it was posted, in the phone's language and 12 or
-     * 24-hour setting, instead of how long ago
+     * A story's header shows when it was posted the way {@link #STORY_TIME_MODE} says, in the
+     * phone's language and 12 or 24-hour setting, instead of how long ago
      * ({@link app.hushgram.extension.instagram.stories.StoryTime}). Read as each header is drawn,
      * so a change shows from the next story. The patch is off in the default selection, so a build
      * that has it asked for it, and the switch starts on.
      */
     public static final BooleanSetting SHOW_STORY_TIME =
             new BooleanSetting("hushgram_show_story_time", TRUE);
+
+    /**
+     * How {@link #SHOW_STORY_TIME} writes the time: the date and time it was posted, the time left
+     * before the story expires, or only the time of day it was posted. It starts as the date and
+     * time, which is what the switch showed before the choice, so no one's header changes until
+     * they pick. It isn't a switch: the switch above it is.
+     */
+    public static final EnumSetting<StoryTimeMode> STORY_TIME_MODE =
+            new EnumSetting<>("hushgram_story_time_mode", StoryTimeMode.DATE_AND_TIME, parent(SHOW_STORY_TIME));
 
     /**
      * A story plays again from the start when it ends, instead of the viewer moving on

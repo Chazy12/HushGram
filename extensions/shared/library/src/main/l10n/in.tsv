@@ -105,7 +105,17 @@ A finished story stays on screen until you tap or swipe. Turn this off for Insta
 Loop a story	Putar ulang cerita
 A story plays again from the start when it ends, until you tap or swipe to move on. Ads still move on. With Stop Story auto-advance on too, stories loop.	Cerita diputar lagi dari awal saat selesai, sampai Anda mengetuk atau menggeser untuk lanjut. Iklan tetap lanjut. Jika Hentikan cerita maju otomatis juga aktif, cerita tetap diputar ulang.
 Show a story's exact time	Tampilkan waktu pasti cerita
-A story's header shows the date and time it was posted, like Oct 2, 3:45 PM, instead of how long ago. It follows your phone's language and 12 or 24-hour setting.	Bagian atas cerita menampilkan tanggal dan jam cerita itu diposting, misalnya 2 Okt, 15.45, bukan berapa lama yang lalu. Mengikuti bahasa ponsel Anda dan setelan 12 atau 24 jamnya.
+A story's header shows its time the way the choice below says, instead of how long ago. It follows your phone's language and 12 or 24-hour setting.	Bagian atas cerita menampilkan waktunya sesuai pilihan di bawah, bukan berapa lama yang lalu. Mengikuti bahasa ponsel Anda dan setelan 12 atau 24 jamnya.
+How the time shows	Cara waktu ditampilkan
+Date and time	Tanggal dan jam
+Time left	Sisa waktu
+Time posted	Jam diposting
+The date and time the story was posted, like Oct 2, 3:45 PM.	Tanggal dan jam cerita diposting, misalnya 2 Okt, 15.45.
+How long until the story expires, like 18h 14m left. Older stories show the date and time.	Berapa lama lagi cerita berakhir, misalnya sisa 18 j 14 m. Cerita yang lebih lama menampilkan tanggal dan jam.
+Only the time the story was posted, like 3:45 PM. Older stories show the date and time.	Hanya jam cerita diposting, misalnya 15.45. Cerita yang lebih lama menampilkan tanggal dan jam.
+Turn on Show a story's exact time to use this choice.	Aktifkan Tampilkan waktu pasti cerita untuk menggunakan pilihan ini.
+%1$dh %2$dm left	sisa %1$d j %2$d m
+%1$dm left	sisa %1$d m
 Stories	Cerita
 Hide Reels in the feed	Sembunyikan Reels di feed
 The rows of suggested reels between posts in your home feed. A reel someone you follow posts stays.	Deretan reel yang disarankan di antara postingan di feed beranda Anda. Reel yang diposting orang yang Anda ikuti tetap ada.

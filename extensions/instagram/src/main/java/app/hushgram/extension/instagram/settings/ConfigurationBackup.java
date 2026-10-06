@@ -63,6 +63,7 @@ public final class ConfigurationBackup {
         if (PatchFamily.STORY_RING.inBuild()) settings.put(Settings.STORY_RING_SCALE.key, Settings.STORY_RING_SCALE);
         if (PatchFamily.PLAYBACK_QUALITY.inBuild()) settings.put(Settings.PLAYBACK_QUALITY.key, Settings.PLAYBACK_QUALITY);
         if (PatchFamily.TAP_TO_PLAY.inBuild()) settings.put(Settings.TAP_TO_PLAY_SCOPE.key, Settings.TAP_TO_PLAY_SCOPE);
+        if (PatchFamily.STORY_TIME.inBuild()) settings.put(Settings.STORY_TIME_MODE.key, Settings.STORY_TIME_MODE);
         if (PatchFamily.REEL_DOWNLOAD.inBuild() || PatchFamily.STORY_DOWNLOAD.inBuild()
                 || PatchFamily.VIDEO_DOWNLOAD.inBuild()) {
             settings.put(Settings.DOWNLOAD_COMPATIBLE.key, Settings.DOWNLOAD_COMPATIBLE);
