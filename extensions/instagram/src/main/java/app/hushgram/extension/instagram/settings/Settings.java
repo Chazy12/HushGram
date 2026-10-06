@@ -212,6 +212,17 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting HIDE_META_AI_POSTS =
             new BooleanSetting("hushgram_hide_meta_ai_posts", TRUE);
 
+    /**
+     * About this reel at the top of a reel's More menu, in Reels and in the feed: the generated
+     * summary, its Sources and the Ask Meta AI box. The menu's other options stay. Off to start.
+     */
+    public static final BooleanSetting HIDE_ABOUT_THIS_REEL =
+            new BooleanSetting("hushgram_hide_about_this_reel", FALSE);
+
+    /** Only the Ask Meta AI box under About this reel's summary. Off to start. */
+    public static final BooleanSetting HIDE_ASK_META_AI =
+            new BooleanSetting("hushgram_hide_ask_meta_ai", FALSE);
+
     /** The grid of posts and reels under the Search tab's bar. Search and its results stay. */
     public static final BooleanSetting HIDE_EXPLORE_GRID =
             new BooleanSetting("hushgram_hide_explore_grid", TRUE);

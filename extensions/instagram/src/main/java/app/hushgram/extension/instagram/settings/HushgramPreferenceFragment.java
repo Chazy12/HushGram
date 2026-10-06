@@ -369,6 +369,12 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                             + "Restart Instagram after changing it.")));
             metaAi.addPreference(toggle(context, Settings.HIDE_META_AI_POSTS, L10n.t("Hide Meta AI posts"),
                     L10n.t("Meta AI's videos, chats and pictures of you that Instagram puts in your home feed.")));
+            metaAi.addPreference(toggle(context, Settings.HIDE_ABOUT_THIS_REEL, L10n.t("Hide About this reel"),
+                    L10n.t("A reel's more menu opens without the summary at the top, its Sources or the Ask Meta AI box, "
+                            + "in Reels and in your feed. In your feed, the audio row under the summary goes too. "
+                            + "The menu's other options stay.")));
+            metaAi.addPreference(toggle(context, Settings.HIDE_ASK_META_AI, L10n.t("Hide Ask Meta AI in About this reel"),
+                    L10n.t("About this reel keeps its summary and Sources without the Ask Meta AI box under them.")));
         }
 
         if (build.contains(PatchFamily.EXPLORE_GRID)) {

@@ -5,6 +5,7 @@
 package app.hushgram.extension.instagram.metaai;
 
 import android.view.View;
+import android.view.ViewGroup;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,6 +39,11 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  *
  * <p>The home feed's Meta AI units go through {@link #filter} at the feed's parse helper, the way
  * Hide suggested posts' do.
+ *
+ * <p>A reel's More menu, in Reels and in the feed, can open with About this reel: a generated
+ * summary, its Sources and an Ask Meta AI box. Every menu asks one factory for it and leaves the
+ * block out on a null, so the factory's answer goes through {@link #aboutThisReel}. The summary
+ * row adds the box alone with one addView, which goes through {@link #askMetaAiBox} instead.
  */
 public final class MetaAi {
     /**
@@ -152,6 +158,43 @@ public final class MetaAi {
             HookStatus.threw(FamilyNames.META_AI, "inbox row", failure);
             return row;
         }
+    }
+
+    /**
+     * Injected after each ask for a reel's About this reel summary, the block at the top of its More
+     * menu with the summary, its Sources and an Ask Meta AI box, with Instagram's answer. Answers
+     * null, which every menu takes as a reel with no summary and leaves the block out, while Hide
+     * About this reel is on, and the answer otherwise, or when anything goes wrong. Never throws.
+     */
+    public static Object aboutThisReel(Object summary) {
+        if (summary == null) return null;
+        try {
+            HookStatus.invoked(FamilyNames.META_AI);
+            if (!Utils.settingsReady() || !Settings.HIDE_ABOUT_THIS_REEL.get()) return summary;
+            Logger.printDebug(() -> "Meta AI: left out About this reel");
+            return null;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.META_AI, "About this reel", failure);
+            return summary;
+        }
+    }
+
+    /**
+     * Injected in place of the call that adds the Ask Meta AI box to About this reel's summary row.
+     * Leaves the box out while Hide Ask Meta AI is on, and adds it the way Instagram does otherwise,
+     * or when anything goes wrong. Only Instagram's own addView can throw, as it would unpatched.
+     */
+    public static void askMetaAiBox(ViewGroup row, View box) {
+        boolean hide;
+        try {
+            HookStatus.invoked(FamilyNames.META_AI);
+            hide = Utils.settingsReady() && Settings.HIDE_ASK_META_AI.get();
+            if (hide) Logger.printDebug(() -> "Meta AI: left the Ask Meta AI box out of About this reel");
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.META_AI, "Ask Meta AI box", failure);
+            hide = false;
+        }
+        if (!hide) row.addView(box);
     }
 
     /**
