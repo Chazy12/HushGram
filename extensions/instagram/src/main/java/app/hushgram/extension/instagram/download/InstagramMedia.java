@@ -85,6 +85,15 @@ public final class InstagramMedia {
         return null;
     }
 
+    /**
+     * The sizes Instagram's feed photo picker reads for a Media, through the helper it asks. Under
+     * two of Instagram's server flags they're a carousel page's rather than the post's own
+     * {@code image_versions2}. Written by the Full resolution photos patch alone.
+     */
+    public static Object pickerImageVersions(Object media) {
+        return null;
+    }
+
     /** The {@code candidates} of a picture's sizes, one per size. */
     public static List<?> imageCandidates(Object imageVersions) {
         return null;

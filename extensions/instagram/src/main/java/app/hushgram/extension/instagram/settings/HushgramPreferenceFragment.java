@@ -363,8 +363,7 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         if (fullResolution) {
             feed.addPreference(toggle(context, Settings.FULL_RESOLUTION_PHOTOS, L10n.t("Full resolution photos"),
                     L10n.t("Photos in your feed, in carousels and in posts you open load at the largest size Instagram "
-                            + "sends, instead of the size it picks for your screen. This uses more data, since Instagram "
-                            + "still loads its usual size ahead of time and the larger one comes on top.")));
+                            + "sends rather than the size it picks for your screen. This can use more data.")));
         }
 
         if (build.contains(PatchFamily.META_AI)) {
@@ -2029,7 +2028,7 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             case TIME_LEFT:
                 return L10n.t("How long until the story expires, like 18h 14m left. Older stories show the date and time.");
             case TIME_POSTED:
-                return L10n.t("Only the time the story was posted, like 3:45 PM. Older stories show the date and time.");
+                return L10n.t("Only the time the story was posted, like 3:45 PM. Stories posted before today show the date and time.");
             default:
                 return L10n.t("The date and time the story was posted, like Oct 2, 3:45 PM.");
         }

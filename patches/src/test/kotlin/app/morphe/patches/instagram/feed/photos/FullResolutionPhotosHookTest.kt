@@ -12,7 +12,13 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.instagram.FixtureDex
+import app.morphe.patches.instagram.download.IMAGE_INFO
+import app.morphe.patches.instagram.download.IMAGE_URL
+import app.morphe.patches.instagram.download.INSTAGRAM_MEDIA
 import app.morphe.patches.instagram.download.MEDIA
+import app.morphe.patches.instagram.download.PANDO_IMAGE_INFO
+import app.morphe.patches.instagram.download.imageBridges
+import app.morphe.patches.instagram.download.pickerSizesBridge
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -99,6 +105,38 @@ class FullResolutionPhotosHookTest {
     }
 
     /**
+     * The picker's own read of the post's sizes is found through the helper the use case asks: its
+     * one ask for the size for a width, and in that one the one read of the post's sizes, kept and
+     * handed first to what picks the size. Anything else stops the patch, saying what it found.
+     */
+    @Test
+    fun thePickersReadIsFoundOrThePatchStops() {
+        val forWidth = "$MEDIA_EXT->forWidth(${MEDIA}I)$EXTENDED_IMAGE_URL"
+        val once = "expected $forScreen to ask Media's helpers once for the size for a width"
+        val handed = "$forWidth doesn't pick the size from the sizes it reads"
+        val cases = listOf(
+            helpers() to null,
+            helpers(widths = 0) to once,
+            helpers(widths = 2) to once,
+            helpers(reads = 0) to "expected $forWidth to ask Media's helpers once for the post's sizes, found 0",
+            helpers(reads = 2) to "expected $forWidth to ask Media's helpers once for the post's sizes, found 2",
+            helpers(keeps = false) to "$forWidth doesn't keep the sizes it reads",
+            helpers(handsOn = false) to handed,
+            helpers(overwritten = true) to handed,
+        )
+        for ((helpers, expected) in cases) {
+            val context = PatchContexts.of(classes() + helpers)
+            val site = context.findFullResolution()
+            if (expected == null) {
+                assertEquals("$MEDIA_EXT->sizes($MEDIA)$IMAGE_INFO", context.findPickerSizes(site).toString())
+                continue
+            }
+            val failure = assertThrows(expected, PatchException::class.java) { context.findPickerSizes(site) }
+            assertTrue("$expected: ${failure.message}", failure.message!!.contains(expected))
+        }
+    }
+
+    /**
      * In each declared build the method picking a feed photo's address is found by its log line
      * alone, and the hook lands right after its one ask for the size for the screen.
      */
@@ -133,6 +171,94 @@ class FullResolutionPhotosHookTest {
             }
         }
         assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    /**
+     * In each declared build the readers the hook goes through point where Instagram's picker
+     * reads: the post's own sizes through the getter the picker calls on the post, the picker's
+     * sizes through the helper it asks, their candidates through the call made by the method it
+     * hands them to, and every candidate the tree-backed sizes list is of the pick's class, an
+     * ImageUrl, read through that interface's own getters.
+     */
+    @Test
+    fun eachDeclaredBuildReadsTheSizesThePickerReads() {
+        val versions = AppCompatibilities.instagram().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableSetOf<String>()
+        val wanted = setOf(MEDIA_EXT, MEDIA)
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apks" && it.name.contains("-$version-") }) {
+                val pool = linkedMapOf<String, ClassDef>()
+                FixtureDex.forEach(bundle) { dex ->
+                    for (classDef in dex.classes) {
+                        val type = classDef.type
+                        if (type in wanted || SIZE_PACKAGES.any(type::startsWith) ||
+                            classDef.methods.any { method -> method.code().any { it.string() == NO_IMAGE_URL } }
+                        ) {
+                            pool.putIfAbsent(type, ImmutableClassDef.of(classDef))
+                        }
+                    }
+                }
+                val site = PatchContexts.of(pool.values).findFullResolution()
+                val forWidth = pool.getValue(MEDIA_EXT).method(site.forScreen).code().mapNotNull { it.call() }
+                    .single { it.definingClass == MEDIA_EXT && it.returnType == EXTENDED_IMAGE_URL }
+                val picker = pool.getValue(MEDIA_EXT).method(forWidth).code().mapNotNull { it.call() }
+                val onPost = picker.single { it.definingClass == MEDIA && it.returnType == IMAGE_INFO }
+                val read = picker.single { it.definingClass == MEDIA_EXT && it.returnType == IMAGE_INFO }
+                val choose = picker.single { it.returnType == EXTENDED_IMAGE_URL && it.parameterTypes.firstOrNull()?.toString() == IMAGE_INFO }
+                pool.putAll(FixtureDex.classes(bundle, setOf(choose.definingClass)))
+                val candidates = pool.getValue(choose.definingClass).method(choose).code().mapNotNull { it.call() }
+                    .single { it.definingClass == IMAGE_INFO && it.returnType == "Ljava/util/List;" }
+                val context = PatchContexts.of(pool.values + ExtensionDex.classDef(INSTAGRAM_MEDIA))
+
+                val helper = context.findPickerSizes(context.findFullResolution())
+                context.imageBridges("test")()
+                context.pickerSizesBridge("test", helper)()
+
+                val what = bundle.name
+                val bridges = context.mutableClassDefBy(INSTAGRAM_MEDIA).methods
+                fun bridge(name: String) = bridges.single { it.name == name }.code()
+                fun assertReads(name: String, receiver: String, call: MethodReference) {
+                    val code = bridge(name)
+                    assertEquals("$what: $name casts to", receiver, (code[0].reference() as TypeReference).type)
+                    assertEquals("$what: $name calls", call.toString(), code[1].call().toString())
+                }
+                assertEquals("$what: the helper found", read.toString(), helper.toString())
+                assertReads("imageVersions", MEDIA, onPost)
+                assertReads("pickerImageVersions", MEDIA, read)
+                assertReads("imageCandidates", IMAGE_INFO, candidates)
+                val listed = pool.getValue(PANDO_IMAGE_INFO).methods.single { it.name == candidates.name && it.parameterTypes.isEmpty() }
+                assertTrue(
+                    "$what: the candidates aren't of the pick's class",
+                    listed.code().any { it.opcode == Opcode.NEW_INSTANCE && (it.reference() as TypeReference).type == EXTENDED_IMAGE_URL },
+                )
+                assertTrue("$what: a size isn't an ImageUrl", IMAGE_URL in supertypes(EXTENDED_IMAGE_URL, pool))
+                for ((name, getter) in listOf("candidateUrl" to "getUrl", "candidateWidth" to "getWidth", "candidateHeight" to "getHeight")) {
+                    val call = bridge(name)[1].call()!!
+                    assertEquals("$what: $name", "$IMAGE_URL->$getter", "${call.definingClass}->${call.name}")
+                }
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    private fun ClassDef.method(reference: MethodReference): Method = methods.single {
+        it.name == reference.name && it.returnType == reference.returnType &&
+            it.parameterTypes.map(CharSequence::toString) == reference.parameterTypes.map(CharSequence::toString)
+    }
+
+    /** [type], its superclasses and every interface they implement, as far as [pool] holds them. */
+    private fun supertypes(type: String, pool: Map<String, ClassDef>): Set<String> {
+        val seen = linkedSetOf<String>()
+        val next = ArrayDeque(listOf(type))
+        while (next.isNotEmpty()) {
+            val current = next.removeFirst()
+            if (!seen.add(current)) continue
+            val classDef = pool[current] ?: continue
+            classDef.superclass?.let(next::add)
+            next.addAll(classDef.interfaces)
+        }
+        return seen
     }
 
     /**
@@ -221,6 +347,49 @@ class FullResolutionPhotosHookTest {
         return listOf(classDef(useCase, sources + padding))
     }
 
+    /**
+     * Media's helpers shaped like Instagram 450's: the one for the screen asks the one for a width,
+     * which reads the post's sizes into v1 and hands them first to what picks the size.
+     */
+    private fun helpers(
+        widths: Int = 1,
+        reads: Int = 1,
+        keeps: Boolean = true,
+        handsOn: Boolean = true,
+        overwritten: Boolean = false,
+    ): ClassDef {
+        val forWidth = "$MEDIA_EXT->forWidth(${MEDIA}I)$EXTENDED_IMAGE_URL"
+        val sizes = "$MEDIA_EXT->sizes($MEDIA)$IMAGE_INFO"
+        val screen = List(widths) { "invoke-static {p1, v0}, $forWidth\nmove-result-object v0" }
+        val read = List(reads) { "invoke-static {p0}, $sizes" + if (keeps) "\nmove-result-object v1" else "" }
+        val handOn = "invoke-static {${if (handsOn) "v1" else "v0"}, p1}, Lfixture/Sizes;->choose(${IMAGE_INFO}I)$EXTENDED_IMAGE_URL"
+        return classDef(
+            MEDIA_EXT,
+            listOf(
+                helper("forScreen", listOf(contextType, MEDIA), (listOf("const/4 v0, 0x0") + screen + "return-object v0").joinToString("\n")),
+                helper(
+                    "forWidth", listOf(MEDIA, "I"),
+                    (listOf("const/4 v0, 0x0", "const/4 v1, 0x0") + read + listOfNotNull(if (overwritten) "const/4 v1, 0x0" else null) +
+                        listOf(handOn, "move-result-object v0", "return-object v0")).joinToString("\n"),
+                ),
+                helper("sizes", listOf(MEDIA), "const/4 v0, 0x0\nreturn-object v0", returns = IMAGE_INFO),
+            ),
+        )
+    }
+
+    /** A static helper of [MEDIA_EXT] with two locals, answering a size unless [returns] says otherwise. */
+    private fun helper(name: String, parameters: List<String>, body: String, returns: String = EXTENDED_IMAGE_URL): Method {
+        val flags = AccessFlags.PUBLIC.value or AccessFlags.STATIC.value or AccessFlags.FINAL.value
+        val mutable = MutableMethod(
+            ImmutableMethod(
+                MEDIA_EXT, name, parameters.map { ImmutableMethodParameter(it, null, null) }, returns, flags, null, null,
+                ImmutableMethodImplementation(2 + parameters.size, emptyList(), null, null),
+            ),
+        )
+        mutable.addInstructionsWithLabels(0, body)
+        return ImmutableMethod.of(mutable)
+    }
+
     private fun method(name: String, locals: Int, static: Boolean, body: String): Method {
         var flags = AccessFlags.PUBLIC.value or AccessFlags.FINAL.value
         if (static) flags = flags or AccessFlags.STATIC.value
@@ -245,4 +414,11 @@ class FullResolutionPhotosHookTest {
     private fun Instruction.referenceText(): String? = reference()?.toString()
 
     private fun Instruction.string(): String? = (reference() as? StringReference)?.string
+
+    private fun Instruction.call(): MethodReference? = reference() as? MethodReference
+
+    private companion object {
+        /** Where Instagram keeps its picture sizes and their address classes. */
+        val SIZE_PACKAGES = listOf("Lcom/instagram/model/mediasize/", "Lcom/instagram/common/typedurl/")
+    }
 }

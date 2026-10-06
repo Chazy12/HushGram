@@ -17,12 +17,16 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+import org.robolectric.annotation.Implementation;
+import org.robolectric.annotation.Implements;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 
+import app.hushgram.extension.instagram.download.InstagramMedia;
 import app.hushgram.extension.instagram.settings.FamilyNames;
 import app.hushgram.extension.instagram.settings.Settings;
 import app.hushgram.extension.shared.SettingsContextRule;
@@ -106,12 +110,158 @@ public class FullResolutionTest {
         return FullResolution.photo(post, picked, on, media -> listed, SIZES);
     }
 
+    private Object photo(List<?> own, List<?> picker) {
+        return FullResolution.photo(post, picked, ON, media -> own, media -> picker, SIZES);
+    }
+
+    /** The diagnostic report's line for this patch. */
+    private static String reportLine() {
+        for (String line : HookStatus.report()) {
+            if (line.startsWith(FamilyNames.FULL_RESOLUTION + ":")) return line;
+        }
+        return String.join("\n", HookStatus.report());
+    }
+
     /** On, the largest size of the post's own shape loads in place of Instagram's pick, and the hook says it ran. */
     @Test
     public void withTheSwitchOnTheLargestSizeOfTheSameShapeLoads() {
         assertSame(large, photo(ON, small, picked, large));
         assertSame(large, photo(ON, large, picked, small));
-        assertTrue(String.join("\n", HookStatus.report()), HookStatus.report().toString().contains(FamilyNames.FULL_RESOLUTION));
+        assertTrue(reportLine(), reportLine().endsWith("Counted: " + FullResolution.UPGRADED + " 2"));
+    }
+
+    /**
+     * Each photo counts why it loaded what it did, in fixed words the saved report carries: never an
+     * address or an id. Off, nothing is counted.
+     */
+    @Test
+    public void eachOutcomeIsCountedUnderItsName() {
+        assertSame(picked, photo(() -> false, picked, large));
+        assertFalse(reportLine(), reportLine().contains("Counted"));
+
+        assertSame(large, photo(ON, small, picked, large));
+        assertSame(picked, photo(ON, small, picked));
+        assertSame(picked, photo(ON, small, large));
+        assertSame(picked, FullResolution.photo(post, picked, ON, media -> null, SIZES));
+        Size noSize = new Size("p0", 0, 0);
+        assertSame(noSize, FullResolution.photo(post, noSize, ON, media -> Arrays.asList(noSize, large), SIZES));
+        assertSame(picked, photo(ON, picked, new Size("p2160", 2160, 2700), small));
+        assertSame(picked, photo(ON, picked, square));
+        assertSame(picked, photo(ON, picked, new OtherSize("o1440", 1440, 1800)));
+        assertSame(large, photo(Arrays.asList(small, large), Arrays.asList(picked, large)));
+        assertSame(picked, photo(ON, picked, square, new Size("p2160", 2160, 2700)));
+
+        String line = reportLine();
+        assertTrue(line, line.endsWith("Counted: "
+                + FullResolution.UPGRADED + " 1, "
+                + FullResolution.ALREADY_LARGEST + " 1, "
+                + FullResolution.NOT_LISTED + " 1, "
+                + FullResolution.NO_SIZES + " 1, "
+                + FullResolution.UNREADABLE + " 1, "
+                + FullResolution.OVER_CAP + " 2, "
+                + FullResolution.OTHER_SHAPE + " 1, "
+                + FullResolution.OTHER_KIND + " 1, "
+                + FullResolution.UPGRADED_FROM_PICKER + " 1"));
+        assertFalse(line, line.contains("p1080") || line.contains("p1440"));
+    }
+
+    /**
+     * When the post's own sizes don't list the pick, or there are none, the sizes Instagram's picker
+     * read are tried: a carousel page's, under two of its server flags. They're never read while the
+     * post's own sizes list the pick, and a pick neither lists stays.
+     */
+    @Test
+    public void thePickersSizesAreTriedWhenThePostsOwnDontListThePick() {
+        List<Object> pickerSizes = Arrays.asList(picked, large);
+        assertSame(large, photo(null, pickerSizes));
+        assertSame(large, photo(Collections.emptyList(), pickerSizes));
+        assertSame(large, photo(Arrays.asList(small, new Size("p1440-cover", 1440, 1800)), pickerSizes));
+
+        int[] reads = {0};
+        assertSame(picked, FullResolution.photo(post, picked, ON, media -> Arrays.asList(small, picked), media -> {
+            reads[0]++;
+            return pickerSizes;
+        }, SIZES));
+        assertEquals("the picker's sizes were read with the pick listed", 0, reads[0]);
+
+        HookStatus.clear();
+        assertSame(picked, photo(Arrays.asList(small, large), Arrays.asList(small, large)));
+        assertSame(picked, photo(Arrays.asList(small, large), null));
+        assertSame(picked, photo((List<?>) null, null));
+        assertTrue(reportLine(), reportLine().endsWith("Counted: "
+                + FullResolution.NOT_LISTED + " 2, " + FullResolution.NO_SIZES + " 1"));
+
+        HookStatus.clear();
+        assertSame(picked, FullResolution.photo(post, picked, ON, media -> null, media -> {
+            throw new IllegalStateException("no picker");
+        }, SIZES));
+        assertTrue(HookStatus.missing(FamilyNames.FULL_RESOLUTION).toString().contains(IllegalStateException.class.getName()));
+    }
+
+    /**
+     * The hook as Instagram calls it reads through InstagramMedia's bridges, which the patch fills
+     * with Instagram's own getters: the post's sizes, the picker's sizes, their candidates and each
+     * candidate's address and size. These stand in for what the patch writes.
+     */
+    @Test
+    @Config(shadows = PatchedReads.class)
+    public void theHookReadsThroughTheBridgesThePatchFills() {
+        PatchedReads.asked.clear();
+        PatchedReads.own = Arrays.asList(small, picked, large);
+        PatchedReads.picker = null;
+        assertSame(large, FullResolution.photo(post, picked));
+
+        PatchedReads.own = null;
+        PatchedReads.picker = Arrays.asList(picked, large);
+        assertSame(large, FullResolution.photo(post, picked));
+
+        PatchedReads.own = Arrays.asList(small, picked);
+        assertSame(picked, FullResolution.photo(post, picked));
+
+        assertTrue(reportLine(), reportLine().endsWith("Counted: " + FullResolution.UPGRADED + " 1, "
+                + FullResolution.UPGRADED_FROM_PICKER + " 1, " + FullResolution.ALREADY_LARGEST + " 1"));
+        assertEquals(Arrays.asList(post, post, post), PatchedReads.asked);
+    }
+
+    /** InstagramMedia's bridges as the patch fills them, over this test's sizes. */
+    @Implements(value = InstagramMedia.class, isInAndroidSdk = false)
+    public static class PatchedReads {
+        static final Object OWN = new Object();
+        static final Object PICKER = new Object();
+        static List<?> own;
+        static List<?> picker;
+        static final List<Object> asked = new ArrayList<>();
+
+        @Implementation
+        protected static Object imageVersions(Object media) {
+            asked.add(media);
+            return own == null ? null : OWN;
+        }
+
+        @Implementation
+        protected static Object pickerImageVersions(Object media) {
+            return picker == null ? null : PICKER;
+        }
+
+        @Implementation
+        protected static List<?> imageCandidates(Object versions) {
+            return versions == OWN ? own : versions == PICKER ? picker : null;
+        }
+
+        @Implementation
+        protected static String candidateUrl(Object size) {
+            return ((Size) size).url;
+        }
+
+        @Implementation
+        protected static int candidateWidth(Object size) {
+            return ((Size) size).width;
+        }
+
+        @Implementation
+        protected static int candidateHeight(Object size) {
+            return ((Size) size).height;
+        }
     }
 
     /** With nothing larger listed, the pick stays: it already is the largest. */

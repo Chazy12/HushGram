@@ -318,6 +318,9 @@ tasks.register("verifyAndroidBoundaries") {
                 "swipeSwitchStartsOffPersistsAndHonorsPause[28]", "swipeSwitchStartsOffPersistsAndHonorsPause[37]"),
             "app.hushgram.extension.instagram.feed.FullResolutionTest" to listOf(
                 "withTheSwitchOnTheLargestSizeOfTheSameShapeLoads[28]", "withTheSwitchOnTheLargestSizeOfTheSameShapeLoads[37]",
+                "eachOutcomeIsCountedUnderItsName[28]", "eachOutcomeIsCountedUnderItsName[37]",
+                "thePickersSizesAreTriedWhenThePostsOwnDontListThePick[28]", "thePickersSizesAreTriedWhenThePostsOwnDontListThePick[37]",
+                "theHookReadsThroughTheBridgesThePatchFills[28]", "theHookReadsThroughTheBridgesThePatchFills[37]",
                 "aPickThatIsAlreadyTheLargestStays[28]", "aPickThatIsAlreadyTheLargestStays[37]",
                 "aCropOrAnotherShapeIsNeverPicked[28]", "aCropOrAnotherShapeIsNeverPicked[37]",
                 "aSizeRoundedByAPixelIsStillTheSameShape[28]", "aSizeRoundedByAPixelIsStillTheSameShape[37]",
@@ -452,6 +455,9 @@ tasks.register("verifyAndroidBoundaries") {
                 "theHookCountsTimeLeftFromNow[28]", "theHookCountsTimeLeftFromNow[37]",
                 "aStoryADayOldShowsTheDateAndTimeInsteadOfTimeLeft[28]", "aStoryADayOldShowsTheDateAndTimeInsteadOfTimeLeft[37]",
                 "timePostedShowsOnlyTheTimeOfDay[28]", "timePostedShowsOnlyTheTimeOfDay[37]",
+                "timePostedOnAnEarlierDayShowsTheDateToo[28]", "timePostedOnAnEarlierDayShowsTheDateToo[37]",
+                "oneMinuteLeftTakesTheSingularInSpanish[28]", "oneMinuteLeftTakesTheSingularInSpanish[37]",
+                "oneMinuteLeftTakesTheSingularInPortuguese[28]", "oneMinuteLeftTakesTheSingularInPortuguese[37]",
                 "everyModeKeepsInstagramsLabelOffPausedAndUnready[28]", "everyModeKeepsInstagramsLabelOffPausedAndUnready[37]"),
             "app.hushgram.extension.instagram.settings.StoryTimeSettingsTest" to listOf(
                 "missingPatchHasNoStoryTimeSwitch[28]", "missingPatchHasNoStoryTimeSwitch[37]",

@@ -61,7 +61,7 @@ val showStoryTimePatch = bytecodePatch(
     name = "Show a story's exact time",
     description = "Shows the date and time a story was posted in its header, like Oct 2, 3:45 PM, instead of " +
         "how long ago. A choice under its switch can show the time left before the story expires, or only the " +
-        "time it went up, instead. It follows your phone's language and 12 or 24-hour setting.",
+        "time it went up. It follows your phone's language and 12 or 24-hour setting.",
     default = false,
 ) {
     category("Interface")

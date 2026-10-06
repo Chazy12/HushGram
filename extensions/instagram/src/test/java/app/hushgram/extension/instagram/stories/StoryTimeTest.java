@@ -199,17 +199,58 @@ public class StoryTimeTest {
     public void timePostedShowsOnlyTheTimeOfDay() {
         long posted = postedOnOctober2(0) * 1000L;
         hourSetting("12");
-        assertEquals("3:45 PM", plain(text(StoryTimeMode.TIME_POSTED, posted, posted + duration(20, 0, 0))));
+        assertEquals("3:45 PM", plain(text(StoryTimeMode.TIME_POSTED, posted, posted + duration(5, 0, 0))));
         hourSetting("24");
-        assertEquals("15:45", plain(text(StoryTimeMode.TIME_POSTED, posted, posted + duration(20, 0, 0))));
+        assertEquals("15:45", plain(text(StoryTimeMode.TIME_POSTED, posted, posted + duration(5, 0, 0))));
         assertEquals("Oct 2, 15:45", plain(text(StoryTimeMode.TIME_POSTED, posted, posted + StoryTime.DAY)));
-        // Through the hook, which reads the phone's clock: an hour old is the time alone, two days old the date too.
+        // Through the hook, which reads the phone's clock: an hour old is the time alone unless that
+        // was yesterday, two days old the date too.
         Settings.STORY_TIME_MODE.save(StoryTimeMode.TIME_POSTED);
         Context context = RuntimeEnvironment.getApplication();
         long hourAgo = System.currentTimeMillis() / 1000L - 60 * 60;
-        assertEquals(DateUtils.formatDateTime(context, hourAgo * 1000L, DateUtils.FORMAT_SHOW_TIME), StoryTime.label(hourAgo));
+        int hourAgoFormat = StoryTime.sameDay(hourAgo * 1000L, System.currentTimeMillis()) ? DateUtils.FORMAT_SHOW_TIME : StoryTime.FORMAT;
+        assertEquals(DateUtils.formatDateTime(context, hourAgo * 1000L, hourAgoFormat), StoryTime.label(hourAgo));
         long twoDaysAgo = hourAgo - 2 * 24 * 60 * 60;
         assertEquals(DateUtils.formatDateTime(context, twoDaysAgo * 1000L, StoryTime.FORMAT), StoryTime.label(twoDaysAgo));
+    }
+
+    /**
+     * The time alone reads right only for a story posted today on the phone's clock. At 9:00 AM, one
+     * posted at 11:30 PM the night before is under a day old but shows its date too. The day is the
+     * phone's time zone's.
+     */
+    @Test
+    public void timePostedOnAnEarlierDayShowsTheDateToo() {
+        hourSetting("12");
+        long posted = inNewYork(Calendar.OCTOBER, 1, 23, 30);
+        assertEquals("Oct 1, 11:30 PM", plain(text(StoryTimeMode.TIME_POSTED, posted, inNewYork(Calendar.OCTOBER, 2, 9, 0))));
+        assertEquals("midnight starts a new day", "Oct 1, 11:30 PM",
+                plain(text(StoryTimeMode.TIME_POSTED, posted, inNewYork(Calendar.OCTOBER, 2, 0, 0))));
+        assertEquals("11:30 PM", plain(text(StoryTimeMode.TIME_POSTED, posted, inNewYork(Calendar.OCTOBER, 1, 23, 59))));
+
+        // 2:00 AM in New York is still the evening before in Los Angeles.
+        long twoAm = inNewYork(Calendar.OCTOBER, 2, 2, 0);
+        assertEquals("Oct 1, 11:30 PM", plain(text(StoryTimeMode.TIME_POSTED, posted, twoAm)));
+        TimeZone.setDefault(TimeZone.getTimeZone("America/Los_Angeles"));
+        assertEquals("8:30 PM", plain(text(StoryTimeMode.TIME_POSTED, posted, twoAm)));
+    }
+
+    /** One minute left takes the singular where the language's verb agrees with the count. */
+    @Test
+    @Config(qualifiers = "es")
+    public void oneMinuteLeftTakesTheSingularInSpanish() {
+        long posted = postedOnOctober2(0) * 1000L;
+        assertEquals("queda 1 min", text(StoryTimeMode.TIME_LEFT, posted, posted + StoryTime.DAY - 1));
+        assertEquals("quedan 2 min", text(StoryTimeMode.TIME_LEFT, posted, posted + StoryTime.DAY - duration(0, 2, 0)));
+    }
+
+    /** The same in Brazilian Portuguese. */
+    @Test
+    @Config(qualifiers = "pt-rBR")
+    public void oneMinuteLeftTakesTheSingularInPortuguese() {
+        long posted = postedOnOctober2(0) * 1000L;
+        assertEquals("falta 1 min", text(StoryTimeMode.TIME_LEFT, posted, posted + StoryTime.DAY - 1));
+        assertEquals("faltam 2 min", text(StoryTimeMode.TIME_LEFT, posted, posted + StoryTime.DAY - duration(0, 2, 0)));
     }
 
     /** No mode, which a setting that can't be read gives, is the date and time. */
@@ -274,6 +315,14 @@ public class StoryTimeTest {
         posted.clear();
         posted.set(YEAR + years, Calendar.OCTOBER, 2, 15, 45, 30);
         return posted.getTimeInMillis() / 1000L;
+    }
+
+    /** Milliseconds since 1970 of [month] [day] at [hour]:[minute] in New York, in {@link #YEAR}. */
+    private static long inNewYork(int month, int day, int hour, int minute) {
+        Calendar time = Calendar.getInstance(TimeZone.getTimeZone(ZONE), Locale.US);
+        time.clear();
+        time.set(YEAR, month, day, hour, minute);
+        return time.getTimeInMillis();
     }
 
     /** The phone's 12 or 24-hour setting, or null for the language's own. */

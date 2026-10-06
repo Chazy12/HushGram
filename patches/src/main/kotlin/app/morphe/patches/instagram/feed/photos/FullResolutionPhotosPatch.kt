@@ -9,8 +9,10 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patches.instagram.download.IMAGE_INFO
 import app.morphe.patches.instagram.download.MEDIA
 import app.morphe.patches.instagram.download.imageBridges
+import app.morphe.patches.instagram.download.pickerSizesBridge
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
@@ -59,8 +61,7 @@ internal const val NO_IMAGE_URL =
 val fullResolutionPhotosPatch = bytecodePatch(
     name = "Full resolution photos",
     description = "Loads photos in your feed, in carousels and in posts you open at the largest size Instagram " +
-        "sends, instead of the size it picks for your screen. It uses more data, since Instagram still loads " +
-        "its usual size ahead of time.",
+        "sends rather than the size it picks for your screen. It can use more data.",
     default = true,
 ) {
     category("Feed")
@@ -70,9 +71,12 @@ val fullResolutionPhotosPatch = bytecodePatch(
     execute {
         requireStatusMethod("fullResolution")
         val site = findFullResolution()
+        val pickerSizes = findPickerSizes(site)
         val writeBridges = imageBridges(PATCH)
+        val writePickerBridge = pickerSizesBridge(PATCH, pickerSizes)
         loadFullResolution(site)
         writeBridges()
+        writePickerBridge()
         enableStatus("fullResolution")
     }
 }
@@ -92,7 +96,7 @@ internal object FeedImageSourceFingerprint : Fingerprint(
 /**
  * Where the photo's size is picked: the method, the index of the move-result after the one call to
  * Media's helpers that takes a Context and the post and answers a size, the register the post is
- * in and the register the size lands in.
+ * in, the register the size lands in and the helper called.
  */
 internal class FullResolutionSite(
     val definingClass: String,
@@ -100,6 +104,7 @@ internal class FullResolutionSite(
     val pick: Int,
     val media: Int,
     val size: Int,
+    val forScreen: MethodReference,
 )
 
 /**
@@ -131,13 +136,55 @@ internal fun BytecodePatchContext.findFullResolution(): FullResolutionSite {
     if (size == media) refuse("$where keeps the size in the post's own register v$media")
     if (size > 15 || media > 15) refuse("$where keeps the post in v$media and the size in v$size, past what a plain invoke can name")
     if (call + 2 in method.jumpTargets()) refuse("something in $where jumps in right after the size it's handed")
-    return FullResolutionSite(method.definingClass, method.name, call + 1, media, size)
+    return FullResolutionSite(method.definingClass, method.name, call + 1, media, size, code[call].methodReference()!!)
 }
 
 /**
+ * Finds the helper Instagram's picker reads a post's sizes through. The helper [site] calls for
+ * the screen's size makes one static call to Media's helpers with the post and a width, and that
+ * one makes one static call to Media's helpers taking only the post and answering an
+ * [IMAGE_INFO], whose answer it hands first to a static method answering the size. Under two of
+ * Instagram's server flags that helper answers a carousel page's sizes rather than the post's own.
+ * Fails before anything changes when any of it isn't there exactly once.
+ */
+internal fun BytecodePatchContext.findPickerSizes(site: FullResolutionSite): MethodReference {
+    val forScreen = helper(site.forScreen)
+    val forWidth = forScreen.instructions().mapNotNull { it.staticCall() }.filter {
+        it.definingClass == MEDIA_EXT && it.parameterTypes.map(CharSequence::toString) == listOf(MEDIA, "I") &&
+            it.returnType == EXTENDED_IMAGE_URL
+    }.singleOrNull() ?: refuse("expected ${site.forScreen} to ask Media's helpers once for the size for a width")
+    val picker = helper(forWidth)
+    val code = picker.instructions()
+    val reads = code.indices.filter { at ->
+        val called = code[at].staticCall()
+        called != null && called.definingClass == MEDIA_EXT &&
+            called.parameterTypes.map(CharSequence::toString) == listOf(MEDIA) && called.returnType == IMAGE_INFO
+    }
+    val read = reads.singleOrNull()
+        ?: refuse("expected $forWidth to ask Media's helpers once for the post's sizes, found ${reads.size}")
+    val kept = code.getOrNull(read + 1)
+    if (kept?.opcode != Opcode.MOVE_RESULT_OBJECT) refuse("$forWidth doesn't keep the sizes it reads")
+    val sizes = (kept as OneRegisterInstruction).registerA
+    val handedOn = code.drop(read + 2).takeWhile { !it.writes(sizes) }.any { instruction ->
+        val called = instruction.staticCall()
+        called != null && called.returnType == EXTENDED_IMAGE_URL &&
+            called.parameterTypes.firstOrNull()?.toString() == IMAGE_INFO && instruction.arguments().firstOrNull() == sizes
+    }
+    if (!handedOn) refuse("$forWidth doesn't pick the size from the sizes it reads")
+    return code[read].staticCall()!!
+}
+
+/** Media's helper [reference], which must be there with code. */
+private fun BytecodePatchContext.helper(reference: MethodReference): Method =
+    classDefBy(reference.definingClass).methods.singleOrNull {
+        it.name == reference.name && it.parameterTypes.map(CharSequence::toString) == reference.parameterTypes.map(CharSequence::toString) &&
+            it.returnType == reference.returnType && it.implementation != null
+    } ?: refuse("$reference isn't there")
+
+/**
  * Hands [PHOTO] the post and Instagram's pick right after the pick, and keeps what it answers in
- * the pick's register. The answer is the pick or one of the post's sizes of its class, and the
- * check-cast keeps the verifier's view of the register as it was.
+ * the pick's register. The answer is the pick or a size of its class that the post or the picker
+ * lists, and the check-cast keeps the verifier's view of the register as it was.
  */
 internal fun BytecodePatchContext.loadFullResolution(site: FullResolutionSite) {
     val method = mutableClassDefBy(site.definingClass).methods.single {
@@ -156,6 +203,15 @@ internal fun BytecodePatchContext.loadFullResolution(site: FullResolutionSite) {
 private fun Method.instructions(): List<Instruction> = implementation?.instructions?.toList().orEmpty()
 
 private fun Instruction.methodReference(): MethodReference? = (this as? ReferenceInstruction)?.reference as? MethodReference
+
+private fun Instruction.staticCall(): MethodReference? =
+    methodReference()?.takeIf { opcode == Opcode.INVOKE_STATIC || opcode == Opcode.INVOKE_STATIC_RANGE }
+
+private fun Instruction.writes(register: Int): Boolean {
+    if (!opcode.setsRegister()) return false
+    val destination = (this as? OneRegisterInstruction)?.registerA ?: return false
+    return destination == register || (opcode.setsWideRegister() && destination + 1 == register)
+}
 
 /** The registers an invoke hands over, in order. */
 private fun Instruction.arguments(): List<Int> = when (this) {

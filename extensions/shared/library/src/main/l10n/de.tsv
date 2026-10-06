@@ -112,10 +112,11 @@ Time left	Verbleibende Zeit
 Time posted	Uhrzeit des Postens
 The date and time the story was posted, like Oct 2, 3:45 PM.	Datum und Uhrzeit, zu der die Story gepostet wurde, etwa 2. Okt., 15:45.
 How long until the story expires, like 18h 14m left. Older stories show the date and time.	Wie lange die Story noch zu sehen ist, etwa noch 18 Std. 14 Min. Ältere Stories zeigen Datum und Uhrzeit.
-Only the time the story was posted, like 3:45 PM. Older stories show the date and time.	Nur die Uhrzeit, zu der die Story gepostet wurde, etwa 15:45. Ältere Stories zeigen Datum und Uhrzeit.
+Only the time the story was posted, like 3:45 PM. Stories posted before today show the date and time.	Nur die Uhrzeit, zu der die Story gepostet wurde, etwa 15:45. Stories, die vor heute gepostet wurden, zeigen Datum und Uhrzeit.
 Turn on Show a story's exact time to use this choice.	Aktiviere „Genaue Zeit einer Story anzeigen“, um diese Auswahl zu nutzen.
 %1$dh %2$dm left	noch %1$d Std. %2$d Min.
 %1$dm left	noch %1$d Min.
+1m left	noch 1 Min.
 Stories	Stories
 Hide Reels in the feed	Reels im Feed ausblenden
 The rows of suggested reels between posts in your home feed. A reel someone you follow posts stays.	Die Reihen vorgeschlagener Reels zwischen den Beiträgen in deinem Feed. Ein Reel von jemandem, dem du folgst, bleibt.
@@ -213,7 +214,7 @@ Hide Threads posts	Threads-Beiträge ausblenden
 The posts, accounts and communities from Threads that Instagram mixes into your feed.	Die Beiträge, Konten und Communitys von Threads, die Instagram in deinen Feed mischt.
 Stop swipe to create	Wischen zum Erstellen stoppen
 Full resolution photos	Fotos in voller Auflösung
-Photos in your feed, in carousels and in posts you open load at the largest size Instagram sends, instead of the size it picks for your screen. This uses more data, since Instagram still loads its usual size ahead of time and the larger one comes on top.	Fotos in deinem Feed, in Karussells und in Beiträgen, die du öffnest, laden in der größten Größe, die Instagram schickt, statt in der Größe, die es für deinen Bildschirm wählt. Das braucht mehr Daten, da Instagram seine übliche Größe trotzdem vorab lädt und die größere noch dazukommt.
+Photos in your feed, in carousels and in posts you open load at the largest size Instagram sends rather than the size it picks for your screen. This can use more data.	Fotos in deinem Feed, in Karussells und in Beiträgen, die du öffnest, laden in der größten Größe, die Instagram schickt, statt in der Größe, die es für deinen Bildschirm wählt. Das kann mehr Daten verbrauchen.
 A sideways swipe on Home no longer opens the camera. The + button and every other way into the camera still work.	Ein seitliches Wischen auf der Startseite öffnet die Kamera nicht mehr. Die Schaltfläche + und alle anderen Wege zur Kamera funktionieren weiterhin.
 Meta AI	Meta AI
 Hide Meta AI in search and Home's bar	Meta AI in der Suche und oben auf der Startseite ausblenden

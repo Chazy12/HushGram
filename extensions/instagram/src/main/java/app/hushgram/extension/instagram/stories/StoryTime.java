@@ -9,6 +9,8 @@ import android.text.format.DateUtils;
 
 import androidx.annotation.Nullable;
 
+import java.util.Calendar;
+
 import app.hushgram.extension.instagram.settings.FamilyNames;
 import app.hushgram.extension.instagram.settings.Settings;
 import app.hushgram.extension.shared.L10n;
@@ -25,8 +27,9 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  *
  * <p>{@link Settings#STORY_TIME_MODE} picks what the label says: the date and time, the time left
  * before the story expires a day after it went up, or only the time of day it went up. A story
- * that's already a day old has no time left and no plain time of day that reads right, so those
- * two show the date and time for it.
+ * that's already a day old has no time left, so that mode shows the date and time for it, and the
+ * time of day alone reads right only for a story posted today, so that mode shows the date and
+ * time for one posted on an earlier day.
  *
  * <p>Both story headers ask the story item for its label. One of them picks a second relative
  * formatter instead while one of Instagram's server flags is on, so the patch passes that flag's
@@ -81,10 +84,20 @@ public final class StoryTime {
     static String text(Context context, @Nullable StoryTimeMode mode, long posted, long now) {
         long age = Math.max(0L, now - posted);
         if (mode == StoryTimeMode.TIME_LEFT && age < DAY) return timeLeft(DAY - age);
-        if (mode == StoryTimeMode.TIME_POSTED && age < DAY) {
+        if (mode == StoryTimeMode.TIME_POSTED && age < DAY && sameDay(posted, Math.max(now, posted))) {
             return DateUtils.formatDateTime(context, posted, DateUtils.FORMAT_SHOW_TIME);
         }
         return DateUtils.formatDateTime(context, posted, FORMAT);
+    }
+
+    /** Whether [one] and [other], in milliseconds, fall on the same day by the phone's clock and time zone. */
+    static boolean sameDay(long one, long other) {
+        Calendar first = Calendar.getInstance();
+        first.setTimeInMillis(one);
+        Calendar second = Calendar.getInstance();
+        second.setTimeInMillis(other);
+        return first.get(Calendar.ERA) == second.get(Calendar.ERA) && first.get(Calendar.YEAR) == second.get(Calendar.YEAR)
+                && first.get(Calendar.DAY_OF_YEAR) == second.get(Calendar.DAY_OF_YEAR);
     }
 
     /**
@@ -94,7 +107,8 @@ public final class StoryTime {
     static String timeLeft(long left) {
         long minutes = (left + MINUTE - 1) / MINUTE;
         long hours = minutes / 60;
-        return hours > 0 ? L10n.f("%1$dh %2$dm left", hours, minutes % 60) : L10n.f("%1$dm left", minutes);
+        return hours > 0 ? L10n.f("%1$dh %2$dm left", hours, minutes % 60)
+                : L10n.quantity(minutes, "1m left", "%1$dm left", minutes);
     }
 
     /**

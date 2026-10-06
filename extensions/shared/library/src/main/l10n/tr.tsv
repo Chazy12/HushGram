@@ -112,10 +112,11 @@ Time left	Kalan süre
 Time posted	Paylaşılma saati
 The date and time the story was posted, like Oct 2, 3:45 PM.	Hikayenin paylaşıldığı tarih ve saat, örneğin 2 Eki 15:45.
 How long until the story expires, like 18h 14m left. Older stories show the date and time.	Hikayenin süresinin dolmasına ne kadar kaldığı, örneğin 18 sa 14 dk kaldı. Daha eski hikayeler tarih ve saati gösterir.
-Only the time the story was posted, like 3:45 PM. Older stories show the date and time.	Yalnızca hikayenin paylaşıldığı saat, örneğin 15:45. Daha eski hikayeler tarih ve saati gösterir.
+Only the time the story was posted, like 3:45 PM. Stories posted before today show the date and time.	Yalnızca hikayenin paylaşıldığı saat, örneğin 15:45. Bugünden önce paylaşılan hikayeler tarih ve saati gösterir.
 Turn on Show a story's exact time to use this choice.	Bu seçimi kullanmak için Hikayenin tam zamanını göster seçeneğini açın.
 %1$dh %2$dm left	%1$d sa %2$d dk kaldı
 %1$dm left	%1$d dk kaldı
+1m left	1 dk kaldı
 Stories	Hikayeler
 Hide Reels in the feed	Akıştaki reelleri gizle
 The rows of suggested reels between posts in your home feed. A reel someone you follow posts stays.	Ana akışındaki gönderiler arasına giren önerilen reel sıraları. Takip ettiğin birinin paylaştığı reel kalır.
@@ -213,7 +214,7 @@ Hide Threads posts	Threads gönderilerini gizle
 The posts, accounts and communities from Threads that Instagram mixes into your feed.	Instagram'ın akışına karıştırdığı Threads gönderileri, hesapları ve toplulukları.
 Stop swipe to create	Oluşturmak için kaydırmayı durdur
 Full resolution photos	Tam çözünürlüklü fotoğraflar
-Photos in your feed, in carousels and in posts you open load at the largest size Instagram sends, instead of the size it picks for your screen. This uses more data, since Instagram still loads its usual size ahead of time and the larger one comes on top.	Akışındaki, karusellerdeki ve açtığın gönderilerdeki fotoğraflar, Instagram'ın ekranın için seçtiği boyut yerine gönderdiği en büyük boyutta yüklenir. Instagram her zamanki boyutu yine önceden yüklediği ve büyük olan bunun üstüne geldiği için bu daha fazla veri kullanır.
+Photos in your feed, in carousels and in posts you open load at the largest size Instagram sends rather than the size it picks for your screen. This can use more data.	Akışındaki, karusellerdeki ve açtığın gönderilerdeki fotoğraflar, Instagram'ın ekranın için seçtiği boyut yerine gönderdiği en büyük boyutta yüklenir. Bu daha fazla veri kullanabilir.
 A sideways swipe on Home no longer opens the camera. The + button and every other way into the camera still work.	Ana sayfada yana kaydırmak artık kamerayı açmaz. + düğmesi ve kameraya giden diğer yollar çalışmaya devam eder.
 Meta AI	Meta AI
 Hide Meta AI in search and Home's bar	Aramada ve Ana Sayfa çubuğunda Meta AI'ı gizle

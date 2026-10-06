@@ -516,8 +516,8 @@ public class Settings extends BaseSettings {
      * Photos in the feed, carousels and posts opened from a profile load at the largest size the
      * server sent instead of the one Instagram picks for the screen
      * ({@link app.hushgram.extension.instagram.feed.FullResolution}). Read as each photo is bound,
-     * so a change shows from the next photo. Off to start: it takes more data and memory, and
-     * Instagram's prefetch still loads its usual size first, so an upgraded photo downloads twice.
+     * so a change shows from the next photo. Off to start: a larger photo can take more data and
+     * memory.
      */
     public static final BooleanSetting FULL_RESOLUTION_PHOTOS =
             new BooleanSetting("hushgram_full_resolution_photos", FALSE);

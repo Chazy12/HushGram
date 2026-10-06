@@ -69,7 +69,7 @@ public class FullResolutionSettingsTest {
         SwitchPreference row = (SwitchPreference) page.getPreferenceScreen().findPreference(Settings.FULL_RESOLUTION_PHOTOS.key);
         assertNotNull(row);
         assertEquals("Full resolution photos", row.getTitle().toString());
-        assertTrue(row.getSummary().toString(), row.getSummary().toString().contains("This uses more data"));
+        assertTrue(row.getSummary().toString(), row.getSummary().toString().contains("This can use more data"));
         PreferenceCategory feed = categoryHolding(page.getPreferenceScreen(), row);
         assertNotNull(feed);
         assertEquals("Feed", feed.getTitle().toString());

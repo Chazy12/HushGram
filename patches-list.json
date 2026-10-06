@@ -302,7 +302,7 @@
     },
     {
       "name": "Full resolution photos",
-      "description": "Loads photos in your feed, in carousels and in posts you open at the largest size Instagram sends, instead of the size it picks for your screen. It uses more data, since Instagram still loads its usual size ahead of time.",
+      "description": "Loads photos in your feed, in carousels and in posts you open at the largest size Instagram sends rather than the size it picks for your screen. It can use more data.",
       "category": "Feed",
       "use": true,
       "dependencies": [
@@ -1487,7 +1487,7 @@
     },
     {
       "name": "Show a story's exact time",
-      "description": "Shows the date and time a story was posted in its header, like Oct 2, 3:45 PM, instead of how long ago. A choice under its switch can show the time left before the story expires, or only the time it went up, instead. It follows your phone's language and 12 or 24-hour setting.",
+      "description": "Shows the date and time a story was posted in its header, like Oct 2, 3:45 PM, instead of how long ago. A choice under its switch can show the time left before the story expires, or only the time it went up. It follows your phone's language and 12 or 24-hour setting.",
       "category": "Interface",
       "use": false,
       "dependencies": [

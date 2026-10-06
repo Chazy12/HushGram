@@ -12,6 +12,7 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 /** Instagram's post, reel or story, which keeps its name. */
 internal const val MEDIA = "Lcom/instagram/feed/media/Media;"
@@ -114,6 +115,14 @@ internal fun BytecodePatchContext.imageBridges(patch: String): () -> Unit {
         Bridge("candidateHeight", IMAGE_URL, kept("getHeight", "I"), primitive = true),
     ))
 }
+
+/**
+ * The same for the sizes Instagram's feed photo picker reads for a Media: a call to [helper], the
+ * static method of Media's helpers the picker asks, which may answer a carousel page's sizes
+ * rather than the post's own.
+ */
+internal fun BytecodePatchContext.pickerSizesBridge(patch: String, helper: MethodReference): () -> Unit =
+    bridgeWriter(patch, listOf(Bridge("pickerImageVersions", MEDIA, "invoke-static {p0}, $helper")))
 
 /** The same for whether a story is a photo with music, which Instagram serves as a video. */
 internal fun BytecodePatchContext.storyMusicBridges(patch: String): () -> Unit {

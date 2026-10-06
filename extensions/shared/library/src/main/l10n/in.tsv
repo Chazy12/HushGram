@@ -112,10 +112,11 @@ Time left	Sisa waktu
 Time posted	Jam diposting
 The date and time the story was posted, like Oct 2, 3:45 PM.	Tanggal dan jam cerita diposting, misalnya 2 Okt, 15.45.
 How long until the story expires, like 18h 14m left. Older stories show the date and time.	Berapa lama lagi cerita berakhir, misalnya sisa 18 j 14 m. Cerita yang lebih lama menampilkan tanggal dan jam.
-Only the time the story was posted, like 3:45 PM. Older stories show the date and time.	Hanya jam cerita diposting, misalnya 15.45. Cerita yang lebih lama menampilkan tanggal dan jam.
+Only the time the story was posted, like 3:45 PM. Stories posted before today show the date and time.	Hanya jam cerita diposting, misalnya 15.45. Cerita yang diposting sebelum hari ini menampilkan tanggal dan jam.
 Turn on Show a story's exact time to use this choice.	Aktifkan Tampilkan waktu pasti cerita untuk menggunakan pilihan ini.
 %1$dh %2$dm left	sisa %1$d j %2$d m
 %1$dm left	sisa %1$d m
+1m left	sisa 1 m
 Stories	Cerita
 Hide Reels in the feed	Sembunyikan Reels di feed
 The rows of suggested reels between posts in your home feed. A reel someone you follow posts stays.	Deretan reel yang disarankan di antara postingan di feed beranda Anda. Reel yang diposting orang yang Anda ikuti tetap ada.
@@ -213,7 +214,7 @@ Hide Threads posts	Sembunyikan postingan Threads
 The posts, accounts and communities from Threads that Instagram mixes into your feed.	Postingan, akun, dan komunitas dari Threads yang dicampur Instagram ke feed kamu.
 Stop swipe to create	Hentikan geser untuk membuat
 Full resolution photos	Foto resolusi penuh
-Photos in your feed, in carousels and in posts you open load at the largest size Instagram sends, instead of the size it picks for your screen. This uses more data, since Instagram still loads its usual size ahead of time and the larger one comes on top.	Foto di feed, di carousel, dan di postingan yang kamu buka dimuat dalam ukuran terbesar yang dikirim Instagram, bukan ukuran yang dipilihnya untuk layarmu. Ini memakai lebih banyak data, karena Instagram tetap memuat ukuran biasanya lebih dulu dan yang lebih besar ditambahkan di atasnya.
+Photos in your feed, in carousels and in posts you open load at the largest size Instagram sends rather than the size it picks for your screen. This can use more data.	Foto di feed, di carousel, dan di postingan yang kamu buka dimuat dalam ukuran terbesar yang dikirim Instagram, bukan ukuran yang dipilihnya untuk layarmu. Ini bisa memakai lebih banyak data.
 A sideways swipe on Home no longer opens the camera. The + button and every other way into the camera still work.	Menggeser ke samping di Beranda tidak lagi membuka kamera. Tombol + dan cara lain untuk membuka kamera tetap berfungsi.
 Meta AI	Meta AI
 Hide Meta AI in search and Home's bar	Sembunyikan Meta AI di pencarian dan bilah Beranda

@@ -136,7 +136,7 @@ public class StoryTimeSettingsTest {
         row.setValue("TIME_POSTED");
         ShadowLooper.idleMainLooper();
         assertEquals(StoryTimeMode.TIME_POSTED, Settings.STORY_TIME_MODE.savedValue());
-        assertEquals("Only the time the story was posted, like 3:45 PM. Older stories show the date and time.",
+        assertEquals("Only the time the story was posted, like 3:45 PM. Stories posted before today show the date and time.",
                 String.valueOf(row.getSummary()));
 
         // A value saved behind the row shows on it once the page hears of it.
