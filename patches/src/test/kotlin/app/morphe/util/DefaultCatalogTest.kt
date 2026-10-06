@@ -15,6 +15,7 @@ import app.morphe.patches.instagram.download.story.downloadStoryPatch
 import app.morphe.patches.instagram.download.video.downloadVideoPatch
 import app.morphe.patches.instagram.explore.hideExploreGridPatch
 import app.morphe.patches.instagram.feed.following.startOnFollowingPatch
+import app.morphe.patches.instagram.feed.photos.fullResolutionPhotosPatch
 import app.morphe.patches.instagram.feed.reels.hideFeedReelsPatch
 import app.morphe.patches.instagram.feed.suggested.hideSuggestedPostsPatch
 import app.morphe.patches.instagram.feed.swipecreate.stopSwipeToCreatePatch
@@ -65,6 +66,7 @@ import org.junit.Test
 class DefaultCatalogTest {
     private val neutral = listOf<Patch<*>>(
         copyCommentPatch,
+        fullResolutionPhotosPatch,
         hideHighlightsPatch,
         hideInstantsPatch,
         hideNotesRowPatch,
@@ -129,7 +131,7 @@ class DefaultCatalogTest {
     }
 
     @Test fun initiallyNeutralControlsAreAvailableInSimpleMode() {
-        assertEquals(8, neutral.size)
+        assertEquals(9, neutral.size)
         neutral.forEach { assertEquals(it.name, true, it.use) }
     }
 
@@ -141,7 +143,7 @@ class DefaultCatalogTest {
     @Test fun generatedCatalogMatchesAllReviewedDeclarations() {
         val all = prior + neutral + optIn
         val declarations = all.associate { it.name!! to it.use }
-        assertEquals("every named patch needs one reviewed decision", 51, all.size)
+        assertEquals("every named patch needs one reviewed decision", 52, all.size)
         assertEquals("the review must not name a patch twice", all.size, declarations.size)
         val file = File("patches-list.json").takeIf(File::isFile) ?: File("../patches-list.json")
         val rows = JsonParser.parseString(file.readText()).asJsonObject.getAsJsonArray("patches")

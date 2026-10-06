@@ -512,6 +512,16 @@ public class Settings extends BaseSettings {
     public static final EnumSetting<PlaybackQuality> PLAYBACK_QUALITY =
             new EnumSetting<>("hushgram_playback_quality", PlaybackQuality.AUTO, parent(DEFAULT_PLAYBACK_QUALITY));
 
+    /**
+     * Photos in the feed, carousels and posts opened from a profile load at the largest size the
+     * server sent instead of the one Instagram picks for the screen
+     * ({@link app.hushgram.extension.instagram.feed.FullResolution}). Read as each photo is bound,
+     * so a change shows from the next photo. Off to start: it takes more data and memory, and
+     * Instagram's prefetch still loads its usual size first, so an upgraded photo downloads twice.
+     */
+    public static final BooleanSetting FULL_RESOLUTION_PHOTOS =
+            new BooleanSetting("hushgram_full_resolution_photos", FALSE);
+
     // ---- Downloads -------------------------------------------------------------------------
     // What every save reads when it starts (app.hushgram.extension.instagram.download), ported
     // with the save pipeline from Hushfacebook 3a473639 with the same types and defaults, keyed

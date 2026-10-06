@@ -403,6 +403,13 @@ once-call Lapp/hushgram/extension/instagram/feed/SwipeToCreate;->hold(FFLjava/la
 # The disabled path must skip the added native getter and reason reads. The 449 fixture checks
 # the gate's branch and the full stock instruction path, in addition to the hold hook above.
 once-call Lapp/hushgram/extension/instagram/feed/SwipeToCreate;->enabled()I in instance (Lcom/instagram/ui/swipenavigation/container/PositionConfig;)V calling instance Lcom/instagram/ui/swipenavigation/container/SwipeNavigationContainer;->setEndPanelExtraParameter(Lcom/instagram/ui/swipenavigation/container/PositionConfig;)V holding Lcom/instagram/ui/swipenavigation/container/PositionConfig;->A0F:Z
+# Full resolution photos hands the post and the size Instagram picked for a feed photo to
+# FullResolution.photo right after the pick, in the feed image use case's instance method taking a
+# Context, the session and the post. That method is the only one holding its log line for a photo
+# with no address, trailing space and all. It's called once there and nowhere else. Left out,
+# photos load at Instagram's size; twice or elsewhere, it isn't the hook the patch wrote.
+# FullResolutionPhotosHookTest checks on the 450 fixture where it lands and what it's handed.
+once-call Lapp/hushgram/extension/instagram/feed/FullResolution;->photo(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object; in instance (Landroid/content/Context;Lcom/instagram/common/session/UserSession;Lcom/instagram/feed/media/Media;)L*; holding instagram.features.feed.ui.rows.image.FeedImageUseCase#getImageSource()\sCould\snot\sgenerate\simageUrl\sfor\smediaId=\s
 #
 # Hide suggested stories asks hideTray() first thing in Home's story tray row build, the one method
 # holding "MainFeedStoryTrayBinderGroup.buildRowViewTypes", and nowhere else. It passes each item

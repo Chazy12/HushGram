@@ -24,6 +24,7 @@ import org.robolectric.annotation.Config;
 import app.hushgram.extension.instagram.direct.Instants;
 import app.hushgram.extension.instagram.direct.NotesRow;
 import app.hushgram.extension.instagram.profile.ProfileHighlights;
+import app.hushgram.extension.instagram.feed.FullResolution;
 import app.hushgram.extension.instagram.feed.SwipeToCreate;
 import app.hushgram.extension.instagram.reels.ReelScrolling;
 import app.hushgram.extension.instagram.stories.StoryRing;
@@ -51,13 +52,13 @@ public class NeutralDefaultsSettingsTest {
         RuntimeEnvironment.getApplication().getApplicationInfo().targetSdkVersion = 36;
         initiallyOff = new BooleanSetting[]{Settings.COPY_COMMENTS, Settings.SAVE_COMMENT_PHOTOS,
                 Settings.HIDE_HIGHLIGHTS, Settings.HIDE_NOTES_ROW, Settings.HIDE_INSTANTS,
-                Settings.STOP_SWIPE_TO_CREATE, Settings.STOP_REELS_SCROLLING};
+                Settings.STOP_SWIPE_TO_CREATE, Settings.STOP_REELS_SCROLLING, Settings.FULL_RESOLUTION_PHOTOS};
         restoreDefaults();
         BaseSettings.SAFE_MODE.save(false);
         Settings.SIGN_IN_NOTICE_HIDDEN.save(true);
         PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.COMMENT_COPY, PatchFamily.COMMENT_PHOTO,
                 PatchFamily.PROFILE_HIGHLIGHTS, PatchFamily.NOTES_ROW, PatchFamily.INSTANTS, PatchFamily.SWIPE_TO_CREATE,
-                PatchFamily.REEL_SCROLLING, PatchFamily.STORY_RING);
+                PatchFamily.REEL_SCROLLING, PatchFamily.STORY_RING, PatchFamily.FULL_RESOLUTION);
     }
 
     @After public void restore() throws Exception {
@@ -170,6 +171,8 @@ public class NeutralDefaultsSettingsTest {
         assertFalse(Instants.hide());
         assertEquals(0, SwipeToCreate.enabled());
         assertEquals(0, SwipeToCreate.hold(-1f, 0f, "swipe"));
+        Object photo = new Object();
+        assertSame(photo, FullResolution.photo(new Object(), photo));
         assertEquals(270f, StoryRing.size(270f), 0f);
     }
 }

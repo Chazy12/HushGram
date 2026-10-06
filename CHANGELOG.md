@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** New Full resolution photos patch. With its switch on, photos in your feed, in carousels and in posts you open load at the largest size Instagram's server sends, up to 2048 pixels on the longer side, instead of the size Instagram picks for your screen. They take the same room on screen, and stories and Reels load as before. It's in simple mode with its switch off, under Feed in HushGram settings. It uses more data, since Instagram still loads its usual size ahead of time and the larger one comes on top. Asked for in #20.
+
 * **Instagram:** Show a story's exact time has a new How the time shows choice under its switch. Date and time is what it already did, and it's where the choice starts, so nothing changes until you pick. Time left shows how long the story has before it expires, like 18h 14m left. Time posted shows only the time it went up, like 3:45 PM. A story that's already a day old shows the date and time either way.
 
 * **Instagram:** New Hide that you're typing patch. With its switch on, the people you're chatting with don't see the dots while you type, and you still see theirs. Instagram's own typing indicator setting turns off both. It's off until you pick it in Manager, and the switch, under Messages in HushGram settings, starts off. Asked for in #13.

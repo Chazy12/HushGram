@@ -336,7 +336,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         boolean suggestions = build.contains(PatchFamily.FEED_SUGGESTIONS);
         boolean following = build.contains(PatchFamily.FOLLOWING_FEED);
         boolean swipe = build.contains(PatchFamily.SWIPE_TO_CREATE);
-        PreferenceCategory feed = suggestions || following || swipe ? category(screen, L10n.t("Feed")) : null;
+        boolean fullResolution = build.contains(PatchFamily.FULL_RESOLUTION);
+        PreferenceCategory feed = suggestions || following || swipe || fullResolution ? category(screen, L10n.t("Feed")) : null;
         if (following) {
             feed.addPreference(toggle(context, Settings.START_ON_FOLLOWING, L10n.t("Start Home on Following"),
                     L10n.t("Home opens on posts from accounts you follow. Tap Following at the top to switch to For you, "
@@ -358,6 +359,12 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             feed.addPreference(toggle(context, Settings.STOP_SWIPE_TO_CREATE, L10n.t("Stop swipe to create"),
                     L10n.t("A sideways swipe on Home no longer opens the camera. The + button and every other way "
                             + "into the camera still work.")));
+        }
+        if (fullResolution) {
+            feed.addPreference(toggle(context, Settings.FULL_RESOLUTION_PHOTOS, L10n.t("Full resolution photos"),
+                    L10n.t("Photos in your feed, in carousels and in posts you open load at the largest size Instagram "
+                            + "sends, instead of the size it picks for your screen. This uses more data, since Instagram "
+                            + "still loads its usual size ahead of time and the larger one comes on top.")));
         }
 
         if (build.contains(PatchFamily.META_AI)) {

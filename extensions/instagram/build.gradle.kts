@@ -310,6 +310,22 @@ tasks.register("verifyAndroidBoundaries") {
             "app.hushgram.extension.instagram.settings.SwipeToCreateSettingsTest" to listOf(
                 "missingPatchHasNoSwipeSwitch[28]", "missingPatchHasNoSwipeSwitch[37]",
                 "swipeSwitchStartsOffPersistsAndHonorsPause[28]", "swipeSwitchStartsOffPersistsAndHonorsPause[37]"),
+            "app.hushgram.extension.instagram.feed.FullResolutionTest" to listOf(
+                "withTheSwitchOnTheLargestSizeOfTheSameShapeLoads[28]", "withTheSwitchOnTheLargestSizeOfTheSameShapeLoads[37]",
+                "aPickThatIsAlreadyTheLargestStays[28]", "aPickThatIsAlreadyTheLargestStays[37]",
+                "aCropOrAnotherShapeIsNeverPicked[28]", "aCropOrAnotherShapeIsNeverPicked[37]",
+                "aSizeRoundedByAPixelIsStillTheSameShape[28]", "aSizeRoundedByAPixelIsStillTheSameShape[37]",
+                "nothingOverTheLargestSideLoads[28]", "nothingOverTheLargestSideLoads[37]",
+                "aPickThatIsntOneOfThePostsSizesStays[28]", "aPickThatIsntOneOfThePostsSizesStays[37]",
+                "aSizeOfAnotherClassIsPassedOver[28]", "aSizeOfAnotherClassIsPassedOver[37]",
+                "unreadableSizesLeaveThePick[28]", "unreadableSizesLeaveThePick[37]",
+                "offPausedAndUnreadyKeepInstagramsPick[28]", "offPausedAndUnreadyKeepInstagramsPick[37]",
+                "aThrowingReadKeepsThePickAndIsReported[28]", "aThrowingReadKeepsThePickAndIsReported[37]",
+                "theStockHookKeepsThePick[28]", "theStockHookKeepsThePick[37]"),
+            "app.hushgram.extension.instagram.settings.FullResolutionSettingsTest" to listOf(
+                "missingPatchHasNoPhotoSwitch[28]", "missingPatchHasNoPhotoSwitch[37]",
+                "photoSwitchSitsUnderFeedStartsOffAndSaysItUsesMoreData[28]", "photoSwitchSitsUnderFeedStartsOffAndSaysItUsesMoreData[37]",
+                "photoSwitchPersistsAndHonorsPause[28]", "photoSwitchPersistsAndHonorsPause[37]"),
             "app.hushgram.extension.instagram.reels.ReelScrollingTest" to listOf(
                 "withTheSwitchOnAReelsPagerStaysPut[28]", "withTheSwitchOnAReelsPagerStaysPut[37]",
                 "otherPagersAreLeftAlone[28]", "otherPagersAreLeftAlone[37]",

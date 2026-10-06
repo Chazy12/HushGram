@@ -153,6 +153,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean fullResolution() {
+        return false;
+    }
+
     public static boolean reelsSuggestions() {
         return false;
     }
