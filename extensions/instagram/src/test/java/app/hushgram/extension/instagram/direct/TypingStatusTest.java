@@ -114,7 +114,7 @@ public class TypingStatusTest {
             Settings.HIDE_TYPING.save(true);
             Settings.READ_WITHOUT_SEEN_RECEIPT.save(false);
             assertTrue(TypingStatus.hold(TYPING));
-            assertFalse(ThreadSeen.hold(null));
+            assertFalse(ThreadSeen.hold(null, null));
         } finally {
             Settings.READ_WITHOUT_SEEN_RECEIPT.resetToDefault();
         }

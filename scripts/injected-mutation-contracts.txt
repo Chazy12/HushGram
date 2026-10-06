@@ -61,23 +61,27 @@ once-call Lapp/hushgram/extension/instagram/direct/NotesRow;->sections([Ljava/la
 # Instants stay with the switch on; twice or elsewhere, it isn't the guard the patch wrote.
 start-call Lapp/hushgram/extension/instagram/direct/Instants;->hide()Z in static (Lcom/instagram/common/session/UserSession;Z)Z calling static LX/06c9;->A0L(Landroid/content/Context;)Z holding Lcom/instagram/common/session/UserSession;->deviceSession:LX/06bK; LX/02hb;->A06:LX/02hb; LX/02hb;->A05:LX/02hb;
 once-call Lapp/hushgram/extension/instagram/direct/Instants;->hide()Z in static (Lcom/instagram/common/session/UserSession;Z)Z calling static LX/06c9;->A0L(Landroid/content/Context;)Z holding Lcom/instagram/common/session/UserSession;->deviceSession:LX/06bK; LX/02hb;->A06:LX/02hb; LX/02hb;->A05:LX/02hb;
-# Read messages without the seen receipt (#13) hands ThreadSeen.hold(Object) the receipt first in the
-# mutation queue's handler for an ordinary chat's seen receipt (05cs.Gsm on 450), the one method
-# holding both names of the GraphQL mutation that carries it. Left out, opening a chat still sends the
-# receipt with the switch on; twice or elsewhere, it isn't the guard the patch wrote. NativeThreadSeenTest
-# checks on the 450 fixture where it lands.
-start-call Lapp/hushgram/extension/instagram/direct/ThreadSeen;->hold(Ljava/lang/Object;)Z in instance (L*;L*;L*;)V holding IGDirectItemSeenMutation xig_direct_item_seen
-once-call Lapp/hushgram/extension/instagram/direct/ThreadSeen;->hold(Ljava/lang/Object;)Z in instance (L*;L*;L*;)V holding IGDirectItemSeenMutation xig_direct_item_seen
-# The same patch's Mark as read (#45) goes on a chat's long press through ThreadSeen.offerMarkRead,
-# called first in the one builder that adds Mark as unread to that menu's rows (077L.A03 on 450, the
-# static method of this shape reading that constant), and a tap on it reaches ThreadSeen.markRead
-# first in the menu's tap handler (07Qv.A03 on 450, the instance method of this shape holding the
-# group deletion click name). Left out, the row isn't offered or does nothing; twice or elsewhere, it
-# isn't the guard the patch wrote. NativeMarkReadTest checks on the 450 fixture where both land.
-start-call Lapp/hushgram/extension/instagram/direct/ThreadSeen;->offerMarkRead(Ljava/util/List;Ljava/lang/Object;)V in static (Lcom/instagram/common/session/UserSession;Lcom/instagram/direct/capabilities/Capabilities;L*;L*;Ljava/util/List;Z)V holding LX/07Qw;->A0K:LX/07Qw;
+# Read messages without the seen receipt (#13) hands ThreadSeen.hold(Object, Object) the receipt and
+# the account the handler keeps first in the mutation queue's handler for an ordinary chat's seen
+# receipt (05cs.Gsm on 450), the one method holding both names of the GraphQL mutation that carries
+# it. Left out, opening a chat still sends the receipt with the switch on; twice or elsewhere, it isn't
+# the guard the patch wrote. NativeThreadSeenTest checks on the 450 fixture where it lands.
+start-call Lapp/hushgram/extension/instagram/direct/ThreadSeen;->hold(Ljava/lang/Object;Ljava/lang/Object;)Z in instance (L*;L*;L*;)V holding IGDirectItemSeenMutation xig_direct_item_seen
+once-call Lapp/hushgram/extension/instagram/direct/ThreadSeen;->hold(Ljava/lang/Object;Ljava/lang/Object;)Z in instance (L*;L*;L*;)V holding IGDirectItemSeenMutation xig_direct_item_seen
+# The same patch's Mark as read (#45) goes on a chat's long press through ThreadSeen.offerMarkRead, in
+# the one builder that adds Mark as unread to that menu's rows (077L.A03 on 450, the static method of
+# this shape reading that constant), just past its check of the chat's MARK_THREAD_AS_UNREAD
+# capability. A tap on it reaches ThreadSeen.markRead in the menu's tap handler (07Qv.A03 on 450, the
+# instance method of this shape holding the group deletion click name), on the branch past
+# Instagram's check for an action it blocks. Mark as read for chats picked together (0PgT.onClick on
+# 450, the dialog click holding its log name) tells ThreadSeen.markReadTogether about each chat just
+# before it queues that chat's receipt. None of the three is first in its method, so each has a
+# once-call rule alone. Left out, the row isn't offered, does nothing, or the receipts of chats marked
+# read together stay held; twice or elsewhere, it isn't the hook the patch wrote. NativeMarkReadTest
+# checks on the 450 fixture where all three land.
 once-call Lapp/hushgram/extension/instagram/direct/ThreadSeen;->offerMarkRead(Ljava/util/List;Ljava/lang/Object;)V in static (Lcom/instagram/common/session/UserSession;Lcom/instagram/direct/capabilities/Capabilities;L*;L*;Ljava/util/List;Z)V holding LX/07Qw;->A0K:LX/07Qw;
-start-call Lapp/hushgram/extension/instagram/direct/ThreadSeen;->markRead(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Z in instance (Landroid/graphics/RectF;Landroid/view/View;L*;L*;L*;L*;Lcom/instagram/model/direct/DirectShareTarget;Lcom/instagram/model/direct/DirectThreadKey;L*;Ljava/util/List;Ljava/util/List;Lkotlin/jvm/functions/Function0;ZZZ)V holding group_thread_deletion_click_clicked
 once-call Lapp/hushgram/extension/instagram/direct/ThreadSeen;->markRead(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Z in instance (Landroid/graphics/RectF;Landroid/view/View;L*;L*;L*;L*;Lcom/instagram/model/direct/DirectShareTarget;Lcom/instagram/model/direct/DirectThreadKey;L*;Ljava/util/List;Ljava/util/List;Lkotlin/jvm/functions/Function0;ZZZ)V holding group_thread_deletion_click_clicked
+once-call Lapp/hushgram/extension/instagram/direct/ThreadSeen;->markReadTogether(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V in instance (Landroid/content/DialogInterface;I)V holding multiple_thread_mark_read
 # Hide that you're typing (#13) hands TypingStatus.hold(I) the typing flag first in Instagram's typing
 # status service (01MY.A06 on 450), the one (boolean) method holding the trace name and flag below.
 # Left out, the other person sees you typing with the switch on; twice or elsewhere, it isn't the

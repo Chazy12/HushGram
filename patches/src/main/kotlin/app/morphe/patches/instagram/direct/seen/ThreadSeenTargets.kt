@@ -28,7 +28,7 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 
 internal const val THREAD_SEEN = "$EXTENSION_PACKAGE/direct/ThreadSeen;"
-internal const val HOLD_THREAD_SEEN = "$THREAD_SEEN->hold(Ljava/lang/Object;)Z"
+internal const val HOLD_THREAD_SEEN = "$THREAD_SEEN->hold(Ljava/lang/Object;Ljava/lang/Object;)Z"
 
 /** The query and root field of the GraphQL mutation that carries an ordinary chat's seen receipt. */
 internal const val THREAD_SEEN_QUERY = "IGDirectItemSeenMutation"
@@ -53,6 +53,8 @@ internal object ThreadSeenFingerprint : Fingerprint(
 
 internal data class ThreadSeenTargets(
     val handler: MutableMethod,
+    /** The account the handler keeps and sends the receipt for. */
+    val account: FieldReference,
     val mutation: String,
     val complete: MethodReference,
     val selector: Method,
@@ -73,8 +75,8 @@ private val OBJECT_MOVES = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, 
 
 /**
  * Resolve the receipt's handler and everything the early completion relies on, before any edit:
- * the one mutation class it handles, the queue's completion callback, the registration that hands
- * the handler that mutation, and the sender that queues it when a chat opens.
+ * the account it keeps, the one mutation class it handles, the queue's completion callback, the
+ * registration that hands the handler that mutation, and the sender that queues it when a chat opens.
  */
 internal fun BytecodePatchContext.findThreadSeen(): ThreadSeenTargets {
     val handler = uniqueMethod(THREAD_SEEN_PATCH, "chat receipt handler", ThreadSeenFingerprint)
@@ -87,6 +89,14 @@ internal fun BytecodePatchContext.findThreadSeen(): ThreadSeenTargets {
     classDefForEach { classes += it }
     val byType = classes.associateBy { it.type }
     val methods = classes.flatMap { it.methods }
+
+    // The account the receipt goes out for: the one the handler keeps, which its provider builds it with.
+    val account = (byType[handler.definingClass] ?: refuse("receipt handler class is missing")).fields
+        .filter { !AccessFlags.STATIC.isSet(it.accessFlags) && it.type == USER_SESSION }.toList()
+        .one("account the receipt handler keeps")
+    if (handler.visualCode().none { it.opcode == Opcode.IGET_OBJECT && it.field()?.toString() == account.toString() }) {
+        refuse("receipt handler never reads the account it keeps")
+    }
 
     val callback = byType[handler.parameterTypes[1].toString()] ?: refuse("receipt callback interface is missing")
     if (!AccessFlags.PUBLIC.isSet(callback.accessFlags) || !AccessFlags.INTERFACE.isSet(callback.accessFlags)) {
@@ -135,10 +145,10 @@ internal fun BytecodePatchContext.findThreadSeen(): ThreadSeenTargets {
     requireOrigin(THREAD_SEEN_PATCH, creator, sendAt, allocated, createAt, "live receipt mutation", fromDefinition = true)
 
     byType[THREAD_SEEN]?.methods?.filter {
-        it.name == "hold" && it.returnType == "Z" && it.parameterTypes.map(Any::toString) == listOf(JAVA_OBJECT) &&
+        it.name == "hold" && it.returnType == "Z" && it.parameterTypes.map(Any::toString) == listOf(JAVA_OBJECT, JAVA_OBJECT) &&
             it.public() && it.static()
-    }?.singleOrNull() ?: refuse("extension has no public static hold(Object)Z")
-    return ThreadSeenTargets(handler, mutation, complete, selector, registry, creator)
+    }?.singleOrNull() ?: refuse("extension has no public static hold(Object, Object)Z")
+    return ThreadSeenTargets(handler, account, mutation, complete, selector, registry, creator)
 }
 
 /** The handler's first act is to cast its mutation parameter, directly or through one copy. */

@@ -18,6 +18,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
+import com.android.tools.smali.dexlib2.immutable.ImmutableField
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction10x
@@ -51,7 +52,8 @@ class ThreadSeenHookTest {
         val first = input.single { it.type == F.HANDLER }.methods.single { it.name == "send" }.visualCode().first()
         context.holdBackThreadSeen()
         val patched = context.mutableClassDefBy(F.HANDLER).methods.single { it.name == "send" }
-        assertThreadGuard(patched, found.complete.toString(), first)
+        assertEquals(F.ACCOUNT.toString(), found.account.toString())
+        assertThreadGuard(patched, found.complete.toString(), first, F.ACCOUNT.toString())
         for (candidate in input) {
             val methods = context.mutableClassDefBy(candidate.type).methods.filter { candidate.type != F.HANDLER || it.name != "send" }
             assertEquals("${candidate.type} changed", before[candidate.type]!!.filter { candidate.type != F.HANDLER || !it.first.contains("->send(") },
@@ -71,12 +73,21 @@ class ThreadSeenHookTest {
         val found = context.findThreadSeen()
         context.holdBackThreadSeen()
         assertThreadGuard(context.mutableClassDefBy(F.HANDLER).methods.single { it.name == "send" }, found.complete.toString(),
-            typed(Opcode.CHECK_CAST, 5, F.MUTATION))
+            typed(Opcode.CHECK_CAST, 5, F.MUTATION), F.ACCOUNT.toString())
     }
 
     @Test fun aMissingHandlerIsRefused() = refuses(F.classes().filter { it.type != F.HANDLER })
     @Test fun duplicateHandlersAreRefused() = refuses(F.classes() + F.handler("Lfixture/SecondChatSeenHandler;"))
     @Test fun aMissingExtensionIsRefused() = refuses(F.classes().filter { it.type != THREAD_SEEN })
+    @Test fun anExtensionWithTheOneArgumentHoldIsRefused() = refuses(F.classes().map { if (it.type == THREAD_SEEN) F.extension(listOf(OBJECT)) else it },
+        "extension has no public static hold(Object, Object)Z")
+    @Test fun aHandlerWithoutAnAccountIsRefused() = refuses(F.classes().map { if (it.type == F.HANDLER) F.handler(accounts = 0) else it },
+        "expected one account the receipt handler keeps, found 0")
+    @Test fun aHandlerKeepingTwoAccountsIsRefused() = refuses(F.classes().map { if (it.type == F.HANDLER) F.handler(accounts = 2) else it },
+        "expected one account the receipt handler keeps, found 2")
+    @Test fun aHandlerThatNeverReadsItsAccountIsRefused() = refuses(replace(F.classes(), F.HANDLER, "send") {
+        it[2] = ImmutableInstruction11n(Opcode.CONST_4, 0, 0)
+    }, "receipt handler never reads the account it keeps")
     @Test fun aNonPublicCallbackIsRefused() = refuses(F.classes().map {
         if (it.type == F.CALLBACK) F.callback(AccessFlags.INTERFACE.value or AccessFlags.ABSTRACT.value) else it
     })
@@ -122,56 +133,71 @@ class ThreadSeenHookTest {
     }
 
     private fun changed(type: String, name: String, change: (MutableList<Instruction>) -> Unit) = refuses(replace(F.classes(), type, name, change))
-    private fun refuses(input: List<ClassDef>) {
+    /** [input] is refused, for [why] when it's given, with nothing in it edited first. */
+    private fun refuses(input: List<ClassDef>, why: String? = null) {
         val context = PatchContexts.of(input)
         val before = input.associate { it.type to snapshot(it.methods) }
         val refusal = assertThrows(PatchException::class.java) { context.holdBackThreadSeen() }
         assertTrue(refusal.message, refusal.message!!.startsWith("$THREAD_SEEN_PATCH: "))
+        if (why != null) assertTrue("refused for something other than \"$why\": ${refusal.message}", why in refusal.message!!)
         input.forEach { assertEquals("${it.type} was edited before refusal", before[it.type], snapshot(context.mutableClassDefBy(it.type).methods)) }
     }
 
     companion object {
         /**
-         * The guard sits first, hands the extension the receipt, completes through the queue's
-         * callback when held, and otherwise runs [original].
+         * The guard sits first, hands the extension the receipt and the account [account] the
+         * handler keeps, completes through the queue's callback when held, and otherwise runs [original].
          */
-        internal fun assertThreadGuard(method: Method, completion: String, original: Instruction) {
+        internal fun assertThreadGuard(method: Method, completion: String, original: Instruction, account: String) {
             val code = method.visualCode()
             assertEquals(1, code.count { it.visualReference()?.toString() == HOLD_THREAD_SEEN })
-            assertEquals(listOf(Opcode.MOVE_OBJECT_FROM16, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ,
-                Opcode.MOVE_OBJECT_FROM16, Opcode.CONST_4, Opcode.INVOKE_INTERFACE, Opcode.RETURN_VOID), code.take(8).map { it.opcode })
+            assertEquals(listOf(Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_FROM16, Opcode.IGET_OBJECT, Opcode.INVOKE_STATIC,
+                Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.MOVE_OBJECT_FROM16, Opcode.CONST_4, Opcode.INVOKE_INTERFACE,
+                Opcode.RETURN_VOID), code.take(10).map { it.opcode })
             assertEquals(0, (code[0] as TwoRegisterInstruction).registerA)
             assertEquals("the receipt goes to the extension", method.parameterRegisterNumber(2), (code[0] as TwoRegisterInstruction).registerB)
-            assertEquals(listOf(0), code[1].namedRegisters())
-            assertEquals(HOLD_THREAD_SEEN, code[1].visualReference().toString())
-            assertEquals(method.parameterRegisterNumber(1), (code[4] as TwoRegisterInstruction).registerB)
-            assertEquals(completion, code[6].visualReference().toString())
-            assertEquals(listOf(1, 0, 0), code[6].namedRegisters())
-            assertEquals(original.opcode, code[8].opcode)
-            assertEquals(original.namedRegisters(), code[8].namedRegisters())
-            assertEquals(original.visualReference()?.toString(), code[8].visualReference()?.toString())
-            assertEquals("off branches directly to Instagram's original first instruction", setOf(4, 8), ControlFlow.of(method).normal[3].toSet())
+            assertEquals(1, (code[1] as TwoRegisterInstruction).registerA)
+            assertEquals("the account is read off the handler itself", method.parameterRegisterNumber(0) - 1,
+                (code[1] as TwoRegisterInstruction).registerB)
+            assertEquals(listOf(1, 1), (code[2] as TwoRegisterInstruction).let { listOf(it.registerA, it.registerB) })
+            assertEquals(account, code[2].visualReference().toString())
+            assertEquals(listOf(0, 1), code[3].namedRegisters())
+            assertEquals(HOLD_THREAD_SEEN, code[3].visualReference().toString())
+            assertEquals(method.parameterRegisterNumber(1), (code[6] as TwoRegisterInstruction).registerB)
+            assertEquals(completion, code[8].visualReference().toString())
+            assertEquals(listOf(1, 0, 0), code[8].namedRegisters())
+            assertEquals(original.opcode, code[10].opcode)
+            assertEquals(original.namedRegisters(), code[10].namedRegisters())
+            assertEquals(original.visualReference()?.toString(), code[10].visualReference()?.toString())
+            assertEquals("off branches directly to Instagram's original first instruction", setOf(6, 10), ControlFlow.of(method).normal[5].toSet())
         }
 
         internal data class ThreadTrace(val completed: Int, val sent: Int)
 
-        /** Executes the injected instructions, with the queue's callback and the receipt supplied by the harness. */
+        /** Executes the injected instructions, with the handler, the queue's callback and the receipt supplied by the harness. */
         internal fun traceThreadGuard(method: Method, held: Boolean): ThreadTrace {
             val code = method.visualCode()
             val flow = ControlFlow.of(method)
             val registers = mutableMapOf<Int, Any?>()
+            val self = Any()
             val callback = Any()
             val receipt = Any()
+            val account = Any()
+            registers[method.parameterRegisterNumber(0) - 1] = self
             registers[method.parameterRegisterNumber(1)] = callback
             registers[method.parameterRegisterNumber(2)] = receipt
             var at = 0
             var completed = 0
-            while (at < 8) {
+            while (at < 10) {
                 val instruction = code[at]
                 when (instruction.opcode) {
+                    Opcode.IGET_OBJECT -> (instruction as TwoRegisterInstruction).let {
+                        assertEquals("the account comes from the handler itself", self, registers[it.registerB])
+                        registers[it.registerA] = account
+                    }
                     Opcode.INVOKE_STATIC -> {
                         assertEquals(HOLD_THREAD_SEEN, instruction.visualReference().toString())
-                        assertEquals(listOf(receipt), instruction.namedRegisters().map { registers[it] })
+                        assertEquals(listOf(receipt, account), instruction.namedRegisters().map { registers[it] })
                     }
                     Opcode.MOVE_RESULT -> registers[(instruction as OneRegisterInstruction).registerA] = held
                     Opcode.IF_EQZ -> if (registers[(instruction as OneRegisterInstruction).registerA] == false) {
@@ -189,7 +215,7 @@ class ThreadSeenHookTest {
                 }
                 at++
             }
-            assertEquals(8, at)
+            assertEquals(10, at)
             return ThreadTrace(completed, 1)
         }
     }
@@ -197,7 +223,8 @@ class ThreadSeenHookTest {
 
 /**
  * Stand-ins for the chat receipt's queue in the shapes 450 has: the handler copies its mutation
- * before casting it, and the registry loads its provider six instructions before the name.
+ * before casting it, reads the account it keeps and names the message the receipt is for by the
+ * item id its details hold, and the registry loads its provider six instructions before the name.
  */
 internal object ChatSeenFixture {
     const val HANDLER = "Lfixture/ChatSeenHandler;"
@@ -213,29 +240,54 @@ internal object ChatSeenFixture {
     const val MANAGER = "Lfixture/QueueManager;"
     const val CREATOR = "Lfixture/ChatOpener;"
     const val PARSER = "Lfixture/QueueParser;"
+    /** What the receipt keeps of the message it marks seen, and the class that declares its item id. */
+    const val SEEN_ITEM = "Lfixture/SeenItem;"
+    const val SEEN_BASE = "Lfixture/SeenItemBase;"
     val COMPLETE = ImmutableMethodReference(CALLBACK, "complete", listOf(ERROR, STRING), "V")
     val OTHER_PROVIDER = ImmutableFieldReference("Lfixture/OtherHandler;", "provider", PROVIDER)
+    val ACCOUNT = account(HANDLER)
+    val DETAILS = ImmutableFieldReference(MUTATION, "details", SEEN_ITEM)
+    val ITEM_ID = ImmutableFieldReference(SEEN_BASE, "itemId", STRING)
 
     fun classes(): List<ClassDef> = listOf(
-        handler(), callback(), provider(), registry(), selector(), manager(), creator(), parser(),
-        clazz(THREAD_SEEN, listOf(method(THREAD_SEEN, "hold", listOf(OBJECT), "Z", 2,
-            listOf(ImmutableInstruction11n(Opcode.CONST_4, 0, 0), ImmutableInstruction11x(Opcode.RETURN, 0)), static = true))),
+        handler(), callback(), provider(), registry(), selector(), manager(), creator(), parser(), extension(),
     )
 
-    /** p0 is v2; p1 the task, p2 the callback and p3 the mutation are v3 to v5. */
-    fun handler(type: String = HANDLER): ClassDef = clazz(type, listOf(
-        method(type, "<clinit>", emptyList(), "V", 1, listOf(
-            field(Opcode.SGET_OBJECT, 0, ImmutableFieldReference(PROVIDER, "instance", PROVIDER)),
-            field(Opcode.SPUT_OBJECT, 0, ImmutableFieldReference(type, "provider", PROVIDER)),
-            ImmutableInstruction10x(Opcode.RETURN_VOID),
-        ), static = true),
-        method(type, "send", listOf(TASK, CALLBACK, BASE), "V", 6, listOf(
-            ImmutableInstruction22x(Opcode.MOVE_OBJECT_FROM16, 1, 5), typed(Opcode.CHECK_CAST, 1, MUTATION),
-            text(0, THREAD_SEEN_QUERY), text(0, THREAD_SEEN_ROOT),
-            call(Opcode.INVOKE_STATIC, listOf(1, 0), "Lfixture/Network;", "enqueue", listOf(BASE, STRING), "V"),
-            ImmutableInstruction10x(Opcode.RETURN_VOID),
-        )),
-    ))
+    fun account(type: String) = ImmutableFieldReference(type, "account", USER_SESSION)
+
+    /** The extension's hold, which answers no as javac writes it. */
+    fun extension(parameters: List<String> = listOf(OBJECT, OBJECT)): ClassDef = clazz(THREAD_SEEN, listOf(method(THREAD_SEEN, "hold",
+        parameters, "Z", parameters.size + 1, listOf(ImmutableInstruction11n(Opcode.CONST_4, 0, 0), ImmutableInstruction11x(Opcode.RETURN, 0)),
+        static = true)))
+
+    /**
+     * p0 is v2; p1 the task, p2 the callback and p3 the mutation are v3 to v5. The handler keeps
+     * [accounts] accounts, and reads the first.
+     */
+    fun handler(type: String = HANDLER, accounts: Int = 1): ClassDef = ImmutableClassDef(type, AccessFlags.PUBLIC.value, OBJECT, null, null, null,
+        (0 until accounts).map {
+            ImmutableField(type, if (it == 0) "account" else "account$it", USER_SESSION, AccessFlags.PUBLIC.value or AccessFlags.FINAL.value,
+                null, null, null)
+        },
+        listOf(
+            method(type, "<clinit>", emptyList(), "V", 1, listOf(
+                field(Opcode.SGET_OBJECT, 0, ImmutableFieldReference(PROVIDER, "instance", PROVIDER)),
+                field(Opcode.SPUT_OBJECT, 0, ImmutableFieldReference(type, "provider", PROVIDER)),
+                ImmutableInstruction10x(Opcode.RETURN_VOID),
+            ), static = true),
+            method(type, "send", listOf(TASK, CALLBACK, BASE), "V", 6, listOf(
+                ImmutableInstruction22x(Opcode.MOVE_OBJECT_FROM16, 1, 5), typed(Opcode.CHECK_CAST, 1, MUTATION),
+                ImmutableInstruction22c(Opcode.IGET_OBJECT, 0, 2, account(type)),
+                call(Opcode.INVOKE_STATIC, listOf(0), "Lfixture/Network;", "signIn", listOf(USER_SESSION), "V"),
+                text(0, THREAD_SEEN_QUERY), text(0, THREAD_SEEN_ROOT),
+                call(Opcode.INVOKE_STATIC, listOf(1, 0), "Lfixture/Network;", "enqueue", listOf(BASE, STRING), "V"),
+                ImmutableInstruction22c(Opcode.IGET_OBJECT, 0, 1, DETAILS),
+                ImmutableInstruction22c(Opcode.IGET_OBJECT, 1, 0, ITEM_ID),
+                text(0, RECEIPT_ITEM),
+                call(Opcode.INVOKE_STATIC, listOf(1, 0), "Lfixture/Network;", "put", listOf(OBJECT, STRING), "V"),
+                ImmutableInstruction10x(Opcode.RETURN_VOID),
+            )),
+        ))
 
     /** The queue's callback, whose own helper finishes a task with no error and no message. */
     fun callback(flags: Int = AccessFlags.PUBLIC.value or AccessFlags.INTERFACE.value or AccessFlags.ABSTRACT.value): ClassDef =

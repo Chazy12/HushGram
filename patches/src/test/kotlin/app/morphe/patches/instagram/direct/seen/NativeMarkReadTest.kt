@@ -12,8 +12,10 @@ import app.morphe.patches.instagram.direct.seen.MarkReadHookTest.Companion.CHOSE
 import app.morphe.patches.instagram.direct.seen.MarkReadHookTest.Companion.KEY
 import app.morphe.patches.instagram.direct.seen.MarkReadHookTest.Companion.SESSION
 import app.morphe.patches.instagram.direct.seen.MarkReadHookTest.Companion.TapTrace
+import app.morphe.patches.instagram.direct.seen.MarkReadHookTest.Companion.assertOfferGated
 import app.morphe.patches.instagram.direct.seen.MarkReadHookTest.Companion.assertRowOffer
 import app.morphe.patches.instagram.direct.seen.MarkReadHookTest.Companion.assertTapGuard
+import app.morphe.patches.instagram.direct.seen.MarkReadHookTest.Companion.assertTogetherHook
 import app.morphe.patches.instagram.direct.seen.MarkReadHookTest.Companion.traceTapGuard
 import app.morphe.patches.instagram.direct.seen.NativeThreadSeenTest.Companion.threadClasses
 import app.morphe.patches.instagram.direct.seen.NativeVisualSeenTest.Companion.fixtures
@@ -32,8 +34,10 @@ import java.io.File
 
 /**
  * Mark as read on each declared build's own dex: Instagram's own Mark as read goes on the one
- * chat menu builder that offers Mark as unread, the menu's tap handler hands it to the extension
- * first, and the bridges are written from Instagram's own handler for marking a chat read.
+ * chat menu builder that offers Mark as unread, past its check of the chat's capabilities, the
+ * menu's tap handler hands it to the extension once Instagram hasn't blocked the action, Instagram's
+ * Mark as read for chats picked together tells the extension about each chat, and the bridges are
+ * written from Instagram's own handlers.
  */
 class NativeMarkReadTest {
     @Test fun declaredBuildsOfferMarkAsReadOnOneChatAndHandleItsTapFirst() = fixtures { bundle ->
@@ -49,22 +53,28 @@ class NativeMarkReadTest {
         assertEquals("Ljava/util/List;", found.builder.parameterTypes[found.rows].toString())
         assertEquals(USER_SESSION, found.session.type)
         assertEquals(found.action.definingClass, found.session.definingClass)
-        assertEquals(7, found.bridges.size)
+        assertEquals(9, found.bridges.size)
 
         val first = seen.handler.visualCode().first()
         val rows = found.builder.visualCode()
         val act = found.action.visualCode()
-        val hooked = listOf(seen.handler, found.builder, found.action).map { "${it.definingClass}->${it.name}(" }
+        val picked = found.together.visualCode()
+        val hooked = listOf(seen.handler, found.builder, found.action, found.together).map { "${it.definingClass}->${it.name}(" }
         val before = classes.mapValues { snapshot(it.value.methods) }
         context.readWithoutSeenReceipt()
 
-        assertThreadGuard(seen.handler, seen.complete.toString(), first)
-        assertRowOffer(found.builder, found.rows, found.markAsRead.toString(), rows)
-        assertTapGuard(found.action, found.markAsRead.toString(), found.session.toString(), act)
+        assertThreadGuard(seen.handler, seen.complete.toString(), first, seen.account.toString())
+        assertRowOffer(found.builder, found.rows, found.markAsRead.toString(), rows, found.offerAt)
+        assertOfferGated(found.builder, found.offerAt)
+        assertTapGuard(found.action, found.markAsRead.toString(), found.session.toString(), act, found.tapAt)
+        val handed = listOf(CHOSEN, found.markAsRead.toString(), SESSION, CHAT, KEY)
         for (handled in listOf(true, false)) {
-            val trace = traceTapGuard(found.action, found.chosen, found.thread, found.key, handled)
-            assertEquals(TapTrace(listOf(CHOSEN, found.markAsRead.toString(), SESSION, CHAT, KEY), handled), trace)
+            assertEquals(TapTrace(handed, returned = handled),
+                traceTapGuard(found.action, found.tapAt, found.chosen, found.thread, found.key, blocked = false, handled = handled))
+            assertEquals("a blocked action never reaches the extension", TapTrace(emptyList(), returned = true),
+                traceTapGuard(found.action, found.tapAt, found.chosen, found.thread, found.key, blocked = true, handled = handled))
         }
+        assertTogetherHook(found.together, picked, found.togetherAt)
         for ((type, original) in before) {
             if (type == INSTAGRAM_CHATS) continue
             val now = snapshot(context.mutableClassDefBy(type).methods)
@@ -82,9 +92,11 @@ class NativeMarkReadTest {
         val found = context.findMarkRead(seen)
         val rows = found.builder.visualCode()
         val act = found.action.visualCode()
+        val picked = found.together.visualCode()
         context.readWithoutSeenReceipt()
-        assertRowOffer(found.builder, found.rows, found.markAsRead.toString(), rows)
-        assertTapGuard(found.action, found.markAsRead.toString(), found.session.toString(), act)
+        assertRowOffer(found.builder, found.rows, found.markAsRead.toString(), rows, found.offerAt)
+        assertTapGuard(found.action, found.markAsRead.toString(), found.session.toString(), act, found.tapAt)
+        assertTogetherHook(found.together, picked, found.togetherAt)
     }
 
     companion object {
@@ -92,8 +104,10 @@ class NativeMarkReadTest {
 
         /**
          * The chat receipt's classes, plus the chat menu's enum, the classes whose methods take it or
-         * read it into a list, Instagram's handler for marking a chat read, every class those name,
-         * and the extension's hooks and bridges.
+         * read it into a list, Instagram's handler for marking a chat read, its check for a blocked
+         * chat action and its Mark as read for chats picked together, every class those name, the
+         * receipt's details and the classes they extend, the account class, and the extension's hooks
+         * and bridges.
          */
         private fun markReadClasses(bundle: File): Map<String, ClassDef> = cached.getOrPut(bundle.absolutePath) {
             val classes = threadClasses(bundle).toMutableMap()
@@ -103,7 +117,9 @@ class NativeMarkReadTest {
                 }
             }
             classes[menu.type] = menu
-            FixtureDex.classesHolding(bundle, MARK_READ_HANDLER).forEach { classes[it.type] = it }
+            for (anchor in listOf(MARK_READ_HANDLER, THREAD_ACTION_BLOCKED, MARK_READ_TOGETHER_ACTION)) {
+                FixtureDex.classesHolding(bundle, anchor).forEach { classes[it.type] = it }
+            }
             FixtureDex.forEach(bundle) { dex ->
                 for (candidate in dex.classes) {
                     if (candidate.type in classes) continue
@@ -116,7 +132,7 @@ class NativeMarkReadTest {
             val named = mutableSetOf(seen.mutation, THREAD_KEY)
             for (candidate in classes.values.toList()) for (method in candidate.methods) {
                 if (method.takes(menu.type)) named += method.parameterTypes.map(Any::toString)
-                if (method.visualCode().none { it.visualString() == MARK_READ_HANDLER }) continue
+                if (method.visualCode().none { it.visualString() == MARK_READ_HANDLER } && !method.readsInto(menu.type)) continue
                 for (instruction in method.visualCode()) {
                     when (val reference = instruction.visualReference()) {
                         is MethodReference -> named += reference.parameterTypes.map(Any::toString) + reference.definingClass + reference.returnType
@@ -125,6 +141,14 @@ class NativeMarkReadTest {
                 }
             }
             classes += FixtureDex.classes(bundle, named.filter { it.startsWith("L") && it !in classes }.toSet())
+            // The receipt's details and every class they extend, where the message's item id is declared.
+            var wanted = classes.getValue(seen.mutation).fields.map { it.type }.toSet() + USER_SESSION
+            while (true) {
+                val loaded = FixtureDex.classes(bundle, wanted.filter { it.startsWith("L") && it !in classes }.toSet())
+                if (loaded.isEmpty()) break
+                classes += loaded
+                wanted = loaded.values.mapNotNull { it.superclass }.toSet()
+            }
             classes[INSTAGRAM_CHATS] = ImmutableClassDef.of(ExtensionDex.classDef(INSTAGRAM_CHATS))
             classes
         }

@@ -24,8 +24,8 @@ val readWithoutSeenReceiptPatch = bytecodePatch(
     name = "Read messages without the seen receipt",
     description = "Adds an off-by-default switch so opening a chat doesn't tell people you've seen their " +
         "messages. Unlike turning off read receipts in Instagram's settings, you still see when they've seen " +
-        "yours. To let one chat know, long press it and tap Mark as read. View-once photos and videos have " +
-        "their own patch.",
+        "yours. Instagram's Mark as read still lets them know, whether you long press one chat or pick " +
+        "several. View-once photos and videos have their own patch.",
     default = false,
 ) {
     category("Privacy")
@@ -40,7 +40,8 @@ val readWithoutSeenReceiptPatch = bytecodePatch(
 
 /**
  * Resolves the receipt's handler and everything Mark as read needs before changing anything, then
- * holds the receipt back and offers Mark as read on a chat's long press.
+ * holds the receipt back, offers Mark as read on a chat's long press and lets the receipts of
+ * chats marked read through.
  */
 internal fun BytecodePatchContext.readWithoutSeenReceipt() {
     val seen = findThreadSeen()
@@ -55,15 +56,17 @@ internal fun BytecodePatchContext.holdBackThreadSeen() = holdBackThreadSeen(find
 /**
  * Completes the chat receipt's queued task through Instagram's own success callback before any
  * request is built. The chat still clears on this phone, since that happens before the queue runs,
- * and the receipt isn't retried after a restart. The extension is handed the receipt, so it can let
- * through the one for a chat marked read by hand.
+ * and the receipt isn't retried after a restart. The extension is handed the receipt and the
+ * account the handler sends it for, so it can let through the one for a message marked read.
  */
 internal fun holdBackThreadSeen(found: ThreadSeenTargets) {
     found.handler.addInstructionsWithLabels(
         0,
         """
             move-object/from16 v0, ${found.handler.parameterRegister(2)}
-            invoke-static { v0 }, $HOLD_THREAD_SEEN
+            move-object/from16 v1, p0
+            iget-object v1, v1, ${found.account}
+            invoke-static { v0, v1 }, $HOLD_THREAD_SEEN
             move-result v0
             if-eqz v0, :instagram
             move-object/from16 v1, ${found.handler.parameterRegister(1)}

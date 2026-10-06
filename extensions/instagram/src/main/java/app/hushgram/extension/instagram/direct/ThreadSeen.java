@@ -4,19 +4,14 @@
  */
 package app.hushgram.extension.instagram.direct;
 
-import android.os.SystemClock;
+import android.content.Context;
 import app.hushgram.extension.instagram.settings.FamilyNames;
 import app.hushgram.extension.instagram.settings.Settings;
 import app.hushgram.extension.shared.L10n;
 import app.hushgram.extension.shared.Logger;
 import app.hushgram.extension.shared.Utils;
 import app.hushgram.extension.shared.diagnostics.HookStatus;
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -29,35 +24,41 @@ import java.util.function.Supplier;
  * While the switch is on, the handler reports the receipt done through Instagram's own callback
  * without sending it, so the chat still reads as seen on this phone and the queue doesn't retry it.
  *
- * <p>While the switch is on, a long press on a chat in the inbox also offers Instagram's own Mark
- * as read, which Instagram otherwise offers only when several chats are picked
- * ({@link #offerMarkRead}). Tapping it ({@link #markRead}) queues that chat's receipt through
- * Instagram's own sender, picked the way Instagram's own handler for marking a chat read picks it,
- * and takes the chat's unread mark off. That chat's next receipt then goes through the hold once, if
- * it comes within a minute, and so does that same receipt if Instagram tries it again after a failed
- * send. Every other receipt stays held.
+ * <p>Instagram's own Mark as read still lets a chat know. While the switch is on, a long press on a
+ * chat in the inbox offers it, which Instagram otherwise offers only when several chats are picked
+ * ({@link #offerMarkRead}), wherever Instagram would let that chat be marked unread. Tapping it
+ * ({@link #markRead}), where Instagram allows an action on that chat, queues the chat's receipt
+ * through Instagram's own sender, picked the way Instagram's own handler for marking a chat read
+ * picks it, and takes the chat's unread mark off. Marking several picked chats read together goes
+ * through the same sender, and {@link #markReadTogether} is told about each chat first. Either way
+ * the receipt for that message, on that account, goes through the hold from then on, for a day
+ * ({@link ReadMarks}), so it still goes out when Instagram sends it after a restart or once it's
+ * back online. Every other receipt stays held, a newer message in the same chat included.
  *
  * <p>The hooks fail open: with the switch off, HushGram paused, the settings not read yet or
- * anything thrown, Instagram sends the receipt and builds its menu as usual. A receipt whose chat
- * can't be read while a chat waits for its receipt is the one exception: it stays held, since
- * letting it through would send a receipt nobody asked for.
+ * anything thrown, Instagram sends the receipt and builds its menu as usual. Deciding whether a
+ * held receipt was marked read fails closed: a receipt whose chat, message or account can't be
+ * read, or whose marks can't be read, stays held, since letting it through would send a receipt
+ * nobody asked for.
  */
 public final class ThreadSeen {
     /** The steps a failure is reported under. */
     static final String SWITCH = "switch read";
     static final String ROW = "mark as read row";
     static final String MARK = "mark as read";
+    static final String TOGETHER = "chats marked read together";
     static final String PASS = "chat marked read";
     static final String FEEDBACK = "mark as read feedback";
 
-    /** How long a chat marked read by hand waits for its receipt. */
-    static final long PASS_MILLIS = 60_000L;
-
     /** Instagram's chats, through the bodies the patch writes in {@link InstagramChats}. Tests stand in their own. */
     interface Chats {
+        String accountId(Object session);
+
         String threadId(Object key);
 
         Object receiptKey(Object receipt);
+
+        String receiptMessage(Object receipt);
 
         Object lastMessage(Object thread);
 
@@ -72,6 +73,11 @@ public final class ThreadSeen {
 
     private static final Chats INSTAGRAM = new Chats() {
         @Override
+        public String accountId(Object session) {
+            return InstagramChats.accountId(session);
+        }
+
+        @Override
         public String threadId(Object key) {
             return InstagramChats.threadId(key);
         }
@@ -79,6 +85,11 @@ public final class ThreadSeen {
         @Override
         public Object receiptKey(Object receipt) {
             return InstagramChats.receiptKey(receipt);
+        }
+
+        @Override
+        public String receiptMessage(Object receipt) {
+            return InstagramChats.receiptMessage(receipt);
         }
 
         @Override
@@ -107,15 +118,13 @@ public final class ThreadSeen {
         }
     };
 
-    private static final LongSupplier CLOCK = SystemClock::elapsedRealtime;
+    /** Wall time, since a mark outlives the process and elapsed time starts over with the phone. */
+    private static final LongSupplier CLOCK = System::currentTimeMillis;
 
     private static final Object LOCK = new Object();
 
-    /** Chats marked read by hand whose next receipt goes through, by thread id, with when that runs out. */
-    private static final Map<String, Long> passes = new HashMap<>();
-
-    /** Receipts let through, so one that Instagram tries again after a failed send goes through again. */
-    private static final List<WeakReference<Object>> passed = new ArrayList<>();
+    /** The marks, read the first time they're needed. */
+    private static ReadMarks marks;
 
     private static volatile boolean logged;
 
@@ -123,23 +132,24 @@ public final class ThreadSeen {
     }
 
     /**
-     * Asked at the start of Instagram's seen receipt handler with the receipt. True makes the handler
-     * finish without sending. False while the switch is off, HushGram is paused or the settings
-     * aren't ready, and for the receipt of a chat just marked read by hand. Never throws.
+     * Asked at the start of Instagram's seen receipt handler with the receipt and the account the
+     * handler sends it for. True makes the handler finish without sending. False while the switch
+     * is off, HushGram is paused or the settings aren't ready, and for the receipt of a message
+     * marked read. Never throws.
      */
-    public static boolean hold(Object receipt) {
-        return hold(receipt, ThreadSeen::switchedOn, INSTAGRAM, CLOCK);
+    public static boolean hold(Object receipt, Object session) {
+        return hold(receipt, session, ThreadSeen::switchedOn, INSTAGRAM, CLOCK);
     }
 
-    static boolean hold(Object receipt, BooleanSupplier on) {
-        return hold(receipt, on, INSTAGRAM, CLOCK);
+    static boolean hold(Object receipt, Object session, BooleanSupplier on) {
+        return hold(receipt, session, on, INSTAGRAM, CLOCK);
     }
 
-    static boolean hold(Object receipt, BooleanSupplier on, Chats chats, LongSupplier clock) {
+    static boolean hold(Object receipt, Object session, BooleanSupplier on, Chats chats, LongSupplier clock) {
         try {
             HookStatus.invoked(FamilyNames.THREAD_SEEN);
             boolean hold = on.getAsBoolean();
-            if (hold && markedRead(receipt, chats, clock)) {
+            if (hold && markedRead(receipt, session, chats, clock)) {
                 Logger.printDebug(() -> "Messages: sent the seen receipt for a chat marked read");
                 return false;
             }
@@ -155,8 +165,9 @@ public final class ThreadSeen {
     }
 
     /**
-     * Called first in the builder that offers Mark as unread on a chat's long press, with the rows
-     * so far and Instagram's own Mark as read. Adds Mark as read, once, while the switch is on.
+     * Called in the builder that offers Mark as unread on a chat's long press, once Instagram has
+     * found the chat can be marked unread, with the rows so far and Instagram's own Mark as read.
+     * Adds Mark as read, once, while the switch is on.
      */
     public static void offerMarkRead(List<Object> rows, Object markAsRead) {
         offerMarkRead(rows, markAsRead, ThreadSeen::switchedOn);
@@ -174,9 +185,10 @@ public final class ThreadSeen {
     }
 
     /**
-     * Called first when a row of a chat's long press menu is tapped, with the row, Instagram's own
-     * Mark as read, the account, the chat and its key. True when the tap was Mark as read and has
-     * been handled here, so Instagram's code for the row doesn't run. Never throws.
+     * Called when a row of a chat's long press menu is tapped and Instagram has allowed an action
+     * on that chat, with the row, Instagram's own Mark as read, the account, the chat and its key.
+     * True when the tap was Mark as read and has been handled here, so Instagram's code for the row
+     * doesn't run. Never throws.
      */
     public static boolean markRead(Object chosen, Object markAsRead, Object session, Object thread, Object key) {
         return markRead(chosen, markAsRead, session, thread, key, ThreadSeen::switchedOn, INSTAGRAM, CLOCK);
@@ -184,21 +196,29 @@ public final class ThreadSeen {
 
     static boolean markRead(Object chosen, Object markAsRead, Object session, Object thread, Object key,
                             BooleanSupplier on, Chats chats, LongSupplier clock) {
-        String waiting = null;
+        ReadMarks waiting = null;
+        String account = null;
+        String id = null;
+        String message = null;
+        long now = 0;
         try {
             HookStatus.invoked(FamilyNames.THREAD_SEEN);
             if (chosen == null || chosen != markAsRead || !on.getAsBoolean()) return false;
-            String id = chats.threadId(key);
+            account = chats.accountId(session);
+            id = chats.threadId(key);
             Object last = chats.lastMessage(thread);
-            String message = last == null ? null : chats.messageId(last);
+            message = last == null ? null : chats.messageId(last);
             String sender = last == null ? null : chats.senderId(last);
-            if (isEmpty(id) || isEmpty(message) || isEmpty(sender)) {
+            ReadMarks marks = marks();
+            if (isEmpty(account) || isEmpty(id) || isEmpty(message) || isEmpty(sender) || marks == null) {
                 Logger.printDebug(() -> "Messages: a chat marked read has no message to mark");
                 toast(() -> L10n.t("Couldn't mark as read"));
                 return true;
             }
-            allow(id, clock.getAsLong());
-            waiting = id;
+            now = clock.getAsLong();
+            boolean fresh = !marks.allows(account, id, message, now);
+            marks.allow(account, id, message, now);
+            if (fresh) waiting = marks;
             chats.sendSeen(session, id, message, sender);
             waiting = null;
             try {
@@ -209,7 +229,13 @@ public final class ThreadSeen {
             toast(() -> L10n.t("Marked as read"));
             return true;
         } catch (Throwable t) {
-            if (waiting != null) revoke(waiting);
+            if (waiting != null) {
+                try {
+                    waiting.revoke(account, id, message, now);
+                } catch (Throwable ignored) {
+                    // The mark stays, and so does the failure reported below.
+                }
+            }
             HookStatus.threw(FamilyNames.THREAD_SEEN, MARK, t);
             toast(() -> L10n.t("Couldn't mark as read"));
             return false;
@@ -217,67 +243,86 @@ public final class ThreadSeen {
     }
 
     /**
-     * Whether [receipt] goes through because its chat was marked read by hand: the first receipt for
-     * that chat within the minute, or one already let through that Instagram is trying again. A
-     * receipt whose chat can't be read stays held, and the failure is reported.
+     * Called for each chat picked with others and marked read together, just before Instagram's own
+     * sender queues its receipt, with what the sender is handed: the account, a detail of the
+     * receipt, the chat's thread id, the message it points at and that message's sender. Lets that
+     * receipt through the hold while the switch is on, as a long press's Mark as read does. Never
+     * throws.
      */
-    private static boolean markedRead(Object receipt, Chats chats, LongSupplier clock) {
-        synchronized (LOCK) {
-            if (wasPassed(receipt)) return true;
-            if (passes.isEmpty()) return false;
-        }
-        String thread;
+    @SuppressWarnings("unused")
+    public static void markReadTogether(Object session, Object detail, String thread, String message, String sender) {
+        markReadTogether(session, thread, message, ThreadSeen::switchedOn, INSTAGRAM, CLOCK);
+    }
+
+    static void markReadTogether(Object session, String thread, String message, BooleanSupplier on, Chats chats,
+                                 LongSupplier clock) {
         try {
-            thread = chats.threadId(chats.receiptKey(receipt));
+            HookStatus.invoked(FamilyNames.THREAD_SEEN);
+            if (!on.getAsBoolean()) return;
+            String account = chats.accountId(session);
+            ReadMarks marks = marks();
+            if (isEmpty(account) || isEmpty(thread) || isEmpty(message) || marks == null) {
+                Logger.printDebug(() -> "Messages: a chat marked read together has no message to mark");
+                return;
+            }
+            marks.allow(account, thread, message, clock.getAsLong());
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.THREAD_SEEN, TOGETHER, t);
+        }
+    }
+
+    /**
+     * Whether [receipt] goes through because its message was marked read on [session]'s account.
+     * With no mark kept, the receipt isn't read at all. Anything that can't be read leaves it held,
+     * and the failure is reported.
+     */
+    private static boolean markedRead(Object receipt, Object session, Chats chats, LongSupplier clock) {
+        try {
+            ReadMarks marks = marks();
+            long now = clock.getAsLong();
+            if (marks == null || marks.isEmpty(now)) return false;
+            String account = chats.accountId(session);
+            String thread = chats.threadId(chats.receiptKey(receipt));
+            String message = chats.receiptMessage(receipt);
+            if (isEmpty(account) || isEmpty(thread) || isEmpty(message)) return false;
+            return marks.allows(account, thread, message, now);
         } catch (Throwable t) {
             HookStatus.threw(FamilyNames.THREAD_SEEN, PASS, t);
             return false;
         }
-        if (thread == null) return false;
-        long now = clock.getAsLong();
+    }
+
+    /**
+     * The marks, kept in their own file in Instagram's main process and only in memory in any other.
+     * Null before Instagram's context is set.
+     */
+    private static ReadMarks marks() {
         synchronized (LOCK) {
-            Long until = passes.remove(thread);
-            dropExpired(now);
-            if (until == null || now > until) return false;
-            passed.add(new WeakReference<>(receipt));
-            return true;
+            if (marks == null) {
+                if (!Utils.settingsReady()) return null;
+                Context context = Utils.getContext();
+                if (context == null) return null;
+                marks = new ReadMarks(Utils.isMainProcess()
+                        ? context.getSharedPreferences(ReadMarks.FILE, Context.MODE_PRIVATE)
+                        : null);
+            }
+            return marks;
         }
     }
 
-    private static void allow(String thread, long now) {
-        synchronized (LOCK) {
-            dropExpired(now);
-            passes.put(thread, now + PASS_MILLIS);
-        }
-    }
-
-    private static void revoke(String thread) {
-        synchronized (LOCK) {
-            passes.remove(thread);
-        }
-    }
-
-    /** Called holding {@link #LOCK}. */
-    private static boolean wasPassed(Object receipt) {
-        boolean found = false;
-        for (Iterator<WeakReference<Object>> it = passed.iterator(); it.hasNext(); ) {
-            Object held = it.next().get();
-            if (held == null) it.remove();
-            else if (receipt != null && held == receipt) found = true;
-        }
-        return found;
-    }
-
-    /** Called holding {@link #LOCK}. */
-    private static void dropExpired(long now) {
-        passes.values().removeIf(until -> now > until);
-    }
-
-    /** Forgets every chat marked read and every receipt let through, for tests. */
+    /** Forgets every mark, on file too, for tests. */
     static void forgetMarks() {
         synchronized (LOCK) {
-            passes.clear();
-            passed.clear();
+            ReadMarks current = marks();
+            if (current != null) current.clear();
+            marks = null;
+        }
+    }
+
+    /** Drops the marks read so far, as a restart does, so the next one is read from the file. For tests. */
+    static void restartForTests() {
+        synchronized (LOCK) {
+            marks = null;
         }
     }
 
@@ -293,7 +338,8 @@ public final class ThreadSeen {
         }
     }
 
-    private static boolean switchedOn() {
+    /** The switch, read the way every hook here reads it. Tests hand it to the overloads that take fake chats. */
+    static boolean switchedOn() {
         return Utils.settingsReady() && Settings.READ_WITHOUT_SEEN_RECEIPT.get();
     }
 }

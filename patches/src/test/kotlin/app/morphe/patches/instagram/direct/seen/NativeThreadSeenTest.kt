@@ -34,13 +34,15 @@ class NativeThreadSeenTest {
         val found = context.findThreadSeen()
         val visual = context.findVisualSeen()
         assertEquals("both receipts finish through the queue's one callback", visual.complete.toString(), found.complete.toString())
+        assertEquals("the receipt goes out for the account its handler keeps", found.handler.definingClass, found.account.definingClass)
+        assertEquals(USER_SESSION, found.account.type)
         assertNotEquals(visual.handler.definingClass, found.handler.definingClass)
         assertNotEquals(visual.creator.definingClass, found.creator.definingClass)
         val first = found.handler.visualCode().first()
         val hooked = "${found.handler.definingClass}->${found.handler.name}("
         val before = classes.mapValues { snapshot(it.value.methods) }
         context.holdBackThreadSeen()
-        assertThreadGuard(found.handler, found.complete.toString(), first)
+        assertThreadGuard(found.handler, found.complete.toString(), first, found.account.toString())
         assertEquals(ThreadTrace(completed = 1, sent = 0), traceThreadGuard(found.handler, true))
         assertEquals(ThreadTrace(completed = 0, sent = 1), traceThreadGuard(found.handler, false))
         for ((type, original) in before) {
@@ -61,7 +63,7 @@ class NativeThreadSeenTest {
             context.holdBackThreadSeen()
             if (!visualFirst) context.holdBackVisualSeen()
             assertVisualGuard(visual.handler, visual.complete.toString())
-            assertThreadGuard(found.handler, found.complete.toString(), first)
+            assertThreadGuard(found.handler, found.complete.toString(), first, found.account.toString())
         }
     }
 
@@ -71,7 +73,7 @@ class NativeThreadSeenTest {
         val found = context.findThreadSeen()
         val first = found.handler.visualCode().first()
         context.holdBackThreadSeen()
-        assertThreadGuard(found.handler, found.complete.toString(), first)
+        assertThreadGuard(found.handler, found.complete.toString(), first, found.account.toString())
     }
 
     /**
