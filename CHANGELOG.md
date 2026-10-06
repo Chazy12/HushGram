@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** The Korean settings read more naturally. @BlackGold8282 reworked 121 of them in #66, including the download, notes and Meta AI rows.
+
 * **Instagram:** A photo story with music now has two rows in its menu, Download as video and Download as photo. Instagram serves those stories as a short video with the song, so Download used to save only that. Download as photo saves the picture on its own at its largest size. Every other story keeps its one Download row. Asked for in #53.
 
 * **Instagram:** New Hide Instants patch. Instagram's Instants, the no-edit camera for friends, put a stack of photos in your messages. With the switch on, Instagram treats your account as one without Instants, so that stack goes after a restart. It's in simple mode with the switch off, under Messages in HushGram settings. Asked for in #59.
