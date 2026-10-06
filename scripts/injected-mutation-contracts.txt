@@ -439,15 +439,16 @@ once-call Lapp/hushgram/extension/instagram/download/VideoDownload;->allow(Ljava
 # Tap to play: IgGrootPlayer's play asks allowDirectStart() first, its prepare tells rebound()
 # first, and the autoplay check hands its answer to autoplayAllowed() where it returns, once on
 # 449. The touch dispatch feeds the tap clock first. IgVideoPlayerImpl's playInternal asks
-# allowStart() first, after reading the IgGrootPlayer it plays; it's the one method holding its log
+# allowStart() first, after reading the IgGrootPlayer it plays and checking whether its logger is
+# the Reels viewer's (the Tap to play choice of where, #39); it's the one method holding its log
 # line, a static taking its player, a reason and two flags. IgGrootPlayer's pause tells paused()
 # first. It holds no string, so the rule picks it by its class's prepare log line: of the class's
 # two methods taking a string and answering nothing, the pause is the one that hands a string on to
 # a (String) method of one of Instagram's renamed classes, the player underneath; the other only
 # logs. Left out, a video starts with no tap, or a pause no longer disarms the player; twice or
 # elsewhere, it isn't the hook the patch wrote.
-start-call Lapp/hushgram/extension/instagram/media/TapToPlay;->allowStart(Ljava/lang/Object;Ljava/lang/String;)Z in static (L*;Ljava/lang/String;ZZ)V holding IgVideoPlayerImpl.playInternal\splayAfterSeek:\s
-once-call Lapp/hushgram/extension/instagram/media/TapToPlay;->allowStart(Ljava/lang/Object;Ljava/lang/String;)Z in static (L*;Ljava/lang/String;ZZ)V holding IgVideoPlayerImpl.playInternal\splayAfterSeek:\s
+start-call Lapp/hushgram/extension/instagram/media/TapToPlay;->allowStart(Ljava/lang/Object;Ljava/lang/String;I)Z in static (L*;Ljava/lang/String;ZZ)V holding IgVideoPlayerImpl.playInternal\splayAfterSeek:\s
+once-call Lapp/hushgram/extension/instagram/media/TapToPlay;->allowStart(Ljava/lang/Object;Ljava/lang/String;I)Z in static (L*;Ljava/lang/String;ZZ)V holding IgVideoPlayerImpl.playInternal\splayAfterSeek:\s
 start-call Lapp/hushgram/extension/instagram/media/TapToPlay;->paused(Ljava/lang/Object;Ljava/lang/String;)V in instance (Ljava/lang/String;)V calling instance LX/*;->*(Ljava/lang/String;)V class-holding IgGrootPlayer.prepare
 once-call Lapp/hushgram/extension/instagram/media/TapToPlay;->paused(Ljava/lang/Object;Ljava/lang/String;)V in instance (Ljava/lang/String;)V calling instance LX/*;->*(Ljava/lang/String;)V class-holding IgGrootPlayer.prepare
 start-call Lapp/hushgram/extension/instagram/media/TapToPlay;->allowDirectStart(Ljava/lang/Object;Ljava/lang/String;)Z in instance (Ljava/lang/String;Z)V holding retry play_after_recovery
