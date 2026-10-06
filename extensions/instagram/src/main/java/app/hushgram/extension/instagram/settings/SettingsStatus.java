@@ -104,6 +104,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean instants() {
+        return false;
+    }
+
     public static boolean shareSheet() {
         return false;
     }

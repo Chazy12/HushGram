@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** New Hide Instants patch. Instagram's Instants, the no-edit camera for friends, put a stack of photos in your messages. With the switch on, Instagram treats your account as one without Instants, so that stack goes after a restart. It's in simple mode with the switch off, under Messages in HushGram settings. Asked for in #59.
+
 * **Instagram:** HushGram now patches Instagram 450.0.0.50.77. Before patching, get the APKMirror variant labelled (arm64-v8a) (480dpi) (Android 9.0+) with build number 385611438. Another build sits under the same label, so check the number. All 48 patches carry over. Instagram 450 renamed and merged a lot of the code they hook, and each one now finds its spot in the new layout.
 
 * **Instagram:** Tap to play can leave Reels out, or stick to Reels. A new Where videos wait choice under its switch picks Everywhere, Everywhere but Reels or Only in Reels. It starts at Everywhere, so nothing changes until you pick. A reel you see in the feed goes with the feed. Asked for in #39.

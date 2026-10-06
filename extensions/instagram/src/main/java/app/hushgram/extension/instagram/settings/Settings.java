@@ -236,6 +236,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_hide_notes_row", FALSE);
 
     /**
+     * Instants, Instagram's no-edit camera for friends, everywhere Instagram offers it
+     * ({@link app.hushgram.extension.instagram.direct.Instants}). Instagram settles what it shows when
+     * it starts, so a change takes a restart. Off to start.
+     */
+    public static final BooleanSetting HIDE_INSTANTS =
+            new BooleanSetting("hushgram_hide_instants", FALSE, true);
+
+    /**
      * The New group button beside the share sheet's search bar, whichever form Instagram gives it,
      * and the button that sends to the people you picked there as a group.
      */

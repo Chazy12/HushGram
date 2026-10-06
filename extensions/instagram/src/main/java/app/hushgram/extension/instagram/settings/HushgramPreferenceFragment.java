@@ -384,11 +384,18 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                             + "search results stay.")));
         }
 
-        if (build.contains(PatchFamily.NOTES_ROW)) {
+        if (build.contains(PatchFamily.NOTES_ROW) || build.contains(PatchFamily.INSTANTS)) {
             PreferenceCategory messages = category(screen, L10n.t("Messages"));
-            messages.addPreference(toggle(context, Settings.HIDE_NOTES_ROW, L10n.t("Hide the notes row"),
-                    L10n.t("Takes the row of notes off the top of your messages, the Map bubble in it too. "
-                            + "Your chats, search and requests stay.")));
+            if (build.contains(PatchFamily.NOTES_ROW)) {
+                messages.addPreference(toggle(context, Settings.HIDE_NOTES_ROW, L10n.t("Hide the notes row"),
+                        L10n.t("Takes the row of notes off the top of your messages, the Map bubble in it too. "
+                                + "Your chats, search and requests stay.")));
+            }
+            if (build.contains(PatchFamily.INSTANTS)) {
+                messages.addPreference(toggle(context, Settings.HIDE_INSTANTS, L10n.t("Hide Instants"),
+                        L10n.t("Instagram treats your account as one without Instants, so the stack of photos in "
+                                + "your messages goes. Applies after Instagram restarts.")));
+            }
         }
 
         List<Preference> reels = new ArrayList<>();

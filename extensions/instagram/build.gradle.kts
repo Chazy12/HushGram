@@ -243,6 +243,16 @@ tasks.register("verifyAndroidBoundaries") {
                 "missingPatchHasNoNotesRowSwitch[28]", "missingPatchHasNoNotesRowSwitch[37]",
                 "notesRowSwitchStartsOffUnderMessagesPersistsAndHonorsPause[28]",
                 "notesRowSwitchStartsOffUnderMessagesPersistsAndHonorsPause[37]"),
+            "app.hushgram.extension.instagram.direct.InstantsTest" to listOf(
+                "withTheSwitchOnTheCheckAnswersNo[28]", "withTheSwitchOnTheCheckAnswersNo[37]",
+                "offToStartAndOffLeaveItToInstagram[28]", "offToStartAndOffLeaveItToInstagram[37]",
+                "pausedAndUnreadyLeaveItToInstagram[28]", "pausedAndUnreadyLeaveItToInstagram[37]",
+                "aThrowingSwitchLeavesItToInstagramAndIsReported[28]", "aThrowingSwitchLeavesItToInstagramAndIsReported[37]"),
+            "app.hushgram.extension.instagram.settings.InstantsSettingsTest" to listOf(
+                "missingPatchHasNoInstantsSwitch[28]", "missingPatchHasNoInstantsSwitch[37]",
+                "instantsAloneStillGetsMessages[28]", "instantsAloneStillGetsMessages[37]",
+                "instantsSwitchStartsOffUnderMessagesPersistsAndHonorsPause[28]",
+                "instantsSwitchStartsOffUnderMessagesPersistsAndHonorsPause[37]"),
             "app.hushgram.extension.instagram.feed.SwipeToCreateTest" to listOf(
                 "withTheSwitchOnASwipeTowardTheCameraIsHeld[28]", "withTheSwitchOnASwipeTowardTheCameraIsHeld[37]",
                 "everyOtherMoveGoesOn[28]", "everyOtherMoveGoesOn[37]",

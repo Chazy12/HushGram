@@ -216,6 +216,8 @@ The posts and reels under the Search tab's bar. Search, your recent searches and
 Messages	Mesajlar
 Hide the notes row	Notlar satırını gizle
 Takes the row of notes off the top of your messages, the Map bubble in it too. Your chats, search and requests stay.	Mesajlarının üst kısmındaki notlar satırını, içindeki Harita balonuyla birlikte kaldırır. Sohbetlerin, arama ve istekler kalır.
+Hide Instants	Instants'ı gizle
+Instagram treats your account as one without Instants, so the stack of photos in your messages goes. Applies after Instagram restarts.	Instagram hesabını Instants olmayan bir hesap gibi görür, bu yüzden mesajlarındaki fotoğraf yığını kaybolur. Instagram yeniden başlatıldıktan sonra geçerli olur.
 Start Home on Following	Ana Sayfa'yı Takip Edilenler ile aç
 Home opens on posts from accounts you follow. Tap Following at the top to switch to For you, and Home remembers your pick. Restart Instagram after changing it.	Ana Sayfa, takip ettiğin hesapların gönderileriyle açılır. Senin için'e geçmek için üstteki Takip Edilenler'e dokun, Ana Sayfa seçimini hatırlar. Değiştirdikten sonra Instagram'ı yeniden başlat.
 Hide suggested stories	Önerilen hikayeleri gizle

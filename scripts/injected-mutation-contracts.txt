@@ -55,6 +55,12 @@ once-call Lapp/hushgram/extension/instagram/metaai/MetaAi;->inboxRow(Ljava/lang/
 # back; twice or elsewhere, it isn't the hook the patch wrote. HideNotesRowHookTest checks on the
 # 449 fixture where it lands.
 once-call Lapp/hushgram/extension/instagram/direct/NotesRow;->sections([Ljava/lang/Object;)[Ljava/lang/Object; in static (L*;)V holding InboxViewModelGenerator.calculateAndApplyDiffUpdate
+# Hide Instants (#59) asks Instants.hide() first in Instagram's one Instants check (02qP.A0O on 450),
+# the static (UserSession, boolean) method answering a boolean from two rollout flags. It holds no
+# string, so the rules pick it by the fields it reads and its device check, pinned to 450. Left out,
+# Instants stay with the switch on; twice or elsewhere, it isn't the guard the patch wrote.
+start-call Lapp/hushgram/extension/instagram/direct/Instants;->hide()Z in static (Lcom/instagram/common/session/UserSession;Z)Z calling static LX/06c9;->A0L(Landroid/content/Context;)Z holding Lcom/instagram/common/session/UserSession;->deviceSession:LX/06bK; LX/02hb;->A06:LX/02hb; LX/02hb;->A05:LX/02hb;
+once-call Lapp/hushgram/extension/instagram/direct/Instants;->hide()Z in static (Lcom/instagram/common/session/UserSession;Z)Z calling static LX/06c9;->A0L(Landroid/content/Context;)Z holding Lcom/instagram/common/session/UserSession;->deviceSession:LX/06bK; LX/02hb;->A06:LX/02hb; LX/02hb;->A05:LX/02hb;
 #
 # The patch fingerprint picks the method that puts a sponsored item into a feed by
 # "cross_surface_duplicate_ad" and "Is ad pod", a static method answering a boolean. "Is ad pod" has
