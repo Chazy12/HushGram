@@ -264,8 +264,23 @@ private fun requireRegistration(registry: Method, handler: String, classes: Map<
     }
 }
 
-/** A value must reach its use on every normal and exceptional path, including wide-half writes. */
-private fun requireOrigin(method: Method, at: Int, register: Int, definition: Int, what: String, fromDefinition: Boolean = false) {
+private fun requireOrigin(method: Method, at: Int, register: Int, definition: Int, what: String, fromDefinition: Boolean = false) =
+    requireOrigin(PATCH, method, at, register, definition, what, fromDefinition)
+
+/**
+ * A value must reach its use on every normal and exceptional path, including wide-half writes.
+ * A refusal names [patch], the patch whose check it was.
+ */
+internal fun requireOrigin(
+    patch: String,
+    method: Method,
+    at: Int,
+    register: Int,
+    definition: Int,
+    what: String,
+    fromDefinition: Boolean = false,
+) {
+    fun refuse(why: String): Nothing = throw PatchException("$patch: $why")
     val flow = ControlFlow.of(method)
     val pending = ArrayDeque<Pair<Int, Boolean>>()
     val visited = mutableSetOf<Pair<Int, Boolean>>()

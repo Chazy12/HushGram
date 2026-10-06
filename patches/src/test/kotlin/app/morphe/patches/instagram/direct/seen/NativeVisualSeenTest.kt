@@ -82,7 +82,7 @@ class NativeVisualSeenTest {
         val update = queue.methods.single { it.toString() == updateRef.toString() }
         val remove = queue.methods.single { it.parameterTypes.map(Any::toString) == listOf(STRING) && it.returnType == "Landroid/util/Pair;" }
         val delay = update.visualCode().calls().single { it.returnType == "J" && it.parameterTypes.map(Any::toString) == listOf(STRING) }
-        assertVisualUploadedDelayIsZero(found.registry, classes, delay)
+        assertUploadedDelayIsZero(found.registry, classes, delay)
         assertTrue("uploaded selects removal rather than retry", uploadedCallsRemoval(update, remove.toString(), delay))
         val removeCode = remove.visualCode()
         assertTrue("removes just the completed task's keys", removeCode.calls().count { it.name == "remove" } >= 3)
@@ -111,7 +111,7 @@ class NativeVisualSeenTest {
         private val anchors = setOf(VISUAL_ENDPOINT, VISUAL_MUTATION, SUCCESS_ANCHOR, DISPATCH_ANCHOR,
             "mutation_success", "IGDirectItemSeenMutation", "seenEphemeralMessageThreadData")
 
-        private fun fixtures(check: (File) -> Unit) {
+        internal fun fixtures(check: (File) -> Unit) {
             val versions = AppCompatibilities.instagram().single().targets.mapNotNull { it.version }.toSet()
             var count = 0
             for (version in versions) for (bundle in Fixtures.files { it.extension == "apks" && it.name.contains("-$version-") }) {
@@ -121,7 +121,7 @@ class NativeVisualSeenTest {
             assertTrue("no fixture of a declared build", count > 0)
         }
 
-        private fun nativeClasses(bundle: File): Map<String, ClassDef> = cached.getOrPut(bundle.absolutePath) {
+        internal fun nativeClasses(bundle: File): Map<String, ClassDef> = cached.getOrPut(bundle.absolutePath) {
             val found = mutableMapOf<String, ClassDef>()
             FixtureDex.forEach(bundle) { dex ->
                 if (dex.stringSection.any { it in anchors }) for (candidate in dex.classes) {
@@ -239,7 +239,7 @@ class NativeVisualSeenTest {
         }
 
         /** The descriptor retains uploaded tasks only if its explicit retention flag is true. */
-        private fun assertVisualUploadedDelayIsZero(registry: Method, classes: Map<String, ClassDef>, delay: MethodReference) {
+        internal fun assertUploadedDelayIsZero(registry: Method, classes: Map<String, ClassDef>, delay: MethodReference, marker: String = VISUAL_MUTATION) {
             val descriptorClass = classes.getValue(delay.definingClass)
             val constructor = descriptorClass.methods.single { it.name == "<init>" }
             val code = constructor.visualCode()
@@ -260,14 +260,15 @@ class NativeVisualSeenTest {
             assertTrue("descriptor initialization only calls Object's constructor", build.calls().all { it.definingClass == OBJECT && it.name == "<init>" })
             assertTrue("retention starts false", build.none { it.opcode == Opcode.IPUT_BOOLEAN && it.visualReference().toString() == flag })
             val registration = registry.visualCode()
-            val nameAt = registration.indexOfFirst { it.visualString() == VISUAL_MUTATION }
+            val nameAt = registration.indexOfFirst { it.visualString() == marker }
+            assertTrue("$marker is registered", nameAt >= 0)
             val wrappedAt = registration.indices.first { it > nameAt &&
                 (registration[it].visualReference() as? MethodReference)?.let { ref -> ref.name == "<init>" && ref.definingClass == descriptorClass.type } == true }
             val visualBlock = registration.subList(nameAt + 2, wrappedAt)
-            assertTrue("visual descriptor leaves retention off", visualBlock.none { it.opcode == Opcode.IPUT_BOOLEAN && it.visualReference().toString() == flag })
+            assertTrue("$marker's descriptor leaves retention off", visualBlock.none { it.opcode == Opcode.IPUT_BOOLEAN && it.visualReference().toString() == flag })
             for (call in visualBlock.calls().filter { it.parameterTypes.map(Any::toString) == listOf(builder.type) }) {
                 val helper = classes.getValue(call.definingClass).methods.single { it.toString() == call.toString() }
-                assertTrue("visual configuration keeps retention off", helper.visualCode().none { it.opcode == Opcode.IPUT_BOOLEAN && it.visualReference().toString() == flag })
+                assertTrue("$marker's configuration keeps retention off", helper.visualCode().none { it.opcode == Opcode.IPUT_BOOLEAN && it.visualReference().toString() == flag })
             }
         }
     }

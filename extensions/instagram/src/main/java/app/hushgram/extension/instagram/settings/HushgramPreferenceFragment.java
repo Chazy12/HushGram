@@ -384,7 +384,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                             + "search results stay.")));
         }
 
-        if (build.contains(PatchFamily.NOTES_ROW) || build.contains(PatchFamily.INSTANTS)) {
+        if (build.contains(PatchFamily.NOTES_ROW) || build.contains(PatchFamily.INSTANTS)
+                || build.contains(PatchFamily.THREAD_SEEN)) {
             PreferenceCategory messages = category(screen, L10n.t("Messages"));
             if (build.contains(PatchFamily.NOTES_ROW)) {
                 messages.addPreference(toggle(context, Settings.HIDE_NOTES_ROW, L10n.t("Hide the notes row"),
@@ -395,6 +396,12 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                 messages.addPreference(toggle(context, Settings.HIDE_INSTANTS, L10n.t("Hide Instants"),
                         L10n.t("Instagram treats your account as one without Instants, so the stack of photos in "
                                 + "your messages goes. Applies after Instagram restarts.")));
+            }
+            if (build.contains(PatchFamily.THREAD_SEEN)) {
+                messages.addPreference(toggle(context, Settings.READ_WITHOUT_SEEN_RECEIPT,
+                        L10n.t("Read messages without the seen receipt"),
+                        L10n.t("Opening a chat doesn't tell people you've seen their messages, and you still see "
+                                + "when they've seen yours.")));
             }
         }
 

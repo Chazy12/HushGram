@@ -124,6 +124,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_view_dm_media_anonymously", FALSE);
 
     /**
+     * The seen receipt a chat sends when you open it, the one that puts Seen under the other
+     * person's message ({@link app.hushgram.extension.instagram.direct.ThreadSeen}). Read each time
+     * Instagram goes to send one, so a change applies to the next receipt. Off to start.
+     */
+    public static final BooleanSetting READ_WITHOUT_SEEN_RECEIPT =
+            new BooleanSetting("hushgram_read_without_seen_receipt", FALSE);
+
+    /**
      * The Mark as seen button in the story viewer's header
      * ({@link app.hushgram.extension.instagram.stories.StorySeenButton}). Off to start. A story you
      * tap it on is sent as seen while the rest stay held back. Read each time a story is shown and

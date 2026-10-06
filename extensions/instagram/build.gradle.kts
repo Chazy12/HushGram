@@ -253,6 +253,17 @@ tasks.register("verifyAndroidBoundaries") {
                 "instantsAloneStillGetsMessages[28]", "instantsAloneStillGetsMessages[37]",
                 "instantsSwitchStartsOffUnderMessagesPersistsAndHonorsPause[28]",
                 "instantsSwitchStartsOffUnderMessagesPersistsAndHonorsPause[37]"),
+            "app.hushgram.extension.instagram.direct.ThreadSeenTest" to listOf(
+                "withTheSwitchOnTheReceiptIsHeld[28]", "withTheSwitchOnTheReceiptIsHeld[37]",
+                "offToStartAndOffSendTheReceipt[28]", "offToStartAndOffSendTheReceipt[37]",
+                "viewOnceMediaIsAnIndependentChoice[28]", "viewOnceMediaIsAnIndependentChoice[37]",
+                "pausedAndUnreadySendTheReceipt[28]", "pausedAndUnreadySendTheReceipt[37]",
+                "aThrowingSwitchSendsTheReceiptAndIsReported[28]", "aThrowingSwitchSendsTheReceiptAndIsReported[37]"),
+            "app.hushgram.extension.instagram.settings.ThreadSeenSettingsTest" to listOf(
+                "missingPatchHasNoSeenReceiptSwitch[28]", "missingPatchHasNoSeenReceiptSwitch[37]",
+                "seenReceiptAloneStillGetsMessages[28]", "seenReceiptAloneStillGetsMessages[37]",
+                "seenReceiptSwitchStartsOffUnderMessagesPersistsAndHonorsPause[28]",
+                "seenReceiptSwitchStartsOffUnderMessagesPersistsAndHonorsPause[37]"),
             "app.hushgram.extension.instagram.feed.SwipeToCreateTest" to listOf(
                 "withTheSwitchOnASwipeTowardTheCameraIsHeld[28]", "withTheSwitchOnASwipeTowardTheCameraIsHeld[37]",
                 "everyOtherMoveGoesOn[28]", "everyOtherMoveGoesOn[37]",
