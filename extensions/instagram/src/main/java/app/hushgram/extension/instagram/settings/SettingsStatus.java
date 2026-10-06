@@ -88,6 +88,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean typing() {
+        return false;
+    }
+
     public static boolean feedReels() {
         return false;
     }

@@ -385,7 +385,7 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         }
 
         if (build.contains(PatchFamily.NOTES_ROW) || build.contains(PatchFamily.INSTANTS)
-                || build.contains(PatchFamily.THREAD_SEEN)) {
+                || build.contains(PatchFamily.THREAD_SEEN) || build.contains(PatchFamily.TYPING)) {
             PreferenceCategory messages = category(screen, L10n.t("Messages"));
             if (build.contains(PatchFamily.NOTES_ROW)) {
                 messages.addPreference(toggle(context, Settings.HIDE_NOTES_ROW, L10n.t("Hide the notes row"),
@@ -402,6 +402,11 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                         L10n.t("Read messages without the seen receipt"),
                         L10n.t("Opening a chat doesn't tell people you've seen their messages, and you still see "
                                 + "when they've seen yours.")));
+            }
+            if (build.contains(PatchFamily.TYPING)) {
+                messages.addPreference(toggle(context, Settings.HIDE_TYPING, L10n.t("Hide that you're typing"),
+                        L10n.t("People you're chatting with don't see the typing dots while you write, and you "
+                                + "still see theirs.")));
             }
         }
 

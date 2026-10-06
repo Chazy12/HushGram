@@ -671,6 +671,43 @@
       "options": []
     },
     {
+      "name": "Hide that you're typing",
+      "description": "Adds an off-by-default switch so the people you're chatting with don't see when you're typing. Unlike turning off the typing indicator in Instagram's settings, you still see when they're typing.",
+      "category": "Privacy",
+      "use": false,
+      "dependencies": [
+        "BytecodePatch",
+        "HushGram settings"
+      ],
+      "compatiblePackages": {
+        "com.instagram.android": [
+          "450.0.0.50.77"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Instagram",
+          "packageName": "com.instagram.android",
+          "description": null,
+          "appIconColor": 14757996,
+          "signatures": [
+            "3a10c50c18ba937506c2875e9047be74f8fd8b86fae2ff9feaa50a81fcb4c014",
+            "5f3e50f435583c9ae626302a71f7340044087a7e2c60adacfc254205a993e305"
+          ],
+          "targets": [
+            {
+              "version": "450.0.0.50.77",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 385611438
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Hide the Explore grid",
       "description": "Empties the grid of posts and reels under the Search tab's bar. Search, your recent searches and search results stay.",
       "category": "Interface",

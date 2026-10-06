@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** New Hide that you're typing patch. With its switch on, the people you're chatting with don't see the dots while you type, and you still see theirs. Instagram's own typing indicator setting turns off both. It's off until you pick it in Manager, and the switch, under Messages in HushGram settings, starts off. Asked for in #13.
+
 * **Instagram:** New Read messages without the seen receipt patch. With its switch on, opening a chat doesn't tell people you've seen their messages, and you still see when they've seen yours. Instagram's own read receipts setting turns off both. It's off until you pick it in Manager, and the switch, under Messages in HushGram settings, starts off. View-once photos and videos keep their own patch. Asked for in #13.
 
 * **Instagram:** The README's troubleshooting now says how to stop the Play Store from offering, and trying to install, Meta's build over a patched Instagram: untick Enable auto update in the three-dot menu of Instagram's Play page. Asked in #68.

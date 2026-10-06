@@ -132,6 +132,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_read_without_seen_receipt", FALSE);
 
     /**
+     * The typing indicator a chat shows the other person while you write
+     * ({@link app.hushgram.extension.instagram.direct.TypingStatus}). Read each time you start
+     * typing, so a change applies the next time. Off to start.
+     */
+    public static final BooleanSetting HIDE_TYPING = new BooleanSetting("hushgram_hide_typing", FALSE);
+
+    /**
      * The Mark as seen button in the story viewer's header
      * ({@link app.hushgram.extension.instagram.stories.StorySeenButton}). Off to start. A story you
      * tap it on is sent as seen while the rest stay held back. Read each time a story is shown and

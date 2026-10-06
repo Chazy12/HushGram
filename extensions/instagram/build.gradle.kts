@@ -264,6 +264,18 @@ tasks.register("verifyAndroidBoundaries") {
                 "seenReceiptAloneStillGetsMessages[28]", "seenReceiptAloneStillGetsMessages[37]",
                 "seenReceiptSwitchStartsOffUnderMessagesPersistsAndHonorsPause[28]",
                 "seenReceiptSwitchStartsOffUnderMessagesPersistsAndHonorsPause[37]"),
+            "app.hushgram.extension.instagram.direct.TypingStatusTest" to listOf(
+                "withTheSwitchOnTypingIsKeptBack[28]", "withTheSwitchOnTypingIsKeptBack[37]",
+                "aStopAlwaysRunsInstagramsCode[28]", "aStopAlwaysRunsInstagramsCode[37]",
+                "offToStartAndOffSendTheIndicator[28]", "offToStartAndOffSendTheIndicator[37]",
+                "pausedAndUnreadySendTheIndicator[28]", "pausedAndUnreadySendTheIndicator[37]",
+                "aThrowingSwitchSendsTheIndicatorAndIsReported[28]", "aThrowingSwitchSendsTheIndicatorAndIsReported[37]",
+                "theSeenReceiptSwitchIsAnIndependentChoice[28]", "theSeenReceiptSwitchIsAnIndependentChoice[37]"),
+            "app.hushgram.extension.instagram.settings.TypingSettingsTest" to listOf(
+                "missingPatchHasNoTypingSwitch[28]", "missingPatchHasNoTypingSwitch[37]",
+                "typingAloneStillGetsMessages[28]", "typingAloneStillGetsMessages[37]",
+                "typingSwitchStartsOffUnderMessagesPersistsAndHonorsPause[28]",
+                "typingSwitchStartsOffUnderMessagesPersistsAndHonorsPause[37]"),
             "app.hushgram.extension.instagram.feed.SwipeToCreateTest" to listOf(
                 "withTheSwitchOnASwipeTowardTheCameraIsHeld[28]", "withTheSwitchOnASwipeTowardTheCameraIsHeld[37]",
                 "everyOtherMoveGoesOn[28]", "everyOtherMoveGoesOn[37]",

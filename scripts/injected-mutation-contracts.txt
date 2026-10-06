@@ -68,6 +68,12 @@ once-call Lapp/hushgram/extension/instagram/direct/Instants;->hide()Z in static 
 # the 450 fixture where it lands.
 start-call Lapp/hushgram/extension/instagram/direct/ThreadSeen;->hold()Z in instance (L*;L*;L*;)V holding IGDirectItemSeenMutation xig_direct_item_seen
 once-call Lapp/hushgram/extension/instagram/direct/ThreadSeen;->hold()Z in instance (L*;L*;L*;)V holding IGDirectItemSeenMutation xig_direct_item_seen
+# Hide that you're typing (#13) hands TypingStatus.hold(I) the typing flag first in Instagram's typing
+# status service (01MY.A06 on 450), the one (boolean) method holding the trace name and flag below.
+# Left out, the other person sees you typing with the switch on; twice or elsewhere, it isn't the
+# guard the patch wrote. NativeTypingTest checks on the 450 fixture where it lands.
+start-call Lapp/hushgram/extension/instagram/direct/TypingStatus;->hold(I)Z in instance (Z)V holding IGDirectTypingStatusService is_typing_indicator_enabled
+once-call Lapp/hushgram/extension/instagram/direct/TypingStatus;->hold(I)Z in instance (Z)V holding IGDirectTypingStatusService is_typing_indicator_enabled
 #
 # The patch fingerprint picks the method that puts a sponsored item into a feed by
 # "cross_surface_duplicate_ad" and "Is ad pod", a static method answering a boolean. "Is ad pod" has

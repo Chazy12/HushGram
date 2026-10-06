@@ -48,7 +48,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildDe() {
-        Map<String, String> table = new HashMap<>(804);
+        Map<String, String> table = new HashMap<>(808);
         fillDe0(table);
         fillDe1(table);
         fillDe2(table);
@@ -382,6 +382,8 @@ public final class L10nTranslations {
                 "Vorgeschlagene Beitr\u00e4ge ausblenden");
         table.put("Hide suggested stories",
                 "Vorgeschlagene Stories ausblenden");
+        table.put("Hide that you're typing",
+                "Verbergen, dass du schreibst");
         table.put("Hide the Explore grid",
                 "Entdecken-Raster ausblenden");
         table.put("Hide the Follow button",
@@ -424,11 +426,11 @@ public final class L10nTranslations {
                 "HushGram-Einstellungen exportiert.");
         table.put("HushGram turns back on when Instagram restarts.",
                 "HushGram ist wieder aktiv, sobald Instagram neu startet.");
-        table.put("Import HushGram settings",
-                "HushGram-Einstellungen importieren");
     }
 
     private static void fillDe3(Map<String, String> table) {
+        table.put("Import HushGram settings",
+                "HushGram-Einstellungen importieren");
         table.put("Import overrides",
                 "\u00dcberschreibungen importieren");
         table.put("Imported %1$d override changes. Restart Instagram to apply them.",
@@ -547,11 +549,11 @@ public final class L10nTranslations {
                 "Zeigt in deiner eigenen Gefolgt-Liste Folgt dir nicht hinter dem Namen jedes Kontos, das dir nicht zur\u00fcckfolgt. Es erscheint erst etwas, wenn Instagram es gepr\u00fcft hat.");
         table.put("Once you turn on Instagram's auto scroll in Reels, it stays on after a restart or after you leave Reels, until you turn it off.",
                 "Wenn du das automatische Scrollen von Instagram in Reels einschaltest, bleibt es nach einem Neustart und nach dem Verlassen von Reels an, bis du es ausschaltest.");
-        table.put("Only accounts you follow",
-                "Nur Konten, denen du folgst");
     }
 
     private static void fillDe4(Map<String, String> table) {
+        table.put("Only accounts you follow",
+                "Nur Konten, denen du folgst");
         table.put("Only in Reels",
                 "Nur in Reels");
         table.put("Open MetaConfig overrides",
@@ -574,6 +576,8 @@ public final class L10nTranslations {
                 "HushGram pausieren");
         table.put("Pause and diagnostics",
                 "Pause und Diagnose");
+        table.put("People you're chatting with don't see the typing dots while you write, and you still see theirs.",
+                "Deine Chatpartner sehen beim Schreiben keine Tipp-Punkte, und du siehst ihre weiterhin.");
         table.put("Pills such as Edits, Use template, Meta AI and Ray-Ban Meta glasses. A live badge and a state-controlled media label stay.",
                 "Hinweise wie Edits, Vorlage verwenden, Meta AI und Ray-Ban Meta Brillen. Ein Live-Abzeichen und ein Hinweis auf staatlich kontrollierte Medien bleiben.");
         table.put("Playback",
@@ -668,13 +672,13 @@ public final class L10nTranslations {
                 "Foto wird gespeichert");
         table.put("Saving a video",
                 "Video wird gespeichert");
+    }
+
+    private static void fillDe5(Map<String, String> table) {
         table.put("Saving diagnostic report...",
                 "Diagnosebericht wird gespeichert...");
         table.put("Saving...",
                 "Wird gespeichert \u2026");
-    }
-
-    private static void fillDe5(Map<String, String> table) {
         table.put("Saving... Cancel: Downloads in HushGram.",
                 "Wird gespeichert \u2026 Abbrechen: Downloads in HushGram.");
         table.put("Search",
@@ -791,13 +795,13 @@ public final class L10nTranslations {
                 "Die Einstellung lie\u00df sich nicht vollst\u00e4ndig aktualisieren. Der gespeicherte Wert wird angezeigt.");
         table.put("There's no diagnostic data to clear.",
                 "Es gibt keine Diagnosedaten zum L\u00f6schen.");
+    }
+
+    private static void fillDe6(Map<String, String> table) {
         table.put("There's no diagnostic data to put back.",
                 "Es gibt keine Diagnosedaten zum Wiederherstellen.");
         table.put("There's no saved copy to discard. Nothing changed.",
                 "Es gibt keine gespeicherte Kopie zum Verwerfen. Es wurde nichts ge\u00e4ndert.");
-    }
-
-    private static void fillDe6(Map<String, String> table) {
         table.put("They're chosen in Morphe Manager when you patch, and Pause doesn't turn them off. Patch again to change them.",
                 "Diese werden beim Patchen in Morphe Manager ausgew\u00e4hlt, und die Pause schaltet sie nicht aus. Patche erneut, um sie zu \u00e4ndern.");
         table.put("This file matches the current overrides. Nothing changed.",
@@ -885,7 +889,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildEs() {
-        Map<String, String> table = new HashMap<>(804);
+        Map<String, String> table = new HashMap<>(808);
         fillEs0(table);
         fillEs1(table);
         fillEs2(table);
@@ -1219,6 +1223,8 @@ public final class L10nTranslations {
                 "Ocultar publicaciones sugeridas");
         table.put("Hide suggested stories",
                 "Ocultar historias sugeridas");
+        table.put("Hide that you're typing",
+                "Ocultar que est\u00e1s escribiendo");
         table.put("Hide the Explore grid",
                 "Ocultar la cuadr\u00edcula de Explorar");
         table.put("Hide the Follow button",
@@ -1261,11 +1267,11 @@ public final class L10nTranslations {
                 "Se exportaron los ajustes de HushGram.");
         table.put("HushGram turns back on when Instagram restarts.",
                 "HushGram vuelve a activarse cuando Instagram se reinicie.");
-        table.put("Import HushGram settings",
-                "Importar los ajustes de HushGram");
     }
 
     private static void fillEs3(Map<String, String> table) {
+        table.put("Import HushGram settings",
+                "Importar los ajustes de HushGram");
         table.put("Import overrides",
                 "Importar valores personalizados");
         table.put("Imported %1$d override changes. Restart Instagram to apply them.",
@@ -1384,11 +1390,11 @@ public final class L10nTranslations {
                 "En tu propia lista de Seguidos, a\u00f1ade No te sigue despu\u00e9s del nombre de cada cuenta que no te sigue. No se muestra nada hasta que Instagram lo haya comprobado.");
         table.put("Once you turn on Instagram's auto scroll in Reels, it stays on after a restart or after you leave Reels, until you turn it off.",
                 "Cuando activas el desplazamiento autom\u00e1tico de Instagram en Reels, sigue activado despu\u00e9s de un reinicio o de salir de Reels, hasta que lo desactives.");
-        table.put("Only accounts you follow",
-                "Solo cuentas que sigues");
     }
 
     private static void fillEs4(Map<String, String> table) {
+        table.put("Only accounts you follow",
+                "Solo cuentas que sigues");
         table.put("Only in Reels",
                 "Solo en Reels");
         table.put("Open MetaConfig overrides",
@@ -1411,6 +1417,8 @@ public final class L10nTranslations {
                 "Pausar HushGram");
         table.put("Pause and diagnostics",
                 "Pausa y diagn\u00f3stico");
+        table.put("People you're chatting with don't see the typing dots while you write, and you still see theirs.",
+                "Las personas con las que chateas no ven los puntos de escritura mientras escribes, y t\u00fa sigues viendo los suyos.");
         table.put("Pills such as Edits, Use template, Meta AI and Ray-Ban Meta glasses. A live badge and a state-controlled media label stay.",
                 "Etiquetas como Edits, Usar plantilla, Meta AI y las gafas Ray-Ban Meta. Una insignia de directo y la etiqueta de medio controlado por el Estado se quedan.");
         table.put("Playback",
@@ -1505,13 +1513,13 @@ public final class L10nTranslations {
                 "Guardando una foto");
         table.put("Saving a video",
                 "Guardando un video");
+    }
+
+    private static void fillEs5(Map<String, String> table) {
         table.put("Saving diagnostic report...",
                 "Guardando el informe de diagn\u00f3stico...");
         table.put("Saving...",
                 "Guardando...");
-    }
-
-    private static void fillEs5(Map<String, String> table) {
         table.put("Saving... Cancel: Downloads in HushGram.",
                 "Guardando... Cancelar: Descargas en HushGram.");
         table.put("Search",
@@ -1628,13 +1636,13 @@ public final class L10nTranslations {
                 "No se pudo terminar de actualizar el ajuste. Se muestra su valor guardado.");
         table.put("There's no diagnostic data to clear.",
                 "No hay datos de diagn\u00f3stico que borrar.");
+    }
+
+    private static void fillEs6(Map<String, String> table) {
         table.put("There's no diagnostic data to put back.",
                 "No hay datos de diagn\u00f3stico que restaurar.");
         table.put("There's no saved copy to discard. Nothing changed.",
                 "No hay ninguna copia guardada que descartar. Nada ha cambiado.");
-    }
-
-    private static void fillEs6(Map<String, String> table) {
         table.put("They're chosen in Morphe Manager when you patch, and Pause doesn't turn them off. Patch again to change them.",
                 "Se eligen en Morphe Manager al parchear, y Pausar no los desactiva. Vuelve a parchear para cambiarlos.");
         table.put("This file matches the current overrides. Nothing changed.",
@@ -1722,7 +1730,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildIn() {
-        Map<String, String> table = new HashMap<>(804);
+        Map<String, String> table = new HashMap<>(808);
         fillIn0(table);
         fillIn1(table);
         fillIn2(table);
@@ -2056,6 +2064,8 @@ public final class L10nTranslations {
                 "Sembunyikan postingan yang disarankan");
         table.put("Hide suggested stories",
                 "Sembunyikan cerita yang disarankan");
+        table.put("Hide that you're typing",
+                "Sembunyikan bahwa Anda sedang mengetik");
         table.put("Hide the Explore grid",
                 "Sembunyikan kisi Jelajahi");
         table.put("Hide the Follow button",
@@ -2098,11 +2108,11 @@ public final class L10nTranslations {
                 "Pengaturan HushGram diekspor.");
         table.put("HushGram turns back on when Instagram restarts.",
                 "HushGram aktif lagi saat Instagram dimulai ulang.");
-        table.put("Import HushGram settings",
-                "Impor pengaturan HushGram");
     }
 
     private static void fillIn3(Map<String, String> table) {
+        table.put("Import HushGram settings",
+                "Impor pengaturan HushGram");
         table.put("Import overrides",
                 "Impor nilai pengganti");
         table.put("Imported %1$d override changes. Restart Instagram to apply them.",
@@ -2221,11 +2231,11 @@ public final class L10nTranslations {
                 "Di daftar Mengikuti milikmu sendiri, menambahkan Tidak mengikuti kamu setelah nama setiap akun yang tidak mengikuti balik kamu. Tidak ada yang muncul sampai Instagram memeriksanya.");
         table.put("Once you turn on Instagram's auto scroll in Reels, it stays on after a restart or after you leave Reels, until you turn it off.",
                 "Setelah kamu mengaktifkan gulir otomatis Instagram di Reels, fitur itu tetap aktif setelah dimulai ulang atau setelah kamu keluar dari Reels, sampai kamu menonaktifkannya.");
-        table.put("Only accounts you follow",
-                "Hanya akun yang kamu ikuti");
     }
 
     private static void fillIn4(Map<String, String> table) {
+        table.put("Only accounts you follow",
+                "Hanya akun yang kamu ikuti");
         table.put("Only in Reels",
                 "Hanya di Reels");
         table.put("Open MetaConfig overrides",
@@ -2248,6 +2258,8 @@ public final class L10nTranslations {
                 "Jeda HushGram");
         table.put("Pause and diagnostics",
                 "Jeda dan diagnostik");
+        table.put("People you're chatting with don't see the typing dots while you write, and you still see theirs.",
+                "Orang yang Anda ajak chat tidak melihat titik-titik mengetik saat Anda menulis, dan Anda tetap melihat milik mereka.");
         table.put("Pills such as Edits, Use template, Meta AI and Ray-Ban Meta glasses. A live badge and a state-controlled media label stay.",
                 "Label seperti Edits, Gunakan template, Meta AI, dan kacamata Ray-Ban Meta. Lencana siaran langsung dan label media yang dikendalikan negara tetap ada.");
         table.put("Playback",
@@ -2342,13 +2354,13 @@ public final class L10nTranslations {
                 "Menyimpan foto");
         table.put("Saving a video",
                 "Menyimpan video");
+    }
+
+    private static void fillIn5(Map<String, String> table) {
         table.put("Saving diagnostic report...",
                 "Menyimpan laporan diagnostik...");
         table.put("Saving...",
                 "Menyimpan...");
-    }
-
-    private static void fillIn5(Map<String, String> table) {
         table.put("Saving... Cancel: Downloads in HushGram.",
                 "Menyimpan... Batal: Unduhan di HushGram.");
         table.put("Search",
@@ -2465,13 +2477,13 @@ public final class L10nTranslations {
                 "Pengaturan ini tidak dapat selesai diperbarui. Nilai yang tersimpan ditampilkan.");
         table.put("There's no diagnostic data to clear.",
                 "Tidak ada data diagnostik yang dapat dihapus.");
+    }
+
+    private static void fillIn6(Map<String, String> table) {
         table.put("There's no diagnostic data to put back.",
                 "Tidak ada data diagnostik yang dapat dikembalikan.");
         table.put("There's no saved copy to discard. Nothing changed.",
                 "Tidak ada salinan tersimpan untuk dibuang. Tidak ada yang berubah.");
-    }
-
-    private static void fillIn6(Map<String, String> table) {
         table.put("They're chosen in Morphe Manager when you patch, and Pause doesn't turn them off. Patch again to change them.",
                 "Semua ini dipilih di Morphe Manager saat Anda menambal, dan Jeda tidak mematikannya. Tambal ulang untuk mengubahnya.");
         table.put("This file matches the current overrides. Nothing changed.",
@@ -2559,7 +2571,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildKo() {
-        Map<String, String> table = new HashMap<>(804);
+        Map<String, String> table = new HashMap<>(808);
         fillKo0(table);
         fillKo1(table);
         fillKo2(table);
@@ -2893,6 +2905,8 @@ public final class L10nTranslations {
                 "\ucd94\ucc9c \uac8c\uc2dc\ubb3c \uc228\uae30\uae30");
         table.put("Hide suggested stories",
                 "\ucd94\ucc9c \uc2a4\ud1a0\ub9ac \uc228\uae30\uae30");
+        table.put("Hide that you're typing",
+                "\uc785\ub825 \uc911 \ud45c\uc2dc \uc228\uae30\uae30");
         table.put("Hide the Explore grid",
                 "\ud0d0\uc0c9 \uadf8\ub9ac\ub4dc \uc228\uae30\uae30");
         table.put("Hide the Follow button",
@@ -2935,11 +2949,11 @@ public final class L10nTranslations {
                 "HushGram \uc124\uc815\uc744 \ub0b4\ubcf4\ub0c8\uc2b5\ub2c8\ub2e4");
         table.put("HushGram turns back on when Instagram restarts.",
                 "Instaram\uc744 \ub2e4\uc2dc \uc2dc\uc791\ud558\uba74 HashGram\uc774 \ub2e4\uc2dc \uc2e4\ud589\ub429\ub2c8\ub2e4");
-        table.put("Import HushGram settings",
-                "HushGram \uc124\uc815 \uac00\uc838\uc624\uae30");
     }
 
     private static void fillKo3(Map<String, String> table) {
+        table.put("Import HushGram settings",
+                "HushGram \uc124\uc815 \uac00\uc838\uc624\uae30");
         table.put("Import overrides",
                 "\uc7ac\uc815\uc758 \uac00\uc838\uc624\uae30");
         table.put("Imported %1$d override changes. Restart Instagram to apply them.",
@@ -3058,11 +3072,11 @@ public final class L10nTranslations {
                 "\ub0b4 \ud314\ub85c\uc789 \ubaa9\ub85d\uc5d0\uc11c \ub098\ub97c \ub9de\ud314\ub85c\uc6b0\ud558\uc9c0 \uc54a\ub294 \uacc4\uc815\uc758 \uc774\ub984 \ub4a4\uc5d0 '\ub098\ub97c \ud314\ub85c\uc6b0\ud558\uc9c0 \uc54a\uc74c\u2019\uc774\ub77c\uace0 \ud45c\uc2dc\ud569\ub2c8\ub2e4. Instagram\uc5d0\uc11c \ud655\uc778\uc744 \uc644\ub8cc\ud558\uae30 \uc804\uae4c\uc9c0\ub294 \uc544\ubb34\uac83\ub3c4 \ud45c\uc2dc\ub418\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4");
         table.put("Once you turn on Instagram's auto scroll in Reels, it stays on after a restart or after you leave Reels, until you turn it off.",
                 "\ub9b4\uc2a4\uc5d0\uc11c Instagram\uc758 \uc790\ub3d9 \uc2a4\ud06c\ub864\uc744 \ud65c\uc131\ud654\ud558\uba74, Instagram\uc744 \ub2e4\uc2dc \uc2dc\uc791\ud558\uac70\ub098 \ub9b4\uc2a4\ub97c \ub098\uac14\ub2e4\uac00 \ub2e4\uc2dc \ub4e4\uc5b4\uc640\ub3c4 \uc9c1\uc811 \ube44\ud65c\uc131\ud654\ud558\uae30 \uc804\uae4c\uc9c0 \uacc4\uc18d \ud65c\uc131\ud654\ub41c \uc0c1\ud0dc\ub85c \uc720\uc9c0\ub429\ub2c8\ub2e4");
-        table.put("Only accounts you follow",
-                "\ub098\ub97c \ud314\ub85c\uc6b0\ud558\ub294 \uacc4\uc815\ub9cc");
     }
 
     private static void fillKo4(Map<String, String> table) {
+        table.put("Only accounts you follow",
+                "\ub098\ub97c \ud314\ub85c\uc6b0\ud558\ub294 \uacc4\uc815\ub9cc");
         table.put("Only in Reels",
                 "\ub9b4\uc2a4\uc5d0\uc11c\ub9cc");
         table.put("Open MetaConfig overrides",
@@ -3085,6 +3099,8 @@ public final class L10nTranslations {
                 "HushGram \uc77c\uc2dc \uc815\uc9c0");
         table.put("Pause and diagnostics",
                 "\uc77c\uc2dc \uc815\uc9c0 \ubc0f \uc9c4\ub2e8");
+        table.put("People you're chatting with don't see the typing dots while you write, and you still see theirs.",
+                "\uba54\uc2dc\uc9c0\ub97c \uc4f0\ub294 \ub3d9\uc548 \uc0c1\ub300\ubc29\uc5d0\uac8c \uc785\ub825 \uc911 \ud45c\uc2dc\uac00 \ubcf4\uc774\uc9c0 \uc54a\uc73c\uba70, \uc0c1\ub300\ubc29\uc758 \uc785\ub825 \uc911 \ud45c\uc2dc\ub294 \uacc4\uc18d \ubcfc \uc218 \uc788\uc2b5\ub2c8\ub2e4");
         table.put("Pills such as Edits, Use template, Meta AI and Ray-Ban Meta glasses. A live badge and a state-controlled media label stay.",
                 "Edits, \ud15c\ud50c\ub9bf \uc0ac\uc6a9, Meta AI, Ray-Ban Meta \uc548\uacbd\uacfc \uac19\uc740 \ud45c\uc2dc\ub97c \uc228\uae41\ub2c8\ub2e4. \ub77c\uc774\ube0c \ubc30\uc9c0\uc640 \uc815\ubd80 \uaddc\uc81c \ubbf8\ub514\uc5b4 \ub77c\ubca8\uc740 \uacc4\uc18d \ud45c\uc2dc\ub429\ub2c8\ub2e4");
         table.put("Playback",
@@ -3179,13 +3195,13 @@ public final class L10nTranslations {
                 "\uc0ac\uc9c4\uc744 \uc800\uc7a5\ud558\ub294 \uc911");
         table.put("Saving a video",
                 "\ub3d9\uc601\uc0c1\uc744 \uc800\uc7a5\ud558\ub294 \uc911");
+    }
+
+    private static void fillKo5(Map<String, String> table) {
         table.put("Saving diagnostic report...",
                 "\uc9c4\ub2e8 \ubcf4\uace0\uc11c\ub97c \uc800\uc7a5\ud558\ub294 \uc911...");
         table.put("Saving...",
                 "\uc800\uc7a5\ud558\ub294 \uc911\u2026");
-    }
-
-    private static void fillKo5(Map<String, String> table) {
         table.put("Saving... Cancel: Downloads in HushGram.",
                 "\uc800\uc7a5\ud558\ub294 \uc911\u2026 \ucde8\uc18c: HushGram\uc5d0\uc11c \ub2e4\uc6b4\ub85c\ub4dc");
         table.put("Search",
@@ -3302,13 +3318,13 @@ public final class L10nTranslations {
                 "\uc124\uc815 \uc5c5\ub370\uc774\ud2b8\ub97c \uc644\ub8cc\ud558\uc9c0 \ubabb\ud558\uc600\uc2b5\ub2c8\ub2e4. \uc800\uc7a5\ub41c \uac12\uc774 \ud45c\uc2dc\ub429\ub2c8\ub2e4");
         table.put("There's no diagnostic data to clear.",
                 "\uc0ad\uc81c\ud560 \uc9c4\ub2e8 \ub370\uc774\ud130\uac00 \uc5c6\uc2b5\ub2c8\ub2e4");
+    }
+
+    private static void fillKo6(Map<String, String> table) {
         table.put("There's no diagnostic data to put back.",
                 "\ubcf5\uc6d0\ud560 \uc9c4\ub2e8 \ub370\uc774\ud130\uac00 \uc5c6\uc2b5\ub2c8\ub2e4");
         table.put("There's no saved copy to discard. Nothing changed.",
                 "\uc0ad\uc81c\ud560 \uc800\uc7a5\ub41c \ubcf5\uc0ac\ubcf8\uc774 \uc5c6\uc2b5\ub2c8\ub2e4. \ubcc0\uacbd\ub41c \uc0ac\ud56d\uc740 \uc5c6\uc2b5\ub2c8\ub2e4");
-    }
-
-    private static void fillKo6(Map<String, String> table) {
         table.put("They're chosen in Morphe Manager when you patch, and Pause doesn't turn them off. Patch again to change them.",
                 "\ud328\uce58\ud560 \ub54c Morphe Manager\uc5d0\uc11c \uc120\ud0dd\ub418\uba70, HashGram\uc744 \uc77c\uc2dc \uc815\uc9c0\ud574\ub3c4 \ube44\ud65c\uc131\ud654\ub418\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4. \ubcc0\uacbd\ud558\ub824\uba74 \ub2e4\uc2dc \ud328\uce58\ud558\uc138\uc694");
         table.put("This file matches the current overrides. Nothing changed.",
@@ -3396,7 +3412,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildPt_rBR() {
-        Map<String, String> table = new HashMap<>(804);
+        Map<String, String> table = new HashMap<>(808);
         fillPt_rBR0(table);
         fillPt_rBR1(table);
         fillPt_rBR2(table);
@@ -3730,6 +3746,8 @@ public final class L10nTranslations {
                 "Ocultar posts sugeridos");
         table.put("Hide suggested stories",
                 "Ocultar stories sugeridos");
+        table.put("Hide that you're typing",
+                "Ocultar que voc\u00ea est\u00e1 digitando");
         table.put("Hide the Explore grid",
                 "Ocultar a grade do Explorar");
         table.put("Hide the Follow button",
@@ -3772,11 +3790,11 @@ public final class L10nTranslations {
                 "Configura\u00e7\u00f5es do HushGram exportadas.");
         table.put("HushGram turns back on when Instagram restarts.",
                 "O HushGram ser\u00e1 reativado quando o Instagram for reiniciado.");
-        table.put("Import HushGram settings",
-                "Importar configura\u00e7\u00f5es do HushGram");
     }
 
     private static void fillPt_rBR3(Map<String, String> table) {
+        table.put("Import HushGram settings",
+                "Importar configura\u00e7\u00f5es do HushGram");
         table.put("Import overrides",
                 "Importar valores personalizados");
         table.put("Imported %1$d override changes. Restart Instagram to apply them.",
@@ -3895,11 +3913,11 @@ public final class L10nTranslations {
                 "Na sua pr\u00f3pria lista Seguindo, adiciona N\u00e3o segue voc\u00ea depois do nome de cada conta que n\u00e3o segue voc\u00ea de volta. Nada aparece at\u00e9 o Instagram verificar.");
         table.put("Once you turn on Instagram's auto scroll in Reels, it stays on after a restart or after you leave Reels, until you turn it off.",
                 "Depois que voc\u00ea ativa a rolagem autom\u00e1tica do Instagram no Reels, ela continua ativada depois de reiniciar ou de sair do Reels, at\u00e9 voc\u00ea desativ\u00e1-la.");
-        table.put("Only accounts you follow",
-                "S\u00f3 contas que voc\u00ea segue");
     }
 
     private static void fillPt_rBR4(Map<String, String> table) {
+        table.put("Only accounts you follow",
+                "S\u00f3 contas que voc\u00ea segue");
         table.put("Only in Reels",
                 "S\u00f3 nos Reels");
         table.put("Open MetaConfig overrides",
@@ -3922,6 +3940,8 @@ public final class L10nTranslations {
                 "Pausar o HushGram");
         table.put("Pause and diagnostics",
                 "Pausa e diagn\u00f3stico");
+        table.put("People you're chatting with don't see the typing dots while you write, and you still see theirs.",
+                "As pessoas com quem voc\u00ea conversa n\u00e3o veem os pontinhos de digita\u00e7\u00e3o enquanto voc\u00ea escreve, e voc\u00ea continua vendo os delas.");
         table.put("Pills such as Edits, Use template, Meta AI and Ray-Ban Meta glasses. A live badge and a state-controlled media label stay.",
                 "Etiquetas como Edits, Usar modelo, Meta AI e \u00f3culos Ray-Ban Meta. O selo de ao vivo e o aviso de m\u00eddia controlada pelo Estado continuam.");
         table.put("Playback",
@@ -4016,13 +4036,13 @@ public final class L10nTranslations {
                 "Salvando uma foto");
         table.put("Saving a video",
                 "Salvando um v\u00eddeo");
+    }
+
+    private static void fillPt_rBR5(Map<String, String> table) {
         table.put("Saving diagnostic report...",
                 "Salvando relat\u00f3rio de diagn\u00f3stico...");
         table.put("Saving...",
                 "Salvando...");
-    }
-
-    private static void fillPt_rBR5(Map<String, String> table) {
         table.put("Saving... Cancel: Downloads in HushGram.",
                 "Salvando... Cancelar: Downloads no HushGram.");
         table.put("Search",
@@ -4139,13 +4159,13 @@ public final class L10nTranslations {
                 "N\u00e3o foi poss\u00edvel concluir a atualiza\u00e7\u00e3o da configura\u00e7\u00e3o. O valor salvo est\u00e1 sendo mostrado.");
         table.put("There's no diagnostic data to clear.",
                 "N\u00e3o h\u00e1 dados de diagn\u00f3stico para limpar.");
+    }
+
+    private static void fillPt_rBR6(Map<String, String> table) {
         table.put("There's no diagnostic data to put back.",
                 "N\u00e3o h\u00e1 dados de diagn\u00f3stico para restaurar.");
         table.put("There's no saved copy to discard. Nothing changed.",
                 "N\u00e3o h\u00e1 c\u00f3pia salva para descartar. Nada mudou.");
-    }
-
-    private static void fillPt_rBR6(Map<String, String> table) {
         table.put("They're chosen in Morphe Manager when you patch, and Pause doesn't turn them off. Patch again to change them.",
                 "Eles s\u00e3o escolhidos no Morphe Manager quando voc\u00ea aplica os patches, e a pausa n\u00e3o os desativa. Aplique os patches novamente para alter\u00e1-los.");
         table.put("This file matches the current overrides. Nothing changed.",
@@ -4233,7 +4253,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildTr() {
-        Map<String, String> table = new HashMap<>(804);
+        Map<String, String> table = new HashMap<>(808);
         fillTr0(table);
         fillTr1(table);
         fillTr2(table);
@@ -4567,6 +4587,8 @@ public final class L10nTranslations {
                 "\u00d6nerilen g\u00f6nderileri gizle");
         table.put("Hide suggested stories",
                 "\u00d6nerilen hikayeleri gizle");
+        table.put("Hide that you're typing",
+                "Yazd\u0131\u011f\u0131n\u0131 gizle");
         table.put("Hide the Explore grid",
                 "Ke\u015ffet \u0131zgaras\u0131n\u0131 gizle");
         table.put("Hide the Follow button",
@@ -4609,11 +4631,11 @@ public final class L10nTranslations {
                 "HushGram ayarlar\u0131 d\u0131\u015fa aktar\u0131ld\u0131.");
         table.put("HushGram turns back on when Instagram restarts.",
                 "HushGram, Instagram yeniden ba\u015flad\u0131\u011f\u0131nda tekrar a\u00e7\u0131l\u0131r.");
-        table.put("Import HushGram settings",
-                "HushGram ayarlar\u0131n\u0131 i\u00e7e aktar");
     }
 
     private static void fillTr3(Map<String, String> table) {
+        table.put("Import HushGram settings",
+                "HushGram ayarlar\u0131n\u0131 i\u00e7e aktar");
         table.put("Import overrides",
                 "Ge\u00e7ersiz k\u0131lmalar\u0131 i\u00e7e aktar");
         table.put("Imported %1$d override changes. Restart Instagram to apply them.",
@@ -4732,11 +4754,11 @@ public final class L10nTranslations {
                 "Kendi Takip edilenler listende, seni geri takip etmeyen her hesab\u0131n ad\u0131ndan sonra Seni takip etmiyor ekler. Instagram kontrol edene kadar hi\u00e7bir \u015fey g\u00f6r\u00fcnmez.");
         table.put("Once you turn on Instagram's auto scroll in Reels, it stays on after a restart or after you leave Reels, until you turn it off.",
                 "Reels'te Instagram'\u0131n otomatik kayd\u0131rmas\u0131n\u0131 a\u00e7t\u0131\u011f\u0131nda, yeniden ba\u015flatmadan veya Reels'ten \u00e7\u0131kt\u0131ktan sonra da sen kapatana kadar a\u00e7\u0131k kal\u0131r.");
-        table.put("Only accounts you follow",
-                "Yaln\u0131zca takip etti\u011fin hesaplar");
     }
 
     private static void fillTr4(Map<String, String> table) {
+        table.put("Only accounts you follow",
+                "Yaln\u0131zca takip etti\u011fin hesaplar");
         table.put("Only in Reels",
                 "Yaln\u0131zca Reels'te");
         table.put("Open MetaConfig overrides",
@@ -4759,6 +4781,8 @@ public final class L10nTranslations {
                 "HushGram'u duraklat");
         table.put("Pause and diagnostics",
                 "Duraklatma ve tan\u0131lama");
+        table.put("People you're chatting with don't see the typing dots while you write, and you still see theirs.",
+                "Sohbet etti\u011fin ki\u015filer sen yazarken yaz\u0131yor noktalar\u0131n\u0131 g\u00f6rmez, sen ise onlar\u0131nkini g\u00f6rmeye devam edersin.");
         table.put("Pills such as Edits, Use template, Meta AI and Ray-Ban Meta glasses. A live badge and a state-controlled media label stay.",
                 "Edits, \u015eablonu kullan, Meta AI ve Ray-Ban Meta g\u00f6zl\u00fckleri gibi etiketler. Canl\u0131 yay\u0131n rozeti ve devlet kontrol\u00fcndeki medya etiketi kal\u0131r.");
         table.put("Playback",
@@ -4853,13 +4877,13 @@ public final class L10nTranslations {
                 "Foto\u011fraf kaydediliyor");
         table.put("Saving a video",
                 "Video kaydediliyor");
+    }
+
+    private static void fillTr5(Map<String, String> table) {
         table.put("Saving diagnostic report...",
                 "Tan\u0131lama raporu kaydediliyor...");
         table.put("Saving...",
                 "Kaydediliyor...");
-    }
-
-    private static void fillTr5(Map<String, String> table) {
         table.put("Saving... Cancel: Downloads in HushGram.",
                 "Kaydediliyor... \u0130ptal: HushGram'da \u0130ndirmeler.");
         table.put("Search",
@@ -4976,13 +5000,13 @@ public final class L10nTranslations {
                 "Ayar\u0131n g\u00fcncellenmesi tamamlanamad\u0131. Kay\u0131tl\u0131 de\u011feri g\u00f6steriliyor.");
         table.put("There's no diagnostic data to clear.",
                 "Temizlenecek tan\u0131lama verisi yok.");
+    }
+
+    private static void fillTr6(Map<String, String> table) {
         table.put("There's no diagnostic data to put back.",
                 "Geri getirilecek tan\u0131lama verisi yok.");
         table.put("There's no saved copy to discard. Nothing changed.",
                 "At\u0131lacak kay\u0131tl\u0131 kopya yok. Hi\u00e7bir \u015fey de\u011fi\u015fmedi.");
-    }
-
-    private static void fillTr6(Map<String, String> table) {
         table.put("They're chosen in Morphe Manager when you patch, and Pause doesn't turn them off. Patch again to change them.",
                 "Bunlar yamalarken Morphe Manager'da se\u00e7ilir ve Duraklatma bunlar\u0131 kapatmaz. De\u011fi\u015ftirmek i\u00e7in yeniden yamala.");
         table.put("This file matches the current overrides. Nothing changed.",
