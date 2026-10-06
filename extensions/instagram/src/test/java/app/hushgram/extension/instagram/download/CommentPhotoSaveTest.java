@@ -39,9 +39,11 @@ import org.robolectric.annotation.Implementation;
 import org.robolectric.annotation.Implements;
 import app.hushgram.extension.instagram.comment.CommentPhoto;
 import app.hushgram.extension.instagram.comment.CommentPhotoNative;
+import app.hushgram.extension.instagram.settings.FamilyNames;
 import app.hushgram.extension.instagram.settings.Settings;
 import app.hushgram.extension.shared.SettingsContextRule;
 import app.hushgram.extension.shared.Utils;
+import app.hushgram.extension.shared.diagnostics.HookStatus;
 import app.hushgram.extension.shared.settings.BaseSettings;
 import app.hushgram.extension.shared.settings.PauseForTests;
 
@@ -99,6 +101,7 @@ public class CommentPhotoSaveTest {
         Settings.SAVE_FOLDER.resetToDefault();
         NativePhoto.selected = null;
         NativePhoto.photo = null;
+        HookStatus.clear();
         Utils.awaitBackgroundTasksForTests();
         SaveLeftovers.forgetSweepForTests();
         File[] files = legacy.listFiles();
@@ -120,10 +123,13 @@ public class CommentPhotoSaveTest {
                 new MediaSave.Rendition(server.origin() + "/small.jpg", 640, 480, 0),
                 new MediaSave.Rendition(server.origin() + "/large.jpg", 1440, 1080, 0)), null, null);
         List<?> stock = Collections.singletonList(new Object());
+        HookStatus.clear();
         List<?> rows = CommentPhoto.rows(stock, NativePhoto.selected, context);
         assertEquals(2, rows.size());
         assertSame(stock.get(0), rows.get(0));
         assertEquals("opening the menu starts nothing", 0, MediaSave.savesInFlight());
+        assertEquals("every read reached the photo", Collections.singletonList(FamilyNames.COMMENT_PHOTO
+                + ": invoked 1, 0 found, 0 missing. Counted: photo found 1"), HookStatus.report());
         return (Row) rows.get(1);
     }
 
@@ -206,12 +212,20 @@ public class CommentPhotoSaveTest {
         Row(Object callback) { this.callback = (Function0<?>) callback; }
     }
 
-    /** The patched native getters, answering for one selected comment only. */
+    /** The patched native reads, answering for one selected comment's own photo only. */
     @Implements(value = CommentPhotoNative.class, isInAndroidSdk = false)
     public static class NativePhoto {
         static Object selected;
         static MediaSave.Item photo;
-        @Implementation protected static Object photoMedia(Object comment) { return comment == selected ? photo : null; }
+        private static final Object RAW = new Object(), INFO = new Object();
+        @Implementation protected static int selected(Object comment) { return comment != null && comment == selected ? 1 : 0; }
+        @Implementation protected static Object raw(Object comment) { return RAW; }
+        @Implementation protected static Object gif(Object raw) { return null; }
+        @Implementation protected static Object info(Object raw) { return raw == RAW ? INFO : null; }
+        @Implementation protected static Object media(Object info) { return info == INFO ? photo : null; }
+        @Implementation protected static Object kind(Object media) { return media instanceof MediaSave.Item ? 1 : null; }
+        @Implementation protected static int photoKind() { return 1; }
+        @Implementation protected static Object mediaGif(Object media) { return null; }
         @Implementation protected static Object newRow(Object callback) { return new Row(callback); }
         @Implementation protected static Object callback(Object row) { return row instanceof Row ? ((Row) row).callback : null; }
     }

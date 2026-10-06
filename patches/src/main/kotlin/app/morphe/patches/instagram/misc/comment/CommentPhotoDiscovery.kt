@@ -30,7 +30,7 @@ internal const val COMMENT_MEDIA_KEY = "media_comment_info"
 internal const val SAVE_ACTION = "SaveMedia"
 
 /**
- * The calls the photo bridge makes on the selected comment, each a public getter proved to read the
+ * The calls the photo bridges make on the selected comment, each a public getter proved to read the
  * comment's own media_comment_info, never its parent post, and the PHOTO kind's value.
  */
 internal data class CommentPhotoPlan(
@@ -126,7 +126,7 @@ internal fun BytecodePatchContext.findCommentPhoto(): CommentPhotoPlan = discove
     val (icon, label) = actionResources(save, classes)
 
     validateCommentHook()
-    stub(PHOTO_NATIVE, "photoMedia", listOf(OBJECT), OBJECT)
+    PHOTO_READS.forEach { (name, shape) -> stub(PHOTO_NATIVE, name, shape.first, shape.second) }
     validateActionRow(PHOTO_ROW, PHOTO_NATIVE)
     val images = imageBridges(PHOTO_PATCH)
     CommentPhotoPlan(surface, gif, info, media, kind, mediaGif, photo, icon, label, images)
@@ -134,43 +134,51 @@ internal fun BytecodePatchContext.findCommentPhoto(): CommentPhotoPlan = discove
 
 /** Only called after discovery and every accessibility/register/stub check succeeded. */
 internal fun BytecodePatchContext.applyCommentPhoto(plan: CommentPhotoPlan) = discovering(PHOTO_PATCH) {
-    val bridge = stub(PHOTO_NATIVE, "photoMedia", listOf(OBJECT), OBJECT)
+    val reads = PHOTO_READS.associate { (name, shape) -> name to stub(PHOTO_NATIVE, name, shape.first, shape.second) }
     val surface = plan.surface
     applyCommentHook(surface)
-    // Each step that finds nothing, a GIF, or another kind ends at the unsupported return.
-    replace(bridge, 4, """
+    // One native read per bridge. The extension makes them in order and decides between them, so
+    // it can count the step that found nothing, a GIF or another kind. Each read is handed only what
+    // the read before it answered, so every cast holds.
+    replace(reads.getValue("selected"), 2, """
         instance-of v0, p0, ${surface.selectedType}
-        if-eqz v0, :unsupported
+        return v0
+    """)
+    replace(reads.getValue("raw"), 1, """
         check-cast p0, ${surface.selectedType}
-        iget-object v0, p0, ${surface.rawField}
-        if-eqz v0, :unsupported
-        invoke-interface { v0 }, ${plan.gif}
-        move-result-object v1
-        if-nez v1, :unsupported
-        invoke-interface { v0 }, ${plan.info}
-        move-result-object v0
-        if-eqz v0, :unsupported
-        invoke-interface { v0 }, ${plan.media}
-        move-result-object v0
-        if-eqz v0, :unsupported
-        invoke-virtual { v0 }, ${plan.kind}
-        move-result-object v1
-        if-eqz v1, :unsupported
-        invoke-virtual { v1 }, $INTEGER->intValue()I
-        move-result v1
-        const v2, ${plan.photo}
-        if-ne v1, v2, :unsupported
-        invoke-virtual { v0 }, ${plan.mediaGif}
-        move-result-object v1
-        if-nez v1, :unsupported
-        return-object v0
-        :unsupported
-        const/4 v0, 0x0
-        return-object v0
+        iget-object p0, p0, ${surface.rawField}
+        return-object p0
+    """)
+    fun read(name: String, invoke: String, getter: MethodReference) = replace(reads.getValue(name), 1, """
+        check-cast p0, ${getter.definingClass}
+        $invoke { p0 }, $getter
+        move-result-object p0
+        return-object p0
+    """)
+    read("gif", "invoke-interface", plan.gif)
+    read("info", "invoke-interface", plan.info)
+    read("media", "invoke-interface", plan.media)
+    read("kind", "invoke-virtual", plan.kind)
+    read("mediaGif", "invoke-virtual", plan.mediaGif)
+    replace(reads.getValue("photoKind"), 1, """
+        const v0, ${plan.photo}
+        return v0
     """)
     applyActionRow(surface, PHOTO_ROW, PHOTO_NATIVE, plan.icon, plan.label)
     plan.images()
 }
+
+/** The photo read's bridges on [PHOTO_NATIVE], by name, with their parameters and return type. */
+internal val PHOTO_READS: List<Pair<String, Pair<List<String>, String>>> = listOf(
+    "selected" to (listOf(OBJECT) to "I"),
+    "raw" to (listOf(OBJECT) to OBJECT),
+    "gif" to (listOf(OBJECT) to OBJECT),
+    "info" to (listOf(OBJECT) to OBJECT),
+    "media" to (listOf(OBJECT) to OBJECT),
+    "kind" to (listOf(OBJECT) to OBJECT),
+    "mediaGif" to (listOf(OBJECT) to OBJECT),
+    "photoKind" to (emptyList<String>() to "I"),
+)
 
 private val fieldWrites = setOf(Opcode.IPUT_OBJECT, Opcode.SPUT_OBJECT)
 

@@ -115,6 +115,10 @@ class CommentPhotoHookTest {
             "missing popup guards" to CommentWorld.nativeClasses("Changed", guards = false, photo = PhotoWorld()) + extension(),
             "missing photo bridge" to CommentWorld.nativeClasses("Changed", photo = PhotoWorld()) +
                 extension().filter { it.type != PHOTO_NATIVE },
+            "missing one photo read" to CommentWorld.nativeClasses("Changed", photo = PhotoWorld()) +
+                extension().map { type -> if (type.type != PHOTO_NATIVE) type else ImmutableClassDef(type.type,
+                    type.accessFlags, type.superclass, type.interfaces, type.sourceFile, type.annotations, type.fields,
+                    type.methods.filter { it.name != "kind" }) },
             "missing image bridge" to CommentWorld.nativeClasses("Changed", photo = PhotoWorld()) +
                 extension().filter { it.type != INSTAGRAM_MEDIA },
         )
@@ -168,25 +172,32 @@ class CommentPhotoHookTest {
         assertEquals(Opcode.MOVE_RESULT_OBJECT, renderer[callAt + 1].opcode)
         assertEquals(surface.rowConstructor.definingClass, patch.mutableClassDefBy(PHOTO_ROW).superclass)
         val native = patch.mutableClassDefBy(PHOTO_NATIVE).methods
-        val bridge = native.single { it.name == "photoMedia" }.code()
-        assertTrue(bridge.any { it.field()?.toString() == surface.rawField.toString() })
+        fun read(name: String) = native.single { it.name == name }.code()
+        // Each read is one native step; the extension decides between them and counts where one stops.
+        val selected = read("selected")
+        assertEquals(listOf(Opcode.INSTANCE_OF, Opcode.RETURN), selected.map { it.opcode })
+        assertEquals(surface.selectedType, (selected[0].reference() as TypeReference).type)
+        val raw = read("raw")
+        assertEquals(listOf(Opcode.CHECK_CAST, Opcode.IGET_OBJECT, Opcode.RETURN_OBJECT), raw.map { it.opcode })
+        assertEquals(surface.selectedType, (raw[0].reference() as TypeReference).type)
+        assertEquals(surface.rawField.toString(), raw[1].field().toString())
+        for ((name, getter) in listOf("gif" to plan.gif, "info" to plan.info, "media" to plan.media,
+                "kind" to plan.kind, "mediaGif" to plan.mediaGif)) {
+            val code = read(name)
+            val invoke = if (getter.definingClass == MEDIA) Opcode.INVOKE_VIRTUAL else Opcode.INVOKE_INTERFACE
+            assertEquals(name, listOf(Opcode.CHECK_CAST, invoke, Opcode.MOVE_RESULT_OBJECT, Opcode.RETURN_OBJECT), code.map { it.opcode })
+            assertEquals(name, getter.definingClass, (code[0].reference() as TypeReference).type)
+            assertEquals(name, getter.toString(), code[1].call().toString())
+        }
+        assertEquals(listOf(surface.raw, surface.raw, plan.media.definingClass, MEDIA, MEDIA),
+            listOf(plan.gif, plan.info, plan.media, plan.kind, plan.mediaGif).map { it.definingClass })
+        val kind = read("photoKind")
+        assertEquals(listOf(Opcode.CONST, Opcode.RETURN), kind.map { it.opcode })
+        assertEquals(plan.photo, (kind[0] as NarrowLiteralInstruction).narrowLiteral)
         for (call in listOf(plan.gif, plan.info, plan.media, plan.kind, plan.mediaGif)) {
-            assertEquals("$call", 1, bridge.count { it.call()?.toString() == call.toString() })
+            assertEquals("$call is read once", 1, native.sumOf { method -> method.code().count { it.call()?.toString() == call.toString() } })
         }
-        assertTrue(bridge.any { it.opcode == Opcode.CONST && (it as NarrowLiteralInstruction).narrowLiteral == plan.photo })
-        assertEquals("separate unsupported/photo returns", 2, bridge.count { it.opcode == Opcode.RETURN_OBJECT })
-        // Nothing, a GIF or another kind at any step jumps to the one null return; only a photo falls through.
-        assertEquals(listOf(Opcode.INSTANCE_OF, Opcode.IF_EQZ, Opcode.CHECK_CAST, Opcode.IGET_OBJECT, Opcode.IF_EQZ,
-            Opcode.INVOKE_INTERFACE, Opcode.MOVE_RESULT_OBJECT, Opcode.IF_NEZ,
-            Opcode.INVOKE_INTERFACE, Opcode.MOVE_RESULT_OBJECT, Opcode.IF_EQZ,
-            Opcode.INVOKE_INTERFACE, Opcode.MOVE_RESULT_OBJECT, Opcode.IF_EQZ,
-            Opcode.INVOKE_VIRTUAL, Opcode.MOVE_RESULT_OBJECT, Opcode.IF_EQZ, Opcode.INVOKE_VIRTUAL, Opcode.MOVE_RESULT,
-            Opcode.CONST, Opcode.IF_NE, Opcode.INVOKE_VIRTUAL, Opcode.MOVE_RESULT_OBJECT, Opcode.IF_NEZ,
-            Opcode.RETURN_OBJECT, Opcode.CONST_4, Opcode.RETURN_OBJECT), bridge.map { it.opcode })
-        val addresses = bridge.runningFold(0) { address, instruction -> address + instruction.codeUnits }
-        bridge.forEachIndexed { at, instruction ->
-            if (instruction is OffsetInstruction) assertEquals("$at", addresses[bridge.size - 2], addresses[at] + instruction.codeOffset)
-        }
+        assertTrue("the old all-in-one bridge is gone", native.none { it.name == "photoMedia" })
         val factory = native.single { it.name == "newRow" }.code()
         assertTrue(factory.any { it.field()?.toString() == surface.style.toString() })
         assertTrue(factory.any { (it.reference() as? TypeReference)?.type == PHOTO_ROW })

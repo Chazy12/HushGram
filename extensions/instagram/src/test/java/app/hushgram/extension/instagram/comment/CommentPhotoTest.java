@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 import kotlin.jvm.functions.Function0;
 import org.junit.After;
 import org.junit.Before;
@@ -23,8 +24,10 @@ import org.robolectric.Shadows;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowToast;
 import app.hushgram.extension.instagram.download.MediaSave;
+import app.hushgram.extension.instagram.settings.FamilyNames;
 import app.hushgram.extension.instagram.settings.Settings;
 import app.hushgram.extension.shared.SettingsContextRule;
+import app.hushgram.extension.shared.diagnostics.HookStatus;
 import app.hushgram.extension.shared.settings.BaseSettings;
 import app.hushgram.extension.shared.settings.HushgramPause;
 import app.hushgram.extension.shared.settings.PauseForTests;
@@ -56,6 +59,7 @@ public class CommentPhotoTest {
         BaseSettings.PAUSED.save(false);
         PauseForTests.resume();
         BaseSettings.SAFE_MODE.save(false);
+        HookStatus.clear();
     }
 
     private static List<MediaSave.Rendition> photo(String name) {
@@ -196,6 +200,80 @@ public class CommentPhotoTest {
         assertEquals("no media getter or native row callback", 0, nativeRows.inspected);
         assertEquals(0, nativeRows.created);
         assertTrue(queued.isEmpty());
+    }
+
+    private static final List<String> READS = Arrays.asList(
+            "selected", "raw", "gif", "info", "media", "kind", "photoKind", "mediaGif");
+
+    private static List<String> counted(String counts) {
+        return Collections.singletonList(FamilyNames.COMMENT_PHOTO + ": invoked 0, 0 found, 0 missing. Counted: " + counts);
+    }
+
+    /** One case per step that can come back without a photo: its reason, the reads it takes, and how it breaks. */
+    private static final class Step {
+        final String reason;
+        final int reads;
+        final Consumer<FakeReads> breaks;
+        Step(String reason, int reads, Consumer<FakeReads> breaks) {
+            this.reason = reason;
+            this.reads = reads;
+            this.breaks = breaks;
+        }
+    }
+
+    @Test public void eachStepThatFindsNoPhotoCountsItsOwnReasonOnceAndReadsNoFurther() {
+        List<Step> steps = Arrays.asList(
+                new Step("not a selected comment", 1, reads -> reads.isSelected = false),
+                new Step("no raw comment", 2, reads -> reads.rawAnswer = null),
+                new Step("comment GIF", 3, reads -> reads.gifAnswer = new Object()),
+                new Step("no media_comment_info", 4, reads -> reads.infoAnswer = null),
+                new Step("no media in media_comment_info", 5, reads -> reads.mediaAnswer = null),
+                new Step("no media_type", 6, reads -> reads.kindAnswer = null),
+                new Step("media_type 2", 7, reads -> reads.kindAnswer = 2),
+                new Step("media_type 8", 7, reads -> reads.kindAnswer = 8),
+                new Step("media_type 0", 7, reads -> reads.kindAnswer = 0),
+                new Step("media_type other", 7, reads -> reads.kindAnswer = 10),
+                new Step("media_type other", 7, reads -> reads.kindAnswer = -1),
+                new Step("media GIF", 8, reads -> reads.mediaGifAnswer = new Object()));
+        for (Step step : steps) {
+            HookStatus.clear();
+            FakeReads reads = new FakeReads();
+            step.breaks.accept(reads);
+            assertNull(step.reason, CommentPhoto.photoMedia(reads.comment, reads));
+            assertEquals(step.reason, READS.subList(0, step.reads), reads.made);
+            assertEquals(step.reason, counted(step.reason + " 1"), HookStatus.report());
+        }
+    }
+
+    @Test public void aPhotoIsReadInTheBridgesOldOrderAndLeavesItsCountToTheSizes() {
+        HookStatus.clear();
+        FakeReads reads = new FakeReads();
+        assertSame(reads.media, CommentPhoto.photoMedia(reads.comment, reads));
+        assertEquals(READS, reads.made);
+        assertTrue("the sizes read counts a found photo", HookStatus.report().isEmpty());
+    }
+
+    @Test public void theUnpatchedBridgesCountAnUnselectedComment() {
+        HookStatus.clear();
+        assertSame(stock, CommentPhoto.rows(stock, new Object(), context));
+        assertEquals(Collections.singletonList(FamilyNames.COMMENT_PHOTO
+                + ": invoked 1, 0 found, 0 missing. Counted: not a selected comment 1"), HookStatus.report());
+    }
+
+    /** A comment's native reads, answering as a photo comment would unless a test breaks one. */
+    static final class FakeReads implements CommentPhoto.PhotoReads {
+        final List<String> made = new ArrayList<>();
+        final Object comment = new Object(), raw = new Object(), info = new Object(), media = new Object();
+        boolean isSelected = true;
+        Object rawAnswer = raw, gifAnswer, infoAnswer = info, mediaAnswer = media, kindAnswer = 1, mediaGifAnswer;
+        public boolean selected(Object c) { made.add("selected"); assertSame(comment, c); return isSelected; }
+        public Object raw(Object c) { made.add("raw"); assertSame(comment, c); return rawAnswer; }
+        public Object gif(Object r) { made.add("gif"); assertSame(raw, r); return gifAnswer; }
+        public Object info(Object r) { made.add("info"); assertSame(raw, r); return infoAnswer; }
+        public Object media(Object i) { made.add("media"); assertSame(info, i); return mediaAnswer; }
+        public Object kind(Object m) { made.add("kind"); assertSame(media, m); return kindAnswer; }
+        public int photoKind() { made.add("photoKind"); return 1; }
+        public Object mediaGif(Object m) { made.add("mediaGif"); assertSame(media, m); return mediaGifAnswer; }
     }
 
     static final class Row {

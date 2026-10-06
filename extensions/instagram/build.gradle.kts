@@ -211,7 +211,10 @@ tasks.register("verifyAndroidBoundaries") {
                 "noPhotoNowRemovesOnlyStaleOwnedRows[28]", "noPhotoNowRemovesOnlyStaleOwnedRows[37]",
                 "eachFamilyAloneAndTogetherKeepDistinctOwnedRows[28]", "eachFamilyAloneAndTogetherKeepDistinctOwnedRows[37]",
                 "offPausedUnreadyAndMissingInputsLeaveStockUntouched[28]", "offPausedUnreadyAndMissingInputsLeaveStockUntouched[37]",
-                "getterRowAndQueueFailuresStayContainedAndRespectALateSwitch[28]", "getterRowAndQueueFailuresStayContainedAndRespectALateSwitch[37]"),
+                "getterRowAndQueueFailuresStayContainedAndRespectALateSwitch[28]", "getterRowAndQueueFailuresStayContainedAndRespectALateSwitch[37]",
+                "eachStepThatFindsNoPhotoCountsItsOwnReasonOnceAndReadsNoFurther[28]", "eachStepThatFindsNoPhotoCountsItsOwnReasonOnceAndReadsNoFurther[37]",
+                "aPhotoIsReadInTheBridgesOldOrderAndLeavesItsCountToTheSizes[28]", "aPhotoIsReadInTheBridgesOldOrderAndLeavesItsCountToTheSizes[37]",
+                "theUnpatchedBridgesCountAnUnselectedComment[28]", "theUnpatchedBridgesCountAnUnselectedComment[37]"),
             "app.hushgram.extension.instagram.download.CommentPhotoSaveTest" to listOf(
                 "explicitCommentPhotoTapSavesTheLargestSuppliedRenditionAndCleansUp[28]", "explicitCommentPhotoTapSavesTheLargestSuppliedRenditionAndCleansUp[37]",
                 "commentPhotoCancelUsesTheExistingControlAndRemovesAllTemporaryState[28]", "commentPhotoCancelUsesTheExistingControlAndRemovesAllTemporaryState[37]",
@@ -220,7 +223,10 @@ tasks.register("verifyAndroidBoundaries") {
                 "onlySuppliedMetaPhotoAddressesAreCopiedVerbatim[28]", "onlySuppliedMetaPhotoAddressesAreCopiedVerbatim[37]",
                 "missingModelsGetNoImageFallback[28]", "missingModelsGetNoImageFallback[37]",
                 "copyIsDetachedAndUnmodifiable[28]", "copyIsDetachedAndUnmodifiable[37]",
-                "aSaveThatCannotStartSaysSoAndNeverThrows[28]", "aSaveThatCannotStartSaysSoAndNeverThrows[37]"),
+                "aSaveThatCannotStartSaysSoAndNeverThrows[28]", "aSaveThatCannotStartSaysSoAndNeverThrows[37]",
+                "eachWayTheSizesComeBackEmptyCountsItsOwnReasonOnce[28]", "eachWayTheSizesComeBackEmptyCountsItsOwnReasonOnce[37]",
+                "aKeptSizeCountsAFoundPhotoAndNoRefusal[28]", "aKeptSizeCountsAFoundPhotoAndNoRefusal[37]",
+                "everyReasonIsFixedTextTheReportKeepsAsWritten[28]", "everyReasonIsFixedTextTheReportKeepsAsWritten[37]"),
             "app.hushgram.extension.instagram.profile.ProfileSuggestionsTest" to listOf(
                 "offPausedAndUnreadyLeaveInstagramsAnswers[28]", "offPausedAndUnreadyLeaveInstagramsAnswers[37]",
                 "aButtonHiddenEarlierComesBackWhenTheSwitchGoesOff[28]", "aButtonHiddenEarlierComesBackWhenTheSwitchGoesOff[37]",

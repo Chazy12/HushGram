@@ -29,9 +29,47 @@ public final class CommentPhoto {
         void photo(Context context, List<MediaSave.Rendition> snapshot);
     }
 
+    /** The native reads behind a comment's photo, one Instagram getter each, made in this order. */
+    interface PhotoReads {
+        boolean selected(Object comment);
+        Object raw(Object selected);
+        Object gif(Object raw);
+        Object info(Object raw);
+        Object media(Object info);
+        Object kind(Object media);
+        int photoKind();
+        Object mediaGif(Object media);
+    }
+
+    private static final PhotoReads READS = new PhotoReads() {
+        public boolean selected(Object comment) { return CommentPhotoNative.selected(comment) != 0; }
+        public Object raw(Object selected) { return CommentPhotoNative.raw(selected); }
+        public Object gif(Object raw) { return CommentPhotoNative.gif(raw); }
+        public Object info(Object raw) { return CommentPhotoNative.info(raw); }
+        public Object media(Object info) { return CommentPhotoNative.media(info); }
+        public Object kind(Object media) { return CommentPhotoNative.kind(media); }
+        public int photoKind() { return CommentPhotoNative.photoKind(); }
+        public Object mediaGif(Object media) { return CommentPhotoNative.mediaGif(media); }
+    };
+
+    // What the diagnostic report counts when a read finds no photo, one name per step. The names
+    // are fixed text: nothing read from the comment goes in, bar a media_type kept to a small number.
+    static final String NOT_SELECTED = "not a selected comment";
+    static final String NO_RAW = "no raw comment";
+    static final String COMMENT_GIF = "comment GIF";
+    static final String NO_INFO = "no media_comment_info";
+    static final String NO_MEDIA = "no media in media_comment_info";
+    static final String NO_KIND = "no media_type";
+    static final String MEDIA_GIF = "media GIF";
+    /**
+     * Instagram's media types are single digits (1 photo, 2 video, 8 carousel). Anything else shares
+     * one name, so a strange value can't use up the sixteen names a family's counts keep.
+     */
+    private static final int KINDS_NAMED = 10;
+
     private static final NativeRows NATIVE = new NativeRows() {
         public List<MediaSave.Rendition> photo(Object comment) {
-            return CommentPhotoDownload.snapshot(CommentPhotoNative.photoMedia(comment));
+            return CommentPhotoDownload.snapshot(photoMedia(comment, READS));
         }
         public Object row(Object callback) { return CommentPhotoNative.newRow(callback); }
         public Object callback(Object row) { return CommentPhotoNative.callback(row); }
@@ -80,6 +118,35 @@ public final class CommentPhoto {
             HookStatus.threw(FamilyNames.COMMENT_PHOTO, "comment menu", failure);
             return rows;
         }
+    }
+
+    /**
+     * The Media of the selected comment's own still photo, or null for anything else: another
+     * object, a comment with no media, a GIF, a video. Each null is counted under the step that
+     * found nothing, so a report from a phone says where a photo comment's read stopped.
+     */
+    static Object photoMedia(Object comment, PhotoReads reads) {
+        if (!reads.selected(comment)) return refused(NOT_SELECTED);
+        Object raw = reads.raw(comment);
+        if (raw == null) return refused(NO_RAW);
+        if (reads.gif(raw) != null) return refused(COMMENT_GIF);
+        Object info = reads.info(raw);
+        if (info == null) return refused(NO_INFO);
+        Object media = reads.media(info);
+        if (media == null) return refused(NO_MEDIA);
+        Object kind = reads.kind(media);
+        if (!(kind instanceof Integer)) return refused(NO_KIND);
+        int value = (Integer) kind;
+        if (value != reads.photoKind()) {
+            return refused(value >= 0 && value < KINDS_NAMED ? "media_type " + value : "media_type other");
+        }
+        if (reads.mediaGif(media) != null) return refused(MEDIA_GIF);
+        return media;
+    }
+
+    private static Object refused(String step) {
+        HookStatus.counted(FamilyNames.COMMENT_PHOTO, step);
+        return null;
     }
 
     private static boolean enabled() {
