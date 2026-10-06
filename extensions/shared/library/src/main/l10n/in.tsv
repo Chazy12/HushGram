@@ -221,7 +221,10 @@ Takes the row of notes off the top of your messages, the Map bubble in it too. Y
 Hide Instants	Sembunyikan Instants
 Instagram treats your account as one without Instants, so the stack of photos in your messages goes. Applies after Instagram restarts.	Instagram memperlakukan akun Anda seperti akun tanpa Instants, sehingga tumpukan foto di pesan Anda hilang. Berlaku setelah Instagram dimulai ulang.
 Read messages without the seen receipt	Baca pesan tanpa tanda dilihat
-Opening a chat doesn't tell people you've seen their messages, and you still see when they've seen yours.	Membuka chat tidak memberi tahu orang lain bahwa Anda sudah melihat pesan mereka, dan Anda tetap melihat kapan mereka melihat pesan Anda.
+Opening a chat doesn't tell people you've seen their messages, and you still see when they've seen yours. To let one chat know, long press it in your messages and tap Mark as read.	Membuka chat tidak memberi tahu orang lain bahwa Anda sudah melihat pesan mereka, dan Anda tetap melihat kapan mereka melihat pesan Anda. Agar satu chat tahu, tekan lama chat itu di pesan Anda lalu ketuk Tandai sudah dibaca.
+# context: the toasts after tapping Mark as read on a chat's long press while seen receipts are held
+Marked as read	Ditandai sudah dibaca
+Couldn't mark as read	Tidak dapat menandai sudah dibaca
 Hide that you're typing	Sembunyikan bahwa Anda sedang mengetik
 People you're chatting with don't see the typing dots while you write, and you still see theirs.	Orang yang Anda ajak chat tidak melihat titik-titik mengetik saat Anda menulis, dan Anda tetap melihat milik mereka.
 Start Home on Following	Buka Beranda di Mengikuti

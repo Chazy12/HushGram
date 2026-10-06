@@ -28,7 +28,7 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 
 internal const val THREAD_SEEN = "$EXTENSION_PACKAGE/direct/ThreadSeen;"
-internal const val HOLD_THREAD_SEEN = "$THREAD_SEEN->hold()Z"
+internal const val HOLD_THREAD_SEEN = "$THREAD_SEEN->hold(Ljava/lang/Object;)Z"
 
 /** The query and root field of the GraphQL mutation that carries an ordinary chat's seen receipt. */
 internal const val THREAD_SEEN_QUERY = "IGDirectItemSeenMutation"
@@ -135,8 +135,9 @@ internal fun BytecodePatchContext.findThreadSeen(): ThreadSeenTargets {
     requireOrigin(THREAD_SEEN_PATCH, creator, sendAt, allocated, createAt, "live receipt mutation", fromDefinition = true)
 
     byType[THREAD_SEEN]?.methods?.filter {
-        it.name == "hold" && it.returnType == "Z" && it.parameterTypes.isEmpty() && it.public() && it.static()
-    }?.singleOrNull() ?: refuse("extension has no public static hold()Z")
+        it.name == "hold" && it.returnType == "Z" && it.parameterTypes.map(Any::toString) == listOf(JAVA_OBJECT) &&
+            it.public() && it.static()
+    }?.singleOrNull() ?: refuse("extension has no public static hold(Object)Z")
     return ThreadSeenTargets(handler, mutation, complete, selector, registry, creator)
 }
 

@@ -221,7 +221,10 @@ Takes the row of notes off the top of your messages, the Map bubble in it too. Y
 Hide Instants	Instants ausblenden
 Instagram treats your account as one without Instants, so the stack of photos in your messages goes. Applies after Instagram restarts.	Instagram behandelt dein Konto wie eines ohne Instants, also verschwindet der Fotostapel in deinen Nachrichten. Gilt nach einem Neustart von Instagram.
 Read messages without the seen receipt	Nachrichten ohne Gesehen-Bestätigung lesen
-Opening a chat doesn't tell people you've seen their messages, and you still see when they've seen yours.	Wenn du einen Chat öffnest, erfährt niemand, dass du die Nachrichten gesehen hast, und du siehst weiterhin, wann andere deine gesehen haben.
+Opening a chat doesn't tell people you've seen their messages, and you still see when they've seen yours. To let one chat know, long press it in your messages and tap Mark as read.	Wenn du einen Chat öffnest, erfährt niemand, dass du die Nachrichten gesehen hast, und du siehst weiterhin, wann andere deine gesehen haben. Soll ein Chat es doch erfahren, halte ihn in deinen Nachrichten gedrückt und tippe auf Als gelesen markieren.
+# context: the toasts after tapping Mark as read on a chat's long press while seen receipts are held
+Marked as read	Als gelesen markiert
+Couldn't mark as read	Konnte nicht als gelesen markiert werden
 Hide that you're typing	Verbergen, dass du schreibst
 People you're chatting with don't see the typing dots while you write, and you still see theirs.	Deine Chatpartner sehen beim Schreiben keine Tipp-Punkte, und du siehst ihre weiterhin.
 Start Home on Following	Startseite mit „Gefolgt“ öffnen

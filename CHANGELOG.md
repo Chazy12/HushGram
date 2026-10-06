@@ -8,6 +8,8 @@ Every HushGram release, newest first.
 
 * **Instagram:** New Read messages without the seen receipt patch. With its switch on, opening a chat doesn't tell people you've seen their messages, and you still see when they've seen yours. Instagram's own read receipts setting turns off both. It's off until you pick it in Manager, and the switch, under Messages in HushGram settings, starts off. View-once photos and videos keep their own patch. Asked for in #13.
 
+* **Instagram:** While the Read messages without the seen receipt switch is on, a long press on a chat in your messages offers Mark as read. Tapping it sends Instagram's seen receipt for that chat alone, so the people in it see Seen under their messages, and every other chat stays held back. Asked for in #45.
+
 * **Instagram:** The README's troubleshooting now says how to stop the Play Store from offering, and trying to install, Meta's build over a patched Instagram: untick Enable auto update in the three-dot menu of Instagram's Play page. Asked in #68.
 
 * **Instagram:** The Korean settings read more naturally. @BlackGold8282 reworked 121 of them in #66, including the download, notes and Meta AI rows.

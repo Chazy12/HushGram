@@ -221,7 +221,10 @@ Takes the row of notes off the top of your messages, the Map bubble in it too. Y
 Hide Instants	Instants'ı gizle
 Instagram treats your account as one without Instants, so the stack of photos in your messages goes. Applies after Instagram restarts.	Instagram hesabını Instants olmayan bir hesap gibi görür, bu yüzden mesajlarındaki fotoğraf yığını kaybolur. Instagram yeniden başlatıldıktan sonra geçerli olur.
 Read messages without the seen receipt	Mesajları görüldü bilgisi olmadan oku
-Opening a chat doesn't tell people you've seen their messages, and you still see when they've seen yours.	Bir sohbeti açtığında karşı taraf mesajlarını gördüğünü öğrenmez ve onların seninkileri ne zaman gördüğünü görmeye devam edersin.
+Opening a chat doesn't tell people you've seen their messages, and you still see when they've seen yours. To let one chat know, long press it in your messages and tap Mark as read.	Bir sohbeti açtığında karşı taraf mesajlarını gördüğünü öğrenmez ve onların seninkileri ne zaman gördüğünü görmeye devam edersin. Bir sohbetin bilmesini istersen mesajlarında ona uzun bas ve Okundu olarak işaretle'ye dokun.
+# context: the toasts after tapping Mark as read on a chat's long press while seen receipts are held
+Marked as read	Okundu olarak işaretlendi
+Couldn't mark as read	Okundu olarak işaretlenemedi
 Hide that you're typing	Yazdığını gizle
 People you're chatting with don't see the typing dots while you write, and you still see theirs.	Sohbet ettiğin kişiler sen yazarken yazıyor noktalarını görmez, sen ise onlarınkini görmeye devam edersin.
 Start Home on Following	Ana Sayfa'yı Takip Edilenler ile aç

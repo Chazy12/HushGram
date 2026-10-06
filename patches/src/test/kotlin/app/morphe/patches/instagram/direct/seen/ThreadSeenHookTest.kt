@@ -131,38 +131,48 @@ class ThreadSeenHookTest {
     }
 
     companion object {
-        /** The guard sits first, completes through the queue's callback when held, and otherwise runs [original]. */
+        /**
+         * The guard sits first, hands the extension the receipt, completes through the queue's
+         * callback when held, and otherwise runs [original].
+         */
         internal fun assertThreadGuard(method: Method, completion: String, original: Instruction) {
             val code = method.visualCode()
             assertEquals(1, code.count { it.visualReference()?.toString() == HOLD_THREAD_SEEN })
-            assertEquals(listOf(Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ,
-                Opcode.MOVE_OBJECT_FROM16, Opcode.CONST_4, Opcode.INVOKE_INTERFACE, Opcode.RETURN_VOID), code.take(7).map { it.opcode })
-            assertTrue(code[0].namedRegisters().isEmpty())
-            assertEquals(HOLD_THREAD_SEEN, code[0].visualReference().toString())
-            assertEquals(method.parameterRegisterNumber(1), (code[3] as TwoRegisterInstruction).registerB)
-            assertEquals(completion, code[5].visualReference().toString())
-            assertEquals(listOf(1, 0, 0), code[5].namedRegisters())
-            assertEquals(original.opcode, code[7].opcode)
-            assertEquals(original.namedRegisters(), code[7].namedRegisters())
-            assertEquals(original.visualReference()?.toString(), code[7].visualReference()?.toString())
-            assertEquals("off branches directly to Instagram's original first instruction", setOf(3, 7), ControlFlow.of(method).normal[2].toSet())
+            assertEquals(listOf(Opcode.MOVE_OBJECT_FROM16, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ,
+                Opcode.MOVE_OBJECT_FROM16, Opcode.CONST_4, Opcode.INVOKE_INTERFACE, Opcode.RETURN_VOID), code.take(8).map { it.opcode })
+            assertEquals(0, (code[0] as TwoRegisterInstruction).registerA)
+            assertEquals("the receipt goes to the extension", method.parameterRegisterNumber(2), (code[0] as TwoRegisterInstruction).registerB)
+            assertEquals(listOf(0), code[1].namedRegisters())
+            assertEquals(HOLD_THREAD_SEEN, code[1].visualReference().toString())
+            assertEquals(method.parameterRegisterNumber(1), (code[4] as TwoRegisterInstruction).registerB)
+            assertEquals(completion, code[6].visualReference().toString())
+            assertEquals(listOf(1, 0, 0), code[6].namedRegisters())
+            assertEquals(original.opcode, code[8].opcode)
+            assertEquals(original.namedRegisters(), code[8].namedRegisters())
+            assertEquals(original.visualReference()?.toString(), code[8].visualReference()?.toString())
+            assertEquals("off branches directly to Instagram's original first instruction", setOf(4, 8), ControlFlow.of(method).normal[3].toSet())
         }
 
         internal data class ThreadTrace(val completed: Int, val sent: Int)
 
-        /** Executes the injected instructions, with the queue's callback supplied by the harness. */
+        /** Executes the injected instructions, with the queue's callback and the receipt supplied by the harness. */
         internal fun traceThreadGuard(method: Method, held: Boolean): ThreadTrace {
             val code = method.visualCode()
             val flow = ControlFlow.of(method)
             val registers = mutableMapOf<Int, Any?>()
             val callback = Any()
+            val receipt = Any()
             registers[method.parameterRegisterNumber(1)] = callback
+            registers[method.parameterRegisterNumber(2)] = receipt
             var at = 0
             var completed = 0
-            while (at < 7) {
+            while (at < 8) {
                 val instruction = code[at]
                 when (instruction.opcode) {
-                    Opcode.INVOKE_STATIC -> assertEquals(HOLD_THREAD_SEEN, instruction.visualReference().toString())
+                    Opcode.INVOKE_STATIC -> {
+                        assertEquals(HOLD_THREAD_SEEN, instruction.visualReference().toString())
+                        assertEquals(listOf(receipt), instruction.namedRegisters().map { registers[it] })
+                    }
                     Opcode.MOVE_RESULT -> registers[(instruction as OneRegisterInstruction).registerA] = held
                     Opcode.IF_EQZ -> if (registers[(instruction as OneRegisterInstruction).registerA] == false) {
                         at = flow.normal[at].single { it != at + 1 }
@@ -179,7 +189,7 @@ class ThreadSeenHookTest {
                 }
                 at++
             }
-            assertEquals(7, at)
+            assertEquals(8, at)
             return ThreadTrace(completed, 1)
         }
     }
@@ -208,7 +218,7 @@ internal object ChatSeenFixture {
 
     fun classes(): List<ClassDef> = listOf(
         handler(), callback(), provider(), registry(), selector(), manager(), creator(), parser(),
-        clazz(THREAD_SEEN, listOf(method(THREAD_SEEN, "hold", emptyList(), "Z", 1,
+        clazz(THREAD_SEEN, listOf(method(THREAD_SEEN, "hold", listOf(OBJECT), "Z", 2,
             listOf(ImmutableInstruction11n(Opcode.CONST_4, 0, 0), ImmutableInstruction11x(Opcode.RETURN, 0)), static = true))),
     )
 

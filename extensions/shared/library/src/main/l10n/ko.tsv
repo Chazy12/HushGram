@@ -222,7 +222,10 @@ Takes the row of notes off the top of your messages, the Map bubble in it too. Y
 Hide Instants	Instants 숨기기
 Instagram treats your account as one without Instants, so the stack of photos in your messages goes. Applies after Instagram restarts.	Instagram이 계정을 Instants가 없는 계정으로 취급하므로 메시지의 사진 묶음이 사라집니다. Instagram을 다시 시작하면 적용됩니다
 Read messages without the seen receipt	읽음 표시 없이 메시지 읽기
-Opening a chat doesn't tell people you've seen their messages, and you still see when they've seen yours.	채팅을 열어도 상대방에게 메시지를 봤다는 사실이 전달되지 않으며, 상대방이 내 메시지를 봤는지는 계속 확인할 수 있습니다
+Opening a chat doesn't tell people you've seen their messages, and you still see when they've seen yours. To let one chat know, long press it in your messages and tap Mark as read.	채팅을 열어도 상대방에게 메시지를 봤다는 사실이 전달되지 않으며, 상대방이 내 메시지를 봤는지는 계속 확인할 수 있습니다. 한 채팅에만 알리려면 메시지에서 그 채팅을 길게 누르고 읽음으로 표시를 누르세요
+# context: the toasts after tapping Mark as read on a chat's long press while seen receipts are held
+Marked as read	읽음으로 표시함
+Couldn't mark as read	읽음으로 표시할 수 없습니다
 Hide that you're typing	입력 중 표시 숨기기
 People you're chatting with don't see the typing dots while you write, and you still see theirs.	메시지를 쓰는 동안 상대방에게 입력 중 표시가 보이지 않으며, 상대방의 입력 중 표시는 계속 볼 수 있습니다
 Start Home on Following	팔로잉에서 홈 시작

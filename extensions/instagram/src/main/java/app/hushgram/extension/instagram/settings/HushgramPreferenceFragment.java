@@ -401,7 +401,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                 messages.addPreference(toggle(context, Settings.READ_WITHOUT_SEEN_RECEIPT,
                         L10n.t("Read messages without the seen receipt"),
                         L10n.t("Opening a chat doesn't tell people you've seen their messages, and you still see "
-                                + "when they've seen yours.")));
+                                + "when they've seen yours. To let one chat know, long press it in your messages and "
+                                + "tap Mark as read.")));
             }
             if (build.contains(PatchFamily.TYPING)) {
                 messages.addPreference(toggle(context, Settings.HIDE_TYPING, L10n.t("Hide that you're typing"),

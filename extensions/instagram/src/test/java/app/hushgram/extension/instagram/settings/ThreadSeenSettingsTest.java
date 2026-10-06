@@ -81,7 +81,8 @@ public class ThreadSeenSettingsTest {
         assertNotNull(row);
         assertEquals("Read messages without the seen receipt", row.getTitle().toString());
         assertEquals("Opening a chat doesn't tell people you've seen their messages, and you still see "
-                + "when they've seen yours.", row.getSummary().toString());
+                + "when they've seen yours. To let one chat know, long press it in your messages and "
+                + "tap Mark as read.", row.getSummary().toString());
         PreferenceGroup messages = row.getParent();
         assertEquals("Messages", messages.getTitle().toString());
         String[] keys = new String[messages.getPreferenceCount()];

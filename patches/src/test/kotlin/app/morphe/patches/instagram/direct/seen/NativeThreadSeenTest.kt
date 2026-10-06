@@ -98,7 +98,7 @@ class NativeThreadSeenTest {
         private val cached = mutableMapOf<String, Map<String, ClassDef>>()
 
         /** The view-once test's classes, which hold the chat handler and its sender too, plus its provider and the extension. */
-        private fun threadClasses(bundle: File): Map<String, ClassDef> = cached.getOrPut(bundle.absolutePath) {
+        internal fun threadClasses(bundle: File): Map<String, ClassDef> = cached.getOrPut(bundle.absolutePath) {
             val classes = nativeClasses(bundle).toMutableMap()
             val handler = threadHandler(classes)
             val providers = classes.getValue(handler.definingClass).methods.single { it.name == "<clinit>" }.visualCode()
