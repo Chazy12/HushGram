@@ -106,11 +106,15 @@ val hideRepostButtonPatch = bytecodePatch(
         // Proved before anything changes: it reads the state's own constructor as Instagram wrote it.
         val feedState = findFeedRepostState()
         val sites = findRepostSites()
+        if (sites.reads.any { it.type == feedState.type && it.name == "<init>" }) {
+            refuse("${feedState.type}'s constructor reads $REPOSTS_FIELD itself, so its writes and that read would move each other")
+        }
+        // The state goes first, so its own check of each write runs before this patch changes anything.
+        hideFeedState(feedState)
         guardRepostGetter(sites.getter)
         sites.reads.groupBy { Triple(it.type, it.name, it.parameters) }.values.forEach(::filterRepostReads)
         hideFeedUfi(findFeedUfiSite())
         hideFeedComponent(findFeedRepostComponent())
-        hideFeedState(feedState)
         enableStatus("repostButton")
     }
 }
