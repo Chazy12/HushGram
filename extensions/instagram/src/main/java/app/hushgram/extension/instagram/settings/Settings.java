@@ -38,6 +38,14 @@ public class Settings extends BaseSettings {
     public static final EnumSetting<NavigationTarget> NAVIGATION_SETTINGS_TARGET =
             new EnumSetting<>("hushgram_navigation_settings_target", NavigationTarget.OFF, true);
 
+    /**
+     * HushGram's settings list their categories, and a tap opens one as its own page. Search still
+     * looks through every category. Off to start, so the page stays one long list. A choice about
+     * the page itself, so it's read saved, not through Pause.
+     */
+    public static final BooleanSetting CATEGORY_PAGES =
+            new BooleanSetting("hushgram_category_pages", FALSE);
+
     /** Sponsored posts, reels and stories: the ad injector is told no ad went in. */
     public static final BooleanSetting HIDE_ADS =
             new BooleanSetting("hushgram_hide_ads", TRUE);

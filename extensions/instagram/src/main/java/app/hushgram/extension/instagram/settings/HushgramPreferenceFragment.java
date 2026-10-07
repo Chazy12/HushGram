@@ -117,6 +117,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
     static final String SIGN_IN_NOTICE_KEY = "hushgram_sign_in_notice";
     static final String CLEAR_MEDIA_CACHE_NOW = "hushgram_clear_media_cache_now";
     private static final String SCREEN_KEY = "hushgram_settings_root";
+    /** The keys of the rows that open each category's page, numbered in the page's order. */
+    static final String CATEGORY_ROW_KEY = "hushgram_category_page_";
 
     /** The first row, which says whether HushGram runs now and whether the next start changes that. */
     @Nullable
@@ -168,6 +170,12 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
     /** Keep the actual row objects, including their values and listeners, while filtering. */
     private final Map<PreferenceCategory, List<Preference>> searchableRows = new LinkedHashMap<>();
     private final Map<Preference, String> searchAliases = new HashMap<>();
+    /** With Open categories as pages on: the row that opens each category, made with the snapshot. */
+    private final Map<PreferenceCategory, Row> categoryRows = new LinkedHashMap<>();
+    /** The category whose page is open, or null for the list of categories. */
+    @Nullable private PreferenceCategory openCategory;
+    /** Where the list of categories was scrolled to when a page opened, for Back. */
+    private int categoryListPosition, categoryListTop;
 
     /** The page's dialogs that may still be on screen, which would outlive it. */
     private final List<Dialog> shownDialogs = new ArrayList<>();
@@ -255,6 +263,11 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
     @Override
     public void onDestroyView() {
         undoRefresh.removeCallbacks(refreshUndo);
+        // A rebuilt view starts on the list of categories, under the dialog's own title.
+        if (openCategory != null) {
+            openCategory = null;
+            filterSettings();
+        }
         for (Dialog dialog : new ArrayList<>(shownDialogs)) dialog.dismiss();
         shownDialogs.clear();
         clearPositions = null;
@@ -288,6 +301,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         setPreferenceScreen(screen);
         searchableRows.clear();
         searchAliases.clear();
+        categoryRows.clear();
+        openCategory = null;
 
         screen.addPreference(statusCard(context));
         if (!Settings.SIGN_IN_NOTICE_HIDDEN.savedValue()) screen.addPreference(signInNotice(context, screen));
@@ -309,6 +324,9 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         Set<PatchFamily> build = PatchFamily.inThisBuild();
         PreferenceCategory entry = category(screen, L10n.t("Settings entry"));
         entry.addPreference(navigationRow(context));
+        entry.addPreference(toggle(context, Settings.CATEGORY_PAGES, L10n.t("Open categories as pages"),
+                L10n.t("Settings shows a list of its categories, and a tap opens one on its own page. "
+                        + "Search still looks through all of them.")));
 
         List<Preference> privacy = new ArrayList<>();
         ghostSwitches = GhostMode.switches(build);
@@ -1033,8 +1051,81 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                 searchAliases.put(row, aliases.toString());
             }
             searchableRows.put(group, rows);
+            // Pause and diagnostics stays open in every mode, as it does while searching.
+            if (group != recovery) categoryRows.put(group, categoryRow(context, group, rows));
         }
         filterSettings();
+    }
+
+    /** The row that opens [group]'s page: its name, its first few settings, and where it stood. */
+    private Row categoryRow(Context context, PreferenceCategory group, List<Preference> rows) {
+        Row row = new Row(context);
+        row.setKey(CATEGORY_ROW_KEY + categoryRows.size());
+        row.setPersistent(false);
+        row.setTitle(group.getTitle());
+        List<String> titles = new ArrayList<>();
+        for (Preference each : rows) {
+            if (titles.size() == 3) break;
+            CharSequence title = each.getTitle();
+            if (title != null && title.length() > 0) titles.add(title.toString());
+        }
+        row.setSummary(String.join(", ", titles));
+        // The category itself is off the screen while its row is on, so the row takes its place.
+        row.setOrder(group.getOrder());
+        row.setOnPreferenceClickListener(tapped -> {
+            openCategory(group);
+            return true;
+        });
+        return row;
+    }
+
+    /** Whether the page lists its categories. A choice about the page, so Pause doesn't turn it off. */
+    private static boolean categoryPages() {
+        return Settings.CATEGORY_PAGES.savedValue();
+    }
+
+    /** Opens [group]'s page, keeping where the list of categories was for Back. */
+    private void openCategory(PreferenceCategory group) {
+        ListView list = listView();
+        if (list != null) {
+            categoryListPosition = list.getFirstVisiblePosition();
+            View first = list.getChildAt(0);
+            categoryListTop = first == null ? 0 : first.getTop() - list.getPaddingTop();
+        }
+        openCategory = group;
+        filterSettings();
+        showTitle(group.getTitle());
+        if (list != null) {
+            // After the adapter has caught up with the screen's new rows.
+            list.post(() -> list.setSelection(0));
+            list.announceForAccessibility(group.getTitle());
+        }
+    }
+
+    /**
+     * Back on a category's page: the list of categories again, scrolled where it was. Answers
+     * whether a page was open, so Back closes settings only from the list.
+     */
+    boolean closeCategory() {
+        if (openCategory == null) return false;
+        openCategory = null;
+        filterSettings();
+        showTitle(null);
+        ListView list = listView();
+        if (list != null) {
+            int position = categoryListPosition, top = categoryListTop;
+            list.post(() -> list.setSelectionFromTop(position, top));
+        }
+        return true;
+    }
+
+    @Nullable private ListView listView() {
+        View view = getView();
+        return view == null ? null : view.findViewById(android.R.id.list);
+    }
+
+    private void showTitle(@Nullable CharSequence title) {
+        if (getParentFragment() instanceof SettingsDialog) ((SettingsDialog) getParentFragment()).showTitle(title);
     }
 
     /** Hidden rows still participate in the shared preference synchronization contract. */
@@ -1135,6 +1226,13 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         if (screen == null || search == null || screen.findPreference(search.getKey()) != search) return;
         String normalized = searchText(searchQuery).trim();
         String[] terms = normalized.isEmpty() ? new String[0] : normalized.split("\\s+");
+        boolean pages = categoryPages();
+        if (!pages && openCategory != null) {
+            openCategory = null;
+            showTitle(null);
+        }
+        // A search looks through every category, whichever page is open, and clearing it goes back.
+        boolean listing = pages && terms.length == 0;
         int matches = 0;
         for (Map.Entry<PreferenceCategory, List<Preference>> section : searchableRows.entrySet()) {
             PreferenceCategory group = section.getKey();
@@ -1149,9 +1247,18 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                 } else if (row.getParent() == group) group.removePreference(row);
             }
             // Running saves are live rows outside the snapshot, so Cancel survives every query.
-            if (group.getPreferenceCount() > 0) {
+            boolean filled = group.getPreferenceCount() > 0;
+            boolean asRow = listing && openCategory == null && group != recovery;
+            boolean elsewhere = listing && openCategory != null && group != openCategory && group != recovery;
+            if (filled && !asRow && !elsewhere) {
                 if (group.getParent() != screen) screen.addPreference(group);
             } else if (group.getParent() == screen) screen.removePreference(group);
+            Row row = categoryRows.get(group);
+            if (row != null) {
+                if (filled && asRow) {
+                    if (row.getParent() != screen) screen.addPreference(row);
+                } else if (row.getParent() == screen) screen.removePreference(row);
+            }
         }
         // removePreference notifies even when absent. No-op changes mustn't rebind live Cancel.
         if (terms.length > 0 && matches == 0) {
