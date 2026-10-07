@@ -218,7 +218,18 @@ public final class InstagramMedia {
         return null;
     }
 
-    /** Adds a separate labeled row through the same native adder that creates Download. */
+    /**
+     * A new option of the feed menu named [name], drawn and handled like Download: Download's icon
+     * and ordinal, made by the option's own constructor. Null as built.
+     */
+    public static Object feedOption(String name) {
+        return null;
+    }
+
+    /**
+     * Adds a separate labeled row through the same native adder that creates Download: Save all,
+     * and Open in another player.
+     */
     public static void addSaveAllRow(Object menu, ArrayList<?> rows, Object option, CharSequence label) {
     }
 }

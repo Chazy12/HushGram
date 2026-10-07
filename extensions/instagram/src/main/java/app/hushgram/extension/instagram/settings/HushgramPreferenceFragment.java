@@ -838,6 +838,11 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                         L10n.t("The same Download on a photo post, and on a carousel showing a photo. Saves the largest "
                                 + "size Instagram has.")));
             }
+            if (build.contains(PatchFamily.REEL_DOWNLOAD) || build.contains(PatchFamily.VIDEO_DOWNLOAD)) {
+                downloads.addPreference(toggle(context, Settings.OPEN_IN_PLAYER, L10n.t("Open in another player"),
+                        L10n.t("Adds a row next to Download on a reel and a feed video that plays it in an app you "
+                                + "pick, such as VLC. The player streams it from Instagram's servers.")));
+            }
             downloads.addPreference(toggle(context, Settings.SEND_DOWNLOADS_TO_APP, L10n.t("Send downloads to another app"),
                     L10n.t("Download on a reel, a feed post or a story opens the share sheet with its link, for a "
                             + "downloader app such as Seal. Save all and the other save rows still save here.")));

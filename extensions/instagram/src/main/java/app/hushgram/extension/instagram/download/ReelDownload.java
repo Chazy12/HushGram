@@ -44,6 +44,9 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  *       Download and Download cover. Download saves the reel as Instagram's own row would, and
  *       Download cover saves the still picture Instagram shows before the reel plays, its image
  *       versions at the largest size (#48). A frame of the video is never a stand in.
+ *   <li>With Open in another player on, a reel with a video file gets Download and Open in another
+ *       player in Download's place, after Download cover when that's on too. A tap on it hands the
+ *       file's address to a player picked from Android's chooser ({@link ExternalPlayer}).
  * </ul>
  *
  * <p>Every hook fails open: until the settings are ready, while HushGram is paused, with the switch
@@ -91,8 +94,15 @@ public final class ReelDownload {
     static final String REEL_OPTION = "HUSHGRAM_DOWNLOAD_REEL";
     static final String COVER_OPTION = "HUSHGRAM_DOWNLOAD_COVER";
 
+    /**
+     * The name of the option Open in another player puts after Download on a reel with a video
+     * file, made the same way as the two above.
+     */
+    static final String PLAYER_OPTION = ExternalPlayer.OPTION;
+
     /** Every row of ours, by name. */
-    private static final List<String> OUR_ROWS = Arrays.asList(VIDEO_OPTION, PHOTO_OPTION, REEL_OPTION, COVER_OPTION);
+    private static final List<String> OUR_ROWS = Arrays.asList(VIDEO_OPTION, PHOTO_OPTION, REEL_OPTION, COVER_OPTION,
+            PLAYER_OPTION);
 
     /** What the menu found for a reel's cover, and what a tap on Download cover started. */
     static final String HAS_COVER = "has cover";
@@ -154,7 +164,7 @@ public final class ReelDownload {
         try {
             if (media == null || !on()) return false;
             if (!renditions(media).isEmpty() || InstagramMedia.dashManifest(media) != null) {
-                return coverRows(menu, media, context, sheet, rowState);
+                return videoRows(menu, media, context, sheet, rowState);
             }
             if (StoryDownload.pictures(media).isEmpty()) return false;
             MusicVideo.Music music = MusicVideo.music(media);
@@ -185,25 +195,39 @@ public final class ReelDownload {
     }
 
     /**
-     * Download and Download cover in Download's place for [media], a reel with a video, when Download
-     * cover is on and the reel lists its picture, and whether they went in. Once Download is in, the
-     * answer is yes even if the cover's row isn't, so Instagram's own row doesn't come as a second
-     * Download.
+     * Download, then Download cover and Open in another player, in Download's place for [media], a
+     * reel with a video, and whether they went in. Download cover needs its switch and a picture
+     * the reel lists, and Open in another player its switch and a video file a player can open. With
+     * neither, the reel keeps Instagram's one row. Once Download is in, the answer is yes even if a
+     * row after it isn't, so Instagram's own row doesn't come as a second Download.
      */
-    private static boolean coverRows(Object menu, Object media, Object context, Object sheet, Object rowState) {
-        if (!coverOn() || StoryDownload.pictures(media).isEmpty()) return false;
+    private static boolean videoRows(Object menu, Object media, Object context, Object sheet, Object rowState) {
+        boolean cover = coverOn() && !StoryDownload.pictures(media).isEmpty();
+        boolean player = ExternalPlayer.offers(media);
+        if (!cover && !player) return false;
         Object reel = InstagramMedia.reelOption(REEL_OPTION);
-        Object cover = InstagramMedia.reelOption(COVER_OPTION);
-        if (reel == null || cover == null) return false;
+        Object coverRow = cover ? InstagramMedia.reelOption(COVER_OPTION) : null;
+        Object playerRow = player ? InstagramMedia.reelOption(PLAYER_OPTION) : null;
+        if (reel == null || coverRow == null && playerRow == null) return false;
         if (!InstagramMedia.addReelRow(menu, context, reel, sheet, rowState,
                 StoryDownload.label(StoryDownload.Choice.STORY))) {
             return false;
         }
-        HookStatus.counted(FamilyNames.REEL_DOWNLOAD, HAS_COVER);
-        try {
-            InstagramMedia.addReelRow(menu, context, cover, sheet, rowState, L10n.t(Utils.getContext(), "Download cover"));
-        } catch (Throwable t) {
-            HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "reel menu cover row", t);
+        if (coverRow != null) {
+            HookStatus.counted(FamilyNames.REEL_DOWNLOAD, HAS_COVER);
+            try {
+                InstagramMedia.addReelRow(menu, context, coverRow, sheet, rowState, L10n.t(Utils.getContext(), "Download cover"));
+            } catch (Throwable t) {
+                HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "reel menu cover row", t);
+            }
+        }
+        if (playerRow != null) {
+            try {
+                InstagramMedia.addReelRow(menu, context, playerRow, sheet, rowState,
+                        L10n.t(Utils.getContext(), "Open in another player"));
+            } catch (Throwable t) {
+                HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "reel menu player row", t);
+            }
         }
         return true;
     }
@@ -241,6 +265,10 @@ public final class ReelDownload {
             ours = row != null;
             if (!on()) return ours;
             Context context = activity != null ? activity : Utils.getContext();
+            if (PLAYER_OPTION.equals(row)) {
+                ExternalPlayer.open(context, media, FamilyNames.REEL_DOWNLOAD);
+                return true;
+            }
             if ((row == null || REEL_OPTION.equals(row))
                     && ExternalDownload.handOff(context, ExternalDownload.postLink(media, true), FamilyNames.REEL_DOWNLOAD)) {
                 return true;

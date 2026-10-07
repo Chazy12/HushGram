@@ -44,6 +44,10 @@ import app.hushgram.extension.shared.settings.BooleanSetting;
  *       tap saves its picture at the largest size, the way {@link StoryDownload} saves a photo story.
  *   <li>A carousel also has Save all. It snapshots every ordered page for one cancellable batch,
  *       respecting the photo and video switches while Download still saves the page on screen.
+ *   <li>With Open in another player on, a post, or carousel page on screen, with a video file gets
+ *       a row that hands the file to a player picked from Android's chooser ({@link ExternalPlayer}).
+ *       It's offered next to Save all, before the builder splits into your own and others' rows,
+ *       and the short menu keeps it after Download and Save all.
  * </ul>
  *
  * <p>Every hook fails open: until the settings are ready, while HushGram is paused, with the switch
@@ -58,6 +62,51 @@ public final class VideoDownload {
 
     /** Process-only identity, never entered in Instagram's native enum arrays. */
     private static Object batchOption;
+
+    /** Open in another player's option, made once, as Save all's is. */
+    private static Object playerOption;
+
+    public static synchronized Object playerOption() {
+        try {
+            if (playerOption == null) playerOption = InstagramMedia.feedOption(ExternalPlayer.OPTION);
+            return playerOption;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "feed player option", failure);
+            return null;
+        }
+    }
+
+    /**
+     * Adds Open in another player to [rows], the list the feed menu's builder [menu] fills, when
+     * the switch is on and the post, or the carousel page on screen, has a video file a player can
+     * open. Called beside {@link #offerAll}, so your own posts get it too. Never throws.
+     */
+    public static void offerPlayer(Object menu, ArrayList<?> rows) {
+        try {
+            if (menu == null || rows == null || !ExternalPlayer.on()) return;
+            HookStatus.invoked(FamilyNames.VIDEO_DOWNLOAD);
+            Object shown = shown(InstagramMedia.feedMenuMedia(menu), InstagramMedia.feedMenuItemState(menu));
+            if (!ExternalPlayer.offers(shown)) return;
+            Object option = playerOption();
+            if (option != null) InstagramMedia.addSaveAllRow(menu, rows, option, L10n.t("Open in another player"));
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "feed player row", failure);
+        }
+    }
+
+    /**
+     * Hands the video of [media], or of the carousel page on screen that [itemState] names, to a
+     * player, when its Open in another player row is tapped. [activity] is the one the menu belongs
+     * to. Never throws.
+     */
+    public static void play(Object media, Object itemState, Activity activity) {
+        Context context = activity != null ? activity : Utils.getContext();
+        try {
+            ExternalPlayer.open(context, shown(media, itemState), FamilyNames.VIDEO_DOWNLOAD);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "feed player tap", failure);
+        }
+    }
 
     public static synchronized Object allOption() {
         try {
@@ -199,24 +248,46 @@ public final class VideoDownload {
      * Answers [options], the options the short feed menu keeps, with [download], Instagram's
      * Download option, in front when the switch is on. The menu keeps a row only when its option is
      * on this list and orders the rows by it, so without this the row {@link #offer} added never
-     * shows there. Save all follows Download, keeping native options in their existing order.
-     * A list with both actions or the switches off comes back as it came. Never throws.
+     * shows there. Save all follows Download, keeping native options in their existing order, and
+     * with its own switch on, Open in another player follows them. A list with every action or the
+     * switches off comes back as it came. Never throws.
      */
     public static List<?> allow(List<?> options, Object download) {
         try {
             HookStatus.invoked(FamilyNames.VIDEO_DOWNLOAD);
-            if (options == null || download == null || !videos() && !photos()) return options;
-            Object all = allOption();
-            if (options.contains(download) && (all == null || options.contains(all))) return options;
-            List<Object> allowed = new ArrayList<>(options.size() + 2);
-            if (!options.contains(download)) allowed.add(download);
-            allowed.addAll(options);
-            if (all != null && !options.contains(all)) allowed.add(allowed.indexOf(download) + 1, all);
-            return allowed;
+            if (options == null) return options;
+            List<?> allowed = download == null || !videos() && !photos() ? options : withSaves(options, download);
+            return ExternalPlayer.on() ? withPlayer(allowed, download) : allowed;
         } catch (Throwable t) {
             HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "short feed menu", t);
             return options;
         }
+    }
+
+    /** [options] with Download in front and Save all after it, each when it isn't there yet. */
+    private static List<?> withSaves(List<?> options, Object download) {
+        Object all = allOption();
+        if (options.contains(download) && (all == null || options.contains(all))) return options;
+        List<Object> allowed = new ArrayList<>(options.size() + 2);
+        if (!options.contains(download)) allowed.add(download);
+        allowed.addAll(options);
+        if (all != null && !options.contains(all)) allowed.add(allowed.indexOf(download) + 1, all);
+        return allowed;
+    }
+
+    /**
+     * [options] with Open in another player after Save all, or after Download when Save all isn't
+     * there, or in front when neither is. A list that has it already comes back as it came.
+     */
+    static synchronized List<?> withPlayer(List<?> options, Object download) {
+        Object player = playerOption();
+        if (player == null || options.contains(player)) return options;
+        List<Object> allowed = new ArrayList<>(options);
+        Object all = batchOption;
+        int after = all != null && allowed.contains(all) ? allowed.indexOf(all)
+                : download != null ? allowed.indexOf(download) : -1;
+        allowed.add(after + 1, player);
+        return allowed;
     }
 
     /**

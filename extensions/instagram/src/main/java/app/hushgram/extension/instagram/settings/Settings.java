@@ -816,6 +816,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_send_downloads_to_app", FALSE);
 
     /**
+     * A reel's menu and a feed video's menu get Open in another player, which hands the video's
+     * address to a player picked from Android's chooser. Starts off.
+     */
+    public static final BooleanSetting OPEN_IN_PLAYER =
+            new BooleanSetting("hushgram_open_in_player", FALSE);
+
+    /**
      * Video saves keep to what other apps open: H.264 video with AAC-LC or HE-AAC sound, within
      * {@link #DOWNLOAD_QUALITY}, or the app's single MP4 file when the manifest has no such pair.
      * The sharpest version Meta streams is often AV1 with xHE-AAC sound, which Gallery and VLC play

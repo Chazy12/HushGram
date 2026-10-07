@@ -72,7 +72,7 @@ class DownloadVideoHookTest {
     /** The hooks the patch writes are in the extension the bundle ships, public and static. */
     @Test
     fun theHooksAreInTheExtension() {
-        for (hook in listOf(OFFER_VIDEO, SAVE_VIDEO, ALLOW_VIDEO, OFFER_ALL, SAVE_ALL, ALL_OPTION, OWN_POST)) {
+        for (hook in listOf(OFFER_VIDEO, SAVE_VIDEO, ALLOW_VIDEO, OFFER_ALL, SAVE_ALL, ALL_OPTION, OWN_POST, OFFER_PLAYER, PLAYER_OPTION, PLAY_VIDEO)) {
             val declared = ExtensionDex.classDef(hook.substringBefore("->")).methods
                 .filter { AccessFlags.PUBLIC.isSet(it.accessFlags) && AccessFlags.STATIC.isSet(it.accessFlags) }
                 .map { "${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" }
@@ -97,7 +97,7 @@ class DownloadVideoHookTest {
         assertEquals("anyone else's first row follows", "$state->other:Ljava/lang/Object;", code[offer + 1].referenceText())
         val owner = code.indexOfFirst { it.referenceText() == mine }
         assertEquals("the owner check's jump", offer, code.target(owner + 2))
-        assertEquals("four separate actions in the builder", 4, code.count { it.referenceText()?.startsWith("Lapp/hushgram/") == true })
+        assertEquals("five separate actions in the builder", 5, code.count { it.referenceText()?.startsWith("Lapp/hushgram/") == true })
     }
 
     /**
@@ -235,7 +235,7 @@ class DownloadVideoHookTest {
 
         context.offerDownloadOnEveryVideo()
 
-        val code = context.method(helper, "A09").code().drop(11)
+        val code = context.method(helper, "A09").code().drop(22)
         assertEquals(
             listOf(
                 Opcode.MOVE_OBJECT_FROM16, Opcode.SGET_OBJECT, Opcode.IF_NE, Opcode.MOVE_OBJECT_FROM16, Opcode.INVOKE_STATIC,
@@ -284,7 +284,39 @@ class DownloadVideoHookTest {
         assertEquals(ALL_OPTION, menu[1].referenceText())
         assertEquals(SAVE_ALL, menu[9].referenceText())
         assertEquals("the batch tap stops native dispatch", Opcode.RETURN_VOID, menu[10].opcode)
-        for (branch in listOf(3, 4)) assertEquals("native options reach current-page handling", 11, menu.target(branch))
+        for (branch in listOf(3, 4)) assertEquals("native options reach the player check", 11, menu.target(branch))
+    }
+
+    /**
+     * Open in another player has an option of its own, offered right after Save all on both
+     * ownership paths, and a tap on it goes to play() with the post, its feed state and the activity.
+     */
+    @Test
+    fun openInAnotherPlayerHasItsOwnOptionAndTap() {
+        val context = PatchContexts.of(classes())
+        context.offerDownloadOnEveryVideo()
+        val factory = context.method(INSTAGRAM_MEDIA, "feedOption").code()
+        assertEquals(DOWNLOAD, factory.first().referenceText())
+        assertTrue(factory.any { it.opcode == Opcode.INVOKE_DIRECT && it.referenceText() == "$OPTION-><init>(Ljava/lang/String;II)V" })
+        assertTrue("the name isn't the one handed over", factory.any {
+            it.opcode == Opcode.MOVE_OBJECT && (it as TwoRegisterInstruction).registerA == 1 && it.registerB == 4
+        })
+        val builder = context.method(lambda, "invoke").code()
+        val all = builder.indexOfFirst { it.referenceText() == OFFER_ALL }
+        assertEquals("offered right after Save all", all + 1, builder.indexOfFirst { it.referenceText() == OFFER_PLAYER })
+        assertEquals(1, builder.count { it.referenceText() == OFFER_PLAYER })
+        val offer = builder[all + 1] as Instruction35c
+        val offerAll = builder[all] as Instruction35c
+        assertEquals("the same state and rows", listOf(offerAll.registerC, offerAll.registerD), listOf(offer.registerC, offer.registerD))
+        val menu = context.method(helper, "A09").code()
+        assertEquals(PLAYER_OPTION, menu[11].referenceText())
+        assertEquals("the post's feed state", "$helper->item:$itemState", menu[19].referenceText())
+        val play = menu[20] as Instruction35c
+        assertEquals(PLAY_VIDEO, play.referenceText())
+        assertEquals("play()'s arguments", listOf(1, 0, 2), listOf(play.registerC, play.registerD, play.registerE))
+        assertEquals("the player tap stops native dispatch", Opcode.RETURN_VOID, menu[21].opcode)
+        for (branch in listOf(13, 14)) assertEquals("native options reach current-page handling", 22, menu.target(branch))
+        assertEquals(DOWNLOAD, menu[23].referenceText())
     }
 
     /** Unknown enum initialization and ambiguous or branching entry anchors cannot write half a patch. */
@@ -304,6 +336,8 @@ class DownloadVideoHookTest {
                 context.method(INSTAGRAM_MEDIA, "saveAllOption").code().first().opcode)
             assertEquals("$case: the batch row bridge changed", Opcode.RETURN_VOID,
                 context.method(INSTAGRAM_MEDIA, "addSaveAllRow").code().first().opcode)
+            assertEquals("$case: the player option bridge changed", Opcode.CONST_4,
+                context.method(INSTAGRAM_MEDIA, "feedOption").code().first().opcode)
         }
     }
 
@@ -432,6 +466,7 @@ class DownloadVideoHookTest {
                 val save = handled.indexOfFirst { it.referenceText() == SAVE_VIDEO }
                 assertEquals("${bundle.name}: the current-page save", SAVE_VIDEO, handled[save].referenceText())
                 assertEquals("${bundle.name}: one batch tap", 1, handled.count { it.referenceText() == SAVE_ALL })
+                assertEquals("${bundle.name}: one player tap", 1, handled.count { it.referenceText() == PLAY_VIDEO })
                 val constructor = context.method(INSTAGRAM_MEDIA, "saveAllOption").code().single { it.opcode == Opcode.INVOKE_DIRECT }
                 assertEquals("${bundle.name}: direct native construction", "$OPTION-><init>(Ljava/lang/String;II)V", constructor.referenceText())
                 assertEquals("${bundle.name}: the native option class was preserved", classes.single { it.type == OPTION }.methods.map { it.code().map { instruction -> instruction.referenceText() } },
@@ -452,6 +487,8 @@ class DownloadVideoHookTest {
                 val code = context.method(builders.single().definingClass, builders.single().name, builders.single().parameterTypes.map(Any::toString)).code()
                 assertEquals("${bundle.name}: offer() calls", 1, code.count { it.referenceText() == OFFER_VIDEO })
                 assertEquals("${bundle.name}: Save all offered once", 1, code.count { it.referenceText() == OFFER_ALL })
+                assertEquals("${bundle.name}: the player offered once, right after it",
+                    code.indexOfFirst { it.referenceText() == OFFER_ALL } + 1, code.indexOfLast { it.referenceText() == OFFER_PLAYER })
                 val own = code.indexOfFirst { it.referenceText() == OWN_POST }
                 assertEquals("${bundle.name}: ownPost() calls", 1, code.count { it.referenceText() == OWN_POST })
                 assertEquals("${bundle.name}: ownPost() takes the download check's answer", Opcode.MOVE_RESULT, code[own - 1].opcode)

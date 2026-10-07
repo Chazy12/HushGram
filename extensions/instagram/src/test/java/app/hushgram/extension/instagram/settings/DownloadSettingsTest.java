@@ -66,6 +66,7 @@ public class DownloadSettingsTest {
         Settings.FILENAME_TEMPLATE.resetToDefault();
         Settings.SAVE_FOLDER_PER_ACCOUNT.resetToDefault();
         Settings.SEND_DOWNLOADS_TO_APP.resetToDefault();
+        Settings.OPEN_IN_PLAYER.resetToDefault();
         Settings.DOWNLOAD_REELS.resetToDefault();
         Settings.DOWNLOAD_REEL_COVER.resetToDefault();
     }
@@ -207,6 +208,32 @@ public class DownloadSettingsTest {
             assertEquals("Send downloads to another app", String.valueOf(row.getTitle()));
             assertFalse(((SwitchPreference) row).isChecked());
             assertTrue(ConfigurationBackup.eligible().containsKey(Settings.SEND_DOWNLOADS_TO_APP.key));
+        }
+    }
+
+    /**
+     * Open in another player is under Downloads, above Send downloads to another app, with a reel or
+     * a feed video download in the build, starts off and goes in a settings file. A build with only
+     * story downloads has no menu it joins, so no row.
+     */
+    @Test
+    public void openInAnotherPlayerSitsAboveSendToAnotherApp() {
+        for (PatchFamily family : EnumSet.of(PatchFamily.REEL_DOWNLOAD, PatchFamily.VIDEO_DOWNLOAD)) {
+            PatchFamily.inBuildForTests = EnumSet.of(family);
+            try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+                List<Preference> rows = rowsOf(pageIn(controller));
+                int player = indexOfKey(rows, Settings.OPEN_IN_PLAYER.key);
+                assertEquals(family.name(), indexOfKey(rows, Settings.SEND_DOWNLOADS_TO_APP.key) - 1, player);
+                Preference row = rows.get(player);
+                assertEquals("Open in another player", String.valueOf(row.getTitle()));
+                assertFalse(((SwitchPreference) row).isChecked());
+                assertTrue(ConfigurationBackup.eligible().containsKey(Settings.OPEN_IN_PLAYER.key));
+            }
+        }
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.STORY_DOWNLOAD);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            assertEquals(-1, indexOfKey(rowsOf(pageIn(controller)), Settings.OPEN_IN_PLAYER.key));
+            assertFalse(ConfigurationBackup.eligible().containsKey(Settings.OPEN_IN_PLAYER.key));
         }
     }
 

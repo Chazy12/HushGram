@@ -64,6 +64,9 @@ internal const val SAVE_ALL = "$VIDEO_DOWNLOAD->saveAll(Ljava/lang/Object;Landro
 internal const val ALL_OPTION = "$VIDEO_DOWNLOAD->allOption()Ljava/lang/Object;"
 internal const val OWN_POST = "$VIDEO_DOWNLOAD->ownPost(ILjava/lang/Object;)I"
 internal const val OWN_POST_ROW = "$VIDEO_DOWNLOAD->ownPostRow(ILjava/lang/Object;)I"
+internal const val OFFER_PLAYER = "$VIDEO_DOWNLOAD->offerPlayer(Ljava/lang/Object;Ljava/util/ArrayList;)V"
+internal const val PLAYER_OPTION = "$VIDEO_DOWNLOAD->playerOption()Ljava/lang/Object;"
+internal const val PLAY_VIDEO = "$VIDEO_DOWNLOAD->play(Ljava/lang/Object;Ljava/lang/Object;Landroid/app/Activity;)V"
 
 /** The options the short feed menu's list of kept options reads first and last: "Why you're seeing this" and Report. */
 internal const val WHY_OPTION = "$OPTION->WHY_AM_I_SEEING_THIS:$OPTION"
@@ -117,6 +120,9 @@ private const val CAROUSEL_FIELD = "carousel_media"
  * interested, Report, under an "About this reel" summary on a reel). It shows only the rows whose
  * option is on a fixed list, in that list's order, so it dropped the Download row. The list goes
  * through the extension before it's returned, which puts Download first while the switch is on.
+ *
+ * Open in another player is a row of the same kind as Save all, offered beside it and made with
+ * its own option, which the handler hands to the extension with the post and its feed state.
  *
  * Everything is found before anything changes, so a build that differs stops the patch naming
  * what it couldn't find, and nothing is half done.
@@ -234,6 +240,10 @@ internal fun BytecodePatchContext.offerDownloadOnEveryVideo() {
         it.name == "saveAllOption" && AccessFlags.STATIC.isSet(it.accessFlags) &&
             it.returnType == "Ljava/lang/Object;" && it.parameterTypes.isEmpty()
     } ?: throw PatchException("$PATCH: $INSTAGRAM_MEDIA has no Save all option stub")
+    val feedOptionStub = bridges.methods.singleOrNull {
+        it.name == "feedOption" && AccessFlags.STATIC.isSet(it.accessFlags) &&
+            it.returnType == "Ljava/lang/Object;" && it.parameterTypes.map(Any::toString) == listOf("Ljava/lang/String;")
+    } ?: throw PatchException("$PATCH: $INSTAGRAM_MEDIA has no static feedOption(String)")
     val shortList = shortLists.singleOrNull() ?: throw PatchException(
         "$PATCH: expected one list of the options the short feed menu keeps, a static method taking a flag that reads " +
             "$WHY_OPTION and $REPORT_OPTION, found " +
@@ -283,7 +293,13 @@ internal fun BytecodePatchContext.offerDownloadOnEveryVideo() {
             move-result v${own.answer}
         """,
     )
-    mutable(builder).addInstructions(batchAt, "invoke-static { v${others.state}, v${others.rows} }, $OFFER_ALL")
+    mutable(builder).addInstructions(
+        batchAt,
+        """
+            invoke-static { v${others.state}, v${others.rows} }, $OFFER_ALL
+            invoke-static { v${others.state}, v${others.rows} }, $OFFER_PLAYER
+        """,
+    )
 
     menu.addInstructionsWithLabels(
         0,
@@ -291,13 +307,25 @@ internal fun BytecodePatchContext.offerDownloadOnEveryVideo() {
             move-object/from16 v0, p1
             invoke-static {}, $ALL_OPTION
             move-result-object v1
+            if-eqz v1, :player
+            if-ne v0, v1, :player
+            move-object/from16 v0, p0
+            invoke-static { v0 }, $type->${media.name}($type)$MEDIA
+            move-result-object v1
+            iget-object v2, v0, $type->${activity.name}:$FRAGMENT_ACTIVITY
+            invoke-static { v1, v2 }, $SAVE_ALL
+            return-void
+            :player
+            invoke-static {}, $PLAYER_OPTION
+            move-result-object v1
             if-eqz v1, :current
             if-ne v0, v1, :current
             move-object/from16 v0, p0
             invoke-static { v0 }, $type->${media.name}($type)$MEDIA
             move-result-object v1
             iget-object v2, v0, $type->${activity.name}:$FRAGMENT_ACTIVITY
-            invoke-static { v1, v2 }, $SAVE_ALL
+            iget-object v0, v0, ${page.menuState}
+            invoke-static { v1, v0, v2 }, $PLAY_VIDEO
             return-void
             :current
             move-object/from16 v0, p1
@@ -360,6 +388,14 @@ internal fun BytecodePatchContext.offerDownloadOnEveryVideo() {
         ImmutableMethodImplementation(4, emptyList(), null, null),
     ).toMutable().apply {
         addInstructions(0, newOption(icon, "const-string v1, \"HUSHGRAM_SAVE_ALL\""))
+    })
+    bridges.methods.remove(feedOptionStub)
+    bridges.methods.add(ImmutableMethod(
+        feedOptionStub.definingClass, feedOptionStub.name, feedOptionStub.parameters, feedOptionStub.returnType,
+        feedOptionStub.accessFlags, feedOptionStub.annotations, feedOptionStub.hiddenApiRestrictions,
+        ImmutableMethodImplementation(5, emptyList(), null, null),
+    ).toMutable().apply {
+        addInstructions(0, newOption(icon, "move-object v1, p0"))
     })
     writeBridges()
     writeImageBridges()

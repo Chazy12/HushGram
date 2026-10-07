@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Open in another player, a new switch under Downloads that starts off. With it on, a reel's menu and a feed video's menu get Open in another player next to Download, which opens Android's chooser so a player such as VLC plays the video. The player gets the same file a save would pick at your Download quality.
+
 * **Instagram:** New patch, Ask before a like, in simple mode with its switch off. Turn it on under Feed and the Like button under a post waits for a question before it likes or unlikes the post, so a stray tap doesn't. Continue goes ahead and Cancel doesn't.
 
 * **Instagram:** New patch, Ask before a refresh, in simple mode with its switch off. Turn it on under Feed and pulling down to refresh Home, Reels or another list asks first. Refresh reloads it, and Cancel stops the spinner and keeps what's on screen.
