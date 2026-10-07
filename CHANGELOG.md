@@ -10,7 +10,7 @@ Every HushGram release, newest first.
 
 * **Instagram:** New patch, Ask before a refresh, in simple mode with its switch off. Turn it on under Feed and pulling down to refresh Home, Reels or another list asks first. Refresh reloads it, and Cancel stops the spinner and keeps what's on screen.
 
-* **Instagram:** Patching is a lot quicker again. The patches that still read all of Instagram's code to find their spots (the seen receipts, typing, comments, downloads, Repost, sharing links, auto scroll, the seek bar, the Reels tab, the story ring and tray, developer options, analytics and the shortcut calls) now ask the patcher's index which classes to read first. On a desktop with Instagram 450, running every patch went from about 48 to 56 seconds down to 13 to 15. Reported in #60.
+* **Instagram:** Patching is a lot quicker again. The patches that still read all of Instagram's code to find their spots (the seen receipts, typing, comments, downloads, Repost, sharing links, auto scroll, the seek bar, the Reels tab, the story ring and tray, developer options, analytics and the shortcut calls) now ask the patcher's index which classes to read first. On a desktop with Instagram 450, running every patch went from about 48 to 56 seconds down to 13 to 15. In Morphe Manager on a Galaxy S22, patching every default patch now takes under a minute, where the last build took about three minutes for fewer patches. Reported in #60.
 
 * **Instagram:** New patch, Ask before a call, in simple mode with its switch off. Turn it on under Messages and a call started from a chat waits for a question first, so a stray tap on a call button doesn't ring anyone. Call starts it and Cancel doesn't.
 
