@@ -1022,6 +1022,12 @@ once-call Lapp/hushgram/extension/instagram/feed/LikeConfirm;->hold(Ljava/lang/O
 # the layout's listener field), once, right after the read. Left out, a pull never asks.
 # AskBeforeRefreshHookTest checks where it lands on each declared build.
 once-call Lapp/hushgram/extension/instagram/feed/RefreshConfirm;->listener(Landroid/view/View;Ljava/lang/Object;Landroid/view/animation/Animation$AnimationListener;)Ljava/lang/Object; in instance (Landroid/view/animation/Animation;)V holding LX/05VS;->A0D:LX/0Jbl;
+# Ask before a refresh also hands RefreshConfirm.pull the listener Instagram's nested-scrolling refresh
+# layout reads once a pull goes far enough (RefreshableNestedScrollingParent.GB2 on 450, its spring
+# update, the one place reading the listener and calling it, and the one method also reading the
+# layout's dragging flag), once, right after the read. Home and the inbox pull with this layout, so
+# left out, a pull there never asks. AskBeforeRefreshHookTest checks where it lands on each declared build.
+once-call Lapp/hushgram/extension/instagram/feed/RefreshConfirm;->pull(Landroid/view/View;Ljava/lang/Object;)Ljava/lang/Object; in instance (L*;)V holding Lcom/instagram/ui/widget/refresh/RefreshableNestedScrollingParent;->A0A:LX/02D2; Lcom/instagram/ui/widget/refresh/RefreshableNestedScrollingParent;->A0G:Z
 # Save profile picture hands ProfilePicture.offer the sheet, the account and the context right
 # before each of the profile menu's two sheets is shown (09D9.A02 on 450), the one method loading
 # both helper names. Left out, the menu never gets the row; a third call, or one elsewhere, isn't

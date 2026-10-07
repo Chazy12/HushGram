@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Ask before a refresh now also asks on Home, in your messages inbox and the other lists that pull down with Instagram's newer refresh layout. The question comes up once a pull goes far enough to refresh, and Cancel puts the spinner away there too.
+
 * **Instagram:** Clear the media cache leaves a clear over the limit for a later start when the last one crashed early, since that start might be the one that turns safe mode on.
 
 * **Instagram:** New patch, Save profile picture, in simple mode with its switch off. Turn it on under Downloads and the menu on someone's profile gets Save profile picture, which saves their picture at the largest size Instagram has.

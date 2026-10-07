@@ -169,4 +169,69 @@ public class RefreshConfirmTest {
         String missing = HookStatus.missing(FamilyNames.ASK_BEFORE_REFRESH).toString();
         assertTrue(missing, missing.contains("'" + RefreshConfirm.SPINNER + "'"));
     }
+
+    /** A nested-scrolling layout's refresh listener, as the layout calls it once a pull goes far enough. */
+    private static final class Listener implements Runnable {
+        int refreshes;
+
+        @Override public void run() {
+            refreshes++;
+        }
+    }
+
+    /** The nested-scrolling layout's pull: it hands its listener to the hook, and calls what it gets back. */
+    private static Object pull(View layout, Object listener) {
+        Object back = RefreshConfirm.pull(layout, listener);
+        if (back instanceof Runnable) ((Runnable) back).run();
+        return back;
+    }
+
+    @Test public void offANestedPullRefreshesUnasked() {
+        Listener listener = new Listener();
+        assertSame(listener, pull(new Spinner(activity), listener));
+        assertEquals(1, listener.refreshes);
+        assertNull(ShadowDialog.getLatestDialog());
+        assertNull("no listener stays none", RefreshConfirm.pull(new Spinner(activity), null));
+    }
+
+    @Test public void onANestedPullWaitsForRefresh() {
+        Settings.ASK_BEFORE_REFRESH.save(true);
+        Spinner layout = new Spinner(activity);
+        Listener listener = new Listener();
+        assertNull("skipped while the question is up", pull(layout, listener));
+        AlertDialog question = shown();
+        assertNull("a second pull doesn't put up a second question", pull(layout, listener));
+        assertSame(question, ShadowDialog.getLatestDialog());
+        assertEquals(0, listener.refreshes);
+
+        tap(question, AlertDialog.BUTTON_POSITIVE);
+        assertEquals("Refresh calls the listener the pull would have", 1, listener.refreshes);
+        assertFalse("the question is let go once it's gone", RefreshConfirm.holds(layout));
+        assertTrue("the spinner is left to the refresh", layout.refreshing.isEmpty());
+        assertEquals(List.of(FamilyNames.ASK_BEFORE_REFRESH + ": invoked 2, 0 found, 0 missing. Counted: " + RefreshConfirm.ASKED + " 1"),
+                HookStatus.report());
+    }
+
+    @Test public void cancelOnANestedPullStopsItsSpinnerAndTheNextPullAsksAgain() {
+        Settings.ASK_BEFORE_REFRESH.save(true);
+        Spinner layout = new Spinner(activity);
+        Listener listener = new Listener();
+        pull(layout, listener);
+        tap(shown(), AlertDialog.BUTTON_NEGATIVE);
+        assertEquals(List.of(false), layout.refreshing);
+        assertEquals(0, listener.refreshes);
+        assertFalse("Cancel lets the question go", RefreshConfirm.holds(layout));
+
+        assertNull("the next pull asks again", pull(layout, listener));
+        tap(shown(), AlertDialog.BUTTON_POSITIVE);
+        assertEquals(1, listener.refreshes);
+    }
+
+    @Test public void aListenerRefreshCantCallIsReported() {
+        Settings.ASK_BEFORE_REFRESH.save(true);
+        assertNull(pull(new Spinner(activity), new Object()));
+        tap(shown(), AlertDialog.BUTTON_POSITIVE);
+        String missing = HookStatus.missing(FamilyNames.ASK_BEFORE_REFRESH).toString();
+        assertTrue(missing, missing.contains("'" + RefreshConfirm.ASK + "'"));
+    }
 }
