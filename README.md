@@ -335,6 +335,8 @@ If a patch still fails with HushGram alone on that build, please open an issue n
 
 **Can I lower the odds?** Nobody can say what does, since Meta doesn't say what it acts on. [Before you sign in](#before-you-sign-in) up top lists what's known. A spare account keeps the one you care about out of it. Updating over the top with the same key, or a Root Mount install on a rooted phone, keeps the sign-in you have instead of starting a new one.
 
+**Why doesn't HushGram unlock Instagram Plus or save deleted messages?** Both are left out on purpose, and so are saving the Instants people send you and keeping copies of stories you've watched after they expire. Other Instagram mods offer all four. People using piko's Instagram patches have been reporting banned accounts, and we suspect features like these are part of why. Nobody's proven that, so leaving them out is a precaution.
+
 ## Getting help
 
 For something that's broken, use the [bug form](https://github.com/SysAdminDoc/HushGram/issues/new?template=bug_report.yml) and attach the diagnostic report it asks for, since it answers most of what we'd need to know. Ideas go on the [feature form](https://github.com/SysAdminDoc/HushGram/issues/new?template=feature_request.yml). When Morphe Manager misbehaves with every app, not only Instagram, [Morphe's own tracker](https://github.com/MorpheApp/morphe-manager/issues) is the place.
