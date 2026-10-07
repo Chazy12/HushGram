@@ -20,6 +20,7 @@ import app.hushgram.extension.instagram.stories.StoryTimeMode;
 import app.hushgram.extension.shared.settings.BaseSettings;
 import app.hushgram.extension.shared.settings.BooleanSetting;
 import app.hushgram.extension.shared.settings.EnumSetting;
+import app.hushgram.extension.shared.settings.Setting;
 import app.hushgram.extension.shared.settings.StringSetting;
 
 /**
@@ -182,6 +183,12 @@ public class Settings extends BaseSettings {
      */
     public static final EnumSetting<app.hushgram.extension.instagram.direct.LockDelay> LOCK_AGAIN =
             new EnumSetting<>("hushgram_lock_again", app.hushgram.extension.instagram.direct.LockDelay.RIGHT_AWAY);
+
+    static {
+        // The locks keep answering what you chose while HushGram is paused or in safe mode, so
+        // neither one, nor the marker file that pauses it from outside, gets around them.
+        Setting.keepWhenPaused(LOCK_MESSAGES, LOCK_APP, LOCK_AGAIN);
+    }
 
     /**
      * Instagram doesn't notice your screenshots, so nobody's told you took one of a disappearing

@@ -11,16 +11,20 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.instagram.FixtureDex
 import app.morphe.patches.instagram.feed.FeedItemStandIns.instructions
+import app.morphe.patches.instagram.misc.notifications.NOTIFICATION_GROUPS
+import app.morphe.patches.instagram.misc.notifications.NOTIFICATION_MANAGER
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
@@ -29,6 +33,10 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction10t
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction10x
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction21c
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction21t
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction35c
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction3rc
+import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodReference
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableStringReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
@@ -36,8 +44,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Lock your messages: every notification goes through the extension first, and the in-app banner
- * asks it before it shows. Anything the patch can't tell apart fails it before an instruction changes.
+ * Lock your messages: every notification goes through the extension first, at the poster and at
+ * each post Instagram makes straight to Android, and the in-app banner asks it before it shows. Anything the patch can't tell apart fails it before an instruction changes.
  */
 class LockMessagesHookTest {
     @Test
@@ -52,11 +60,40 @@ class LockMessagesHookTest {
 
     @Test
     fun bothHooksGoFirst() {
-        val context = PatchContexts.of(listOf(poster(), banner()))
+        val context = PatchContexts.of(listOf(poster(), banner(), direct()))
         context.lock()
 
         assertHooked("stand-ins", context, POSTER, BANNER)
     }
+
+    /**
+     * Each direct post, five-register, range or Group notifications' stand-in, hands its
+     * notification over first and posts what comes back, and a jump to a post lands on the hook.
+     */
+    @Test
+    fun aDirectPostHandsItsNotificationOverFirst() {
+        val context = PatchContexts.of(listOf(poster(), banner(), direct()))
+        context.lock()
+
+        val method = context.mutableClassDefBy(DIRECT).methods.single()
+        val code = method.instructions()
+        assertEquals(
+            listOf("if-eqz", HIDE, "move-result-object", "POST", HIDE, "move-result-object", "POST", HIDE,
+                "move-result-object", "POST", "return-void"),
+            code.map(::shape),
+        )
+        for (index in listOf(1, 4, 7)) {
+            assertEquals("the hook at $index reads the notification", 3, (code[index] as RegisterRangeInstruction).startRegister)
+            assertEquals("the copy at ${index + 1} goes back in its register", 3, (code[index + 1] as OneRegisterInstruction).registerA)
+        }
+        val posts = direct().methods.single().instructions().filter { it.postsNotification() }
+        assertEquals("posts keep their calls and registers", posts.map { it.calls() }, code.filter { it.postsNotification() }.map { it.calls() })
+        val jump = method.implementation!!.instructions.toList()[0]
+        assertEquals("the jump lands on the hook", 4, (jump as BuilderOffsetInstruction).target.location.index)
+    }
+
+    @Test
+    fun aBuildWithNoDirectPostFailsThePatch() = refuses("found no notification", listOf(poster(), banner()))
 
     @Test
     fun twoPostersFailThePatch() =
@@ -88,16 +125,50 @@ class LockMessagesHookTest {
         var checked = 0
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apks" && it.name.contains("-$version-") }) {
-                val classes = (FixtureDex.classesHolding(bundle, SIDE_CHANNEL) + FixtureDex.classesHolding(bundle, NO_BANNER_ACTIVITY))
+                val posting = mutableListOf<ClassDef>()
+                FixtureDex.forEach(bundle) { dex ->
+                    if (dex.methodSection.none { it.definingClass == NOTIFICATION_MANAGER && it.name == "notify" }) return@forEach
+                    for (classDef in dex.classes) {
+                        if (classDef.methods.any { method -> method.instructions().any { it.postsNotification() } }) {
+                            posting += ImmutableClassDef.of(classDef)
+                        }
+                    }
+                }
+                val classes = (FixtureDex.classesHolding(bundle, SIDE_CHANNEL) + FixtureDex.classesHolding(bundle, NO_BANNER_ACTIVITY) + posting)
                     .distinctBy { it.type }
                 val context = PatchContexts.of(classes)
                 val targets = context.findLockTargets()
                 val poster = targets.notify.definingClass
                 val banner = targets.banner.definingClass
+                val direct = context.findDirectPosts(targets.notify)
                 hideNotificationText(targets.notify)
+                hideDirectPosts(direct)
                 holdBanner(targets.banner)
 
                 assertHooked(bundle.name, context, poster, banner)
+                // Every post outside the poster hands its notification over first, the inline reply's included.
+                var posts = 0
+                for (classDef in posting.distinctBy { it.type }) {
+                    for (method in context.mutableClassDefBy(classDef.type).methods) {
+                        val isPoster = method.definingClass == poster && method.parameterTypes.map(CharSequence::toString) == NOTIFY_PARAMETERS &&
+                            !AccessFlags.STATIC.isSet(method.accessFlags) && method.instructions().any { text(it) == "\"$SIDE_CHANNEL\"" }
+                        if (isPoster) continue
+                        val code = method.instructions()
+                        code.indices.filter { code[it].postsNotification() }.forEach { index ->
+                            val notification = code[index].registerList().last()
+                            val where = "${bundle.name}: ${method.definingClass}->${method.name} at $index"
+                            assertEquals(where, HIDE_NOTIFICATION, (code[index - 2] as ReferenceInstruction).reference.toString())
+                            assertEquals(where, notification, (code[index - 2] as RegisterRangeInstruction).startRegister)
+                            assertEquals(where, notification, (code[index - 1] as OneRegisterInstruction).registerA)
+                            posts++
+                        }
+                    }
+                }
+                assertTrue("${bundle.name}: no direct post", posts > 0)
+                assertEquals("${bundle.name}: posts hooked", direct.sumOf { it.sites.size }, posts)
+                assertTrue("${bundle.name}: the inline reply's post", direct.any { post ->
+                    post.method.instructions().any { ((it as? ReferenceInstruction)?.reference as? FieldReference)?.type == REPLY_SERVICE }
+                })
                 checked++
             }
         }
@@ -106,7 +177,9 @@ class LockMessagesHookTest {
 
     private fun BytecodePatchContext.lock() {
         val targets = findLockTargets()
+        val posts = findDirectPosts(targets.notify)
         hideNotificationText(targets.notify)
+        hideDirectPosts(posts)
         holdBanner(targets.banner)
     }
 
@@ -143,6 +216,21 @@ class LockMessagesHookTest {
         }
     }
 
+    private fun Instruction.registerList(): List<Int> = when (this) {
+        is RegisterRangeInstruction -> (startRegister until startRegister + registerCount).toList()
+        is FiveRegisterInstruction -> listOf(registerC, registerD, registerE, registerF, registerG).take(registerCount)
+        else -> emptyList()
+    }
+
+    /** A call as what it calls and the registers it reads. */
+    private fun Instruction.calls(): String = "${opcode.name} ${(this as ReferenceInstruction).reference} ${registerList()}"
+
+    private fun shape(instruction: Instruction): String = when {
+        instruction.postsNotification() -> "POST"
+        (instruction as? ReferenceInstruction)?.reference?.toString() == HIDE_NOTIFICATION -> HIDE
+        else -> instruction.opcode.name
+    }
+
     private fun text(instruction: Instruction): String = when (val reference = (instruction as? ReferenceInstruction)?.reference) {
         null -> instruction.opcode.name
         is StringReference -> "\"${reference.string}\""
@@ -152,6 +240,34 @@ class LockMessagesHookTest {
     private companion object {
         const val POSTER = "Lfixture/Poster;"
         const val BANNER = "Lfixture/Banner;"
+        const val DIRECT = "Lfixture/DirectPost;"
+        const val HIDE = "HIDE"
+
+        /** The service an inline reply runs in, which keeps its name: its update is posted straight to Android. */
+        const val REPLY_SERVICE = "Linstagram/features/direct/notifications/impl/internal/DirectNotificationActionService;"
+
+        fun post(definingClass: String, parameters: List<String>) =
+            ImmutableMethodReference(definingClass, "notify", parameters, "V")
+
+        /**
+         * Three posts the way Instagram's code makes them, v0 the manager, v1 a tag, v2 an id and
+         * v3 the notification: tagged as a five-register call, tagged as a range call a jump lands
+         * on, and untagged through Group notifications' stand-in.
+         */
+        fun direct(): ClassDef {
+            val tagged = post(NOTIFICATION_MANAGER, NOTIFY_PARAMETERS)
+            val code = listOf<Instruction>(
+                ImmutableInstruction21t(Opcode.IF_EQZ, 2, 5),
+                ImmutableInstruction35c(Opcode.INVOKE_VIRTUAL, 4, 0, 1, 2, 3, 0, tagged),
+                ImmutableInstruction3rc(Opcode.INVOKE_VIRTUAL_RANGE, 0, 4, tagged),
+                ImmutableInstruction35c(
+                    Opcode.INVOKE_STATIC, 3, 0, 2, 3, 0, 0,
+                    post(NOTIFICATION_GROUPS, listOf(NOTIFICATION_MANAGER, "I", "Landroid/app/Notification;")),
+                ),
+                ImmutableInstruction10x(Opcode.RETURN_VOID),
+            )
+            return clazz(DIRECT, "post", emptyList(), AccessFlags.PUBLIC.value or AccessFlags.STATIC.value, 4, code)
+        }
 
         /** Shaped like androidx's NotificationManagerCompat.notify(tag, id, notification). */
         fun poster(type: String = POSTER, static: Boolean = false, loop: Boolean = false): ClassDef {

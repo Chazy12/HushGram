@@ -8,12 +8,14 @@ import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
+import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesCalling
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
 import app.morphe.patches.instagram.misc.extension.jumpTargets
@@ -21,9 +23,18 @@ import app.morphe.patches.instagram.misc.extension.parameterRegister
 import app.morphe.patches.instagram.misc.extension.requireLocals
 import app.morphe.patches.instagram.misc.extension.requireStatusMethod
 import app.morphe.patches.instagram.misc.extension.uniqueMethod
+import app.morphe.patches.instagram.misc.notifications.NOTIFICATION_GROUPS
+import app.morphe.patches.instagram.misc.notifications.NOTIFICATION_MANAGER
 import app.morphe.patches.instagram.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
+import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 internal const val LOCK_PATCH = "Lock your messages"
 internal const val MESSAGES_LOCK = "$EXTENSION_PACKAGE/direct/MessagesLock;"
@@ -71,7 +82,9 @@ val lockMessagesPatch = bytecodePatch(
     execute {
         requireStatusMethod("messagesLock")
         val targets = findLockTargets()
+        val posts = findDirectPosts(targets.notify)
         hideNotificationText(targets.notify)
+        hideDirectPosts(posts)
         holdBanner(targets.banner)
         enableStatus("messagesLock")
     }
@@ -118,4 +131,100 @@ internal fun holdBanner(banner: MutableMethod) {
         """,
         ExternalLabel("show", banner.getInstruction(0)),
     )
+}
+
+/** A post's notification comes last after these, for Android's notify and for Group notifications' stand-in alike. */
+private val POST_PARAMETERS = listOf(listOf("I", "Landroid/app/Notification;"), NOTIFY_PARAMETERS)
+
+/**
+ * A post of a notification: NotificationManager.notify, or the stand-in Group Instagram's
+ * notifications puts in its place, which takes the manager first and the same parameters after.
+ */
+internal fun Instruction.postsNotification(): Boolean {
+    val call = (this as? ReferenceInstruction)?.reference as? MethodReference ?: return false
+    if (call.name != "notify" || call.returnType != "V") return false
+    val parameters = call.parameterTypes.map(CharSequence::toString)
+    return when (call.definingClass) {
+        NOTIFICATION_MANAGER -> (opcode == Opcode.INVOKE_VIRTUAL || opcode == Opcode.INVOKE_VIRTUAL_RANGE) && parameters in POST_PARAMETERS
+        NOTIFICATION_GROUPS -> (opcode == Opcode.INVOKE_STATIC || opcode == Opcode.INVOKE_STATIC_RANGE) &&
+            parameters.firstOrNull() == NOTIFICATION_MANAGER && parameters.drop(1) in POST_PARAMETERS
+        else -> false
+    }
+}
+
+/** The registers a call reads, in order. */
+private fun Instruction.registers(): List<Int> = when (this) {
+    is RegisterRangeInstruction -> (startRegister until startRegister + registerCount).toList()
+    is FiveRegisterInstruction -> listOf(registerC, registerD, registerE, registerF, registerG).take(registerCount)
+    else -> emptyList()
+}
+
+/** The call as smali, to put back after the hook. */
+private fun Instruction.smali(): String {
+    val call = (this as ReferenceInstruction).reference as MethodReference
+    val reference = "${call.definingClass}->${call.name}(${call.parameterTypes.joinToString("")})${call.returnType}"
+    val name = when (opcode) {
+        Opcode.INVOKE_VIRTUAL -> "invoke-virtual"
+        Opcode.INVOKE_VIRTUAL_RANGE -> "invoke-virtual/range"
+        Opcode.INVOKE_STATIC -> "invoke-static"
+        Opcode.INVOKE_STATIC_RANGE -> "invoke-static/range"
+        else -> error("not a post: $opcode")
+    }
+    val registers = registers()
+    return if (this is RegisterRangeInstruction) "$name { v${registers.first()} .. v${registers.last()} }, $reference"
+    else "$name { ${registers.joinToString { "v$it" }} }, $reference"
+}
+
+/** Each method of Instagram's that posts a notification outside the poster, and where it posts. */
+internal class DirectPosts(val method: MutableMethod, val sites: List<Int>)
+
+private fun Method.sameAs(other: Method) = definingClass == other.definingClass && name == other.name &&
+    returnType == other.returnType && parameterTypes.map(CharSequence::toString) == other.parameterTypes.map(CharSequence::toString)
+
+/**
+ * Every place in Instagram's code that posts a notification straight to Android rather than through
+ * the poster, like the update an inline reply posts: found and checked before anything changes.
+ * Each post's notification must sit in a register a result can go back to.
+ */
+internal fun BytecodePatchContext.findDirectPosts(poster: Method): List<DirectPosts> {
+    val types = (classesCalling(NOTIFICATION_MANAGER, "notify") + classesCalling(NOTIFICATION_GROUPS, "notify"))
+        .map { it.type }.distinct()
+    val posts = types.flatMap { type ->
+        mutableClassDefBy(type).methods.mapNotNull { method ->
+            if (method.sameAs(poster)) return@mapNotNull null
+            val code = method.implementation?.instructions?.toList() ?: return@mapNotNull null
+            val sites = code.indices.filter { code[it].postsNotification() }
+            sites.forEach { index ->
+                val notification = code[index].registers().last()
+                if (notification > 255) refuse("${method.definingClass}->${method.name} posts a notification from v$notification, past v255")
+            }
+            if (sites.isEmpty()) null else DirectPosts(method, sites)
+        }
+    }
+    if (posts.isEmpty()) refuse("found no notification Instagram posts outside the poster")
+    return posts
+}
+
+/**
+ * Each direct post hands its notification to the extension first, which hands back a copy without
+ * the message while the messages are locked. The post is replaced rather than preceded, because a
+ * jump to it lands on what replaces it and would skip anything put in front; it's written back
+ * right after, on the same registers.
+ */
+internal fun hideDirectPosts(posts: List<DirectPosts>) {
+    posts.forEach { post ->
+        post.sites.sortedDescending().forEach { index ->
+            val call = post.method.getInstruction(index)
+            val notification = call.registers().last()
+            val again = call.smali()
+            post.method.replaceInstruction(index, "invoke-static/range { v$notification .. v$notification }, $HIDE_NOTIFICATION")
+            post.method.addInstructions(
+                index + 1,
+                """
+                    move-result-object v$notification
+                    $again
+                """,
+            )
+        }
+    }
 }

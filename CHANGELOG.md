@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Lock your messages is harder to get around. When it locks again, message notifications already in the shade lose their text, and the update Instagram posts after an inline reply is hidden too. On Android 9 to 12 an open inbox or chat now stays out of the recent apps picture, which also keeps screenshots of it out while it's open. Pausing HushGram or safe mode no longer turns a lock off. While paused, a lock that's on covers all of Instagram. A second Instagram screen opening over a locked one doesn't uncover it anymore, screen readers skip what's under a cover, and Android 10 asks through the phone's own lock screen check, which also takes over whenever the prompt over Instagram can't ask.
+
 * **Instagram:** New patch, Turn off HDR brightness boosts, in simple mode with its switch off. Turn it on under Playback and HDR photos and reels stop brightening the screen above everything else (#26).
 
 * **Instagram:** Folder per account, a new switch under Downloads that starts off, puts each save in a folder named for the account that posted it, inside your save folder (#20).

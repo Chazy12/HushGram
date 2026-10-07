@@ -15,13 +15,17 @@ import static org.junit.Assert.assertTrue;
 import android.app.Activity;
 import android.app.Application;
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.hardware.biometrics.BiometricPrompt;
+import android.os.Build;
 import android.os.SystemClock;
 import android.graphics.Rect;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 
 import org.junit.After;
@@ -34,6 +38,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
+import org.robolectric.Shadows;
 import org.robolectric.shadows.ShadowLooper;
 import org.robolectric.shadows.ShadowToast;
 
@@ -114,7 +119,7 @@ public class MessagesLockTest {
     }
 
     @Test
-    public void offPausedUnreadyAndUnlockedLeaveEverythingToInstagram() {
+    public void offUnreadyAndUnlockedLeaveEverythingToInstagram() {
         Notification original = message("ig_direct", Notification.CATEGORY_MESSAGE);
 
         Settings.LOCK_MESSAGES.resetToDefault();
@@ -122,13 +127,6 @@ public class MessagesLockTest {
         assertSame(original, MessagesLock.notification(original));
         assertFalse(MessagesLock.holdBanner());
         Settings.LOCK_MESSAGES.save(true);
-
-        BaseSettings.PAUSED.save(true);
-        PauseForTests.pause(HushgramPause.Reason.SWITCH);
-        assertSame(original, MessagesLock.notification(original));
-        assertFalse(MessagesLock.holdBanner());
-        BaseSettings.PAUSED.save(false);
-        PauseForTests.resume();
 
         SettingsContextRule.withoutContext(() -> {
             assertSame(original, MessagesLock.notification(original));
@@ -290,6 +288,153 @@ public class MessagesLockTest {
         assertEquals(View.GONE, cover(activity).getVisibility());
     }
 
+    /**
+     * Neither Pause nor safe mode, the marker file's included, gets around a lock: it still locks,
+     * and covers all of Instagram, which needs none of Instagram's view ids.
+     */
+    @Test
+    public void pausedOrInSafeModeALockStillLocksAndCoversEverything() {
+        Activity activity = inbox().get();
+        View content = activity.findViewById(android.R.id.content);
+        Notification message = message("ig_direct", Notification.CATEGORY_MESSAGE);
+        for (HushgramPause.Reason reason : new HushgramPause.Reason[]{
+                HushgramPause.Reason.SWITCH, HushgramPause.Reason.CRASH_LOOP, HushgramPause.Reason.MARKER_FILE}) {
+            PauseForTests.pause(reason);
+            assertTrue(reason.name(), MessagesLock.locked());
+            assertNotSame(reason.name(), message, MessagesLock.notification(message));
+            assertTrue(reason.name(), MessagesLock.holdBanner());
+            MessagesLock.check(activity);
+            View cover = cover(activity);
+            assertNotNull(reason.name(), cover);
+            assertEquals(reason.name(), View.VISIBLE, cover.getVisibility());
+            assertEquals(reason.name(), visible(content).height(), cover.getHeight());
+            PauseForTests.resume();
+        }
+        assertEquals("asked once, not once per check", 1, asks.size());
+    }
+
+    /** A second activity coming up leaves the covers in the window under it where they are. */
+    @Test
+    public void eachWindowKeepsItsOwnCovers() {
+        Activity under = inbox().get();
+        MessagesLock.check(under);
+        View inboxCover = cover(under);
+        assertNotNull(inboxCover);
+        Activity above = Robolectric.buildActivity(Activity.class).setup().get();
+        layout(above);
+        MessagesLock.check(above);
+        assertNull("a screen with no messages got a cover", cover(above));
+        assertEquals("the inbox under it showed through", View.VISIBLE, inboxCover.getVisibility());
+
+        Settings.LOCK_APP.save(true);
+        MessagesLock.check(under);
+        View appCover = cover(under, MessagesLock.APP);
+        assertEquals("the inbox's cover stayed up", View.GONE, inboxCover.getVisibility());
+        MessagesLock.check(above);
+        assertNotNull("the activity above has no cover of its own", cover(above));
+        assertNotSame(appCover, cover(above));
+        assertSame("the cover was pulled out of the window under it", under.getWindow().getDecorView(), appCover.getParent());
+        assertEquals(View.VISIBLE, appCover.getVisibility());
+    }
+
+    /** Screen readers skip what's under a cover, and read it as before once it's gone. */
+    @Test
+    public void screenReadersSkipWhatsCovered() {
+        Activity activity = inbox().get();
+        View frame = activity.findViewById(FRAME);
+        frame.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        MessagesLock.check(activity);
+        assertEquals(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS, frame.getImportantForAccessibility());
+
+        asks.get(0)[0].run();
+        MessagesLock.check(activity);
+        assertEquals(View.IMPORTANT_FOR_ACCESSIBILITY_YES, frame.getImportantForAccessibility());
+    }
+
+    /** A hidden inbox list found first doesn't keep the one showing from being covered. */
+    @Test
+    public void theListShowingIsTheOneCovered() {
+        Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+        FrameLayout root = new FrameLayout(activity);
+        View first = new View(activity);
+        first.setId(LIST);
+        root.addView(first, new FrameLayout.LayoutParams(1080, 300));
+        View second = new View(activity);
+        second.setId(LIST);
+        FrameLayout.LayoutParams lower = new FrameLayout.LayoutParams(1080, 900);
+        lower.topMargin = 400;
+        root.addView(second, lower);
+        activity.setContentView(root);
+        layout(activity);
+        MessagesLock.check(activity);
+        assertEquals(visible(first).height(), cover(activity).getHeight());
+
+        first.setVisibility(View.GONE);
+        layout(activity);
+        MessagesLock.check(activity);
+        View cover = cover(activity);
+        assertEquals(View.VISIBLE, cover.getVisibility());
+        assertEquals(visible(second).height(), cover.getHeight());
+        assertEquals(visible(second).top, cover.getTop());
+    }
+
+    /**
+     * While the messages are open, the recent apps picture doesn't show them: Android 13 and up are
+     * told so, and older Android gets the secure flag, which comes off only if the lock put it there.
+     */
+    @Test
+    public void openMessagesStayOutOfTheRecentAppsPicture() {
+        Activity activity = inbox().get();
+        MessagesLock.check(activity);
+        asks.get(0)[0].run();
+        MessagesLock.check(activity);
+        boolean secure = (activity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_SECURE) != 0;
+        assertEquals("the secure flag is for Android 12 and older", Build.VERSION.SDK_INT < 33, secure);
+
+        MessagesLock.relock(true);
+        MessagesLock.check(activity);
+        assertEquals(0, activity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_SECURE);
+
+        // Instagram's own mark stays when the lock has nothing to take back.
+        activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        asks.get(1)[0].run();
+        MessagesLock.check(activity);
+        MessagesLock.relock(true);
+        MessagesLock.check(activity);
+        assertTrue((activity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_SECURE) != 0);
+    }
+
+    /** When the lock comes back, message notifications already in the shade lose their text. */
+    @Test
+    public void lockingAgainHidesWhatTheShadeShows() {
+        Context context = RuntimeEnvironment.getApplication();
+        NotificationManager manager = context.getSystemService(NotificationManager.class);
+        Activity activity = inbox().get();
+        MessagesLock.check(activity);
+        asks.get(0)[0].run();
+        manager.notify("thread", 7, message("ig_direct", Notification.CATEGORY_MESSAGE));
+        manager.notify("like", 8, message("ig_other", Notification.CATEGORY_SOCIAL));
+
+        MessagesLock.left();
+
+        Notification shown = Shadows.shadowOf(manager).getNotification("thread", 7);
+        assertTrue(MessagesLock.isHidden(shown));
+        assertEquals("New message", shown.extras.getCharSequence(Notification.EXTRA_TEXT).toString());
+        assertTrue("it rang again", (shown.flags & Notification.FLAG_ONLY_ALERT_ONCE) != 0);
+        assertFalse("not a message", MessagesLock.isHidden(Shadows.shadowOf(manager).getNotification("like", 8)));
+        assertSame("hidden twice", shown, MessagesLock.notification(shown));
+    }
+
+    /** Only your own cancel ends an ask; a prompt that couldn't ask goes on to the phone's own check. */
+    @Test
+    public void onlyYourCancelEndsAnAsk() {
+        assertTrue(MessagesLock.cancelledByYou(BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED));
+        assertTrue(MessagesLock.cancelledByYou(BiometricPrompt.BIOMETRIC_ERROR_CANCELED));
+        assertFalse(MessagesLock.cancelledByYou(BiometricPrompt.BIOMETRIC_ERROR_HW_NOT_PRESENT));
+        assertFalse(MessagesLock.cancelledByYou(BiometricPrompt.BIOMETRIC_ERROR_LOCKOUT));
+        assertFalse(MessagesLock.cancelledByYou(BiometricPrompt.BIOMETRIC_ERROR_HW_UNAVAILABLE));
+    }
+
     private static ActivityController<Activity> inbox() {
         ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup();
         Activity activity = controller.get();
@@ -321,6 +466,16 @@ public class MessagesLockTest {
     }
 
     /** The cover the lock put in the activity's window, if any. */
+    /** The cover for [screen] the lock put in the activity's window, if any. */
+    private static View cover(Activity activity, String screen) {
+        ViewGroup decor = (ViewGroup) activity.getWindow().getDecorView();
+        for (int i = 0; i < decor.getChildCount(); i++) {
+            View child = decor.getChildAt(i);
+            if (child instanceof MessagesLock.Cover && ((MessagesLock.Cover) child).screen.equals(screen)) return child;
+        }
+        return null;
+    }
+
     private static View cover(Activity activity) {
         ViewGroup decor = (ViewGroup) activity.getWindow().getDecorView();
         for (int i = 0; i < decor.getChildCount(); i++) {

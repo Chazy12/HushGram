@@ -153,7 +153,7 @@ public class NeutralDefaultsSettingsTest {
                 assertEquals("binding and closing must not reset saved preferences", before, savedChoices());
             }
             PauseForTests.pause(HushgramPause.Reason.SWITCH);
-            assertStockHooks();
+            assertStockHooks(chosen);
             assertEquals("Pause must not rewrite saved choices", before, savedChoices());
             PauseForTests.resume();
         }
@@ -170,6 +170,14 @@ public class NeutralDefaultsSettingsTest {
     }
 
     private void assertStockHooks() {
+        assertStockHooks(false);
+    }
+
+    /**
+     * Every hook answers as stock Instagram would. A lock that's on is the one exception: it keeps
+     * locking while paused, so Pause can't be used to get around it.
+     */
+    private void assertStockHooks(boolean lockOn) {
         Object pager = new Object();
         assertEquals(1, ReelScrolling.pager(pager));
         for (int nativeValue : new int[]{0, 1, -7}) assertEquals(nativeValue, ReelScrolling.userInput(pager, nativeValue));
@@ -178,7 +186,7 @@ public class NeutralDefaultsSettingsTest {
         Object[] sections = {StockSection.SEARCH_BAR, StockSection.TRAY};
         assertSame(sections, NotesRow.sections(sections));
         assertFalse(Instants.hide());
-        assertFalse(MessagesLock.holdBanner());
+        assertEquals(lockOn, MessagesLock.holdBanner());
         assertFalse(app.hushgram.extension.instagram.stories.LiveSeen.hold());
         assertEquals("once", app.hushgram.extension.instagram.direct.KeepInChat.viewMode("once"));
         assertFalse(app.hushgram.extension.instagram.direct.ScreenshotBlock.lift());
