@@ -22,6 +22,8 @@ import app.morphe.patches.instagram.download.reel.DOWNLOAD
 import app.morphe.patches.instagram.download.reel.ELIGIBLE_MARKER
 import app.morphe.patches.instagram.download.reel.OPTION
 import app.morphe.patches.instagram.download.reel.code
+import app.morphe.patches.instagram.download.reel.newOption
+import app.morphe.patches.instagram.download.reel.optionIcon
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
@@ -190,30 +192,7 @@ internal fun BytecodePatchContext.offerDownloadOnEveryVideo() {
     val others = builder.othersRow(eligible)
     val batchAt = builder.batchRow(others)
     val own = builder.ownPost(eligible, others)
-    val option = classDefBy(OPTION)
-    val constructor = option.methods.singleOrNull {
-        it.name == "<init>" && AccessFlags.PUBLIC.isSet(it.accessFlags) && it.returnType == "V" &&
-            it.parameterTypes.map(Any::toString) == listOf("Ljava/lang/String;", "I", "I")
-    } ?: throw PatchException("$PATCH: $OPTION has no public (String, int, int) constructor")
-    val icon = option.methods.singleOrNull {
-        it.name == "getIconDrawable" && AccessFlags.PUBLIC.isSet(it.accessFlags) &&
-            !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "I" && it.parameterTypes.isEmpty()
-    } ?: throw PatchException("$PATCH: $OPTION has no public icon getter")
-    val initialization = constructor.code()
-    val readIcon = icon.code()
-    val self = (constructor.implementation?.registerCount ?: 0) - 4
-    val getterSelf = (icon.implementation?.registerCount ?: 0) - 1
-    if (!AccessFlags.ENUM.isSet(option.accessFlags) || option.superclass != "Ljava/lang/Enum;" ||
-        AccessFlags.STATIC.isSet(constructor.accessFlags) || self < 0 || getterSelf < 0 ||
-        initialization.map { it.opcode } != listOf(Opcode.INVOKE_DIRECT, Opcode.IPUT, Opcode.RETURN_VOID) ||
-        initialization.first().referenceText() != "Ljava/lang/Enum;-><init>(Ljava/lang/String;I)V" ||
-        initialization.first().argumentRegisters() != listOf(self, self + 1, self + 2) ||
-        readIcon.map { it.opcode } != listOf(Opcode.IGET, Opcode.RETURN) ||
-        initialization[1].referenceText() != readIcon[0].referenceText() ||
-        (initialization[1] as TwoRegisterInstruction).let { it.registerA != self + 3 || it.registerB != self } ||
-        (readIcon[0] as TwoRegisterInstruction).let { it.registerB != getterSelf ||
-            it.registerA != (readIcon[1] as OneRegisterInstruction).registerA }
-    ) throw PatchException("$PATCH: $OPTION constructor and icon getter differ from the native menu option")
+    val icon = optionIcon(PATCH)
     val handlers = helper.methods.filter {
         !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" && it.parameterTypes.map(Any::toString) == listOf(OPTION)
     }
@@ -380,17 +359,7 @@ internal fun BytecodePatchContext.offerDownloadOnEveryVideo() {
         optionStub.accessFlags, optionStub.annotations, optionStub.hiddenApiRestrictions,
         ImmutableMethodImplementation(4, emptyList(), null, null),
     ).toMutable().apply {
-        addInstructions(0, """
-            sget-object v0, $DOWNLOAD
-            invoke-virtual { v0 }, Ljava/lang/Enum;->ordinal()I
-            move-result v2
-            invoke-virtual { v0 }, $OPTION->${icon.name}()I
-            move-result v3
-            const-string v1, "HUSHGRAM_SAVE_ALL"
-            new-instance v0, $OPTION
-            invoke-direct { v0, v1, v2, v3 }, $OPTION-><init>(Ljava/lang/String;II)V
-            return-object v0
-        """.trimIndent())
+        addInstructions(0, newOption(icon, "const-string v1, \"HUSHGRAM_SAVE_ALL\""))
     })
     writeBridges()
     writeImageBridges()

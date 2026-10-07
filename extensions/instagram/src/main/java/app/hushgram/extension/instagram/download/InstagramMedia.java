@@ -114,6 +114,78 @@ public final class InstagramMedia {
         return 0;
     }
 
+    /**
+     * A Media's {@code music_metadata}, where a photo post keeps its music. Its type is one of
+     * Instagram's with a single getter of the music, which {@link #metadataMusic} calls.
+     */
+    public static Object musicMetadata(Object media) {
+        return null;
+    }
+
+    /** The {@code music_info} of a Media's {@code music_metadata}. */
+    public static Object metadataMusic(Object metadata) {
+        return null;
+    }
+
+    /** A Media's {@code clips_metadata}, where a reel keeps its music. */
+    public static Object clipsMetadata(Object media) {
+        return null;
+    }
+
+    /** The {@code music_info} of a Media's {@code clips_metadata}. */
+    public static Object clipsMusic(Object metadata) {
+        return null;
+    }
+
+    /** A music info's {@code music_asset_info}: the track itself. */
+    public static Object musicTrack(Object music) {
+        return null;
+    }
+
+    /** A music info's {@code music_consumption_info}: which part of the track the post plays. */
+    public static Object musicConsumption(Object music) {
+        return null;
+    }
+
+    /** A track's {@code progressive_download_url}: the whole track as one file. */
+    public static String trackUrl(Object track) {
+        return null;
+    }
+
+    /** A track's {@code fast_start_progressive_download_url}: the same file, laid out to play sooner. */
+    public static String trackFastStartUrl(Object track) {
+        return null;
+    }
+
+    /** A consumption info's {@code audio_asset_start_time_in_ms}: where in the track the post's music starts. */
+    public static Integer musicStartMs(Object consumption) {
+        return null;
+    }
+
+    /** A consumption info's {@code overlap_duration_in_ms}: how long the post's music plays. */
+    public static Integer musicLengthMs(Object consumption) {
+        return null;
+    }
+
+    /**
+     * A new option of the reel menu named [name], drawn and handled like Download: Download's icon
+     * and ordinal, made by the option's own constructor. Null as built.
+     */
+    public static Object reelOption(String name) {
+        return null;
+    }
+
+    /**
+     * Adds a row for [option] labeled [label] to [sheet], the reel menu's sheet, through the menu
+     * helper [menu]'s adder of one row, the way Instagram adds a row with a label of its own.
+     * [context] and [rowState] are what the menu hands that adder. Answers whether the row went in,
+     * which as built it never does.
+     */
+    public static boolean addReelRow(Object menu, Object context, Object option, Object sheet, Object rowState,
+            String label) {
+        return false;
+    }
+
     /** The Media a story's menu is open on, read off the menu's helper, or null for a story with none. */
     public static Object storyMedia(Object menu) {
         return null;

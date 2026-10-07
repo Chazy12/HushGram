@@ -12,10 +12,13 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patcher.util.smali.ExternalLabel
+import app.morphe.patches.instagram.download.INSTAGRAM_MEDIA
 import app.morphe.patches.instagram.download.MEDIA
 import app.morphe.patches.instagram.download.imageBridges
 import app.morphe.patches.instagram.download.mediaBridges
+import app.morphe.patches.instagram.download.musicBridges
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
@@ -33,6 +36,8 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 
 private const val PATCH = "Download any reel"
 
@@ -44,11 +49,20 @@ private const val FRAGMENT_ACTIVITY = "Landroidx/fragment/app/FragmentActivity;"
 private const val REEL_DOWNLOAD = "$EXTENSION_PACKAGE/download/ReelDownload;"
 internal const val OFFER = "$REEL_DOWNLOAD->offer(I)Z"
 internal const val WITHHOLD = "$REEL_DOWNLOAD->withhold(I)Z"
-internal const val SAVE = "$REEL_DOWNLOAD->save(Ljava/lang/Object;Landroid/app/Activity;)Z"
+internal const val SAVE = "$REEL_DOWNLOAD->save(Ljava/lang/Object;Ljava/lang/Object;Landroid/app/Activity;)Z"
+internal const val OURS = "$REEL_DOWNLOAD->ours(Ljava/lang/Object;)Z"
+internal const val ROWS = "$REEL_DOWNLOAD->rows(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Z"
 internal const val ADD_TO = "$REEL_DOWNLOAD->addTo(Ljava/util/List;Ljava/lang/Object;)V"
 
 /** The reel menu's handler of a tapped option, in the class that runs the menu. */
 internal const val HANDLER_MARKER = "ClipsOrganicMoreOptionsHelper_handleOptionSelected"
+
+/**
+ * The reel menu's adder of one row: it takes the option, the sheet and the row's state, and an
+ * icon and a label that replace the option's own when they aren't null.
+ */
+internal const val ROW_MARKER = "ClipsOrganicMoreOptionsHelper_addBottomSheetRowItem"
+private const val CONTEXT = "Landroid/content/Context;"
 
 /** Instagram's check of whether a reel's owner lets other people download it. */
 internal const val ELIGIBLE_MARKER = "ClipsDownloadUtil_isMediaEligibleForThirdPartyDownloads"
@@ -71,7 +85,9 @@ internal const val REDUCED_MARKER = "ClipsOrganicMediaItemViewMoreOptionsControl
  *
  * The Reels viewer also shows photo posts that come with music, which have no video at all. A tap
  * on Download there saves the picture at its largest size, through the picture bridges Download
- * any story uses, which this patch writes too (#71).
+ * any story uses, which this patch writes too (#71). When the post's music has a track to fetch,
+ * the menu's adder of one row puts Download as video and Download as photo in Download's place,
+ * two options made the way Download is, and the handler hands a tap on either to the extension.
  *
  * Everything is found before anything changes, so a build that differs stops the patch naming
  * what it couldn't find, and nothing is half done.
@@ -106,12 +122,14 @@ internal fun BytecodePatchContext.offerDownloadOnEveryReel() {
     val eligibles = mutableListOf<Method>()
     val loaders = mutableListOf<Method>()
     val reducedLists = mutableListOf<Method>()
+    val rowAdders = mutableListOf<Method>()
     classDefForEach { classDef ->
         classDef.methods.forEach { method ->
             val markers = method.markers()
             if (HANDLER_MARKER in markers) handlers += method
             if (ELIGIBLE_MARKER in markers) eligibles += method
             if (REDUCED_MARKER in markers) reducedLists += method
+            if (ROW_MARKER in markers) rowAdders += method
             if (method.code().any { it.opcode == Opcode.SGET_OBJECT && it.referenceText() == DOWNLOAD }) loaders += method
         }
     }
@@ -133,10 +151,23 @@ internal fun BytecodePatchContext.offerDownloadOnEveryReel() {
     val reducedReturns = reduced.optionListReturns()
     val media = instanceField(helper, MEDIA)
     val activity = instanceField(helper, FRAGMENT_ACTIVITY)
+    val adder = one(rowAdders, ROW_MARKER)
+    val adderTypes = adder.parameterTypes.map(Any::toString)
+    if (adder.definingClass != helper || AccessFlags.STATIC.isSet(adder.accessFlags) || adder.returnType != "V" ||
+        adderTypes.size != 6 || adderTypes[0] != CONTEXT || adderTypes[1] != OPTION || !adderTypes[2].startsWith("L") ||
+        !adderTypes[3].startsWith("L") || adderTypes[4] != "Ljava/lang/Integer;" || adderTypes[5] != "Ljava/lang/String;"
+    ) {
+        throw PatchException("$PATCH: ${adder.definingClass}->${adder.name}, the adder of one row, takes ${adderTypes.joinToString("")}")
+    }
+    val icon = optionIcon(PATCH)
     val writeBridges = mediaBridges(PATCH)
     val writeImageBridges = imageBridges(PATCH)
+    val writeMusicBridges = musicBridges(PATCH)
+    val writeRowBridges = rowBridges(icon, adder)
     val menu = mutable(handler)
     menu.requireLocals(PATCH, 3)
+    val rows = mutable(adder)
+    rows.requireLocals(PATCH, 5)
 
     gates.forEach { (builder, found) ->
         val method = mutable(builder)
@@ -170,25 +201,107 @@ internal fun BytecodePatchContext.offerDownloadOnEveryReel() {
         )
     }
 
+    // Download, and the two rows a photo with music gets in its place, go to save() first.
     menu.addInstructionsWithLabels(
         0,
         """
             move-object/from16 v0, p1
             sget-object v1, $DOWNLOAD
-            if-ne v0, v1, :handle
+            if-eq v0, v1, :save
+            invoke-static { v0 }, $OURS
+            move-result v1
+            if-eqz v1, :handle
+            :save
             move-object/from16 v0, p0
             iget-object v1, v0, $media
             iget-object v2, v0, $activity
-            invoke-static { v1, v2 }, $SAVE
+            move-object/from16 v0, p1
+            invoke-static { v0, v1, v2 }, $SAVE
             move-result v0
             if-eqz v0, :handle
             return-void
         """,
         ExternalLabel("handle", menu.getInstruction(0)),
     )
+    // Download's row asks rows() first, which may add the two in its place.
+    rows.addInstructionsWithLabels(
+        0,
+        """
+            move-object/from16 v0, p2
+            sget-object v1, $DOWNLOAD
+            if-ne v0, v1, :add
+            move-object/from16 v0, p0
+            iget-object v1, v0, $media
+            move-object/from16 v2, p1
+            move-object/from16 v3, p3
+            move-object/from16 v4, p4
+            invoke-static/range { v0 .. v4 }, $ROWS
+            move-result v0
+            if-eqz v0, :add
+            return-void
+        """,
+        ExternalLabel("add", rows.getInstruction(0)),
+    )
     writeBridges()
     writeImageBridges()
+    writeMusicBridges()
+    writeRowBridges()
 }
+
+/**
+ * Finds the extension's two bridges to the reel menu, and answers the step that writes them:
+ * `reelOption`, which makes an option named by its argument with Download's ordinal and [icon],
+ * and `addReelRow`, which hands an option and a label to [adder], the menu's adder of one row,
+ * with no icon of its own, and answers true.
+ */
+private fun BytecodePatchContext.rowBridges(icon: String, adder: Method): () -> Unit {
+    val bridges = mutableClassDefBy(INSTAGRAM_MEDIA)
+    val optionStub = bridges.methods.singleOrNull {
+        it.name == "reelOption" && AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Ljava/lang/Object;" &&
+            it.parameterTypes.map(Any::toString) == listOf("Ljava/lang/String;")
+    } ?: throw PatchException("$PATCH: $INSTAGRAM_MEDIA has no static reelOption(String)")
+    val rowStub = bridges.methods.singleOrNull {
+        it.name == "addReelRow" && AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" &&
+            it.parameterTypes.map(Any::toString) == List(5) { "Ljava/lang/Object;" } + "Ljava/lang/String;"
+    } ?: throw PatchException("$PATCH: $INSTAGRAM_MEDIA has no static addReelRow(Object, Object, Object, Object, Object, String)")
+    val types = adder.parameterTypes.map(Any::toString)
+    val call = "${adder.definingClass}->${adder.name}(${types.joinToString("")})V"
+    return {
+        bridges.methods.remove(optionStub)
+        bridges.methods.add(replaced(optionStub, 5).apply {
+            addInstructions(0, newOption(icon, "move-object v1, p0"))
+        })
+        bridges.methods.remove(rowStub)
+        bridges.methods.add(replaced(rowStub, 13).apply {
+            addInstructions(
+                0,
+                """
+                    move-object v0, p0
+                    check-cast v0, ${adder.definingClass}
+                    move-object v1, p1
+                    check-cast v1, ${types[0]}
+                    move-object v2, p2
+                    check-cast v2, ${types[1]}
+                    move-object v3, p3
+                    check-cast v3, ${types[2]}
+                    move-object v4, p4
+                    check-cast v4, ${types[3]}
+                    const/4 v5, 0x0
+                    move-object v6, p5
+                    invoke-virtual/range { v0 .. v6 }, $call
+                    const/4 v0, 0x1
+                    return v0
+                """,
+            )
+        })
+    }
+}
+
+/** [stub] with an empty body of [registers] registers, its parameters among them. */
+private fun replaced(stub: Method, registers: Int): MutableMethod = ImmutableMethod(
+    stub.definingClass, stub.name, stub.parameters, stub.returnType, stub.accessFlags, stub.annotations,
+    stub.hiddenApiRestrictions, ImmutableMethodImplementation(registers, emptyList(), null, null),
+).toMutable()
 
 private fun one(methods: List<Method>, marker: String): Method = methods.singleOrNull() ?: throw PatchException(
     "$PATCH: expected one method holding the $marker marker, found " +

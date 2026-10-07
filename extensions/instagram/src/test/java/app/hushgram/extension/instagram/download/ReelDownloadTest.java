@@ -48,6 +48,12 @@ public class ReelDownloadTest {
         Item.videos = null;
         Item.manifest = null;
         Item.pictures = null;
+        Item.music = false;
+        Item.trackUrl = null;
+        Item.fastStartUrl = null;
+        Item.startMs = null;
+        Item.lengthMs = null;
+        Item.rows.clear();
         HookStatus.clear();
         Settings.DOWNLOAD_REELS.save(true);
     }
@@ -69,7 +75,7 @@ public class ReelDownloadTest {
         assertTrue(ReelDownload.offer(true));
         assertTrue(ReelDownload.withhold(true));
         assertFalse(ReelDownload.withhold(false));
-        assertFalse("a tap was taken from Instagram", ReelDownload.save(new Object(), null));
+        assertFalse("a tap was taken from Instagram", ReelDownload.save(Option.DOWNLOAD, new Object(), null));
         List<Object> reduced = options(Option.PLAYBACK_CONTROLS, Option.REPORT);
         ReelDownload.addTo(reduced, Option.DOWNLOAD);
         assertEquals(options(Option.PLAYBACK_CONTROLS, Option.REPORT), reduced);
@@ -128,7 +134,7 @@ public class ReelDownloadTest {
         Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
         HookStatus.clear();
 
-        assertTrue(ReelDownload.save(new Object(), activity));
+        assertTrue(ReelDownload.save(Option.DOWNLOAD, new Object(), activity));
         Shadows.shadowOf(Looper.getMainLooper()).idle();
 
         assertEquals("Download failed", String.valueOf(ShadowToast.getTextOfLatestToast()));
@@ -150,7 +156,7 @@ public class ReelDownloadTest {
         Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
         HookStatus.clear();
 
-        assertTrue(ReelDownload.save(new Object(), activity));
+        assertTrue(ReelDownload.save(Option.DOWNLOAD, new Object(), activity));
         Shadows.shadowOf(Looper.getMainLooper()).idle();
 
         assertEquals(List.of(FamilyNames.REEL_DOWNLOAD + ": invoked 1, 0 found, 0 missing. "
@@ -169,10 +175,140 @@ public class ReelDownloadTest {
         Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
         HookStatus.clear();
 
-        assertTrue(ReelDownload.save(new Object(), activity));
+        assertTrue(ReelDownload.save(Option.DOWNLOAD, new Object(), activity));
 
         assertEquals(List.of(FamilyNames.REEL_DOWNLOAD + ": invoked 1, 0 found, 0 missing. Counted: no manifest 1"),
                 HookStatus.report());
+    }
+
+    /** The two options a photo with music gets, by the names the extension gives them. */
+    private enum Ours { HUSHGRAM_DOWNLOAD_AS_VIDEO, HUSHGRAM_DOWNLOAD_AS_PHOTO }
+
+    /** A photo the Reels viewer shows with music that has a track to fetch. */
+    private static void photoWithMusic() {
+        Item.pictures = List.of(new MediaSave.Rendition(META + "1080.jpg", 1080, 1350, 0));
+        Item.music = true;
+        Item.trackUrl = "https://scontent.cdninstagram.com/o1/v/t2/f2/m69/track.mp4";
+        Item.startMs = 12_000;
+        Item.lengthMs = 15_000;
+    }
+
+    /**
+     * A photo with music gets Download as video and Download as photo in Download's place, in
+     * that order, made by the bridges and labeled as the story menu labels them.
+     */
+    @Test
+    @Config(shadows = Item.class)
+    public void aPhotoWithMusicGetsTwoRows() {
+        photoWithMusic();
+
+        assertTrue(ReelDownload.rows(null, new Object(), null, null, null));
+
+        assertEquals(List.of("HUSHGRAM_DOWNLOAD_AS_VIDEO=Download as video", "HUSHGRAM_DOWNLOAD_AS_PHOTO=Download as photo"),
+                Item.rows);
+        assertTrue(String.valueOf(HookStatus.report()), String.valueOf(HookStatus.report()).contains("has music 1"));
+    }
+
+    /** A video, a photo without music, music with no track to fetch, nothing at all, or the switch off: one Download row. */
+    @Test
+    @Config(shadows = Item.class)
+    public void anythingElseKeepsTheOneRow() {
+        Item.pictures = List.of(new MediaSave.Rendition(META + "1080.jpg", 1080, 1350, 0));
+        assertFalse("a photo without music", ReelDownload.rows(null, new Object(), null, null, null));
+
+        photoWithMusic();
+        Item.videos = List.of(new MediaSave.Rendition(META + "720.mp4", 720, 1280, 0));
+        assertFalse("a video", ReelDownload.rows(null, new Object(), null, null, null));
+        Item.videos = null;
+
+        Item.trackUrl = null;
+        assertFalse("music with no track", ReelDownload.rows(null, new Object(), null, null, null));
+        assertTrue(String.valueOf(HookStatus.report()), String.valueOf(HookStatus.report()).contains("no audio url 1"));
+
+        Item.fastStartUrl = "https://scontent.cdninstagram.com/o1/v/t2/f2/m69/fast.mp4";
+        Settings.DOWNLOAD_REELS.save(false);
+        assertFalse("the switch off", ReelDownload.rows(null, new Object(), null, null, null));
+        Settings.DOWNLOAD_REELS.save(true);
+
+        Item.pictures = null;
+        assertFalse("no picture", ReelDownload.rows(null, new Object(), null, null, null));
+        assertFalse("no media", ReelDownload.rows(null, null, null, null, null));
+        assertTrue("a row went in", Item.rows.isEmpty());
+    }
+
+    /** The handler knows the two rows by name, and nothing else as ours. */
+    @Test
+    public void theHandlerKnowsOurRows() {
+        assertTrue(ReelDownload.ours(Ours.HUSHGRAM_DOWNLOAD_AS_VIDEO));
+        assertTrue(ReelDownload.ours(Ours.HUSHGRAM_DOWNLOAD_AS_PHOTO));
+        assertFalse(ReelDownload.ours(Option.DOWNLOAD));
+        assertFalse(ReelDownload.ours("HUSHGRAM_DOWNLOAD_AS_VIDEO"));
+        assertFalse(ReelDownload.ours(null));
+    }
+
+    /**
+     * A tap on one of our rows never goes on to Instagram, which doesn't know the option, even with
+     * the switch turned off while the menu was open.
+     */
+    @Test
+    public void ourRowsStayOursWithTheSwitchOff() {
+        Settings.DOWNLOAD_REELS.save(false);
+        assertTrue(ReelDownload.save(Ours.HUSHGRAM_DOWNLOAD_AS_VIDEO, new Object(), null));
+        assertTrue(ReelDownload.save(Ours.HUSHGRAM_DOWNLOAD_AS_PHOTO, new Object(), null));
+        assertFalse(ReelDownload.save(Option.DOWNLOAD, new Object(), null));
+    }
+
+    /** Download as photo saves the picture of a photo with music. */
+    @Test
+    @Config(shadows = Item.class)
+    public void downloadAsPhotoSavesThePicture() {
+        photoWithMusic();
+        refuseEveryFetch();
+        Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+        HookStatus.clear();
+
+        assertTrue(ReelDownload.save(Ours.HUSHGRAM_DOWNLOAD_AS_PHOTO, new Object(), activity));
+
+        assertTrue(String.valueOf(HookStatus.report()), String.valueOf(HookStatus.report()).contains("saved as photo 1"));
+    }
+
+    /** Download as video with music that has no track to fetch says so, and the toast says it failed. */
+    @Test
+    @Config(shadows = Item.class)
+    public void downloadAsVideoWithNoTrackSaysSo() {
+        photoWithMusic();
+        Item.trackUrl = null;
+        Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+        HookStatus.clear();
+
+        assertTrue(ReelDownload.save(Ours.HUSHGRAM_DOWNLOAD_AS_VIDEO, new Object(), activity));
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+
+        assertEquals("Download failed", String.valueOf(ShadowToast.getTextOfLatestToast()));
+        assertTrue(String.valueOf(HookStatus.report()), String.valueOf(HookStatus.report()).contains("no audio url 1"));
+    }
+
+    /**
+     * Download as video starts a save that fetches the picture first. A fetch that can't go out
+     * ends it, counted, and leaves no file of its own behind in the work folder.
+     */
+    @Test
+    @Config(shadows = Item.class)
+    public void downloadAsVideoCleansUpAfterAFailedFetch() throws InterruptedException {
+        photoWithMusic();
+        refuseEveryFetch();
+        Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+        HookStatus.clear();
+
+        assertTrue(ReelDownload.save(Ours.HUSHGRAM_DOWNLOAD_AS_VIDEO, new Object(), activity));
+        long deadline = System.currentTimeMillis() + 10_000;
+        while (MediaSave.savesInFlight() > 0 && System.currentTimeMillis() < deadline) Thread.sleep(20);
+
+        String report = String.valueOf(HookStatus.report());
+        assertTrue(report, report.contains("saved as video 1"));
+        assertTrue(report, report.contains("picture fetch failed 1"));
+        java.io.File[] left = DashSave.workFolder(activity.getApplicationContext()).listFiles();
+        assertEquals("files left in the work folder", 0, left == null ? 0 : left.length);
     }
 
     /** An address on Meta's media servers, which the save takes. */
@@ -200,6 +336,30 @@ public class ReelDownloadTest {
         @Implementation protected static String candidateUrl(Object candidate) { return ((MediaSave.Rendition) candidate).url; }
         @Implementation protected static int candidateWidth(Object candidate) { return ((MediaSave.Rendition) candidate).width; }
         @Implementation protected static int candidateHeight(Object candidate) { return ((MediaSave.Rendition) candidate).height; }
+
+        static boolean music;
+        static String trackUrl;
+        static String fastStartUrl;
+        static Integer startMs;
+        static Integer lengthMs;
+        static final List<String> rows = new ArrayList<>();
+
+        @Implementation protected static Object musicMetadata(Object media) { return music ? "metadata" : null; }
+        @Implementation protected static Object metadataMusic(Object metadata) { return "music"; }
+        @Implementation protected static Object clipsMetadata(Object media) { return null; }
+        @Implementation protected static Object musicTrack(Object music) { return "track"; }
+        @Implementation protected static Object musicConsumption(Object music) { return "part"; }
+        @Implementation protected static String trackUrl(Object track) { return trackUrl; }
+        @Implementation protected static String trackFastStartUrl(Object track) { return fastStartUrl; }
+        @Implementation protected static Integer musicStartMs(Object part) { return startMs; }
+        @Implementation protected static Integer musicLengthMs(Object part) { return lengthMs; }
+        @Implementation protected static Object reelOption(String name) { return Ours.valueOf(name); }
+
+        @Implementation
+        protected static boolean addReelRow(Object menu, Object context, Object option, Object sheet, Object rowState, String label) {
+            rows.add(option + "=" + label);
+            return true;
+        }
     }
 
     /** Without the bridges written, a reel has no files and no details, and neither read throws. */

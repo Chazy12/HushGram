@@ -16,8 +16,14 @@ import app.morphe.patches.instagram.download.IMAGE_INFO
 import app.morphe.patches.instagram.download.IMAGE_URL
 import app.morphe.patches.instagram.download.INSTAGRAM_MEDIA
 import app.morphe.patches.instagram.download.MEDIA
+import app.morphe.patches.instagram.download.MUSIC_CONSUMPTION
+import app.morphe.patches.instagram.download.MUSIC_INFO
+import app.morphe.patches.instagram.download.PANDO_MUSIC_CONSUMPTION
+import app.morphe.patches.instagram.download.PANDO_MUSIC_INFO
+import app.morphe.patches.instagram.download.PANDO_TRACK_DATA
 import app.morphe.patches.instagram.download.PANDO_IMAGE_INFO
 import app.morphe.patches.instagram.download.PANDO_VIDEO_VERSION
+import app.morphe.patches.instagram.download.TRACK_DATA
 import app.morphe.patches.instagram.download.USER
 import app.morphe.patches.instagram.download.VIDEO_VERSION
 import app.morphe.patches.instagram.misc.extension.PURGE_MARKER
@@ -31,6 +37,8 @@ import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.formats.Instruction35c
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import com.android.tools.smali.dexlib2.immutable.ImmutableField
@@ -50,11 +58,16 @@ class DownloadReelHookTest {
     private val session = "Lcom/instagram/common/session/UserSession;"
     private val activity = "Landroidx/fragment/app/FragmentActivity;"
     private val check = "$util->A08($session$MEDIA)Z"
+    private val sheet = "Lfixture/Sheet;"
+    private val rowState = "Lfixture/RowState;"
+    private val musicMetadata = "Lfixture/MusicMetadata;"
+    private val clipsMetadata = "Lfixture/ClipsMetadata;"
+    private val rowTypes = listOf("Landroid/content/Context;", OPTION, sheet, rowState, "Ljava/lang/Integer;", "Ljava/lang/String;")
 
     /** The hooks the patch writes are in the extension the bundle ships, public and static. */
     @Test
     fun theHooksAreInTheExtension() {
-        for (hook in listOf(OFFER, WITHHOLD, SAVE, ADD_TO)) {
+        for (hook in listOf(OFFER, WITHHOLD, SAVE, OURS, ROWS, ADD_TO)) {
             val declared = ExtensionDex.classDef(hook.substringBefore("->")).methods
                 .filter { AccessFlags.PUBLIC.isSet(it.accessFlags) && AccessFlags.STATIC.isSet(it.accessFlags) }
                 .map { "${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" }
@@ -111,7 +124,10 @@ class DownloadReelHookTest {
         assertUntouched(context)
     }
 
-    /** A tap on Download asks save() first, with the menu's media and activity; any other option goes on. */
+    /**
+     * A tap on Download, or on a row a photo with music gets in its place, asks save() first with
+     * the option, the menu's media and its activity; any other option goes on.
+     */
     @Test
     fun theHandlerAsksSaveFirst() {
         val context = PatchContexts.of(classes())
@@ -121,17 +137,103 @@ class DownloadReelHookTest {
         val code = context.method(helper, "A0T").code()
         assertEquals(
             listOf(
-                Opcode.MOVE_OBJECT_FROM16, Opcode.SGET_OBJECT, Opcode.IF_NE, Opcode.MOVE_OBJECT_FROM16, Opcode.IGET_OBJECT,
-                Opcode.IGET_OBJECT, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.RETURN_VOID,
+                Opcode.MOVE_OBJECT_FROM16, Opcode.SGET_OBJECT, Opcode.IF_EQ, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT,
+                Opcode.IF_EQZ, Opcode.MOVE_OBJECT_FROM16, Opcode.IGET_OBJECT, Opcode.IGET_OBJECT, Opcode.MOVE_OBJECT_FROM16,
+                Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.RETURN_VOID,
             ),
-            code.take(10).map { it.opcode },
+            code.take(14).map { it.opcode },
+        )
+        assertEquals(DOWNLOAD, code[1].referenceText())
+        assertEquals(OURS, code[3].referenceText())
+        assertEquals("$helper->media:$MEDIA", code[7].referenceText())
+        assertEquals("$helper->activity:$activity", code[8].referenceText())
+        assertEquals(SAVE, code[10].referenceText())
+        val save = code[10] as Instruction35c
+        assertEquals("save()'s arguments", listOf(0, 1, 2), listOf(save.registerC, save.registerD, save.registerE))
+        // p1 is v4 in a method of five registers taking two.
+        assertEquals("the option", 4, (code[9] as TwoRegisterInstruction).registerB)
+        assertEquals("the original code moved", Opcode.CONST_STRING, code[14].opcode)
+        assertEquals("Download's branch", 6, code.target(2))
+        for (branch in listOf(5, 12)) assertEquals("the branch at $branch", 14, code.target(branch))
+    }
+
+    /**
+     * Download's row asks rows() first, with the menu, its media, and the context, sheet and row
+     * state the adder was handed. Any other option's row, the two of a photo with music among
+     * them, goes on as Instagram's.
+     */
+    @Test
+    fun theRowAdderAsksRowsFirst() {
+        val context = PatchContexts.of(classes())
+
+        context.offerDownloadOnEveryReel()
+
+        val code = context.method(helper, "A0Q").code()
+        assertEquals(
+            listOf(
+                Opcode.MOVE_OBJECT_FROM16, Opcode.SGET_OBJECT, Opcode.IF_NE, Opcode.MOVE_OBJECT_FROM16, Opcode.IGET_OBJECT,
+                Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_FROM16, Opcode.INVOKE_STATIC_RANGE,
+                Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.RETURN_VOID,
+            ),
+            code.take(12).map { it.opcode },
         )
         assertEquals(DOWNLOAD, code[1].referenceText())
         assertEquals("$helper->media:$MEDIA", code[4].referenceText())
-        assertEquals("$helper->activity:$activity", code[5].referenceText())
-        assertEquals(SAVE, code[6].referenceText())
-        assertEquals("the original code moved", Opcode.CONST_STRING, code[10].opcode)
-        for (branch in listOf(2, 8)) assertEquals("the branch at $branch", 10, code.target(branch))
+        assertEquals(ROWS, code[8].referenceText())
+        val call = code[8] as RegisterRangeInstruction
+        assertEquals("rows()'s arguments", listOf(0, 5), listOf(call.startRegister, call.registerCount))
+        // p0 is v5 in a method of 12 registers taking seven: the option p2, then the context p1, sheet p3, row state p4.
+        val moved = listOf(0, 3, 5, 6, 7).map { (code[it] as TwoRegisterInstruction).registerB }
+        assertEquals("what rows() is handed", listOf(7, 5, 6, 8, 9), moved)
+        assertEquals("the original code moved", Opcode.CONST_STRING, code[12].opcode)
+        for (branch in listOf(2, 10)) assertEquals("the branch at $branch", 12, code.target(branch))
+    }
+
+    /** A row adder that takes no label is one this patch can't hand a row's name to, and nothing changes. */
+    @Test
+    fun aRowAdderWithoutALabelFailsBeforeAnythingChanges() {
+        val context = PatchContexts.of(classes(rowParameters = rowTypes.dropLast(1)))
+        val failure = assertThrows(PatchException::class.java) { context.offerDownloadOnEveryReel() }
+        assertTrue(failure.message!!, failure.message!!.contains("the adder of one row"))
+        assertUntouched(context)
+    }
+
+    @Test
+    fun aMissingMusicGetterFailsBeforeAnythingChanges() {
+        val context = PatchContexts.of(classes(leaveOutField = "overlap_duration_in_ms"))
+        val failure = assertThrows(PatchException::class.java) { context.offerDownloadOnEveryReel() }
+        assertTrue(failure.message!!, failure.message!!.contains("overlap_duration_in_ms"))
+        assertUntouched(context)
+    }
+
+    /**
+     * reelOption() makes an option the way Instagram makes Download, named by its argument, and
+     * addReelRow() hands the menu's adder the option and its label with no icon of its own.
+     */
+    @Test
+    fun theRowBridgesMakeAnOptionAndAddItsRow() {
+        val context = PatchContexts.of(classes())
+
+        context.offerDownloadOnEveryReel()
+
+        val option = context.method(INSTAGRAM_MEDIA, "reelOption").code()
+        assertEquals(DOWNLOAD, option[0].referenceText())
+        assertEquals(Opcode.MOVE_OBJECT, option[5].opcode)
+        // p0 is v4 in a method of five registers.
+        assertEquals("the name is the argument", 4, (option[5] as TwoRegisterInstruction).registerB)
+        assertEquals("$OPTION-><init>(Ljava/lang/String;II)V", option[7].referenceText())
+        assertEquals(Opcode.RETURN_OBJECT, option.last().opcode)
+        val row = context.method(INSTAGRAM_MEDIA, "addReelRow").code()
+        val call = row.single { it.opcode == Opcode.INVOKE_VIRTUAL_RANGE }
+        assertEquals("$helper->A0Q(${rowTypes.joinToString("")})V", call.referenceText())
+        assertEquals("the adder's arguments", listOf(0, 7),
+            (call as RegisterRangeInstruction).let { listOf(it.startRegister, it.registerCount) })
+        assertEquals("the casts", listOf(helper) + rowTypes.take(4),
+            row.filter { it.opcode == Opcode.CHECK_CAST }.map { it.referenceText() })
+        assertEquals("no icon of its own", Opcode.CONST_4, row[10].opcode)
+        // p5 is v12 in a method of 13 registers taking six.
+        assertEquals("the label is the last argument", 12, (row[11] as TwoRegisterInstruction).registerB)
+        assertEquals(listOf(Opcode.CONST_4, Opcode.RETURN), row.takeLast(2).map { it.opcode })
     }
 
     /**
@@ -159,6 +261,16 @@ class DownloadReelHookTest {
             "candidateUrl" to "$IMAGE_URL->getUrl()Ljava/lang/String;",
             "candidateWidth" to "$IMAGE_URL->getWidth()I",
             "candidateHeight" to "$IMAGE_URL->getHeight()I",
+            "musicMetadata" to "$MEDIA->A2H()$musicMetadata",
+            "metadataMusic" to "$musicMetadata->Cmh()$MUSIC_INFO",
+            "clipsMetadata" to "$MEDIA->A33()$clipsMetadata",
+            "clipsMusic" to "$clipsMetadata->Cmh()$MUSIC_INFO",
+            "musicTrack" to "$MUSIC_INFO->CmW()$TRACK_DATA",
+            "musicConsumption" to "$MUSIC_INFO->Cme()$MUSIC_CONSUMPTION",
+            "trackUrl" to "$TRACK_DATA->BRg()Ljava/lang/String;",
+            "trackFastStartUrl" to "$TRACK_DATA->BTF()Ljava/lang/String;",
+            "musicStartMs" to "$MUSIC_CONSUMPTION->BTI()Ljava/lang/Integer;",
+            "musicLengthMs" to "$MUSIC_CONSUMPTION->BwK()Ljava/lang/Integer;",
         )
         expected.forEach { (bridge, getter) ->
             val code = context.method(INSTAGRAM_MEDIA, bridge).code()
@@ -217,8 +329,14 @@ class DownloadReelHookTest {
     @Test
     fun eachDeclaredBuildOffersDownloadOnEveryReel() {
         val versions = AppCompatibilities.instagram().single().targets.mapNotNull { it.version }.toSet()
-        val types = setOf(MEDIA, USER, VIDEO_VERSION, PANDO_VIDEO_VERSION, IMAGE_INFO, PANDO_IMAGE_INFO, IMAGE_URL)
-        val markers = setOf(HANDLER_MARKER, ELIGIBLE_MARKER, REDUCED_MARKER)
+        val types = setOf(
+            MEDIA, USER, VIDEO_VERSION, PANDO_VIDEO_VERSION, IMAGE_INFO, PANDO_IMAGE_INFO, IMAGE_URL, OPTION,
+            MUSIC_INFO, PANDO_MUSIC_INFO, TRACK_DATA, PANDO_TRACK_DATA, MUSIC_CONSUMPTION, PANDO_MUSIC_CONSUMPTION,
+        )
+        val markers = setOf(HANDLER_MARKER, ELIGIBLE_MARKER, REDUCED_MARKER, ROW_MARKER)
+        // The types a post keeps its music in: interfaces whose getter answers the music.
+        fun holdsMusic(classDef: ClassDef) = AccessFlags.INTERFACE.isSet(classDef.accessFlags) &&
+            classDef.methods.any { it.parameterTypes.isEmpty() && it.returnType == MUSIC_INFO }
         val checked = mutableSetOf<String>()
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apks" && it.name.contains("-$version-") }) {
@@ -226,9 +344,9 @@ class DownloadReelHookTest {
                 FixtureDex.forEach(bundle) { dex ->
                     val marked = dex.stringSection.any { it.startsWith("android_purge_") && PURGE_MARKER.find(it)?.groupValues?.get(1) in markers }
                     val loads = dex.fieldSection.any { it.toString() == DOWNLOAD }
-                    if (!marked && !loads && dex.classes.none { it.type in types }) return@forEach
+                    if (!marked && !loads && dex.classes.none { it.type in types || holdsMusic(it) }) return@forEach
                     for (classDef in dex.classes) {
-                        val wanted = classDef.type in types || classDef.methods.any { method ->
+                        val wanted = classDef.type in types || holdsMusic(classDef) || classDef.methods.any { method ->
                             method.markers().any { it in markers } || method.code().any { it.referenceText() == DOWNLOAD }
                         }
                         if (wanted) classes += ImmutableClassDef.of(classDef)
@@ -241,8 +359,12 @@ class DownloadReelHookTest {
                 val all = classes.flatMap { it.methods }
                 val handler = all.single { HANDLER_MARKER in it.markers() }
                 val menu = context.method(handler.definingClass, handler.name).code()
-                assertEquals("${bundle.name}: the handler's first call", SAVE,
-                    menu.first { it.opcode == Opcode.INVOKE_STATIC }.referenceText())
+                assertEquals("${bundle.name}: the handler's calls", listOf(OURS, SAVE),
+                    menu.filter { it.opcode == Opcode.INVOKE_STATIC }.take(2).map { it.referenceText() })
+                val adder = all.single { ROW_MARKER in it.markers() }
+                val rows = context.method(adder.definingClass, adder.name, adder.parameterTypes.map(Any::toString)).code()
+                assertEquals("${bundle.name}: the row adder's first call", ROWS,
+                    rows.first { it.opcode == Opcode.INVOKE_STATIC_RANGE }.referenceText())
                 val eligible = all.single { ELIGIBLE_MARKER in it.markers() }
                 val check = "${eligible.definingClass}->${eligible.name}(${eligible.parameterTypes.joinToString("")})${eligible.returnType}"
                 val builders = all.filter { method ->
@@ -275,6 +397,8 @@ class DownloadReelHookTest {
                 val bridges = context.classDefBy(INSTAGRAM_MEDIA).methods.filter { it.name in reelBridges }
                 assertEquals("${bundle.name}: the reel's bridges", reelBridges.size, bridges.size)
                 bridges.forEach { assertEquals("${bundle.name}: ${it.name}", Opcode.CHECK_CAST, it.code().first().opcode) }
+                assertEquals("${bundle.name}: reelOption", DOWNLOAD, context.method(INSTAGRAM_MEDIA, "reelOption").code().first().referenceText())
+                assertTrue("${bundle.name}: addReelRow", context.method(INSTAGRAM_MEDIA, "addReelRow").code().any { it.opcode == Opcode.INVOKE_VIRTUAL_RANGE })
                 checked += version
             }
         }
@@ -285,6 +409,8 @@ class DownloadReelHookTest {
     private val reelBridges = setOf(
         "videoVersions", "dashManifest", "mediaId", "owner", "takenAt", "username", "versionUrl", "versionWidth", "versionHeight",
         "imageVersions", "imageCandidates", "candidateUrl", "candidateWidth", "candidateHeight",
+        "musicMetadata", "metadataMusic", "clipsMetadata", "clipsMusic", "musicTrack", "musicConsumption", "trackUrl",
+        "trackFastStartUrl", "musicStartMs", "musicLengthMs",
     )
 
     private fun assertFiltered(code: List<Instruction>, call: String, hook: String) {
@@ -305,6 +431,9 @@ class DownloadReelHookTest {
         assertEquals("the handler changed", Opcode.CONST_STRING, context.method(helper, "A0T").code().first().opcode)
         assertEquals("a bridge was written", Opcode.CONST_4, context.method(INSTAGRAM_MEDIA, "videoVersions").code().first().opcode)
         assertEquals("a picture bridge was written", Opcode.CONST_4, context.method(INSTAGRAM_MEDIA, "imageVersions").code().first().opcode)
+        assertEquals("a music bridge was written", Opcode.CONST_4, context.method(INSTAGRAM_MEDIA, "musicMetadata").code().first().opcode)
+        assertEquals("the option bridge was written", Opcode.CONST_4, context.method(INSTAGRAM_MEDIA, "reelOption").code().first().opcode)
+        assertTrue("the row adder changed", context.method(helper, "A0Q").code().none { it.referenceText() == ROWS })
     }
 
     private fun BytecodePatchContext.method(type: String, name: String, parameters: List<String>? = null): Method =
@@ -328,6 +457,7 @@ class DownloadReelHookTest {
         handlerMarker: String = HANDLER_MARKER,
         reducedMarker: String = REDUCED_MARKER,
         leaveOutCandidates: Boolean = false,
+        rowParameters: List<String> = rowTypes,
     ): List<ClassDef> {
         val helperFields = listOfNotNull(
             field(helper, "media", MEDIA),
@@ -354,6 +484,11 @@ class DownloadReelHookTest {
                     return-void
                 """),
                 method(helper, "A0P", listOf(OPTION), "V", 2, static = false, body = "return-void"),
+                // The adder of one row: 5 locals, then this and six parameters.
+                method(helper, "A0Q", rowParameters, "V", 6 + rowParameters.size, static = false, body = """
+                    const-string v0, "android_purge_26_q3_$ROW_MARKER"
+                    return-void
+                """),
             ),
             helperFields,
         )
@@ -407,6 +542,9 @@ class DownloadReelHookTest {
             "A3F" to ("image_versions2" to IMAGE_INFO),
             // Another getter of the user field, answering whether it's there: the answer's type tells them apart.
             "ALu" to ("user" to "Z"),
+            "A2H" to ("music_metadata" to musicMetadata),
+            "A33" to ("clips_metadata" to clipsMetadata),
+            "ALU" to ("clips_metadata" to "Z"),
         ).filter { it.second.first != leaveOutField }.map { (name, field) -> getter(MEDIA, name, field.first, field.second) } +
             method(MEDIA, "getId", emptyList(), "Ljava/lang/String;", 1, static = false, body = """
                 const/4 v0, 0x0
@@ -415,6 +553,12 @@ class DownloadReelHookTest {
         val versionGetters = listOf("getUrl" to ("url" to "Ljava/lang/String;"), "DvO" to ("width" to "Ljava/lang/Integer;"),
             "CK7" to ("height" to "Ljava/lang/Integer;"))
         val imageGetters = if (leaveOutCandidates) emptyList() else listOf("Bd1" to ("candidates" to "Ljava/util/List;"))
+        val musicGetters = listOf("CmW" to ("music_asset_info" to TRACK_DATA), "Cme" to ("music_consumption_info" to MUSIC_CONSUMPTION))
+        // The title is another String the track keeps, so the field's key has to pick the address.
+        val trackGetters = listOf("BRg" to ("progressive_download_url" to "Ljava/lang/String;"),
+            "BTF" to ("fast_start_progressive_download_url" to "Ljava/lang/String;"), "getTitle" to ("title" to "Ljava/lang/String;"))
+        val partGetters = listOf("BTI" to ("audio_asset_start_time_in_ms" to "Ljava/lang/Integer;"),
+            "BwK" to ("overlap_duration_in_ms" to "Ljava/lang/Integer;")).filter { it.second.first != leaveOutField }
         return listOf(
             helperClass, controllerClass, feed, eligible,
             classDef(MEDIA, mediaGetters),
@@ -424,9 +568,34 @@ class DownloadReelHookTest {
             anInterface(IMAGE_INFO, imageGetters.map { it.first to it.second.second }),
             classDef(PANDO_IMAGE_INFO, imageGetters.map { (name, field) -> getter(PANDO_IMAGE_INFO, name, field.first, field.second) }),
             anInterface(IMAGE_URL, listOf("getUrl" to "Ljava/lang/String;", "getWidth" to "I", "getHeight" to "I")),
+            anInterface(musicMetadata, listOf("Cmh" to MUSIC_INFO, "Apg" to "Lfixture/Other;")),
+            anInterface(clipsMetadata, listOf("Cmh" to MUSIC_INFO, "CuR" to "Lfixture/OriginalSound;")),
+            anInterface(MUSIC_INFO, musicGetters.map { it.first to it.second.second }),
+            classDef(PANDO_MUSIC_INFO, musicGetters.map { (name, field) -> getter(PANDO_MUSIC_INFO, name, field.first, field.second) }),
+            anInterface(TRACK_DATA, trackGetters.map { it.first to it.second.second }),
+            classDef(PANDO_TRACK_DATA, trackGetters.map { (name, field) -> getter(PANDO_TRACK_DATA, name, field.first, field.second) }),
+            anInterface(MUSIC_CONSUMPTION, partGetters.map { it.first to it.second.second }),
+            classDef(PANDO_MUSIC_CONSUMPTION, partGetters.map { (name, field) -> getter(PANDO_MUSIC_CONSUMPTION, name, field.first, field.second) }),
+            optionClass(),
             ExtensionDex.classDef(INSTAGRAM_MEDIA),
         )
     }
+
+    /** Instagram's menu option: an enum whose constructor keeps the icon its getter answers. */
+    private fun optionClass(): ClassDef = ImmutableClassDef(
+        OPTION, AccessFlags.PUBLIC.value or AccessFlags.FINAL.value or AccessFlags.ENUM.value,
+        "Ljava/lang/Enum;", null, null, null, emptyList(), listOf(
+            method(OPTION, "<init>", listOf("Ljava/lang/String;", "I", "I"), "V", 4, static = false, body = """
+                invoke-direct { p0, p1, p2 }, Ljava/lang/Enum;-><init>(Ljava/lang/String;I)V
+                iput p3, p0, $OPTION->iconDrawable:I
+                return-void
+            """),
+            method(OPTION, "getIconDrawable", emptyList(), "I", 2, static = false, body = """
+                iget v0, p0, $OPTION->iconDrawable:I
+                return v0
+            """),
+        ),
+    )
 
     private fun anInterface(type: String, methods: List<Pair<String, String>>): ClassDef = ImmutableClassDef(
         type, AccessFlags.PUBLIC.value or AccessFlags.INTERFACE.value or AccessFlags.ABSTRACT.value,

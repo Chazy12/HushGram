@@ -431,7 +431,9 @@ shared-call Lapp/hushgram/extension/instagram/download/ReelDownload;->offer(I)Z 
 shared-call Lapp/hushgram/extension/instagram/download/ReelDownload;->offer(I)Z holding android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_addNonAuthorSpecificRows
 shared-call Lapp/hushgram/extension/instagram/download/ReelDownload;->withhold(I)Z holding android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_showRedesignBottomSheet_2
 shared-call Lapp/hushgram/extension/instagram/download/ReelDownload;->withhold(I)Z holding android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_addNonAuthorSpecificRows
-once-call Lapp/hushgram/extension/instagram/download/ReelDownload;->save(Ljava/lang/Object;Landroid/app/Activity;)Z holding android_purge_26_q3_ClipsOrganicMoreOptionsHelper_handleOptionSelected
+once-call Lapp/hushgram/extension/instagram/download/ReelDownload;->save(Ljava/lang/Object;Ljava/lang/Object;Landroid/app/Activity;)Z holding android_purge_26_q3_ClipsOrganicMoreOptionsHelper_handleOptionSelected
+once-call Lapp/hushgram/extension/instagram/download/ReelDownload;->ours(Ljava/lang/Object;)Z holding android_purge_26_q3_ClipsOrganicMoreOptionsHelper_handleOptionSelected
+once-call Lapp/hushgram/extension/instagram/download/ReelDownload;->rows(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Z holding android_purge_26_q3_ClipsOrganicMoreOptionsHelper_addBottomSheetRowItem
 # The reduced reel menu, a short list of options that never had Download, hands its list to addTo()
 # where it returns. It returns once on 449, so one call, and addTo() is called nowhere else.
 once-call Lapp/hushgram/extension/instagram/download/ReelDownload;->addTo(Ljava/util/List;Ljava/lang/Object;)V holding android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_getReducedMenuOptions

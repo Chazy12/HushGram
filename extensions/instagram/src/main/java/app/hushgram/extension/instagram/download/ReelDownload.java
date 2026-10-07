@@ -36,6 +36,10 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  *       the reel is saved from the addresses its Media already holds, through {@link MediaSave},
  *       and Instagram's own download never starts. A photo the Reels viewer shows with its music
  *       has no video at all, so it saves its picture at the largest size instead (#71).
+ *   <li>The menu's adder of one row asks {@link #rows} first for Download. A photo that comes with
+ *       music gets two rows in its place, Download as video and Download as photo, as a photo
+ *       story with music does. As video builds an MP4 of the photo with the post's part of the
+ *       track ({@link MusicVideo}), and the handler hands a tap on either row to {@link #save} too.
  * </ul>
  *
  * <p>Every hook fails open: until the settings are ready, while HushGram is paused, with the switch
@@ -57,6 +61,23 @@ public final class ReelDownload {
     static final String NO_MANIFEST = "no manifest";
     static final String HAS_IMAGE_CANDIDATES = "has image candidates";
     static final String SAVED_AS_PHOTO = "saved as photo";
+
+    /**
+     * What the menu found for a photo with music, and what a tap on Download as video started:
+     * music with a track to fetch, which brings the two rows, music with none, and the video's
+     * build under way. {@link MusicVideo} counts how the build ends.
+     */
+    static final String HAS_MUSIC = "has music";
+    static final String NO_AUDIO_URL = "no audio url";
+    static final String SAVED_AS_VIDEO = "saved as video";
+
+    /**
+     * The names of the two options a photo with music gets in Download's place. They're made like
+     * Download, with its icon and ordinal, so the menu draws them and hands a tap on them to its
+     * handler the way it does Download.
+     */
+    static final String VIDEO_OPTION = "HUSHGRAM_DOWNLOAD_AS_VIDEO";
+    static final String PHOTO_OPTION = "HUSHGRAM_DOWNLOAD_AS_PHOTO";
 
     /**
      * The entry the patch calls, handed Instagram's answer as an int, non-zero for yes, so the hook
@@ -104,25 +125,92 @@ public final class ReelDownload {
     }
 
     /**
-     * Saves the reel [media] when its Download row is tapped with the switch on, and answers
-     * whether it did, in which case Instagram's own download is skipped. [activity] is the one the
-     * menu belongs to. A save that can't start says so. Never throws.
+     * Adds Download as video and Download as photo to the reel menu in Download's place, when the
+     * reel [media] is a photo that comes with music and the switch is on, and answers whether it
+     * did, in which case Instagram's own Download row is left out. [menu] is the menu's helper, and
+     * [context], [sheet] and [rowState] are what its adder of one row was handed for Download. Any
+     * other reel answers false and gets the one Download row. Never throws.
      */
-    public static boolean save(Object media, Activity activity) {
+    public static boolean rows(Object menu, Object media, Object context, Object sheet, Object rowState) {
+        try {
+            if (media == null || !on()) return false;
+            if (!renditions(media).isEmpty() || InstagramMedia.dashManifest(media) != null) return false;
+            if (StoryDownload.pictures(media).isEmpty()) return false;
+            MusicVideo.Music music = MusicVideo.music(media);
+            if (music == null) return false;
+            if (music.url == null) {
+                HookStatus.counted(FamilyNames.REEL_DOWNLOAD, NO_AUDIO_URL);
+                return false;
+            }
+            HookStatus.counted(FamilyNames.REEL_DOWNLOAD, HAS_MUSIC);
+            Object video = InstagramMedia.reelOption(VIDEO_OPTION);
+            Object photo = InstagramMedia.reelOption(PHOTO_OPTION);
+            if (video == null || photo == null) return false;
+            if (!InstagramMedia.addReelRow(menu, context, video, sheet, rowState, StoryDownload.label(StoryDownload.Choice.VIDEO))) {
+                return false;
+            }
+            try {
+                return InstagramMedia.addReelRow(menu, context, photo, sheet, rowState,
+                    StoryDownload.label(StoryDownload.Choice.PHOTO));
+            } catch (Throwable t) {
+                // Instagram's own Download row follows the video's then, and a tap on it saves the photo.
+                HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "reel menu photo row", t);
+                return false;
+            }
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "reel menu rows", t);
+            return false;
+        }
+    }
+
+    /** Whether [option], one the reel menu's handler was handed, is a row {@link #rows} added. Never throws. */
+    public static boolean ours(Object option) {
+        try {
+            return choice(option) != null;
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "reel menu option", t);
+            return false;
+        }
+    }
+
+    /** What a tap on [option] saves: the video or the photo for one of the two rows, else null. */
+    private static StoryDownload.Choice choice(Object option) {
+        if (!(option instanceof Enum)) return null;
+        String name = ((Enum<?>) option).name();
+        if (VIDEO_OPTION.equals(name)) return StoryDownload.Choice.VIDEO;
+        if (PHOTO_OPTION.equals(name)) return StoryDownload.Choice.PHOTO;
+        return null;
+    }
+
+    /**
+     * Saves the reel [media] when [option], its Download row or one {@link #rows} added, is tapped
+     * with the switch on, and answers whether it did, in which case Instagram's own handling is
+     * skipped. [activity] is the one the menu belongs to. A save that can't start says so. Never
+     * throws.
+     */
+    public static boolean save(Object option, Object media, Activity activity) {
+        // A row of ours is no option Instagram knows, so a tap on one never goes on to Instagram,
+        // even with the switch turned off while the menu was open.
+        boolean ours = false;
         try {
             HookStatus.invoked(FamilyNames.REEL_DOWNLOAD);
-            if (!on()) return false;
+            StoryDownload.Choice choice = choice(option);
+            ours = choice != null;
+            if (!on()) return ours;
             Context context = activity != null ? activity : Utils.getContext();
-            if (!saveReel(context, media)) {
+            boolean started = choice == StoryDownload.Choice.VIDEO ? saveAsVideo(context, media)
+                : choice == StoryDownload.Choice.PHOTO ? savePicture(context, StoryDownload.pictures(media), media)
+                : saveReel(context, media);
+            if (!started) {
                 Context application = context.getApplicationContext();
                 Feedback.show(application, L10n.t(application, "Download failed"), true);
             }
             return true;
         } catch (Throwable t) {
             // It runs inside Instagram's click dispatch, where a throw ends the app. Instagram's own
-            // download goes ahead instead.
+            // download goes ahead instead, for its own Download row.
             HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "reel menu", t);
-            return false;
+            return ours;
         }
     }
 
@@ -149,9 +237,38 @@ public final class ReelDownload {
                 () -> "reel download tapped: no video file and no manifest, " + sizes + " picture size(s)");
         if (sizes == 0) return false;
         HookStatus.counted(FamilyNames.REEL_DOWNLOAD, HAS_IMAGE_CANDIDATES);
+        return savePicture(context, pictures, media);
+    }
+
+    /** Starts the save of [pictures], the sizes of [media]'s picture, at the largest, and answers whether it started. */
+    private static boolean savePicture(Context context, List<MediaSave.Rendition> pictures, Object media) {
+        if (pictures.isEmpty()) return false;
         boolean started = MediaSave.savePhoto(context, pictures, details(media));
         if (started) HookStatus.counted(FamilyNames.REEL_DOWNLOAD, SAVED_AS_PHOTO);
         return started;
+    }
+
+    /**
+     * Starts building and saving a video of [media], a photo with music: its largest picture held
+     * for the part of the track the post plays, with that part as its sound. Answers whether it
+     * started.
+     */
+    static boolean saveAsVideo(Context context, Object media) {
+        MediaSave.Rendition picture = MusicVideo.picture(StoryDownload.pictures(media));
+        MusicVideo.Music music = MusicVideo.music(media);
+        Logger.diagnosticInfo(DiagnosticCategory.DOWNLOADS, SOURCE, () -> "reel download as video tapped: "
+            + (picture == null ? "no picture" : picture.toString()) + ", " + (music == null ? "no music" : music.toString()));
+        if (music == null || music.url == null) {
+            HookStatus.counted(FamilyNames.REEL_DOWNLOAD, NO_AUDIO_URL);
+            return false;
+        }
+        if (picture == null) return false;
+        Context application = context.getApplicationContext() != null ? context.getApplicationContext() : context;
+        Thread worker = MediaSave.start(application, true, details(media), (writer, progress) ->
+            MusicVideo.save(application, picture, music, writer, MediaSave.policyFor(application), MediaSave.cap(), progress));
+        if (worker == null) return false;
+        HookStatus.counted(FamilyNames.REEL_DOWNLOAD, SAVED_AS_VIDEO);
+        return true;
     }
 
     private static boolean on() {

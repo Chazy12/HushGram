@@ -130,6 +130,59 @@ internal fun BytecodePatchContext.storyMusicBridges(patch: String): () -> Unit {
     return bridgeWriter(patch, listOf(Bridge("storyImageWithMusic", MEDIA, virtual(photoWithMusic))))
 }
 
+/** A post's music, the track it comes from, and the part of the track the post plays. All keep their names. */
+internal const val MUSIC_INFO = "Lcom/instagram/api/schemas/MusicInfo;"
+internal const val PANDO_MUSIC_INFO = "Lcom/instagram/api/schemas/ImmutablePandoMusicInfo;"
+internal const val TRACK_DATA = "Lcom/instagram/api/schemas/TrackData;"
+internal const val PANDO_TRACK_DATA = "Lcom/instagram/api/schemas/ImmutablePandoTrackData;"
+internal const val MUSIC_CONSUMPTION = "Lcom/instagram/music/common/model/MusicConsumptionModel;"
+internal const val PANDO_MUSIC_CONSUMPTION = "Lcom/instagram/music/common/model/ImmutablePandoMusicConsumptionModel;"
+
+/**
+ * The same for a post's music (#71): where a photo post keeps it (`music_metadata`) or a reel does
+ * (`clips_metadata`), the track's addresses, and the part of the track the post plays. Each of
+ * the two metadata types is an interface of Instagram's whose one getter answering the music
+ * reads it, and the bridge calls that getter.
+ */
+internal fun BytecodePatchContext.musicBridges(patch: String): () -> Unit {
+    fun holder(field: String): Pair<Method, String> {
+        val key = field.hashCode()
+        val getters = classDefBy(MEDIA).methods.filter { method ->
+            method.parameterTypes.isEmpty() && method.returnType.startsWith("L") && !AccessFlags.STATIC.isSet(method.accessFlags) &&
+                method.implementation?.instructions?.any { it.loadsLiteral(key) } == true
+        }
+        val getter = getters.singleOrNull() ?: throw PatchException(
+            "$patch: expected one getter on $MEDIA answering an object for $field, found " +
+                if (getters.isEmpty()) "none" else getters.joinToString { it.name },
+        )
+        val music = anInterface(patch, getter.returnType).methods.filter {
+            it.parameterTypes.isEmpty() && it.returnType == MUSIC_INFO && !AccessFlags.STATIC.isSet(it.accessFlags)
+        }
+        val read = music.singleOrNull() ?: throw PatchException(
+            "$patch: expected one getter of the music on ${getter.returnType}, the type of $field, found ${music.size}",
+        )
+        return getter to "invoke-interface {p0}, ${getter.returnType}->${read.name}()$MUSIC_INFO"
+    }
+    val (metadata, metadataMusic) = holder("music_metadata")
+    val (clips, clipsMusic) = holder("clips_metadata")
+    fun music(field: String, returns: String) = throughInterface(patch, MUSIC_INFO, PANDO_MUSIC_INFO, field, returns)
+    fun track(field: String) = throughInterface(patch, TRACK_DATA, PANDO_TRACK_DATA, field, "Ljava/lang/String;")
+    fun part(field: String) = throughInterface(patch, MUSIC_CONSUMPTION, PANDO_MUSIC_CONSUMPTION, field, "Ljava/lang/Integer;")
+
+    return bridgeWriter(patch, listOf(
+        Bridge("musicMetadata", MEDIA, virtual(metadata)),
+        Bridge("metadataMusic", metadata.returnType, metadataMusic),
+        Bridge("clipsMetadata", MEDIA, virtual(clips)),
+        Bridge("clipsMusic", clips.returnType, clipsMusic),
+        Bridge("musicTrack", MUSIC_INFO, music("music_asset_info", TRACK_DATA)),
+        Bridge("musicConsumption", MUSIC_INFO, music("music_consumption_info", MUSIC_CONSUMPTION)),
+        Bridge("trackUrl", TRACK_DATA, track("progressive_download_url")),
+        Bridge("trackFastStartUrl", TRACK_DATA, track("fast_start_progressive_download_url")),
+        Bridge("musicStartMs", MUSIC_CONSUMPTION, part("audio_asset_start_time_in_ms")),
+        Bridge("musicLengthMs", MUSIC_CONSUMPTION, part("overlap_duration_in_ms")),
+    ))
+}
+
 private fun virtual(getter: Method) = "invoke-virtual {p0}, ${getter.definingClass}->${getter.name}()${getter.returnType}"
 
 /**
