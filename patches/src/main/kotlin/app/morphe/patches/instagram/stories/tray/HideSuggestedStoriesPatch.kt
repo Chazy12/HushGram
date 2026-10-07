@@ -44,11 +44,20 @@ internal const val TRAY_ITEM_INTF = "Lcom/instagram/model/reels/ReelResponseItem
 /** The reel types of suggested tray items, which StoriesTray drops: an account to follow, its story, and a creator's story. */
 internal val SUGGESTED_REELS = listOf("SUGGESTED_USER", "SUGGESTED_USER_REEL", "SUGGESTED_CREATOR_REEL")
 
+/**
+ * The reel types of the cards Instagram makes for the tray, which StoriesTray drops on their own
+ * switches: a rewind, then memories, your week, the year in review, follow anniversaries and birthdays.
+ */
+internal val MADE_REELS = listOf(
+    "HIGHLIGHT_REWIND_REEL", "MEMORY_REEL", "MY_WEEK_REEL", "END_OF_YEAR", "FOLLOW_VERSARIES", "BIRTHDAY_HIGHLIGHTS",
+)
+
 @Suppress("unused")
 val hideSuggestedStoriesPatch = bytecodePatch(
     name = "Hide suggested stories",
     description = "Removes the stories from accounts you don't follow, and the accounts Instagram suggests, from the " +
-        "row of stories at the top of Home. A second switch, off to start, takes the whole row away.",
+        "row of stories at the top of Home. More switches, off to start, take out rewinds, memories and recaps, or the " +
+        "whole row.",
 ) {
     category("Feed")
     dependsOn(settingsPatch, instagramExtensionPatch)
@@ -113,7 +122,8 @@ internal class TrayItemParse(val site: MethodSite, val moveResult: Int, val regi
  * Finds the one `unsafeParseFromJson` holding [TRAY_ITEMS], [TRAY_TOKEN] and [TRAY_REMAINING], and in
  * it the one read of an item between the [TRAY_ITEMS] key and the next key: a `parseFromJsonParser`
  * call on a parser whose items implement [TRAY_ITEM_INTF], its move-result-object, and a null test of
- * it, so a null item is skipped. Checks the item's reel type is an enum field the extension can read.
+ * it, so a null item is skipped. Checks the item's reel type is an enum field the extension can read,
+ * naming every kind a switch takes out.
  */
 internal fun BytecodePatchContext.findTrayItemParse(): TrayItemParse {
     val found = mutableListOf<Pair<String, Method>>()
@@ -150,7 +160,7 @@ internal fun BytecodePatchContext.findTrayItemParse(): TrayItemParse {
     }.distinct()
     val item = casts.singleOrNull { classDefByOrNull(it)?.interfaces?.contains(TRAY_ITEM_INTF) == true }
         ?: refuse("expected $parser to read one class implementing $TRAY_ITEM_INTF, found $casts")
-    requireOneKindField(PATCH, item, SUGGESTED_REELS)
+    requireOneKindField(PATCH, item, SUGGESTED_REELS + MADE_REELS)
     return TrayItemParse(MethodSite(type, method.name, method.parameterTypes.map(CharSequence::toString)), read + 1, register)
 }
 

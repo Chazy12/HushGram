@@ -577,6 +577,12 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             stories.add(toggle(context, Settings.HIDE_SUGGESTED_STORIES, L10n.t("Hide suggested stories"),
                     L10n.t("Stories in the row at the top of Home from accounts you don't follow, and the accounts "
                             + "Instagram suggests there. Stories from accounts you follow stay.")));
+            stories.add(toggle(context, Settings.HIDE_STORY_REWINDS, L10n.t("Hide story rewinds"),
+                    L10n.t("Takes the rewind cards, which bring back old highlights, out of the row of stories at the "
+                            + "top of Home.")));
+            stories.add(toggle(context, Settings.HIDE_STORY_RECAPS, L10n.t("Hide memories and recaps"),
+                    L10n.t("Takes the memories, recaps, follow anniversaries and birthday cards Instagram makes out "
+                            + "of the row of stories at the top of Home. Stories people post stay.")));
             stories.add(toggle(context, Settings.HIDE_STORIES_TRAY, L10n.t("Hide the Stories tray"),
                     L10n.t("Takes the whole row of stories off the top of Home, Your story included. Stories still "
                             + "open from a profile or a message.")));

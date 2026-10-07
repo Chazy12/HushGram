@@ -96,6 +96,15 @@ class HideSuggestedStoriesHookTest {
         assertThrows(PatchException::class.java) { context.findTrayItemParse() }
     }
 
+    /** A reel type without a rewind or a recap kind a switch takes out fails too: that switch would do nothing. */
+    @Test
+    fun anItemWithoutARewindOrRecapTypeFailsThePatch() {
+        for (gone in MADE_REELS) {
+            val context = PatchContexts.of(trayClasses(reelTypes = listOf("USER_REEL") + SUGGESTED_REELS + (MADE_REELS - gone)))
+            assertThrows(gone, PatchException::class.java) { context.findTrayItemParse() }
+        }
+    }
+
     @Test
     fun anItemNotATrayItemFailsThePatch() {
         val context = PatchContexts.of(trayClasses(itemInterface = "Lfixture/SomethingElse;"))
@@ -223,7 +232,7 @@ class HideSuggestedStoriesHookTest {
          */
         fun trayClasses(
             tested: Boolean = true,
-            reelTypes: List<String> = listOf("USER_REEL") + SUGGESTED_REELS,
+            reelTypes: List<String> = listOf("USER_REEL") + SUGGESTED_REELS + MADE_REELS,
             itemInterface: String = TRAY_ITEM_INTF,
         ): List<ClassDef> {
             val tray = listOfNotNull<Instruction>(

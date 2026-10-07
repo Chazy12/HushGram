@@ -272,6 +272,17 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting HIDE_SUGGESTED_STORIES =
             new BooleanSetting("hushgram_hide_suggested_stories", TRUE);
 
+    /** Rewind cards in the stories tray at the top of Home, which bring back old highlights. Off to start. */
+    public static final BooleanSetting HIDE_STORY_REWINDS =
+            new BooleanSetting("hushgram_hide_story_rewinds", FALSE);
+
+    /**
+     * The memories, recaps, follow anniversaries and birthday cards Instagram makes for the stories
+     * tray at the top of Home. Off to start.
+     */
+    public static final BooleanSetting HIDE_STORY_RECAPS =
+            new BooleanSetting("hushgram_hide_story_recaps", FALSE);
+
     /** The whole row of stories at the top of Home, Your story included. Off until you turn it on. */
     public static final BooleanSetting HIDE_STORIES_TRAY =
             new BooleanSetting("hushgram_hide_stories_tray", FALSE);
