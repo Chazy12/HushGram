@@ -7,12 +7,15 @@ package app.morphe.patches.instagram.share
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
+import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesHolding
 import app.morphe.patches.instagram.misc.extension.enableStatus
+import app.morphe.patches.instagram.misc.extension.freeLocalsAt
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
 import app.morphe.patches.instagram.misc.extension.localRegisterCount
 import app.morphe.patches.instagram.misc.extension.requireStatusMethod
@@ -25,8 +28,10 @@ import app.morphe.util.ControlFlow
 import app.morphe.util.RegisterLiveness
 import app.morphe.util.getFreeRegisterProvider
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.readsAfter
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
@@ -38,6 +43,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import java.util.BitSet
 
 private const val PATCH = "Hide the Repost button"
 internal const val HIDE_REPOSTS = "$EXTENSION_PACKAGE/share/RepostButton;->hide()Z"
@@ -45,6 +51,15 @@ internal const val REPOSTS_ELIGIBLE = "$EXTENSION_PACKAGE/share/RepostButton;->e
 internal const val REPOSTS_FEED_UFI = "$EXTENSION_PACKAGE/share/RepostButton;->feedUfi(Landroid/view/View;Landroid/view/View;)V"
 internal const val REPOSTS_FEED_COMPONENT = "$EXTENSION_PACKAGE/share/RepostButton;->feedComponent()Z"
 internal const val REPOSTS_FEED_RESTORE = "$EXTENSION_PACKAGE/share/RepostButton;->restoreFeedUfi(Landroid/view/View;Landroid/view/View;)V"
+internal const val REPOSTS_FEED_STATE = "$EXTENSION_PACKAGE/share/RepostButton;->feedState(I)Z"
+
+/**
+ * The labels Feed's action-row state prints its Repost flags under in its toString: whether the
+ * button shows, whether its count does, and whether it animates.
+ */
+internal const val REPOST_ENABLED_LABEL = ", isRepostButtonEnabled="
+internal const val REPOST_COUNT_LABEL = ", shouldShowRepostCount="
+internal const val REPOST_ANIMATE_LABEL = ", shouldAnimateRepostButton="
 
 /** The post model, a kept name. */
 internal const val MEDIA = "Lcom/instagram/feed/media/Media;"
@@ -58,6 +73,8 @@ internal const val REPOSTS_FIELD = "enable_media_notes_production"
 internal val REPOSTS_HASH = REPOSTS_FIELD.hashCode()
 
 private const val BOOLEAN = "Ljava/lang/Boolean;"
+private const val STRING_BUILDER = "Ljava/lang/StringBuilder;"
+private val OBJECT_MOVES = setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)
 private const val BOUNCY_UFI_BUTTON = "Lcom/instagram/ui/widget/bouncyufibutton/IgBouncyUfiButtonImageView;"
 private const val UFI_COUNT = "Lcom/instagram/common/ui/base/IgTextView;"
 
@@ -86,11 +103,14 @@ val hideRepostButtonPatch = bytecodePatch(
 
     execute {
         requireStatusMethod("repostButton")
+        // Proved before anything changes: it reads the state's own constructor as Instagram wrote it.
+        val feedState = findFeedRepostState()
         val sites = findRepostSites()
         guardRepostGetter(sites.getter)
         sites.reads.groupBy { Triple(it.type, it.name, it.parameters) }.values.forEach(::filterRepostReads)
         hideFeedUfi(findFeedUfiSite())
         hideFeedComponent(findFeedRepostComponent())
+        hideFeedState(feedState)
         enableStatus("repostButton")
     }
 }
@@ -274,6 +294,230 @@ internal fun BytecodePatchContext.hideFeedComponent(found: FeedRepostComponent) 
         """,
         ExternalLabel("draw", method.getInstruction(found.at)),
     )
+}
+
+/**
+ * One write of a Repost flag in a constructor of Feed's action-row state: `iput-boolean` of [value]
+ * into [holder]'s [field] at [at], and the register the hook's answer goes into. That's [value]
+ * itself when nothing reads it after the write, and otherwise a spare one the write then stores.
+ */
+internal class FeedStateWrite(
+    val parameters: List<String>,
+    val at: Int,
+    val value: Int,
+    val holder: Int,
+    val field: FieldReference,
+    val answer: Int,
+)
+
+/** Feed's action-row state, the Repost flags it keeps, and every constructor write of them. */
+internal class FeedRepostState(val type: String, val flags: List<FieldReference>, val writes: List<FeedStateWrite>)
+
+/**
+ * Feed draws each post's action row from an immutable state, and its toString prints
+ * [REPOST_ENABLED_LABEL] followed by whether the row shows the Repost button. That flag is the
+ * boolean field of the state's own class that toString loads from itself and appends right after
+ * the label. It's final, so only the state's constructors set it, and [hideFeedState] passes every
+ * one of those writes through [REPOSTS_FEED_STATE]. The row is drawn again from the same state, so
+ * a button hidden only after a draw can come back on the next one (#69).
+ *
+ * The flags printed under [REPOST_COUNT_LABEL] and [REPOST_ANIMATE_LABEL] go the same way when each
+ * is a final field of the state's own that its constructor sets once. On 450 the count is one, and
+ * the animation is printed from a constant, so it's left out.
+ *
+ * Fails before any change when no class prints the label or more than one does, when what follows
+ * the label isn't such a flag, when a method other than a constructor sets it, or when a write has
+ * no register for the answer.
+ */
+internal fun BytecodePatchContext.findFeedRepostState(): FeedRepostState {
+    val states = classesHolding(REPOST_ENABLED_LABEL).filter { classDef ->
+        classDef.methods.any { it.isToString() && it.holdsString(REPOST_ENABLED_LABEL) }
+    }
+    val state = states.singleOrNull()
+        ?: refuse("expected one Feed action-row state printing \"$REPOST_ENABLED_LABEL\", found ${states.size}")
+    val toString = state.methods.single { it.isToString() }
+    val enabled = toString.printedFlag(state.type, REPOST_ENABLED_LABEL)
+    val writes = state.flagWrites(enabled).toMutableList()
+    if (writes.isEmpty()) refuse("${state.type}'s constructor never sets what it prints as \"$REPOST_ENABLED_LABEL\"")
+    val flags = mutableListOf(enabled)
+    for (label in listOf(REPOST_COUNT_LABEL, REPOST_ANIMATE_LABEL)) {
+        if (!toString.holdsString(label)) continue
+        // A flag printed some other way, or set anywhere but once in a constructor, is left alone.
+        val flag = try { toString.printedFlag(state.type, label) } catch (_: PatchException) { continue }
+        val set = try { state.flagWrites(flag) } catch (_: PatchException) { continue }
+        if (set.size == 1 && flags.none { it.sameAs(flag) }) {
+            flags += flag
+            writes += set
+        }
+    }
+    return FeedRepostState(state.type, flags, writes)
+}
+
+/**
+ * Right before each constructor write of a Repost flag, passes the value through
+ * [REPOSTS_FEED_STATE], so a state built while the switch is on keeps the button and its count off
+ * however often Feed draws the row from it. A label on the write moves onto the call, so a branch
+ * to the write runs the call too.
+ */
+internal fun BytecodePatchContext.hideFeedState(found: FeedRepostState) {
+    val state = mutableClassDefBy(found.type)
+    val constructors = found.writes.groupBy { it.parameters }.map { (parameters, writes) ->
+        state.methods.single { it.name == "<init>" && it.parameterTypes.map(CharSequence::toString) == parameters } to writes
+    }
+    // Every write is checked before the first changes.
+    for ((constructor, writes) in constructors) for (write in writes) {
+        val store = constructor.getInstruction(write.at)
+        val field = (store as? ReferenceInstruction)?.reference as? FieldReference
+        if (store.opcode != Opcode.IPUT_BOOLEAN || field == null || !field.sameAs(write.field) ||
+            (store as TwoRegisterInstruction).registerA != write.value
+        ) refuse("${found.type}'s constructor changed at instruction ${write.at} before its Repost flags were hooked")
+    }
+    for ((constructor, writes) in constructors) for (write in writes.sortedByDescending { it.at }) {
+        constructor.addInstructionsAtControlFlowLabel(
+            write.at,
+            """
+                invoke-static { v${write.value} }, $REPOSTS_FEED_STATE
+                move-result v${write.answer}
+            """,
+        )
+        if (write.answer != write.value) {
+            constructor.replaceInstruction(write.at + 2, "iput-boolean v${write.answer}, v${write.holder}, ${write.field}")
+        }
+    }
+}
+
+private fun Method.isToString() = name == "toString" && parameterTypes.isEmpty() &&
+    returnType == "Ljava/lang/String;" && !AccessFlags.STATIC.isSet(accessFlags)
+
+private fun FieldReference.sameAs(other: FieldReference) =
+    definingClass == other.definingClass && name == other.name && type == other.type
+
+/**
+ * The flag this toString prints under [label]: the boolean field of [type] it loads from itself
+ * and appends right after appending the label. Refuses, saying what it found instead.
+ */
+private fun Method.printedFlag(type: String, label: String): FieldReference {
+    val code = implementation!!.instructions.toList()
+    val loads = code.indices.filter { code[it].loadsString(label) }
+    val load = loads.singleOrNull() ?: refuse("$type->toString loads \"$label\" ${loads.size} times")
+    var at = load + 1
+    if (code.getOrNull(at)?.appended("Ljava/lang/String;") != (code[load] as OneRegisterInstruction).registerA) {
+        refuse("$type->toString doesn't append \"$label\" right after loading it")
+    }
+    at++
+    if (code.getOrNull(at)?.opcode == Opcode.MOVE_RESULT_OBJECT) at++
+    val value = code.getOrNull(at)?.appended("Z")
+        ?: refuse("$type->toString prints something other than a boolean after \"$label\"")
+    val flow = ControlFlow.of(this)
+    val loaded = flow.writersReaching(at, value)
+    val reading = loaded.singleOrNull()?.takeIf { it >= 0 }
+        ?: refuse("$type->toString prints \"$label\" from a value it doesn't load in one place")
+    val read = code[reading]
+    val field = (read as? ReferenceInstruction)?.reference as? FieldReference
+    if (read.opcode != Opcode.IGET_BOOLEAN || field == null || field.definingClass != type) {
+        refuse("$type->toString prints \"$label\" from something other than a boolean field of its own")
+    }
+    if (!flow.holdsThis(reading, (read as TwoRegisterInstruction).registerB, localRegisterCount())) {
+        refuse("$type->toString prints \"$label\" from an object other than itself")
+    }
+    return field
+}
+
+/**
+ * Each write of [flag] in this class, which has to be a final boolean field of its own, so set only
+ * by its constructors. Refuses when it isn't, when another method sets it all the same, or when a
+ * write has no register for the hook's answer.
+ */
+private fun ClassDef.flagWrites(flag: FieldReference): List<FeedStateWrite> {
+    val declared = fields.singleOrNull { it.name == flag.name && it.type == flag.type }
+    if (flag.definingClass != type || flag.type != "Z" || declared == null ||
+        AccessFlags.STATIC.isSet(declared.accessFlags) || !AccessFlags.FINAL.isSet(declared.accessFlags)
+    ) refuse("$type's ${flag.name} isn't a final boolean field of its own")
+    val writes = mutableListOf<FeedStateWrite>()
+    for (method in methods) {
+        val code = method.implementation?.instructions?.toList() ?: continue
+        for ((at, instruction) in code.withIndex()) {
+            if (instruction.opcode != Opcode.IPUT_BOOLEAN) continue
+            val field = (instruction as ReferenceInstruction).reference as FieldReference
+            if (!field.sameAs(flag)) continue
+            if (method.name != "<init>") refuse("$type->${method.name} sets ${flag.name}, which only its constructor should")
+            val store = instruction as TwoRegisterInstruction
+            // The value's register takes the answer when nothing reads it afterwards, handlers included.
+            val answer = if (method.readsAfter(at, store.registerA).isEmpty()) store.registerA
+                else method.freeLocalsAt(PATCH, at, 1).single()
+            writes += FeedStateWrite(
+                method.parameterTypes.map(CharSequence::toString), at, store.registerA, store.registerB, field, answer,
+            )
+        }
+    }
+    return writes
+}
+
+private fun Instruction.loadsString(value: String) =
+    (opcode == Opcode.CONST_STRING || opcode == Opcode.CONST_STRING_JUMBO) &&
+        ((this as ReferenceInstruction).reference as StringReference).string == value
+
+/** The register this hands to `StringBuilder.append([parameter])`, or null when it's no such call. */
+private fun Instruction.appended(parameter: String): Int? {
+    if (opcode != Opcode.INVOKE_VIRTUAL && opcode != Opcode.INVOKE_VIRTUAL_RANGE) return null
+    val called = (this as ReferenceInstruction).reference as MethodReference
+    if (called.definingClass != STRING_BUILDER || called.name != "append" ||
+        called.parameterTypes.map(CharSequence::toString) != listOf(parameter)
+    ) return null
+    return when (this) {
+        is FiveRegisterInstruction -> registerD
+        is RegisterRangeInstruction -> startRegister + 1
+        else -> null
+    }
+}
+
+private fun Instruction.writes(register: Int): Boolean {
+    if (!opcode.setsRegister()) return false
+    val destination = (this as? OneRegisterInstruction)?.registerA ?: return false
+    return destination == register || (opcode.setsWideRegister() && destination + 1 == register)
+}
+
+/**
+ * Every instruction whose write to [register] can be what instruction [at] reads, -1 standing for
+ * what the register held when the method was called. Walks back along every path, branches,
+ * switches and handlers included, to the nearest write. A handler sees the register as it was
+ * before the instruction that threw, so that instruction's own write is walked past.
+ */
+private fun ControlFlow.writersReaching(at: Int, register: Int): Set<Int> {
+    val normalFrom = Array(instructions.size) { mutableListOf<Int>() }
+    val thrownFrom = Array(instructions.size) { mutableListOf<Int>() }
+    for (from in instructions.indices) {
+        normal[from].forEach { normalFrom[it] += from }
+        exceptional[from].forEach { thrownFrom[it] += from }
+    }
+    val writers = sortedSetOf<Int>()
+    val seen = BitSet()
+    val pending = ArrayDeque<Int>()
+    // Each pending instruction is one whose register before it runs is wanted.
+    fun before(index: Int) {
+        if (!seen[index]) { seen.set(index); pending += index }
+    }
+    before(at)
+    while (pending.isNotEmpty()) {
+        val index = pending.removeFirst()
+        if (index == 0) writers += -1
+        normalFrom[index].forEach { from -> if (instructions[from].writes(register)) writers += from else before(from) }
+        thrownFrom[index].forEach(::before)
+    }
+    return writers
+}
+
+/**
+ * Whether [register] holds `this`, which the method keeps in [self], when instruction [at] runs:
+ * [self] untouched since the method started, or a copy made of it.
+ */
+private fun ControlFlow.holdsThis(at: Int, register: Int, self: Int, depth: Int = 0): Boolean {
+    val writers = writersReaching(at, register)
+    if (writers == setOf(-1)) return register == self
+    val copy = writers.singleOrNull()?.takeIf { it >= 0 } ?: return false
+    val move = instructions[copy]
+    return depth < 4 && move.opcode in OBJECT_MOVES &&
+        holdsThis(copy, (move as TwoRegisterInstruction).registerB, self, depth + 1)
 }
 
 private fun Method.holdsString(value: String) = implementation?.instructions?.any {

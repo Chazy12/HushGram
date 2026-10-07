@@ -46,7 +46,7 @@ import org.junit.Test
 class HideRepostButtonHookTest {
     @Test
     fun theHooksAreInTheExtension() {
-        for (hook in listOf(HIDE_REPOSTS, REPOSTS_ELIGIBLE, REPOSTS_FEED_UFI, REPOSTS_FEED_COMPONENT, REPOSTS_FEED_RESTORE)) {
+        for (hook in listOf(HIDE_REPOSTS, REPOSTS_ELIGIBLE, REPOSTS_FEED_UFI, REPOSTS_FEED_COMPONENT, REPOSTS_FEED_RESTORE, REPOSTS_FEED_STATE)) {
             val declared = ExtensionDex.classDef(hook.substringBefore("->")).methods
                 .filter { AccessFlags.PUBLIC.isSet(it.accessFlags) && AccessFlags.STATIC.isSet(it.accessFlags) }
                 .map { "${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" }

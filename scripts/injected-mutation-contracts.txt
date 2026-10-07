@@ -706,6 +706,11 @@ start-call Lapp/hushgram/extension/instagram/share/RepostButton;->hide()Z in ins
 once-call Lapp/hushgram/extension/instagram/share/RepostButton;->hide()Z in instance ()Ljava/lang/Boolean; holding enable_media_notes_production
 shared-call Lapp/hushgram/extension/instagram/share/RepostButton;->eligible(Ljava/lang/Boolean;)Ljava/lang/Boolean; holding MediaUfiUseCase#getUiState
 shared-call Lapp/hushgram/extension/instagram/share/RepostButton;->eligible(Ljava/lang/Boolean;)Ljava/lang/Boolean; holding android_purge_26_q3_ClipsCommentButtonUseCase_isEligibleForRepostsProduction
+# Feed draws each post's action row from an immutable state that keeps its own flags for the
+# Repost button and its count, and its constructor passes both through feedState right before it
+# stores them. No rule: every kind above holds a callee to one call in its method, and this one is
+# called twice there. HideRepostFeedStateTest checks on the 450 fixture that both land right before
+# their write, with the answer going back into the register the write stores.
 # Remove the empty space at the bottom passes the navigation bar height Instagram's window insets
 # listener guesses, when the phone reports none, through BottomSpace.navigationBarHeight right after
 # the listener reads it (00OO.Exr on 449, the one method loading both strings below). Left out, the
