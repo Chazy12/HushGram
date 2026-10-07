@@ -50,7 +50,7 @@ class ResumeLongVideosHookTest {
             "position(Ljava/lang/Object;)I", "duration(Ljava/lang/Object;)I",
             "videoSource(Ljava/lang/Object;)Ljava/lang/Object;", "videoId(Ljava/lang/Object;)Ljava/lang/String;",
             "productType(Ljava/lang/Object;)Ljava/lang/Object;", "sponsored(Ljava/lang/Object;)Z",
-            "seekPlayer(Ljava/lang/Object;IZZ)Z",
+            "seekPlayer(Ljava/lang/Object;IZZ)Z", "accountId(Ljava/lang/Object;)Ljava/lang/String;",
         )
         for (member in hooks.map { it.substringAfter("->") } + stubs) {
             assertTrue("$member is not in the extension: $declared", member in declared)
@@ -95,6 +95,7 @@ class ResumeLongVideosHookTest {
         assertEquals(listOf(source, "$source->A0A:$PRODUCT_TYPE"), stub("productType"))
         assertEquals(listOf(source, "$source->A0e:Z"), stub("sponsored"))
         assertEquals(listOf(player, "$player->A0X(IZZ)V"), stub("seekPlayer"))
+        assertEquals(listOf(player, "$player->A0t:$RESUME_SESSION", "$RESUME_SESSION->userId:$string"), stub("accountId"))
     }
 
     @Test
@@ -110,6 +111,16 @@ class ResumeLongVideosHookTest {
     @Test
     fun aSecondWayToTheVideoFailsBeforeAnythingChanges() {
         assertFailsUntouched(classes(secondPath = true), "one way from $player")
+    }
+
+    @Test
+    fun aPlayerWithTwoSessionsFailsBeforeAnythingChanges() {
+        assertFailsUntouched(classes(secondSession = true), "one $RESUME_SESSION field")
+    }
+
+    @Test
+    fun aSessionWithoutAUserIdFailsBeforeAnythingChanges() {
+        assertFailsUntouched(classes(userId = false), "has no userId")
     }
 
     @Test
@@ -142,6 +153,8 @@ class ResumeLongVideosHookTest {
                 assertEquals("${bundle.name}: the source is the holder's", found.holder.type, found.source.definingClass)
                 assertEquals("${bundle.name}: the product type", PRODUCT_TYPE, found.productType.type)
                 assertTrue("${bundle.name}: the position and length readers differ", found.position != found.length)
+                assertEquals("${bundle.name}: the player's session", found.player.type, found.session.definingClass)
+                assertEquals("${bundle.name}: the session's user ID", "$RESUME_SESSION->userId:$string", found.userId.toString())
 
                 context.resumeLongVideos()
 
@@ -187,6 +200,8 @@ class ResumeLongVideosHookTest {
         privateSponsored: Boolean = false,
         secondPath: Boolean = false,
         seekPauses: Boolean = true,
+        secondSession: Boolean = false,
+        userId: Boolean = true,
     ): List<ClassDef> {
         val open = AccessFlags.PUBLIC.value
         val videoPlayer = classDef(
@@ -244,6 +259,16 @@ class ResumeLongVideosHookTest {
             listOfNotNull(
                 ImmutableField(player, "A0K", holder, open, null, null, null),
                 if (secondPath) ImmutableField(player, "A0L", holder, open, null, null, null) else null,
+                ImmutableField(player, "A0t", RESUME_SESSION, open or AccessFlags.FINAL.value, null, null, null),
+                if (secondSession) ImmutableField(player, "A0u", RESUME_SESSION, open, null, null, null) else null,
+            ),
+        )
+        val session = classDef(
+            RESUME_SESSION,
+            emptyList(),
+            listOfNotNull(
+                if (userId) ImmutableField(RESUME_SESSION, "userId", string, open or AccessFlags.FINAL.value, null, null, null) else null,
+                ImmutableField(RESUME_SESSION, "token", string, open or AccessFlags.FINAL.value, null, null, null),
             ),
         )
         val playerVideo = classDef(holder, emptyList(), listOf(ImmutableField(holder, "A0A", source, open, null, null, null)))
@@ -274,7 +299,7 @@ class ResumeLongVideosHookTest {
                 """),
             ),
         )
-        return listOf(videoPlayer, playerVideo, videoSource, sourceLogger, ExtensionDex.classDef(RESUME_PLAYBACK))
+        return listOf(videoPlayer, playerVideo, videoSource, sourceLogger, session, ExtensionDex.classDef(RESUME_PLAYBACK))
     }
 
     /** A media ID reader: the player's field, its IgVideoSource, the ID, each checked for null. */

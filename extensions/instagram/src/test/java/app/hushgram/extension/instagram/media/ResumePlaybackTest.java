@@ -423,7 +423,8 @@ public class ResumePlaybackTest {
         ResumePlayback.access = new ResumePlayback.Player() {
             @Override public int position(Object p) { throw new IllegalArgumentException("position"); }
             @Override public int duration(Object p) { return 40 * MINUTE; }
-            @Override public ResumePlayback.Facts facts(Object p) { return ResumePlayback.factsOf("111111111", null, false); }
+            @Override public ResumePlayback.Facts facts(Object p) { return ResumePlayback.factsOf(
+                    ResumePlayback.ownedKey(ResumePlaybackForTests.ACCOUNT, "111111111"), null, false); }
             @Override public boolean seek(Object p, int ms) { throw new IllegalArgumentException("seek"); }
         };
         Player player = new Player(video);
@@ -606,5 +607,58 @@ public class ResumePlaybackTest {
         assertEquals("12:34", ResumePlayback.clock(754_000));
         assertEquals("125:09", ResumePlayback.clock(125 * MINUTE + 9_999));
         assertEquals("0:00", ResumePlayback.clock(-5));
+    }
+
+    @Test
+    public void eachAccountKeepsItsOwnPointForTheSameVideo() {
+        Video video = longVideo("3712345678901234567");
+        leftAt(video, 5 * MINUTE);
+        Player elsewhere = new Player(video);
+        elsewhere.account = "17841400000000002";
+        elsewhere.position = 9 * MINUTE;
+        ResumePlayback.stopped(elsewhere, "scroll");
+
+        assertEquals(Collections.singletonList(5 * MINUTE), opened(video).seeks);
+        Player other = new Player(video);
+        other.account = "17841400000000002";
+        assertEquals(Collections.singletonList(9 * MINUTE), openedWith(other).seeks);
+        Player third = new Player(video);
+        third.account = "17841400000000003";
+        assertEquals("another account's point moved it", Collections.emptyList(), openedWith(third).seeks);
+
+        // The file holds a hash of each account, never its ID.
+        Map<String, ?> saved = RuntimeEnvironment.getApplication()
+                .getSharedPreferences(ResumePoints.FILE, Context.MODE_PRIVATE).getAll();
+        assertEquals(2, saved.size());
+        for (String key : saved.keySet()) {
+            assertTrue(key, key.endsWith("/3712345678901234567"));
+            assertFalse(key, key.contains("17841400000000"));
+        }
+    }
+
+    @Test
+    public void aPlayerWithoutAnAccountSavesAndResumesNothing() {
+        Video video = longVideo("111111111");
+        leftAt(video, 10 * MINUTE);
+        Player unknown = new Player(video);
+        unknown.account = null;
+        unknown.position = 20 * MINUTE;
+        ResumePlayback.stopped(unknown, "scroll");
+        Player again = new Player(video);
+        again.account = null;
+        assertEquals(Collections.emptyList(), openedWith(again).seeks);
+        assertEquals("the known account's point", Collections.singletonList(600_000), opened(video).seeks);
+    }
+
+    @Test
+    public void pointsFromBeforeAccountsAreDeleted() {
+        android.content.SharedPreferences unowned = RuntimeEnvironment.getApplication()
+                .getSharedPreferences(ResumePoints.UNOWNED_FILE, Context.MODE_PRIVATE);
+        unowned.edit().putString("111111111", ResumePoints.encode(600_000, System.currentTimeMillis())).commit();
+        ResumePlaybackForTests.install();
+
+        assertEquals("an unowned point moved it", Collections.emptyList(), opened(longVideo("111111111")).seeks);
+        assertTrue(RuntimeEnvironment.getApplication().getSharedPreferences(ResumePoints.UNOWNED_FILE, Context.MODE_PRIVATE)
+                .getAll().isEmpty());
     }
 }

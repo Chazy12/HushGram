@@ -145,7 +145,7 @@ public final class ResumePlayback {
             Object source = videoSource(player);
             if (source == NOT_PATCHED) return Facts.NOT_PATCHED;
             if (source == null) return null;
-            return factsOf(videoId(source), productType(source), sponsored(source));
+            return factsOf(ownedKey(accountId(player), videoId(source)), productType(source), sponsored(source));
         }
 
         @Override
@@ -267,6 +267,16 @@ public final class ResumePlayback {
     @Nullable
     public static Object videoSource(Object player) {
         return NOT_PATCHED;
+    }
+
+    /**
+     * Filled in by the patch: the user ID of the account [player] was made for, read from the
+     * player's own UserSession, or null. Only a player may be passed. The ID goes no further than
+     * {@link #ownedKey}, which hashes it.
+     */
+    @Nullable
+    public static String accountId(Object player) {
+        return null;
     }
 
     /** Filled in by the patch: the media id an IgVideoSource plays. */
@@ -533,6 +543,18 @@ public final class ResumePlayback {
     // ------------------------------------------------------------------ the video
 
     /**
+     * The saved points' key for [videoId] played by the account with [userId], or null when either
+     * is missing. A video whose account isn't known is neither saved nor resumed. Each player carries
+     * its own session, and a delayed resume checks the key again before it seeks, so one account's
+     * point can't reach another account's player.
+     */
+    @Nullable
+    static String ownedKey(@Nullable String userId, @Nullable String videoId) {
+        if (userId == null || userId.isEmpty() || videoId == null || videoId.isEmpty()) return null;
+        return ResumePoints.key(userId, videoId);
+    }
+
+    /**
      * What the rule reads of a video with [videoId], Instagram's ProductType constant [productType]
      * and its sponsored flag, or null when it has no ID. The type is read by the constant's name.
      */
@@ -548,6 +570,7 @@ public final class ResumePlayback {
         /** What {@link Player#facts} answers until the patch fills its bridges in. */
         static final Facts NOT_PATCHED = new Facts("", false, false);
 
+        /** The video's key in the saved points: its account's part and its media ID ({@link #ownedKey}). */
         final String videoId;
         final boolean live;
         final boolean ad;
@@ -598,6 +621,8 @@ public final class ResumePlayback {
             if (points == null) {
                 Context context = Utils.getContext();
                 if (context == null || !Utils.isMainProcess()) return null;
+                // Points from before they had an account could be anyone's, so they go.
+                context.deleteSharedPreferences(ResumePoints.UNOWNED_FILE);
                 points = new ResumePoints(context.getSharedPreferences(ResumePoints.FILE, Context.MODE_PRIVATE));
             }
             return points;

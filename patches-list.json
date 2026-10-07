@@ -1785,7 +1785,7 @@
     },
     {
       "name": "Resume long videos",
-      "description": "A video or reel longer than two minutes that you left partway picks up where you left it the next time it plays. Live videos and ads start as usual. Its switch starts off.",
+      "description": "A video or reel longer than two minutes that you left partway picks up where you left it the next time it plays on the same account. Live videos and ads start as usual. Its switch starts off.",
       "category": "Interface",
       "use": true,
       "dependencies": [

@@ -33,6 +33,9 @@ public final class ResumePlaybackForTests {
     }
 
     /** Stands in for IgVideoPlayerImpl. */
+    /** The user ID of the account every test player was made for, unless a test says otherwise. */
+    public static final String ACCOUNT = "17841400000000001";
+
     public static final class Player {
         public Video video;
         public int position;
@@ -42,6 +45,8 @@ public final class ResumePlaybackForTests {
         public final List<Integer> seeks = new ArrayList<>();
         /** Runs inside a seek, after the seek has told its hook. */
         public Runnable duringSeek;
+        /** The user ID of the account it was made for, as its UserSession holds it. */
+        public String account = ACCOUNT;
 
         public Player(Video video) {
             this.video = video;
@@ -67,8 +72,10 @@ public final class ResumePlaybackForTests {
 
         @Override
         public ResumePlayback.Facts facts(Object player) {
-            Video video = ((Player) player).video;
-            return video == null ? null : ResumePlayback.factsOf(video.id, video.product, video.sponsored);
+            Player playing = (Player) player;
+            Video video = playing.video;
+            return video == null ? null
+                    : ResumePlayback.factsOf(ResumePlayback.ownedKey(playing.account, video.id), video.product, video.sponsored);
         }
 
         @Override

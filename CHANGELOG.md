@@ -6,6 +6,8 @@ Every HushGram release, newest first.
 
 * **Instagram:** Turn off double tap to like has an On comments switch under it, off to start. With it on, a double tap on a comment doesn't like it.
 
+* **Instagram:** Resume long videos keeps each signed-in account's places apart, so a video another account on the phone left partway starts at the beginning for you. Places saved before this update are cleared once, since they don't say which account they belong to.
+
 * **Instagram:** New patch, Hide comments, in simple mode with its switch off. Turn it on under Comments and the Comment button and comment count come off the posts in your feed.
 
 * **Instagram:** Stop loading stories, a new switch under Stories that starts off. With it on, nothing in the row of stories at the top of Home loads, your own story included, which saves data. A story ring on a profile or in a chat still opens its stories.

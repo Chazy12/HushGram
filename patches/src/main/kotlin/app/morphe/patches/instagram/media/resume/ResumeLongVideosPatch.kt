@@ -60,6 +60,10 @@ internal val SOURCE_DUMP = listOf(MEDIA_ID, PRODUCT_TYPE_LABEL, IS_SPONSORED)
 /** Instagram's product type, which Redex leaves under its own name. */
 internal const val PRODUCT_TYPE = "Lcom/instagram/model/mediatype/ProductType;"
 
+/** The signed-in account's session, a kept name, and its user ID field, kept too. */
+internal const val RESUME_SESSION = "Lcom/instagram/common/session/UserSession;"
+internal const val RESUME_USER_ID = "userId"
+
 /** The position reader answers 0 past a day, so it holds this literal and the length reader doesn't. */
 private const val DAY_MS = 86_400_000
 private const val STRING = "Ljava/lang/String;"
@@ -81,7 +85,7 @@ private const val OBJECT = "Ljava/lang/Object;"
 val resumeLongVideosPatch = bytecodePatch(
     name = "Resume long videos",
     description = "A video or reel longer than two minutes that you left partway picks up where you left it the next " +
-        "time it plays. Live videos and ads start as usual. Its switch starts off.",
+        "time it plays on the same account. Live videos and ads start as usual. Its switch starts off.",
     default = true,
 ) {
     category("Interface")
@@ -114,6 +118,9 @@ internal class ResumePlayer(
     val mediaId: FieldReference,
     val productType: FieldReference,
     val sponsored: FieldReference,
+    /** The account the player was made for: its UserSession field, and that session's user ID. */
+    val session: FieldReference,
+    val userId: FieldReference,
 )
 
 internal fun BytecodePatchContext.resumeLongVideos() {
@@ -203,10 +210,20 @@ internal fun BytecodePatchContext.findResumePlayer(): ResumePlayer {
 
     val (holder, sourceField) = player.sourcePath(sourceClass.type, mediaId)
 
+    // Whose points the player reads and writes: the UserSession its constructor is given, and the
+    // session's user ID. The extension keeps each account's points apart by it.
+    val sessions = player.fields.filter { it.type == RESUME_SESSION && !AccessFlags.STATIC.isSet(it.accessFlags) }
+    val session = sessions.singleOrNull()
+        ?: throw PatchException("$PATCH: expected one $RESUME_SESSION field in ${player.type}, found ${sessions.size}")
+    val sessionClass = classDefByOrNull(RESUME_SESSION)
+        ?: throw PatchException("$PATCH: $RESUME_SESSION isn't in this build")
+    val userId = sessionClass.fields.singleOrNull { it.name == RESUME_USER_ID && it.type == STRING }
+        ?: throw PatchException("$PATCH: $RESUME_SESSION has no $RESUME_USER_ID:$STRING")
+
     // The extension's stubs reach these from outside Instagram's packages.
     val holderClass = classDefByOrNull(holder.type)
         ?: throw PatchException("$PATCH: ${holder.type}, what the player plays, isn't in this build")
-    listOf(player, holderClass, sourceClass).forEach { reachable ->
+    listOf(player, holderClass, sourceClass, sessionClass).forEach { reachable ->
         if (!AccessFlags.PUBLIC.isSet(reachable.accessFlags)) {
             throw PatchException("$PATCH: ${reachable.type} isn't public, so the extension can't reach it")
         }
@@ -217,7 +234,7 @@ internal fun BytecodePatchContext.findResumePlayer(): ResumePlayer {
         }
     }
     listOf(player to holder, holderClass to sourceField, sourceClass to mediaId, sourceClass to productType,
-        sourceClass to sponsored).forEach { (owner, field) ->
+        sourceClass to sponsored, player to session, sessionClass to userId).forEach { (owner, field) ->
         val declared = owner.fields.singleOrNull { it.name == field.name && it.type == field.type }
             ?: throw PatchException("$PATCH: ${owner.type} doesn't declare ${field.name}:${field.type}")
         if (!AccessFlags.PUBLIC.isSet(declared.accessFlags) || AccessFlags.STATIC.isSet(declared.accessFlags)) {
@@ -226,7 +243,7 @@ internal fun BytecodePatchContext.findResumePlayer(): ResumePlayer {
     }
 
     return ResumePlayer(player, started, pause, stop, bind, seek, completed, looping, position, length,
-        holder, sourceField, mediaId, productType, sponsored)
+        holder, sourceField, mediaId, productType, sponsored, session, userId)
 }
 
 /**
@@ -296,6 +313,7 @@ private class ResumeStubs(
     val productType: MutableMethod,
     val sponsored: MutableMethod,
     val seekPlayer: MutableMethod,
+    val accountId: MutableMethod,
 ) {
     fun fill(found: ResumePlayer) {
         val player = found.player.type
@@ -340,6 +358,21 @@ private class ResumeStubs(
                 return p0
             """,
         )
+        // Each way out returns on its own. Joined, a session and a String in p0 would merge to
+        // Object, and ART rejects a class that answers that where a String is declared.
+        accountId.addInstructionsWithLabels(
+            0,
+            """
+                check-cast p0, $player
+                iget-object p0, p0, ${found.session}
+                if-eqz p0, :none
+                iget-object p0, p0, ${found.userId}
+                return-object p0
+                :none
+                const/4 p0, 0x0
+                return-object p0
+            """,
+        )
         // The stub's own registers are its four parameters, p0 to p3, all below v16, so the
         // plain invoke names them.
         seekPlayer.addInstructionsWithLabels(
@@ -369,6 +402,7 @@ private fun BytecodePatchContext.resumeStubs(): ResumeStubs {
         productType = stub("productType", listOf(OBJECT), OBJECT),
         sponsored = stub("sponsored", listOf(OBJECT), "Z"),
         seekPlayer = stub("seekPlayer", listOf(OBJECT, "I", "Z", "Z"), "Z"),
+        accountId = stub("accountId", listOf(OBJECT), STRING),
     )
 }
 
