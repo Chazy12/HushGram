@@ -26,6 +26,7 @@ public final class FamilyNames {
     public static final String REEL_WATCH_HISTORY = "Don't send reel watch history";
     public static final String STORY_AUTO_ADVANCE = "Stop Story auto-advance";
     public static final String STORY_TIME = "Show a story's exact time";
+    public static final String POST_TIME = "Show a post's exact time";
     public static final String STORY_LOOP = "Loop a story";
     public static final String STORY_SEEN = "View stories anonymously";
     public static final String DM_MEDIA_SEEN = "View DM photos and videos anonymously";

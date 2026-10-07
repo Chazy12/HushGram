@@ -363,6 +363,15 @@ once-call Lapp/hushgram/extension/instagram/stories/StoryTime;->label(J)Ljava/la
 # relativeHeader(). The builder is the one static method taking a Context, the session, a reel and
 # a story item that holds "timestamp" on 449, and it reads the flag once.
 once-call Lapp/hushgram/extension/instagram/stories/StoryTime;->relativeHeader(I)Z in static (Landroid/content/Context;Lcom/instagram/common/session/UserSession;L*;Lcom/instagram/model/reels/ReelItem;)L*; holding timestamp
+# Show a post's exact time puts PostTime.time() in place of Instagram's relative formatter call,
+# on the same registers, wherever a post's or a comment's time is written: twice in the feed post
+# footer's builder (04vZ.A02 on 450), once in the Compose comment header, and twice in the older
+# comment row's time lambda (0I5B.invoke), the one ()Object method reading the row's time field
+# 0ZUO.A08. Left out, a time stays relative; elsewhere, it isn't the call the patch wrote.
+shared-call Lapp/hushgram/extension/instagram/feed/PostTime;->time(Ljava/lang/Object;Landroid/content/Context;D)Ljava/lang/String; in instance (Landroid/content/Context;Lcom/instagram/feed/media/Media;L*;L*;L*;Z)L*; sites 2 holding CoalescedFooterUseCase#getUiState
+shared-call Lapp/hushgram/extension/instagram/feed/PostTime;->time(Ljava/lang/Object;Landroid/content/Context;J)Ljava/lang/String; in static (*)V holding com.instagram.comments.mvvm.view.compose.CommentAuthorHeader\s(CommentAuthorHeader.kt:77)
+shared-call Lapp/hushgram/extension/instagram/feed/PostTime;->time(Ljava/lang/Object;Landroid/content/Context;D)Ljava/lang/String; in instance ()Ljava/lang/Object; holding LX/0ZUO;->A08:Ljava/lang/Long;
+shared-call Lapp/hushgram/extension/instagram/feed/PostTime;->time(Ljava/lang/Object;Landroid/content/Context;J)Ljava/lang/String; in instance ()Ljava/lang/Object; holding LX/0ZUO;->A08:Ljava/lang/Long;
 # Loop a story answers the read of Instagram's own story loop flag through loop(), right after it
 # in the story viewer's private check of whether a story item plays again. The check holds no
 # string, so the rule names one only the viewer holds, and of the viewer's instance methods taking

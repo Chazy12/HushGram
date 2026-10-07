@@ -331,6 +331,11 @@ public final class SettingsStatus {
         return false;
     }
 
+    /** Rewritten by the Show a post's exact time patch. */
+    public static boolean postTime() {
+        return false;
+    }
+
     /** Rewritten by the Keep in chat patch. */
     public static boolean keepInChat() {
         return false;

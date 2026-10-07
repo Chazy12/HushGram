@@ -383,8 +383,9 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         boolean tabSwipe = build.contains(PatchFamily.TAB_SWIPE);
         boolean askLike = build.contains(PatchFamily.ASK_BEFORE_LIKE);
         boolean askRefresh = build.contains(PatchFamily.ASK_BEFORE_REFRESH);
+        boolean postTime = build.contains(PatchFamily.POST_TIME);
         PreferenceCategory feed = suggestions || following || swipe || fullResolution || homeFeed || tabSwipe
-                || askLike || askRefresh ? category(screen, L10n.t("Feed")) : null;
+                || askLike || askRefresh || postTime ? category(screen, L10n.t("Feed")) : null;
         if (following) {
             feed.addPreference(toggle(context, Settings.START_ON_FOLLOWING, L10n.t("Start Home on Following"),
                     L10n.t("Home opens on posts from accounts you follow. Tap Following at the top to switch to For you, "
@@ -439,6 +440,11 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             feed.addPreference(toggle(context, Settings.ASK_BEFORE_REFRESH, L10n.t("Ask before a refresh"),
                     L10n.t("Pulling down to refresh Home, Reels or another list asks first. Cancel keeps what's "
                             + "on screen.")));
+        }
+        if (postTime) {
+            feed.addPreference(toggle(context, Settings.SHOW_POST_TIME, L10n.t("Show a post's exact time"),
+                    L10n.t("Posts in your feed and their comments show the date and time they went up, like "
+                            + "Oct 2, 3:45 PM, instead of how long ago. Posts and comments you load after a change show it.")));
         }
 
         if (build.contains(PatchFamily.META_AI)) {

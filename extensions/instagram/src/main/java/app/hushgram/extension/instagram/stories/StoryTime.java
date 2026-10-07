@@ -37,7 +37,7 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  */
 public final class StoryTime {
     /** The date, with the month short, and the time. The year shows only for another year. */
-    static final int FORMAT = DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_ABBREV_MONTH;
+    public static final int FORMAT = DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_ABBREV_MONTH;
 
     /** How long a story stays up, in milliseconds. */
     static final long DAY = 24L * 60 * 60 * 1000;

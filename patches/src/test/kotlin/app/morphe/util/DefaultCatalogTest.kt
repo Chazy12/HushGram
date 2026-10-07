@@ -31,6 +31,7 @@ import app.morphe.patches.instagram.feed.reels.hideFeedReelsPatch
 import app.morphe.patches.instagram.feed.suggested.hideSuggestedPostsPatch
 import app.morphe.patches.instagram.feed.swipecreate.stopSwipeToCreatePatch
 import app.morphe.patches.instagram.feed.tabswipe.stopTabSwipingPatch
+import app.morphe.patches.instagram.feed.time.showPostTimePatch
 import app.morphe.patches.instagram.media.hdr.turnOffHdrBoostsPatch
 import app.morphe.patches.instagram.misc.cache.clearMediaCachePatch
 import app.morphe.patches.instagram.misc.location.spoofLocationPatch
@@ -157,6 +158,7 @@ class DefaultCatalogTest {
         readWithoutSeenReceiptPatch,
         reelSeekBarPatch,
         removeBottomSpacePatch,
+        showPostTimePatch,
         showStoryTimePatch,
         spoofLocationPatch,
         startOnFollowingPatch,
@@ -178,14 +180,14 @@ class DefaultCatalogTest {
     }
 
     @Test fun immediateBehaviorChangesAndUnacceptedDmReceiptsStayOptIn() {
-        assertEquals(27, optIn.size)
+        assertEquals(28, optIn.size)
         optIn.forEach { assertEquals(it.name, false, it.use) }
     }
 
     @Test fun generatedCatalogMatchesAllReviewedDeclarations() {
         val all = prior + neutral + optIn
         val declarations = all.associate { it.name!! to it.use }
-        assertEquals("every named patch needs one reviewed decision", 73, all.size)
+        assertEquals("every named patch needs one reviewed decision", 74, all.size)
         assertEquals("the review must not name a patch twice", all.size, declarations.size)
         val file = File("patches-list.json").takeIf(File::isFile) ?: File("../patches-list.json")
         val rows = JsonParser.parseString(file.readText()).asJsonObject.getAsJsonArray("patches")

@@ -131,6 +131,15 @@ public class Settings extends BaseSettings {
             new EnumSetting<>("hushgram_story_time_mode", StoryTimeMode.DATE_AND_TIME, parent(SHOW_STORY_TIME));
 
     /**
+     * A feed post's footer and each comment show the date and time they went up instead of how
+     * long ago ({@link app.hushgram.extension.instagram.feed.PostTime}), the way a story's exact
+     * time writes it. Read as each time is written, so a change shows on posts and comments loaded
+     * after it. The patch is off in the default selection, so a build that has it asked for it,
+     * and the switch starts on.
+     */
+    public static final BooleanSetting SHOW_POST_TIME = new BooleanSetting("hushgram_show_post_time", TRUE);
+
+    /**
      * A story plays again from the start when it ends, instead of the viewer moving on
      * ({@link app.hushgram.extension.instagram.stories.StoryLoop}). While it's on it wins over
      * {@link #BLOCK_STORY_AUTO_ADVANCE}. The patch is off in the default selection, so a build that
