@@ -58,14 +58,15 @@ public class NeutralDefaultsSettingsTest {
                 Settings.HIDE_HOME_FEED, Settings.STOP_TAB_SWIPING, Settings.GROUP_NOTIFICATIONS,
                 Settings.LOCK_MESSAGES, Settings.LOCK_APP,
                 Settings.HIDE_SCREENSHOTS,
-                Settings.ALLOW_SCREENSHOTS};
+                Settings.ALLOW_SCREENSHOTS,
+                Settings.KEEP_IN_CHAT};
         restoreDefaults();
         BaseSettings.SAFE_MODE.save(false);
         Settings.SIGN_IN_NOTICE_HIDDEN.save(true);
         PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.COMMENT_COPY, PatchFamily.COMMENT_PHOTO,
                 PatchFamily.PROFILE_HIGHLIGHTS, PatchFamily.NOTES_ROW, PatchFamily.INSTANTS, PatchFamily.SWIPE_TO_CREATE,
                 PatchFamily.REEL_SCROLLING, PatchFamily.STORY_RING, PatchFamily.FULL_RESOLUTION, PatchFamily.HOME_FEED,
-                PatchFamily.TAB_SWIPE, PatchFamily.NOTIFICATION_GROUPS, PatchFamily.MESSAGES_LOCK, PatchFamily.SCREENSHOT_REPORTS, PatchFamily.SCREENSHOT_BLOCK);
+                PatchFamily.TAB_SWIPE, PatchFamily.NOTIFICATION_GROUPS, PatchFamily.MESSAGES_LOCK, PatchFamily.SCREENSHOT_REPORTS, PatchFamily.SCREENSHOT_BLOCK, PatchFamily.KEEP_IN_CHAT);
     }
 
     @After public void restore() throws Exception {
@@ -177,6 +178,7 @@ public class NeutralDefaultsSettingsTest {
         assertSame(sections, NotesRow.sections(sections));
         assertFalse(Instants.hide());
         assertFalse(MessagesLock.holdBanner());
+        assertEquals("once", app.hushgram.extension.instagram.direct.KeepInChat.viewMode("once"));
         assertFalse(app.hushgram.extension.instagram.direct.ScreenshotBlock.lift());
         assertFalse(app.hushgram.extension.instagram.direct.ScreenshotReports.hold());
         assertEquals(0, SwipeToCreate.enabled());

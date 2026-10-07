@@ -181,6 +181,12 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting ALLOW_SCREENSHOTS = new BooleanSetting("hushgram_allow_screenshots", FALSE);
 
     /**
+     * View once and replayable photos and videos stay in the chat like ones sent with Keep in chat
+     * ({@link app.hushgram.extension.instagram.direct.KeepInChat}). Off to start.
+     */
+    public static final BooleanSetting KEEP_IN_CHAT = new BooleanSetting("hushgram_keep_in_chat", FALSE);
+
+    /**
      * The Mark as seen button in the story viewer's header
      * ({@link app.hushgram.extension.instagram.stories.StorySeenButton}). Off to start. A story you
      * tap it on is sent as seen while the rest stay held back. Read each time a story is shown and

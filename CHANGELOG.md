@@ -6,6 +6,8 @@ Every HushGram release, newest first.
 
 * **Instagram:** New patch, Group Instagram's notifications, in simple mode with its switch off. With Group notifications on, every notification Instagram posts joins one group that shows how many it holds, so they stop filling the shade. Group by type gives each kind its own group. Tapping a notification still opens what it did.
 
+* **Instagram:** New Keep in chat patch. With its switch on under Messages, view once and replayable photos and videos stay in the chat as if they'd been sent with Keep in chat, so you can open them again. It's in simple mode with the switch off.
+
 * **Instagram:** New Allow screenshots patch. With its switch on under Messages, screenshots and screen recordings work wherever Instagram turned them black, like disappearing photos and videos. It's in simple mode with the switch off.
 
 * **Instagram:** New Don't report screenshots patch. With its switch on under Messages, Instagram doesn't notice your screenshots, so whoever sent you a disappearing photo or video isn't told you took one. It's in simple mode with the switch off.

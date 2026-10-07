@@ -270,4 +270,9 @@ public final class SettingsStatus {
     public static boolean screenshotBlock() {
         return false;
     }
+
+    /** Rewritten by the Keep in chat patch. */
+    public static boolean keepInChat() {
+        return false;
+    }
 }
