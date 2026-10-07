@@ -131,7 +131,7 @@ public class VoiceMessageTest {
     @Test public void anUnmarkedOneIsntSaved() {
         for (String mode : new String[] {"", null}) {
             reads.mode = mode;
-            VoiceMessage.save(context, message, reads, save);
+            assertTrue("taken, so Instagram's save doesn't throw on it", VoiceMessage.save(context, message, reads, save));
         }
         assertTrue(saved.isEmpty());
     }
@@ -157,17 +157,47 @@ public class VoiceMessageTest {
         assertEquals(Collections.singletonList(RECORDING), saved);
     }
 
-    /** Anything that isn't a voice message goes on to Instagram's own save. */
+    /** Anything that isn't a voice message goes on to Instagram's own save, on or off. */
     @Test public void saveLeavesEverythingElseToInstagram() {
         reads.address = null;
         assertFalse(VoiceMessage.save(context, message, reads, save));
         assertFalse(VoiceMessage.save(context, null, reads, save));
-        reads.address = RECORDING;
-        reads.mode = "once";
-        assertFalse(VoiceMessage.save(context, message, reads, save));
         Settings.DOWNLOAD_VOICE_MESSAGES.save(false);
-        reads.mode = null;
         assertFalse(VoiceMessage.save(context, message, reads, save));
+        assertTrue(saved.isEmpty());
+    }
+
+    /**
+     * Instagram keeps each message's menu, so a Save offered while the switch was on can still be
+     * tapped after it's turned off or HushGram pauses, or on one sent to be played once. Instagram's
+     * own save throws on a voice message, so the message is still taken, and nothing is saved or
+     * shown.
+     */
+    @Test public void aSaveLeftInTheMenuIsTakenAndSavesNothing() {
+        Settings.DOWNLOAD_VOICE_MESSAGES.save(false);
+        assertTrue("switch off", VoiceMessage.save(context, message, reads, save));
+        Settings.DOWNLOAD_VOICE_MESSAGES.save(true);
+        BaseSettings.PAUSED.save(true);
+        PauseForTests.pause(HushgramPause.Reason.SWITCH);
+        assertTrue("paused", VoiceMessage.save(context, message, reads, save));
+        BaseSettings.PAUSED.save(false);
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertTrue("settings unread", VoiceMessage.save(context, message, reads, save)));
+        reads.mode = "once";
+        assertTrue("played once", VoiceMessage.save(context, message, reads, save));
+        assertTrue(saved.isEmpty());
+        ShadowLooper.idleMainLooper();
+        assertNull("nothing shown", ShadowToast.getTextOfLatestToast());
+        assertTrue(String.valueOf(HookStatus.report()), HookStatus.report().get(0).contains(VoiceMessage.NOT_SAVED));
+    }
+
+    /** A view mode read that throws still keeps the voice message from Instagram's save. */
+    @Test public void aModeReadThatThrowsAtSaveIsTakenAndSavesNothing() {
+        VoiceMessage.Native throwing = new VoiceMessage.Native() {
+            @Override public String audio(Object message) { return RECORDING; }
+            @Override public String viewMode(Object message) { throw new ClassCastException("not voice media"); }
+        };
+        assertTrue(VoiceMessage.save(context, message, throwing, save));
         assertTrue(saved.isEmpty());
     }
 

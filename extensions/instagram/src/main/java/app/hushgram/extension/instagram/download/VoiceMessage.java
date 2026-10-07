@@ -24,8 +24,9 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  * keep Instagram's no. Instagram's own check for a photo or video sent in a chat asks the same
  * thing, an explicit "permanent", and a voice message from the server carries that mark.
  *
- * <p>A tap on Save hands the message to Instagram's saver, which only knows photos and videos. The
- * saver's entry asks {@link #save} first: a voice message's recording is saved here, and anything
+ * <p>A tap on Save hands the message to Instagram's saver, which only knows photos and videos and
+ * throws on a voice message. The saver's entry asks {@link #save} first: a voice message is always
+ * taken here, and its recording saved when Save could have been offered for it now, and anything
  * else goes on to Instagram's own save.
  */
 public final class VoiceMessage {
@@ -57,6 +58,7 @@ public final class VoiceMessage {
     static final String OFFERED = "Save offered";
     static final String PLAYED_ONCE = "sent to be played once";
     static final String NO_MODE = "no view mode";
+    static final String NOT_SAVED = "Save tapped, nothing saved";
     static final String NOT_META = "recording not on Meta's servers";
 
     /** The view mode of a recording anyone in the chat can play again, as every voice message used to be. */
@@ -96,23 +98,37 @@ public final class VoiceMessage {
     }
 
     /**
-     * Saves [message]'s recording when it's a voice message Save could have been offered for, and
-     * answers whether it took the message, so Instagram's own save doesn't. [context] is the chat's.
-     * Never throws.
+     * Takes [message] when it's a voice message, so Instagram's own save never gets one, and answers
+     * whether it took it. The recording is saved only when Save could be offered for the message now.
+     * Instagram works out each message's menu once and keeps it, so a Save offered before the switch
+     * went off or HushGram paused can still be tapped; that tap is taken too, and nothing is saved or
+     * shown. Anything that isn't a voice message goes on to Instagram's own save. [context] is the
+     * chat's. Never throws.
      */
     public static boolean save(Context context, Object message) {
         return save(context, message, NATIVE, SAVE);
     }
 
     static boolean save(Context context, Object message, Native reads, Save save) {
+        if (message == null) return false;
         String address;
         try {
-            if (message == null || !on()) return false;
             address = reads.audio(message);
-            if (address == null || !permanent(reads.viewMode(message))) return false;
+            if (address == null) return false;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.VOICE_MESSAGE, "voice message check", failure);
             return false;
+        }
+        boolean keep;
+        try {
+            keep = on() && permanent(reads.viewMode(message));
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.VOICE_MESSAGE, "voice message check", failure);
+            keep = false;
+        }
+        if (!keep) {
+            HookStatus.counted(FamilyNames.VOICE_MESSAGE, NOT_SAVED);
+            return true;
         }
         try {
             if (!save.audio(context, address, PostDetails.NONE)) failed(context);
