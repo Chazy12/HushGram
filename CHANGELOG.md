@@ -4,6 +4,10 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** New patch, Ask before a like, in simple mode with its switch off. Turn it on under Feed and the Like button under a post waits for a question before it likes or unlikes the post, so a stray tap doesn't. Continue goes ahead and Cancel doesn't.
+
+* **Instagram:** New patch, Ask before a refresh, in simple mode with its switch off. Turn it on under Feed and pulling down to refresh Home, Reels or another list asks first. Refresh reloads it, and Cancel stops the spinner and keeps what's on screen.
+
 * **Instagram:** New patch, Ask before a call, in simple mode with its switch off. Turn it on under Messages and a call started from a chat waits for a question first, so a stray tap on a call button doesn't ring anyone. Call starts it and Cancel doesn't.
 
 * **Instagram:** Ask before a call now hands the call's video flag to its check as a number, the way every other hook takes a yes or no, so Android's verifier has nothing to refuse when the chat's call code loads.

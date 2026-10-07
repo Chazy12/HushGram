@@ -381,8 +381,10 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         boolean fullResolution = build.contains(PatchFamily.FULL_RESOLUTION);
         boolean homeFeed = build.contains(PatchFamily.HOME_FEED);
         boolean tabSwipe = build.contains(PatchFamily.TAB_SWIPE);
+        boolean askLike = build.contains(PatchFamily.ASK_BEFORE_LIKE);
+        boolean askRefresh = build.contains(PatchFamily.ASK_BEFORE_REFRESH);
         PreferenceCategory feed = suggestions || following || swipe || fullResolution || homeFeed || tabSwipe
-                ? category(screen, L10n.t("Feed")) : null;
+                || askLike || askRefresh ? category(screen, L10n.t("Feed")) : null;
         if (following) {
             feed.addPreference(toggle(context, Settings.START_ON_FOLLOWING, L10n.t("Start Home on Following"),
                     L10n.t("Home opens on posts from accounts you follow. Tap Following at the top to switch to For you, "
@@ -427,6 +429,16 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     L10n.t("On a phone under 1440 pixels wide, Instagram tells its server your screen is 1440 "
                             + "pixels wide and asks for photos at that width, so there's a larger size to load. "
                             + "This uses more data. Restart Instagram after changing it.")));
+        }
+        if (askLike) {
+            feed.addPreference(toggle(context, Settings.ASK_BEFORE_LIKE, L10n.t("Ask before a like"),
+                    L10n.t("Tapping the Like button under a post asks first, so a stray tap doesn't like or unlike "
+                            + "it. A double tap isn't asked about.")));
+        }
+        if (askRefresh) {
+            feed.addPreference(toggle(context, Settings.ASK_BEFORE_REFRESH, L10n.t("Ask before a refresh"),
+                    L10n.t("Pulling down to refresh Home, Reels or another list asks first. Cancel keeps what's "
+                            + "on screen.")));
         }
 
         if (build.contains(PatchFamily.META_AI)) {

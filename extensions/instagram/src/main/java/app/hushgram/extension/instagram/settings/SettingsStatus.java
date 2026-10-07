@@ -318,6 +318,14 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean askBeforeLike() {
+        return false;
+    }
+
+    public static boolean askBeforeRefresh() {
+        return false;
+    }
+
     /** Rewritten by the Keep in chat patch. */
     public static boolean keepInChat() {
         return false;

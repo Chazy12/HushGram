@@ -1,0 +1,58 @@
+/*
+ * Copyright 2026 HushGram contributors
+ * https://github.com/SysAdminDoc/HushGram
+ */
+package app.hushgram.extension.instagram.feed;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.ContextWrapper;
+
+import androidx.annotation.Nullable;
+
+import app.hushgram.extension.shared.L10n;
+
+/** The question Ask before a like and Ask before a refresh put up, over the screen they act on. */
+final class ConfirmDialog {
+    private ConfirmDialog() {
+    }
+
+    /**
+     * Shows [question] over the activity behind [context], with [yes] and Cancel. [onYes] runs when
+     * yes is tapped, and [onNo], when there is one, when the question goes away any other way:
+     * Cancel, Back or a tap outside. Answers null, showing nothing, when there's no activity behind
+     * [context] or it's going away.
+     */
+    @Nullable
+    static AlertDialog ask(@Nullable Context context, String question, String yes, Runnable onYes, @Nullable Runnable onNo) {
+        Activity activity = activityOf(context);
+        if (activity == null || activity.isFinishing() || activity.isDestroyed()) return null;
+        boolean[] answered = {false};
+        AlertDialog dialog = new AlertDialog.Builder(activity)
+                .setTitle(question)
+                .setPositiveButton(yes, (shown, which) -> {
+                    answered[0] = true;
+                    onYes.run();
+                })
+                .setNegativeButton(L10n.t("Cancel"), null)
+                .setOnDismissListener(shown -> {
+                    if (!answered[0] && onNo != null) onNo.run();
+                })
+                .create();
+        dialog.show();
+        return dialog;
+    }
+
+    /** The activity behind [context], or null when there's none. */
+    @Nullable
+    static Activity activityOf(@Nullable Context context) {
+        Context at = context;
+        for (int depth = 0; depth < 10 && at != null; depth++) {
+            if (at instanceof Activity) return (Activity) at;
+            if (!(at instanceof ContextWrapper)) return null;
+            at = ((ContextWrapper) at).getBaseContext();
+        }
+        return null;
+    }
+}

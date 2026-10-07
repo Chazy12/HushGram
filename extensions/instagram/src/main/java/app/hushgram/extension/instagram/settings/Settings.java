@@ -231,6 +231,19 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting ASK_BEFORE_CALL = new BooleanSetting("hushgram_ask_before_call", FALSE);
 
     /**
+     * The Like button under a post asks before it likes or unlikes the post
+     * ({@link app.hushgram.extension.instagram.feed.LikeConfirm}). A double tap isn't asked about.
+     * Off to start.
+     */
+    public static final BooleanSetting ASK_BEFORE_LIKE = new BooleanSetting("hushgram_ask_before_like", FALSE);
+
+    /**
+     * Pulling down to refresh a list asks before the list reloads
+     * ({@link app.hushgram.extension.instagram.feed.RefreshConfirm}). Off to start.
+     */
+    public static final BooleanSetting ASK_BEFORE_REFRESH = new BooleanSetting("hushgram_ask_before_refresh", FALSE);
+
+    /**
      * The Mark as seen button in the story viewer's header
      * ({@link app.hushgram.extension.instagram.stories.StorySeenButton}). Off to start. A story you
      * tap it on is sent as seen while the rest stay held back. Read each time a story is shown and

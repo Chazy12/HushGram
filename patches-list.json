@@ -79,6 +79,80 @@
       "options": []
     },
     {
+      "name": "Ask before a like",
+      "description": "Asks before the Like button under a post likes or unlikes it, so a stray tap doesn't. Continue goes ahead and Cancel doesn't. Its switch, under Feed, starts off.",
+      "category": "Interface",
+      "use": true,
+      "dependencies": [
+        "BytecodePatch",
+        "HushGram settings"
+      ],
+      "compatiblePackages": {
+        "com.instagram.android": [
+          "450.0.0.50.77"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Instagram",
+          "packageName": "com.instagram.android",
+          "description": null,
+          "appIconColor": 14757996,
+          "signatures": [
+            "3a10c50c18ba937506c2875e9047be74f8fd8b86fae2ff9feaa50a81fcb4c014",
+            "5f3e50f435583c9ae626302a71f7340044087a7e2c60adacfc254205a993e305"
+          ],
+          "targets": [
+            {
+              "version": "450.0.0.50.77",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 385611438
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Ask before a refresh",
+      "description": "Asks before pulling down refreshes Home, Reels or another list, so a stray pull keeps what's on screen. Refresh goes ahead, and Cancel stops the spinner. Its switch, under Feed, starts off.",
+      "category": "Interface",
+      "use": true,
+      "dependencies": [
+        "BytecodePatch",
+        "HushGram settings"
+      ],
+      "compatiblePackages": {
+        "com.instagram.android": [
+          "450.0.0.50.77"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Instagram",
+          "packageName": "com.instagram.android",
+          "description": null,
+          "appIconColor": 14757996,
+          "signatures": [
+            "3a10c50c18ba937506c2875e9047be74f8fd8b86fae2ff9feaa50a81fcb4c014",
+            "5f3e50f435583c9ae626302a71f7340044087a7e2c60adacfc254205a993e305"
+          ],
+          "targets": [
+            {
+              "version": "450.0.0.50.77",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 385611438
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Change the like animation",
       "description": "Plays an animation you pick, from the ones Instagram made for Instagram Rings creators, in the heart that pops up when you double tap a post. Its switch, under Reels, starts off.",
       "category": "Interface",

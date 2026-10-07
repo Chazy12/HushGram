@@ -996,3 +996,15 @@ once-call Lapp/hushgram/extension/instagram/misc/MediaCache;->beforeVideoCache(L
 # where it lands on each declared build.
 start-call Lapp/hushgram/extension/instagram/direct/CallConfirm;->hold(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;I)Z in instance (L*;L*;Lcom/instagram/model/rtc/cowatch/RtcStartCoWatchPlaybackArguments;Z)V holding ig4a-instagram-schema
 once-call Lapp/hushgram/extension/instagram/direct/CallConfirm;->hold(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;I)Z in instance (L*;L*;Lcom/instagram/model/rtc/cowatch/RtcStartCoWatchPlaybackArguments;Z)V holding ig4a-instagram-schema
+# Ask before a like hands LikeConfirm.hold the Like button handler's own arguments first thing in it
+# (06zU.FdS on 450), the one instance (post, position, module, callback, index) method filing
+# like_media, and returns there while it answers true. Left out, the Like button never asks; twice or
+# elsewhere, it isn't the guard the patch wrote. AskBeforeLikeHookTest checks where it lands on each
+# declared build.
+start-call Lapp/hushgram/extension/instagram/feed/LikeConfirm;->hold(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/Object;I)Z in instance (Lcom/instagram/feed/media/Media;L*;Ljava/lang/String;Lkotlin/jvm/functions/Function0;I)V holding like_media
+once-call Lapp/hushgram/extension/instagram/feed/LikeConfirm;->hold(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/Object;I)Z in instance (Lcom/instagram/feed/media/Media;L*;Ljava/lang/String;Lkotlin/jvm/functions/Function0;I)V holding like_media
+# Ask before a refresh hands RefreshConfirm.listener the refresh listener the pull-down refresh
+# layout's end-of-pull animation reads (04Vu.onAnimationEnd on 450, the one onAnimationEnd reading
+# the layout's listener field), once, right after the read. Left out, a pull never asks.
+# AskBeforeRefreshHookTest checks where it lands on each declared build.
+once-call Lapp/hushgram/extension/instagram/feed/RefreshConfirm;->listener(Landroid/view/View;Ljava/lang/Object;Landroid/view/animation/Animation$AnimationListener;)Ljava/lang/Object; in instance (Landroid/view/animation/Animation;)V holding LX/05VS;->A0D:LX/0Jbl;
