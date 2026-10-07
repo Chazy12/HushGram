@@ -968,3 +968,9 @@ shared-call Lapp/hushgram/extension/instagram/reels/ReelScrolling;->pull()I in i
 # checks every read on each declared build.
 shared-call Lapp/hushgram/extension/instagram/misc/VersionCode;->read(Landroid/content/pm/PackageInfo;)I in instance (L*;)V holding Android\sPackageManager\sreturned\sversion\scode:\s%d,\sapk\sversion\scode\sis:\s%d
 shared-call Lapp/hushgram/extension/instagram/misc/VersionCode;->read(Landroid/content/pm/PackageInfo;)I in instance (Landroid/content/Context;L*;L*;)V holding Error\sgetting\sapp\sversion\scode.
+# Change the like animation hands the animation the double-tap heart is set up with to
+# LikeAnimation.pick first thing in LikeActionView's set-up for a post, and the check that set-up makes
+# before it plays one of Instagram's own animations to LikeAnimation.allow, once each, and nowhere else.
+start-call Lapp/hushgram/extension/instagram/feed/LikeAnimation;->pick(Ljava/lang/Object;)Ljava/lang/Object; in instance (Lcom/instagram/common/session/UserSession;LX/02IM;)V holding LX/02IM;->A0W:LX/02IM;
+once-call Lapp/hushgram/extension/instagram/feed/LikeAnimation;->pick(Ljava/lang/Object;)Ljava/lang/Object; in instance (Lcom/instagram/common/session/UserSession;LX/02IM;)V holding LX/02IM;->A0W:LX/02IM;
+once-call Lapp/hushgram/extension/instagram/feed/LikeAnimation;->allow(Z)Z in instance (Lcom/instagram/common/session/UserSession;LX/02IM;)V holding LX/02IM;->A0W:LX/02IM;

@@ -571,6 +571,22 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_turn_off_double_tap_like_on_comments", FALSE, parent(TURN_OFF_DOUBLE_TAP_LIKE));
 
     /**
+     * The heart that pops up when you double tap a post plays {@link #LIKE_ANIMATION}
+     * ({@link app.hushgram.extension.instagram.feed.LikeAnimation}). Read as each post's heart is set
+     * up, so one already on screen changes the next time it's set up. Off to start.
+     */
+    public static final BooleanSetting CHANGE_LIKE_ANIMATION =
+            new BooleanSetting("hushgram_change_like_animation", FALSE);
+
+    /**
+     * The name of the animation {@link #CHANGE_LIKE_ANIMATION} plays, one of Instagram's own. Blank
+     * to start, which keeps Instagram's heart until one is picked, as a name this Instagram doesn't
+     * have does.
+     */
+    public static final StringSetting LIKE_ANIMATION =
+            new StringSetting("hushgram_like_animation", "", parent(CHANGE_LIKE_ANIMATION));
+
+    /**
      * Reels is off the tab bar, and a start or a switch meant for it lands on Home. Instagram builds
      * its tab list as it starts, so a change takes a restart. The patch is off in the default
      * selection, so a build that has it asked for it, and the switch starts on.

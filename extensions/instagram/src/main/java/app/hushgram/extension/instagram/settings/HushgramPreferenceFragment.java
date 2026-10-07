@@ -74,6 +74,7 @@ import app.hushgram.extension.instagram.media.PlaybackQuality;
 import app.hushgram.extension.instagram.media.TapToPlayScope;
 import app.hushgram.extension.instagram.media.ResumePlayback;
 import app.hushgram.extension.instagram.misc.OverrideExchange;
+import app.hushgram.extension.instagram.feed.LikeAnimation;
 import app.hushgram.extension.instagram.misc.MediaCache;
 import app.hushgram.extension.instagram.misc.NotificationGroups;
 import app.hushgram.extension.instagram.misc.OverrideImport;
@@ -559,6 +560,12 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             reels.add(toggle(context, Settings.TURN_OFF_DOUBLE_TAP_LIKE_ON_COMMENTS, L10n.t("On comments"),
                     L10n.t("A double tap on a comment doesn't like it. Starts off, so comments keep double tap to like until you turn this on.")));
         }
+        if (build.contains(PatchFamily.LIKE_ANIMATION)) {
+            reels.add(toggle(context, Settings.CHANGE_LIKE_ANIMATION, L10n.t("Change the like animation"),
+                    L10n.t("The heart that pops up when you double tap a post plays the animation you pick below, "
+                            + "one of the ones Instagram made for Instagram Rings creators.")));
+            reels.add(likeAnimationRow(context));
+        }
         if (build.contains(PatchFamily.REELS_TAB)) {
             reels.add(toggle(context, Settings.HIDE_REELS_TAB, L10n.t("Hide the Reels tab"),
                     L10n.t("Takes Reels off the tab bar. Reels in your feed and reels people send you still "
@@ -1042,6 +1049,7 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     belongs |= family == PatchFamily.PLAYBACK_QUALITY && Settings.PLAYBACK_QUALITY.key.equals(key);
                     belongs |= family == PatchFamily.TAP_TO_PLAY && Settings.TAP_TO_PLAY_SCOPE.key.equals(key);
                     belongs |= family == PatchFamily.STORY_TIME && Settings.STORY_TIME_MODE.key.equals(key);
+                    belongs |= family == PatchFamily.LIKE_ANIMATION && Settings.LIKE_ANIMATION.key.equals(key);
                     belongs |= family == PatchFamily.MESSAGES_LOCK && Settings.LOCK_AGAIN.key.equals(key);
                     belongs |= family == PatchFamily.RESUME_LONG_VIDEOS && row == clearPositions;
                     belongs |= (family == PatchFamily.REEL_DOWNLOAD || family == PatchFamily.STORY_DOWNLOAD
@@ -2513,6 +2521,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             ((LockDelayRow) preference).showSummary();
         } else if (preference instanceof StoryRingRow) {
             ((StoryRingRow) preference).showSummary();
+        } else if (preference instanceof LikeAnimationRow) {
+            ((LikeAnimationRow) preference).showSummary();
         }
     }
 
@@ -2533,6 +2543,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             ((LockDelayRow) listPreference).showSummary();
         } else if (listPreference instanceof StoryRingRow) {
             ((StoryRingRow) listPreference).showSummary();
+        } else if (listPreference instanceof LikeAnimationRow) {
+            ((LikeAnimationRow) listPreference).showSummary();
         } else {
             super.updateListPreferenceSummary(listPreference, setting);
         }
@@ -2641,6 +2653,43 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         return domain == null || domain.isEmpty()
                 ? L10n.t("Links keep instagram.com.")
                 : L10n.f("Links to instagram.com go out on %1$s.", L10n.isolate(domain));
+    }
+
+    /**
+     * Which of Instagram's like animations the heart plays. Its values are the animations' own names,
+     * read from Instagram as the screen is built, and its summary says which one plays.
+     */
+    static LikeAnimationRow likeAnimationRow(Context context) {
+        return likeAnimationRow(context, LikeAnimation.names());
+    }
+
+    static LikeAnimationRow likeAnimationRow(Context context, List<String> names) {
+        LikeAnimationRow row = new LikeAnimationRow(context);
+        row.setKey(Settings.LIKE_ANIMATION.key);
+        row.setTitle(L10n.t("Like animation"));
+        row.setDialogTitle(L10n.t("Like animation"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        CharSequence[] entries = new CharSequence[names.size()];
+        CharSequence[] values = new CharSequence[names.size()];
+        for (int i = 0; i < names.size(); i++) {
+            entries[i] = LikeAnimation.label(names.get(i));
+            values[i] = names.get(i);
+        }
+        row.setEntries(entries);
+        row.setEntryValues(values);
+        row.setValue(Settings.LIKE_ANIMATION.savedValue());
+        return row;
+    }
+
+    /** What the like animation's row says: the animation the heart plays, or that none is picked. */
+    static String likeAnimationSummary(@Nullable String name, @Nullable CharSequence[] names) {
+        boolean known = false;
+        if (name != null && names != null) {
+            for (CharSequence candidate : names) known |= name.contentEquals(candidate);
+        }
+        return known
+                ? L10n.f("The heart plays %1$s when you double tap a post.", L10n.isolate(LikeAnimation.label(name)))
+                : L10n.t("Pick an animation. Until you do, the heart stays Instagram's.");
     }
 
     /** What the place row says: the place, or that there's none and what a fix answers then. */
@@ -2981,6 +3030,49 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             super.showDialog(state);
             if (getDialog() instanceof AlertDialog) ScreenColors.dialog((AlertDialog) getDialog());
             fitAboveKeyboard(getDialog());
+        }
+    }
+
+    /** The like animation's row. Its summary follows its value, and it answers it itself, as the ring size's does. */
+    static final class LikeAnimationRow extends ListPreference {
+        @Nullable
+        private String summary;
+
+        LikeAnimationRow(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void setValue(String value) {
+            super.setValue(value);
+            showSummary();
+        }
+
+        void showSummary() {
+            summary = Settings.LIKE_ANIMATION.isAvailable()
+                    ? likeAnimationSummary(getValue(), getEntryValues())
+                    : L10n.t("Turn on Change the like animation to use this choice.");
+            setSummary(summary);
+        }
+
+        @Override
+        public CharSequence getSummary() {
+            return summary != null ? summary : super.getSummary();
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setAccessibilityDelegate(new RowSemantics(this, Button.class));
+        }
+
+        /** Its list takes the screen's colours, as the other rows' dialogs do. */
+        @Override
+        protected void showDialog(Bundle state) {
+            super.showDialog(state);
+            if (getDialog() instanceof AlertDialog) ScreenColors.dialog((AlertDialog) getDialog());
         }
     }
 

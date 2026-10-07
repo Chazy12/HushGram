@@ -229,6 +229,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean likeAnimation() {
+        return false;
+    }
+
     public static boolean reelsTab() {
         return false;
     }
