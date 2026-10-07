@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Patching takes a little less time. HushGram settings' entry on the tab bar and Disable analytics' skip of the setup screens now find their places through the patcher's index rather than reading all of Instagram's code. Reported in #60.
+
 * **Instagram:** Save comment photo now offers Save on photo comments in Instagram 450. Instagram 450 leaves the media type out of a comment's photo, and Save used to wait for it, so the row never showed. It now goes by the photo itself, and GIFs, videos and text replies still don't get the row. Asked for in #1.
 
 * **Instagram:** Full resolution photos has a second switch, Ask for larger photos. On a phone under 1440 pixels wide, Instagram tells its server your screen is 1440 pixels wide and asks for photos at that width, so a 1080-wide phone has a larger size to load. It's off to start, it uses more data, and it takes effect after you restart Instagram. Asked for in #20.

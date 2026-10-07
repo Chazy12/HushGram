@@ -6,10 +6,12 @@ package app.morphe.patches.instagram.misc.extension
 
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.StringComparisonType
+import app.morphe.patcher.fieldAccess
 import app.morphe.patcher.literal
 import app.morphe.patcher.methodCall
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patches.instagram.misc.settings.EXTENSION_ROOT
+import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 
 /*
@@ -48,6 +50,14 @@ internal fun BytecodePatchContext.classesLoading(literal: Long): List<ClassDef> 
  */
 internal fun BytecodePatchContext.classesCalling(definingClass: String, name: String): List<ClassDef> =
     classesMatching(Fingerprint(filters = listOf(methodCall(definingClass = definingClass, name = name))))
+
+/**
+ * The classes outside the extension whose code uses the field [name] of [definingClass] with
+ * [opcode] (an iget or iput kind), in the app's order. The same index of the types each class
+ * refers to picks the classes to read.
+ */
+internal fun BytecodePatchContext.classesAccessing(definingClass: String, name: String, opcode: Opcode): List<ClassDef> =
+    classesMatching(Fingerprint(filters = listOf(fieldAccess(definingClass = definingClass, name = name, opcode = opcode))))
 
 /**
  * The types of the classes outside the extension holding a purge marker (see [markers]) named one

@@ -7,6 +7,8 @@ package app.morphe.patches.instagram.misc.settings
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesAccessing
+import app.morphe.patches.instagram.misc.extension.classesHolding
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
@@ -45,12 +47,12 @@ internal fun BytecodePatchContext.navigationEntryTargets(): NavigationEntryTarge
     fun refuse(why: String): Nothing = throw PatchException("Navigation settings: $why")
     fun Method.code() = implementation?.instructions?.toList().orEmpty()
     fun Method.strings() = code().mapNotNull { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string }
-    val classes = mutableListOf<ClassDef>()
-    classDefForEach { classes += it }
-    val tab = classes.filter { it.superclass == "Ljava/lang/Enum;" && it.methods.any { method ->
+    // The enum, the factory and the tab field's writers come from the patcher's indexes (#60); only
+    // the subclass check below needs every class, and it reads no code.
+    val tab = classesHolding("FEED", "CLIPS", "clips_viewer_clips_tab").filter { it.superclass == "Ljava/lang/Enum;" && it.methods.any { method ->
         method.name == "<clinit>" && method.strings().containsAll(listOf("FEED", "CLIPS", "clips_viewer_clips_tab"))
     } }.singleOrNull() ?: refuse("expected one native tab enum")
-    val factory = classes.flatMap { it.methods }.filter { TAB_FACTORY in it.strings() }.singleOrNull()
+    val factory = classesHolding(TAB_FACTORY).flatMap { it.methods }.filter { TAB_FACTORY in it.strings() }.singleOrNull()
         ?: refuse("expected one createTabButton factory")
     val params = factory.parameterTypes.map { it.toString() }
     if (factory.definingClass != MAIN_ACTIVITY || !AccessFlags.STATIC.isSet(factory.accessFlags) ||
@@ -103,13 +105,15 @@ internal fun BytecodePatchContext.navigationEntryTargets(): NavigationEntryTarge
     val constructorParams = constructor.parameterTypes.map { it.toString() }
     val self = constructor.implementation!!.registerCount - constructorParams.size - 1
     val passedTab = self + 1 + constructorParams.indexOf(tab.type)
-    val tabWrites = classes.flatMap { it.methods }.flatMap { method -> method.code().mapNotNull { instruction ->
+    val tabWrites = classesAccessing(proxy.type, enumField.name, Opcode.IPUT_OBJECT).flatMap { it.methods }.flatMap { method -> method.code().mapNotNull { instruction ->
         if (instruction.opcode != Opcode.IPUT_OBJECT ||
             (instruction as? ReferenceInstruction)?.reference.toString() != enumField.toString()) null else method to instruction
     } }
     if (tabWrites.size != 1 || tabWrites.single().first != constructor ||
         (tabWrites.single().second as TwoRegisterInstruction).registerA != passedTab ||
         (tabWrites.single().second as TwoRegisterInstruction).registerB != self) refuse("proxy tab is not the constructor's native tab")
+    val classes = mutableListOf<ClassDef>()
+    classDefForEach { classes += it }
     val variants = classes.filter { it.superclass == proxy.type }
     if (variants.size != 2 || variants.any { AccessFlags.ABSTRACT.isSet(it.accessFlags) }) {
         refuse("expected the two concrete tab proxy variants")
