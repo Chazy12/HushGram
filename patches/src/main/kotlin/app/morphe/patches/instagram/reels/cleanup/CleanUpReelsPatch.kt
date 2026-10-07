@@ -235,15 +235,13 @@ private fun unVanished(method: Method, hide: Method): UnVanish {
     if (at in method.jumpTargets()) throw PatchException("$what jumps to just after its trace, so the hook would be skipped")
     // The hook's jump reaches the hide with each register as it is at the hook. What the hide's
     // path reads before writing has to hold the same there as on Instagram's own way to the hide,
-    // so nothing on a path from the hook to the hide may write it.
+    // so nothing on a path from the hook to the hide may write it. An instruction is on one when the
+    // hook reaches it before the hide and it reaches the hide: the shown branch's writes don't count.
     val flow = ControlFlow.of(method)
-    val between = mutableSetOf<Int>()
-    val pending = ArrayDeque(listOf(at))
-    while (pending.isNotEmpty()) {
-        val index = pending.removeFirst()
-        if (index == hidden || !between.add(index)) continue
-        pending += flow.normal[index] + flow.exceptional[index]
-    }
+    val predecessors = List(code.size) { mutableListOf<Int>() }
+    for (index in code.indices) (flow.normal[index] + flow.exceptional[index]).forEach { predecessors[it] += index }
+    val fromHook = reachable(at) { index -> if (index == hidden) emptyList() else flow.normal[index] + flow.exceptional[index] }
+    val between = (fromHook intersect reachable(hidden) { predecessors[it] }) - hidden
     val rewritten = RegisterLiveness.of(method).liveInto(hidden).filter { register -> between.any { code[it].writes(register) } }
     if (rewritten.isNotEmpty()) {
         throw PatchException(
@@ -253,6 +251,17 @@ private fun unVanished(method: Method, hide: Method): UnVanish {
     }
     val free = method.freeLocalsAt(what, at, 1, listOf(hidden)).single()
     return UnVanish(method, at, controller, hidden, free)
+}
+
+/** Every instruction index reached from [start] by following [next], [start] included. */
+private fun reachable(start: Int, next: (Int) -> Collection<Int>): Set<Int> {
+    val seen = mutableSetOf<Int>()
+    val pending = ArrayDeque(listOf(start))
+    while (pending.isNotEmpty()) {
+        val index = pending.removeFirst()
+        if (seen.add(index)) pending += next(index)
+    }
+    return seen
 }
 
 private fun Instruction.writes(register: Int): Boolean {

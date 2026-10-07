@@ -96,6 +96,21 @@ class CleanUpReelsHookTest {
         }
     }
 
+    /**
+     * Only a write on the way from the hook to the hide stops the patch. The shown branch writing
+     * what the hidden branch answers never reaches the hide, so the hook's jump skips nothing.
+     */
+    @Test
+    fun onlyAWriteOnTheWayToTheHideFailsThePatch() {
+        val context = PatchContexts.of(classes(unVanish = "shown rewrites"))
+        context.hideReelParts()
+        assertUnVanishGuarded("shown rewrites", context.mutableClassDefBy(UNVANISH).methods.single(), 5, 2,
+            "$BAR->source:$CLIPS_VIEWER_SOURCE", "$BAR->A0r()V", 0)
+
+        val failure = assertThrows(PatchException::class.java) { PatchContexts.of(classes(unVanish = "rewritten")).hideReelParts() }
+        assertTrue(failure.message!!, failure.message!!.contains("writes v1 between its trace and the hide"))
+    }
+
     @Test
     fun aBubblesUseCaseWithoutItsOwnNoneStateFailsThePatch() {
         val context = PatchContexts.of(classes(noneOfItsOwn = false))
@@ -425,9 +440,10 @@ class CleanUpReelsHookTest {
         val read = if (shape == "no read") "const/4 v0, 0x0" else "iget-boolean v0, v2, $BAR->vanished:Z"
         val again = if (shape == "jumped") "if-nez v1, :again" else ""
         val twice = if (shape == "twice") "invoke-virtual { v2 }, $BAR->A0r()V" else ""
-        // The hidden branch answers a value written after the trace, which the hook's jump would skip.
+        // The hidden branch answers v1. "rewritten" writes it after the trace on the way to the hide,
+        // which the hook's jump would skip; "shown rewrites" leaves only the shown branch writing it.
         val rewrite = if (shape == "rewritten") "iget-object v1, v2, $BAR->bar:$VIEW" else ""
-        val hiddenEnd = if (shape == "rewritten") "return-object v1" else "goto :done"
+        val hiddenEnd = if (shape == "rewritten" || shape == "shown rewrites") "return-object v1" else "goto :done"
         return classOf(
             UNVANISH, "Ljava/lang/Object;",
             method(UNVANISH, "A0B", listOf(UNVANISH), "Ljava/lang/Object;", 3, """
