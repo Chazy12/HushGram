@@ -55,6 +55,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_sanitize_sharing_links", TRUE);
 
     /**
+     * The domain links to instagram.com go out on when you copy or share them
+     * ({@link app.hushgram.extension.instagram.share.SharingDomain}). Blank to start, which keeps
+     * instagram.com. Used only while {@link #SANITIZE_SHARING_LINKS} is on.
+     */
+    public static final StringSetting SHARING_DOMAIN =
+            new StringSetting("hushgram_sharing_domain", "", parent(SANITIZE_SHARING_LINKS));
+
+    /**
      * A web link tapped in Instagram opens in the phone's default browser, without Instagram's
      * click tracker. Instagram and other Meta pages, and ads, stay in the in-app browser.
      */

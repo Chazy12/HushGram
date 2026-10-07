@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Sanitize sharing links has a Sharing domain row, blank to start. Type a domain there and links to instagram.com that you copy or share go out on it, for sites that show Instagram posts and reels in chat apps.
+
 * **Instagram:** Open developer options keeps its long press and its MetaConfig and Whitehat rows when an Instagram update moves what Export, Validate or Import use. Only the rows that need the moved part are left out, and the diagnostic report says which.
 
 * **Instagram:** New patch, Hide the Share button, in simple mode with its switch off. Turn it on under Sharing and the Share button and its count come off the posts in your feed and off reels. Asked for in #1.

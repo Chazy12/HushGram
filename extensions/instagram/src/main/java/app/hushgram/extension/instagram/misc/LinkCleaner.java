@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 
 import app.hushgram.extension.instagram.settings.FamilyNames;
 import app.hushgram.extension.instagram.settings.Settings;
+import app.hushgram.extension.instagram.share.SharingDomain;
 import app.hushgram.extension.shared.Utils;
 import app.hushgram.extension.shared.diagnostics.HookStatus;
 
@@ -41,7 +42,8 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  *
  * <p>Three ways in: the two share-link parsers hand their link here as Instagram reads it from
  * the server, and every clipboard copy, share sheet and share Instagram sends straight to one app
- * goes through the stand-ins below, which clean the Instagram links in the text on its way out.
+ * goes through the stand-ins below, which clean the Instagram links in the text on its way out,
+ * and move the links to instagram.com to the Sharing domain when one is set ({@link SharingDomain}).
  * The same activity-start stand-ins send a link opened from a bio straight to its page, not
  * through Instagram's click tracker. Nothing here goes online.
  */
@@ -277,15 +279,19 @@ public final class LinkCleaner {
         }
     }
 
-    /** [text] with every Instagram link in it cleaned. The rest of the text stays as it was. */
+    /**
+     * [text] with every Instagram link in it cleaned, and each link to instagram.com on the Sharing
+     * domain when one is set. The rest of the text stays as it was.
+     */
     static String cleanText(String text) {
         if (text.indexOf("://") < 0) return text;
+        String domain = SharingDomain.chosen();
         Matcher links = WEB_LINK.matcher(text);
         StringBuilder out = null;
         int last = 0;
         while (links.find()) {
             String link = links.group();
-            String cleaned = clean(link);
+            String cleaned = SharingDomain.moved(clean(link), domain);
             if (cleaned.equals(link)) continue;
             if (out == null) out = new StringBuilder(text.length());
             out.append(text, last, links.start()).append(cleaned);

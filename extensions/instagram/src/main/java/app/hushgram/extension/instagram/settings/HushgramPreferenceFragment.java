@@ -78,6 +78,7 @@ import app.hushgram.extension.instagram.misc.MediaCache;
 import app.hushgram.extension.instagram.misc.NotificationGroups;
 import app.hushgram.extension.instagram.misc.OverrideImport;
 import app.hushgram.extension.instagram.misc.SpoofLocation;
+import app.hushgram.extension.instagram.share.SharingDomain;
 import app.hushgram.extension.instagram.stories.StoryRingSize;
 import app.hushgram.extension.instagram.stories.StoryTimeMode;
 import app.hushgram.extension.instagram.download.FileNameTemplate;
@@ -343,6 +344,7 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     L10n.t("Takes stkn, igsh, utm_source and other tracking keys off the links you copy or share, "
                             + "and opens a bio link without going through Instagram's click tracker. "
                             + "The post, reel or profile a link opens stays the same.")));
+            privacy.add(sharingDomainRow(context));
         }
         if (build.contains(PatchFamily.EXTERNAL_BROWSER)) {
             privacy.add(toggle(context, Settings.OPEN_LINKS_EXTERNALLY, L10n.t("Open links in external browser"),
@@ -2600,6 +2602,47 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         return row;
     }
 
+    /**
+     * The domain Sanitize sharing links moves links to instagram.com to. What's typed is saved
+     * bare (no scheme, no closing slash), and what isn't a domain is refused with a toast.
+     */
+    static SharingDomainRow sharingDomainRow(Context context) {
+        SharingDomainRow row = new SharingDomainRow(context);
+        row.setKey(Settings.SHARING_DOMAIN.key);
+        row.setTitle(L10n.t("Sharing domain"));
+        row.setDialogTitle(L10n.t("Sharing domain"));
+        row.setDialogMessage(L10n.t("Links to instagram.com that you copy or share go out on this domain "
+                + "instead, for a site that shows Instagram posts and reels in chat apps. Type the domain alone, "
+                + "like example.com. Leave it blank to keep instagram.com."));
+        row.setPositiveButtonText(L10n.t("Save"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        EditText field = row.getEditText();
+        field.setSingleLine(true);
+        field.setHint("example.com");
+        row.setText(Settings.SHARING_DOMAIN.savedValue());
+        row.setOnPreferenceChangeListener((preference, typed) -> {
+            String raw = typed == null ? "" : typed.toString();
+            String domain = SharingDomain.normalize(raw);
+            if (domain == null) {
+                Utils.showToastShort(L10n.t("That isn't a domain. Type one like example.com, or leave it blank."));
+                return false;
+            }
+            if (domain.equals(raw)) return true;
+            // Keeps the bare domain in place of what was typed, as the file name row does.
+            ((SharingDomainRow) preference).setText(domain);
+            return false;
+        });
+        return row;
+    }
+
+    /** What the Sharing domain row says: where links to instagram.com go out. */
+    static String sharingDomainSummary(String text) {
+        String domain = SharingDomain.normalize(text);
+        return domain == null || domain.isEmpty()
+                ? L10n.t("Links keep instagram.com.")
+                : L10n.f("Links to instagram.com go out on %1$s.", L10n.isolate(domain));
+    }
+
     /** What the place row says: the place, or that there's none and what a fix answers then. */
     static String placeSummary(String text) {
         double[] place = SpoofLocation.parse(text);
@@ -2913,6 +2956,34 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
      * shared page syncing it from the setting, or an import. Its dialog shows what the typed
      * template names a video, as it's typed.
      */
+    static final class SharingDomainRow extends EditTextPreference {
+        SharingDomainRow(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void setText(String text) {
+            super.setText(text);
+            setSummary(sharingDomainSummary(text));
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setAccessibilityDelegate(new RowSemantics(this, Button.class));
+        }
+
+        /** Its edit dialog takes the screen's colors, as the place's does. */
+        @Override
+        protected void showDialog(Bundle state) {
+            super.showDialog(state);
+            if (getDialog() instanceof AlertDialog) ScreenColors.dialog((AlertDialog) getDialog());
+            fitAboveKeyboard(getDialog());
+        }
+    }
+
     static final class PlaceRow extends EditTextPreference {
         PlaceRow(Context context) {
             super(context);
