@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Clean up Reels has a fourth switch, Hide the comment bar on reposted reels, that starts off. With it on, a reel you open from a profile's reposts has no Add comment bar under it, and the comment button still opens the comments. Asked for in #64.
+
 * **Instagram:** Details in a post's menu now has Copy username and Copy caption under the post's details. They copy who posted it and the caption exactly as it was written, emoji and right-to-left text included, and each shows only when the post has one. On a carousel the caption comes from the post itself. Asked for in #29.
 
 * **Instagram:** Save comment photo now follows Name saves by account and post time. A comment's photo is named for the person who wrote the comment and when they wrote it, like `username_20261005_143012`, and Folder per account files it under that person's name. A comment whose author or time can't be read keeps the usual `IG_IMG_` name. Asked for in #20.

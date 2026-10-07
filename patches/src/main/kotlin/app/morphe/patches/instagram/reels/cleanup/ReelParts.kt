@@ -10,6 +10,7 @@ private const val DECLUTTER = "$EXTENSION_PACKAGE/reels/ReelDeclutter;"
 internal const val HIDE_FOLLOW_BUTTON = "$DECLUTTER->hideFollowButton()Z"
 internal const val HIDE_CHIPS = "$DECLUTTER->hideChips()Z"
 internal const val HIDE_SOCIAL_FOOTER = "$DECLUTTER->hideSocialFooter()Z"
+internal const val HIDE_COMMENT_BAR = "$DECLUTTER->hideCommentBar(Ljava/lang/Object;)Z"
 
 /**
  * A part of the Reels viewer the patch hides: the method whose marker ends in [marker], and the
@@ -74,4 +75,17 @@ internal const val SOCIAL_CONTEXT_CHECK = "MediaSocialContextViewUtil_shouldHide
 /** Types the social context's enum has to name, so the check is known to be handed that line. */
 internal val SOCIAL_CONTEXT_TYPES = listOf("FOLLOWED_BY", "LIKED_BY")
 
-internal val CLEANUP_MARKERS = REEL_PARTS.map { it.marker } + FLOATING_BUBBLES + SOCIAL_CONTEXT_CHECK
+/**
+ * The controller of the Add comment bar under a reel opened outside the Reels tab, such as from a
+ * profile's reposts: its show, the hide Instagram calls itself, and its onViewCreated, which
+ * inflates the bar and keeps it.
+ */
+internal const val COMMENT_BAR_SHOW = "ClipsViewerCommentBarController_showCommentBar"
+internal const val COMMENT_BAR_HIDE = "ClipsViewerCommentBarController_hideCommentBar"
+internal const val COMMENT_BAR_CREATED = "ClipsViewerCommentBarController_onViewCreated"
+
+/** Where the viewer was opened from, an enum that keeps its name, which the controller holds. */
+internal const val CLIPS_VIEWER_SOURCE = "Lcom/instagram/clips/intf/ClipsViewerSource;"
+
+internal val CLEANUP_MARKERS = REEL_PARTS.map { it.marker } + FLOATING_BUBBLES + SOCIAL_CONTEXT_CHECK +
+    COMMENT_BAR_SHOW + COMMENT_BAR_HIDE + COMMENT_BAR_CREATED

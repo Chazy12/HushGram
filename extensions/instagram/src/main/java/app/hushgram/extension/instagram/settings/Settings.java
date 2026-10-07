@@ -572,6 +572,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_hide_reel_social_footer", TRUE);
 
     /**
+     * The Add comment bar under a reel opened from a profile's reposts. The reel's comment button
+     * still opens its comments. Off to start.
+     */
+    public static final BooleanSetting HIDE_REEL_COMMENT_BAR =
+            new BooleanSetting("hushgram_hide_reel_comment_bar", FALSE);
+
+    /**
      * Download in every reel's more menu, saving the reel through the save pipeline below instead
      * of Instagram's own save, which only some reels offer and which stamps a watermark on.
      */

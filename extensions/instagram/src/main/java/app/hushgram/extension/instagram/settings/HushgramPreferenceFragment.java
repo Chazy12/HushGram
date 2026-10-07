@@ -559,6 +559,9 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     L10n.t("The bubbles of friends who liked or commented, the Followed by and Liked by lines with "
                             + "their faces, the comment shown under a reel and the row of friends who saw it. Comments "
                             + "are still a tap away.")));
+            reels.add(toggle(context, Settings.HIDE_REEL_COMMENT_BAR, L10n.t("Hide the comment bar on reposted reels"),
+                    L10n.t("The Add comment bar under a reel you open from a profile's reposts. The comment button "
+                            + "still opens the comments.")));
         }
         if (build.contains(PatchFamily.REEL_WATCH_HISTORY)) {
             reels.add(toggle(context, Settings.DONT_SEND_REEL_WATCH_HISTORY, L10n.t("Don't send reel watch history"),

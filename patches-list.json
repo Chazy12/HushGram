@@ -228,7 +228,7 @@
     },
     {
       "name": "Clean up Reels",
-      "description": "Hides the Follow button on reels, the pills that push Edits, templates, Meta AI and Ray-Ban Meta glasses, and friends' activity with the comment preview. Each part has its own switch.",
+      "description": "Hides the Follow button on reels, the pills that push Edits, templates, Meta AI and Ray-Ban Meta glasses, friends' activity with the comment preview, and the comment bar under a reposted reel. Each part has its own switch.",
       "category": "Interface",
       "use": false,
       "dependencies": [
