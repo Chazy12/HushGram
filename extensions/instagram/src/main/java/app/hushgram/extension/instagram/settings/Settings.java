@@ -552,6 +552,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_save_profile_pictures", FALSE);
 
     /**
+     * A voice message's menu in a chat gets Save
+     * ({@link app.hushgram.extension.instagram.download.VoiceMessage}). Off until enabled.
+     */
+    public static final BooleanSetting DOWNLOAD_VOICE_MESSAGES =
+            new BooleanSetting("hushgram_download_voice_messages", FALSE);
+
+    /**
      * Feed's action rows leave out the Comment button and the comment count
      * ({@link app.hushgram.extension.instagram.feed.CommentsButton}). Read as each row's state is
      * built, so a post already drawn changes the next time Feed draws it. Off to start.

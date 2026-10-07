@@ -210,6 +210,11 @@ public final class SettingsStatus {
         return false;
     }
 
+    /** Rewritten by the Download voice messages patch. */
+    public static boolean voiceMessage() {
+        return false;
+    }
+
     public static boolean hideComments() {
         return false;
     }

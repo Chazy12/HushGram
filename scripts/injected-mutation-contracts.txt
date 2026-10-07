@@ -1039,3 +1039,15 @@ once-call Lapp/hushgram/extension/instagram/feed/RefreshConfirm;->pull(Landroid/
 # both helper names. Left out, the menu never gets the row; a third call, or one elsewhere, isn't
 # what the patch wrote. SaveProfilePictureHookTest checks where both land on each declared build.
 once-call Lapp/hushgram/extension/instagram/download/ProfilePicture;->offer(Ljava/lang/Object;Ljava/lang/Object;Landroid/content/Context;)V in instance (Landroid/view/View;)V sites 2 holding UserOptionsBottomSheetOverflowHelper UserOptionsOverflowHelper
+# Download voice messages (#20) hands VoiceMessage.offer the answer to whether a message's kind can be
+# saved, and the message, right after the menu model's builder asks it (09xN.invoke on 450, the
+# lambda building the long-press menu's model, the one method of this shape loading these strings
+# and calling that check). Left out, a voice message's menu never gets Save; twice or elsewhere, it
+# isn't the hook the patch wrote.
+once-call Lapp/hushgram/extension/instagram/download/VoiceMessage;->offer(ILjava/lang/Object;)Z in instance ()Ljava/lang/Object; calling instance LX/0Jyt;->AYr(Lcom/instagram/common/session/UserSession;LX/0038;)Z holding imagine imagine_me
+# Its tap goes to VoiceMessage.save first in the chat's media saver's entry (0Prd.A03 on 450, the
+# static method of this shape in the class keeping DirectThreadMediaSaver as its name that calls the
+# check throwing on any other kind of message). Left out, Save on a voice message ends in that throw.
+# DownloadVoiceMessagesHookTest checks where both land on each declared build.
+start-call Lapp/hushgram/extension/instagram/download/VoiceMessage;->save(Landroid/content/Context;Ljava/lang/Object;)Z in static (L*;L*;L*;L*;Z)V calling static LX/0Prd;->A04(*)V class-holding DirectThreadMediaSaver Invalid\smessage\scontentType:\s
+once-call Lapp/hushgram/extension/instagram/download/VoiceMessage;->save(Landroid/content/Context;Ljava/lang/Object;)Z in static (L*;L*;L*;L*;Z)V calling static LX/0Prd;->A04(*)V class-holding DirectThreadMediaSaver Invalid\smessage\scontentType:\s

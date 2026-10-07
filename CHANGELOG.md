@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** New patch, Download voice messages, in simple mode with its switch off. Turn it on under Downloads and holding a voice message in a chat brings up Save, which keeps the recording as an M4A audio file in Recordings/Instagram, or Music/Instagram before Android 12. One sent to be played once never gets it. Asked for in #20.
+
 * **Instagram:** Show if a profile follows you has a new switch under Profiles, Show it as a chip, that starts off. With it on, the answer sits in an outlined chip under the profile's posts, followers and following counts instead of the gray line by the name, and when you follow each other it says Following each other. The label by the name stays the default. Asked for in #24.
 
 * **Instagram:** Clean up Reels has a fourth switch, Hide the comment bar on reposted reels, that starts off. With it on, a reel you open from a profile's reposts has no Add comment bar under it, and the comment button still opens the comments. Asked for in #64.

@@ -61,6 +61,7 @@ public final class FamilyNames {
     public static final String COMMENT_COPY = "Copy comment";
     public static final String COMMENT_PHOTO = "Save comment photo";
     public static final String PROFILE_PICTURE = "Save profile picture";
+    public static final String VOICE_MESSAGE = "Download voice messages";
     public static final String HIDE_COMMENTS = "Hide comments";
     public static final String REEL_DECLUTTER = "Clean up Reels";
     public static final String REEL_DOWNLOAD = "Download any reel";

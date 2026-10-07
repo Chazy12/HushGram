@@ -675,6 +675,43 @@
       "options": []
     },
     {
+      "name": "Download voice messages",
+      "description": "Adds an optional Save to the menu you get by holding a voice message in a chat. It saves the recording as an audio file. Its switch starts off.",
+      "category": "Downloads",
+      "use": true,
+      "dependencies": [
+        "BytecodePatch",
+        "HushGram settings"
+      ],
+      "compatiblePackages": {
+        "com.instagram.android": [
+          "450.0.0.50.77"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Instagram",
+          "packageName": "com.instagram.android",
+          "description": null,
+          "appIconColor": 14757996,
+          "signatures": [
+            "3a10c50c18ba937506c2875e9047be74f8fd8b86fae2ff9feaa50a81fcb4c014",
+            "5f3e50f435583c9ae626302a71f7340044087a7e2c60adacfc254205a993e305"
+          ],
+          "targets": [
+            {
+              "version": "450.0.0.50.77",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 385611438
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Full resolution photos",
       "description": "Loads photos in your feed, in carousels and in posts you open at the largest size Instagram sends rather than the size it picks for your screen. A second switch asks for a larger size on a phone under 1440 pixels wide. It can use more data.",
       "category": "Feed",

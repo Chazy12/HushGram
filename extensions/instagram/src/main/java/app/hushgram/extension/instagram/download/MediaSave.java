@@ -342,6 +342,33 @@ public final class MediaSave {
     }
 
     /**
+     * Save a sound recording, such as a voice message, from [url] on Meta's media servers. It goes
+     * to the phone's audio files ({@link MediaStoreWriter#audioDirectory}) as an M4A file, named as
+     * a photo is, by [details] when Name saves by account and post time is on and it knows enough,
+     * or else {@link MediaStoreWriter#AUDIO_PREFIX} and the time. [details] may be null.
+     *
+     * @return whether a save started. Never throws.
+     */
+    public static boolean saveAudio(Context context, String url, PostDetails details) {
+        try {
+            Context safe = ready(context);
+            if (safe == null) return false;
+            List<Rendition> found = url == null ? Collections.emptyList()
+                : metaOnly(usable(Collections.singletonList(Rendition.of(url))));
+            if (found.isEmpty()) {
+                failure(() -> "nothing to save: no recording address on Meta's media servers", null);
+                return false;
+            }
+            String address = found.get(0).url;
+            info(() -> "saving a recording, " + describe(address));
+            return startAudio(safe, details, fileJob(safe, address, Downloader.Kind.AUDIO)) != null;
+        } catch (Throwable t) {
+            failure(() -> "the recording save could not start", t);
+            return false;
+        }
+    }
+
+    /**
      * The single file a save of [renditions] would fetch: for a [video] the one that suits the
      * Download quality setting, and for a picture the largest. Only addresses on Meta's media
      * servers count. Null when none does. A video save can still take a better track from its
@@ -991,10 +1018,20 @@ public final class MediaSave {
 
     /** As above, naming the video from whatever of the post [details] holds and the file name asks for. */
     static Thread start(Context application, boolean video, PostDetails details, Job job) {
+        return start(application, video, false, details, job);
+    }
+
+    /** As above, for a sound recording, which goes to the phone's audio files. */
+    static Thread startAudio(Context application, PostDetails details, Job job) {
+        return start(application, false, true, details, job);
+    }
+
+    private static Thread start(Context application, boolean video, boolean audio, PostDetails details, Job job) {
         final PostDetails known = details == null ? PostDetails.NONE : details;
-        return launch(application, video, 0, save -> {
+        return launch(application, video, audio, 0, save -> {
             observeDetails(known);
-            MediaStoreWriter writer = new MediaStoreWriter(application, video, known);
+            MediaStoreWriter writer = audio ? MediaStoreWriter.forAudio(application, known)
+                : new MediaStoreWriter(application, video, known);
             Downloader.Result result = job.run(writer, save);
             boolean cancelled = result.status == Downloader.Status.CANCELLED;
             if (result.ok() || cancelled) info(() -> "save finished: " + result);
@@ -1009,6 +1046,11 @@ public final class MediaSave {
     /** Atomically admits one logical save and retires it for every normal result. */
     private static Thread launch(Context application, boolean video, int pages, Work work,
             Consumer<SaveControl.Save> finishing, Runnable finished) {
+        return launch(application, video, false, pages, work, finishing, finished);
+    }
+
+    private static Thread launch(Context application, boolean video, boolean audio, int pages, Work work,
+            Consumer<SaveControl.Save> finishing, Runnable finished) {
         int running;
         do {
             running = IN_FLIGHT.get();
@@ -1019,7 +1061,7 @@ public final class MediaSave {
         } while (!IN_FLIGHT.compareAndSet(running, running + 1));
         SaveControl.Save save;
         try {
-            save = SaveControl.begin(application, video, pages);
+            save = audio ? SaveControl.beginAudio(application) : SaveControl.begin(application, video, pages);
         } catch (Throwable failure) {
             IN_FLIGHT.decrementAndGet();
             throw failure;
