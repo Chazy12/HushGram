@@ -178,6 +178,7 @@ public class MediaCacheTest {
      * Before HushGram's settings are ready the switch is read from the settings file itself, so a
      * start that names the video cache that early still drops or carries out a clear over the limit.
      * Paused, by the switch, safe mode or the marker file, it reads as off, the way the setting would.
+     * After a start that died young it reads as nothing: this start may turn safe mode on.
      */
     @Test
     public void beforeTheSettingsAreReadyTheSavedSwitchAnswers() throws Exception {
@@ -187,6 +188,9 @@ public class MediaCacheTest {
         assertEquals(null, MediaCache.savedAnswer(null));
         assertEquals("Android's own application is there before any onCreate", context, MediaCache.currentApplication());
 
+        // The record this sandbox's first start left, if this class came first.
+        File record = new File(context.getFilesDir(), HushgramPause.START_RECORD_NAME);
+        record.delete();
         SharedPreferences saved = context.getSharedPreferences(Setting.PREFERENCES_NAME, Context.MODE_PRIVATE);
         saved.edit().clear().commit();
         assertEquals(Boolean.FALSE, MediaCache.savedAnswer(context));
@@ -201,6 +205,21 @@ public class MediaCacheTest {
         assertTrue(marker.createNewFile());
         assertEquals(Boolean.FALSE, MediaCache.savedAnswer(context));
         assertTrue(marker.delete());
+
+        // The last start died young: whether safe mode comes on is this start's to decide, later.
+        assertTrue(record.createNewFile());
+        assertEquals(null, MediaCache.savedAnswer(context));
+        saved.edit().putBoolean(MediaCache.SAFE_MODE_KEY, true).commit();
+        assertEquals("safe mode already on still reads as off", Boolean.FALSE, MediaCache.savedAnswer(context));
+        saved.edit().putBoolean(MediaCache.SAFE_MODE_KEY, false).commit();
+        File over = file("ExoPlayerCacheDir/videocache/2.0.1.v3.exo", 900, OLD);
+        assertEquals(0, MediaCache.clearIfOver(context, 100, NOW));
+        MediaCache.beforeVideoCache(cache.getPath(), () -> MediaCache.savedAnswer(context));
+        Utils.awaitBackgroundTasksForTests();
+        assertTrue("the note waits for a start that can tell", over.exists());
+        assertTrue(MediaCache.videosWaiting(context));
+        assertTrue(record.delete());
+        MediaCache.restartForTests();
 
         // Saved on: the clear over the limit happens at a start that names the cache that early.
         File span = file("ExoPlayerCacheDir/videocache/1.0.1.v3.exo", 900, OLD);

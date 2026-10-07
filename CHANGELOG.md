@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Clear the media cache leaves a clear over the limit for a later start when the last one crashed early, since that start might be the one that turns safe mode on.
+
 * **Instagram:** New patch, Save profile picture, in simple mode with its switch off. Turn it on under Downloads and the menu on someone's profile gets Save profile picture, which saves their picture at the largest size Instagram has.
 
 * **Instagram:** Show a post's exact time, a new patch you pick in Manager. A post in your feed says when it went up, like Oct 2, 3:45 PM, instead of 3 hours ago, and each comment says when it was written instead of 3h, in your phone's language and 12 or 24-hour setting. Its switch sits under Feed and starts on.

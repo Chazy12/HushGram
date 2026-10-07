@@ -240,7 +240,8 @@ public final class MediaCache {
      * limit did and the switch is still [on], then deletes on a background thread whatever an earlier
      * start moved aside and didn't get to delete. With the switch off, a clear over the limit's note
      * goes unheeded, and so do both notes when the video cache is a link. When the switch can't be
-     * read at all, [on] is null and a clear over the limit's note waits for a start that can.
+     * read at all, or this start may yet turn safe mode on, [on] is null and a clear over the
+     * limit's note waits for a start that can tell.
      */
     private static void clearVideosAtStart(File cache, Boolean on) {
         File asked = new File(cache, VIDEOS_AT_START);
@@ -366,6 +367,10 @@ public final class MediaCache {
      * once the settings are ready: off while HushGram is paused, by the Pause switch, safe mode or
      * the marker file. Null when there's no context or the file can't be read. Loads no setting,
      * which can't be done before HushGram has a context.
+     *
+     * <p>Null too while the last start's record is still there ({@link HushgramPause#START_RECORD_NAME}):
+     * that start died young, so this one may be the third crash in a row, which turns safe mode on
+     * only once HushGram has its context, after this has read the switch. A later start reads it.
      */
     static Boolean savedAnswer(Context context) {
         if (context == null) return null;
@@ -374,6 +379,8 @@ public final class MediaCache {
             if (files != null && new File(files, HushgramPause.MARKER_FILE_NAME).exists()) return false;
             SharedPreferences saved = context.getSharedPreferences(Setting.PREFERENCES_NAME, Context.MODE_PRIVATE);
             if (saved.getBoolean(PAUSED_KEY, false) || saved.getBoolean(SAFE_MODE_KEY, false)) return false;
+            File own = context.getFilesDir();
+            if (own != null && new File(own, HushgramPause.START_RECORD_NAME).exists()) return null;
             return saved.getBoolean(SWITCH_KEY, false);
         } catch (Throwable failure) {
             return null;
