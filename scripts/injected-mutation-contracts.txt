@@ -7,8 +7,8 @@
 #   no-call <method reference> outside <package prefix>
 #   next-call <method reference> after <method reference> [in [static|instance] <shape>] [calling [static|instance] <method reference>] holding <string> [<string> ...]
 #   sole-call <method reference> replacing <method reference> [in [static|instance] <shape>] [calling [static|instance] <method reference>] holding <string> [<string> ...]
-#   once-call <method reference> [in [static|instance] <shape>] [calling [static|instance] <method reference>] holding <string> [<string> ...]
-#   shared-call <method reference> [in [static|instance] <shape>] [calling [static|instance] <method reference>] holding <string> [<string> ...]
+#   once-call <method reference> [in [static|instance] <shape>] [calling [static|instance] <method reference>] [sites <n>] holding <string> [<string> ...]
+#   shared-call <method reference> [in [static|instance] <shape>] [calling [static|instance] <method reference>] [sites <n>] holding <string> [<string> ...]
 #   story-loop-call <native method reference> [in [static|instance] <shape>] [calling [static|instance] <method reference>] holding <string> [<string> ...]
 # A start-call, next-call, sole-call, once-call or shared-call rule picks its method by every string
 # it names and its shape, and exactly one of Instagram's methods may answer that; name as much as the
@@ -21,7 +21,11 @@
 # Where a sibling has the same strings and shape, calling adds a call the method makes: it has the
 # shape only when one of its invokes names a method reference matching the one written, with * as in
 # a shape (and any run in the method's name). static counts an invoke-static alone, instance any
-# other invoke, and neither word any invoke.
+# other invoke, and neither word any invoke. A once-call or shared-call rule's method calls the hook
+# once, or with sites <n> (2 or more) exactly n times, for a filter put on each of several reads in
+# one method. Where start-call and shared-call look for the hook in the other methods holding the
+# strings, they leave out a method another rule for the same hook picks, so two rules told apart
+# only by calling each hold their own method.
 #
 # One guard per hot method. A guard the patch puts first in a method gets a start-call rule, which
 # holds it first there and in no other method holding the same strings, and a once-call rule, which
@@ -396,17 +400,20 @@ once-call Lapp/hushgram/extension/instagram/feed/FeedSuggestions;->filter(Ljava/
 # method that sets it up (the one holding both log lines below) stores it, once. It also passes the
 # input flag each touch method of a pager's own list reads (the list class ViewPager2 makes, whose
 # onInterceptTouchEvent and onTouchEvent read the flag setUserInputEnabled writes, pinned to 450)
-# through TabSwipe.input(), once in each. Left out, the main tabs still take a sideways swipe.
+# through TabSwipe.input(), once in each. The two touch rules are told apart by the call each method
+# makes, and neither counts the other's method against it. Left out, the main tabs still take a
+# sideways swipe.
 once-call Lapp/hushgram/extension/instagram/feed/TabSwipe;->mainPager(Landroid/view/View;)V in static (L*;L*;Ljava/lang/String;ZZ)V holding initViewPagerIfNeeded:\sViewPager\sview\snot\sfound\sin\slayout\sfor\sid= SwipeableTabsPagerBinder
 shared-call Lapp/hushgram/extension/instagram/feed/TabSwipe;->input(Landroid/view/View;I)Z in instance (Landroid/view/MotionEvent;)Z calling instance Landroidx/recyclerview/widget/RecyclerView;->onInterceptTouchEvent(Landroid/view/MotionEvent;)Z holding Landroidx/viewpager2/widget/ViewPager2;->A0A:Z
 shared-call Lapp/hushgram/extension/instagram/feed/TabSwipe;->input(Landroid/view/View;I)Z in instance (Landroid/view/MotionEvent;)Z calling instance Landroidx/recyclerview/widget/RecyclerView;->onTouchEvent(Landroid/view/MotionEvent;)Z holding Landroidx/viewpager2/widget/ViewPager2;->A0A:Z
 # Hide the home feed passes each item Home reads through HomeFeed.filter, whatever its kind: in
 # Home's feed response parser (the one holding Home's pull to refresh window) and in the read of
 # Home's store of the last run (the one method taking bytes in the class holding the two feed kind
-# names below). Never in the feed item helper, which Explore's chain of posts and the shop and ad
-# feeds read through too. Left out, Home keeps its posts with the switch on.
+# names below), where it filters each of the read's two helper reads, so twice there. Never in the
+# feed item helper, which Explore's chain of posts and the shop and ad feeds read through too.
+# Left out, Home keeps its posts with the switch on.
 shared-call Lapp/hushgram/extension/instagram/feed/HomeFeed;->filter(Ljava/lang/Object;)Ljava/lang/Object; in instance (L*;)Ljava/lang/Object; holding feed_items pull_to_refresh_window_ms
-shared-call Lapp/hushgram/extension/instagram/feed/HomeFeed;->filter(Ljava/lang/Object;)Ljava/lang/Object; in instance ([B)LX/*; class-holding MIXED_UNCONNECTED EXPLORE_STORY
+shared-call Lapp/hushgram/extension/instagram/feed/HomeFeed;->filter(Ljava/lang/Object;)Ljava/lang/Object; in instance ([B)LX/*; sites 2 class-holding MIXED_UNCONNECTED EXPLORE_STORY
 once-call Lapp/hushgram/extension/instagram/metaai/MetaAi;->filter(Ljava/lang/Object;)Ljava/lang/Object; in static (L*;)LX/*; calling L*;->parseFromJsonParser(*)Ljava/lang/Object; class-holding feedContent feedItemType
 #
 # Hide suggested posts answers the home feed adapter's "no next page" flag through feedEnded() at

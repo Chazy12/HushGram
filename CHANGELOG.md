@@ -141,6 +141,7 @@ Every HushGram release, newest first.
 * **Tooling:** Advisory checks now hold unread or conflicting severity for review, including CVSS 4 beside a low label. Package ratings stay tied to the queried dependency and version, and aliases retain the strongest evidence. Malformed, repeated or whitespace-terminated CVSS 3 metrics are refused. Known HIGH and CRITICAL ratings remain visible beside unread evidence.
 
 * **Tooling:** The release check counts every top-level test class a Kotlin test file declares, so a second class in one file no longer reads as left over from a deleted one and the index push goes through.
+* **Tooling:** The injected-code contracts no longer count a method another rule picks for the same hook as a stray call, so the two touch methods Stop swiping between tabs hooks each pass on their own. A rule can also say how many times its method calls the hook, which Hide the home feed needs since it filters both reads of Home's saved feed.
 
 ## 0.0.5 (2026-10-03)
 

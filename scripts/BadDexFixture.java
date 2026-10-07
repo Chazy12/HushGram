@@ -129,6 +129,12 @@ import java.util.Set;
  * returns a tab, which Hide the Reels tab passes through the extension. A fallback beside it holds
  * the same string and has the same shape but asks nothing, so a rule picks the home tab by the
  * static call it makes (calling static), a call whose class and name are Redex's written with a *.
+ * And the list ViewPager2 makes, whose two touch methods share a shape and a field and each pass
+ * that field through the same tab swipe check, so two shared-call rules tell them apart by the
+ * call each makes and neither counts the other's method as somewhere else the check went. Beside
+ * them, in one build, a third method reading the field passes it through the check too. And the
+ * read of Home's store of the last run, which filters each of its two helper reads, so its rule
+ * says sites 2.
  * The rules all these builds are held to are written beside them as contracts.txt, since
  * HushGram's own contract file names Instagram's code.
  *
@@ -377,6 +383,14 @@ public class BadDexFixture {
     private static final ImmutableMethodReference SETUP_SCREEN = method(ANALYTICS, "setupScreen", "I", "Ljava/lang/String;");
     private static final List<String> SETUP_MARKERS = Arrays.asList(
             "FragmentActivity is required to open CDS bottom sheet", "foa_bottom_sheet_config", "cds_bloks");
+    private static final String TAB_PAGER = "Lfixture/TabPager;";
+    private static final String TAB_LIST = "Lfixture/TabList;";
+    private static final String TAB_SWIPE = "Lapp/hushgram/extension/fixture/feed/TabSwipe;";
+    private static final ImmutableMethodReference TAB_SWIPE_INPUT = method(TAB_SWIPE, "input", "Z", VIEW, "I");
+    private static final ImmutableFieldReference TAB_PAGING = new ImmutableFieldReference(TAB_PAGER, "paging", "Z");
+    private static final String FEED_STORE = "Lfixture/FeedStore;";
+    private static final String HOME_FEED = "Lapp/hushgram/extension/fixture/feed/HomeFeed;";
+    private static final ImmutableMethodReference HOME_FEED_FILTER = method(HOME_FEED, "filter", OBJECT, OBJECT);
 
     /**
      * The rules the fixture's builds are held to, written beside the dex files as contracts.txt.
@@ -456,7 +470,10 @@ public class BadDexFixture {
             "start-call Lapp/hushgram/extension/fixture/settings/NavigationSettings;->remember(Landroid/view/View;Ljava/lang/Object;Landroid/view/View$OnLongClickListener;)Landroid/view/View$OnLongClickListener; in instance (Landroid/view/View$OnLongClickListener;)V calling instance Landroid/view/View;->setOnLongClickListener(Landroid/view/View$OnLongClickListener;)V holding Lfixture/NavigationLitho;->button:Landroid/view/View;",
             "shared-call Lapp/hushgram/extension/fixture/settings/NavigationSettings;->remember(Landroid/view/View;Ljava/lang/Object;Landroid/view/View$OnLongClickListener;)Landroid/view/View$OnLongClickListener; in instance (Landroid/view/View$OnLongClickListener;)V calling instance Landroid/view/View;->setOnLongClickListener(Landroid/view/View$OnLongClickListener;)V holding Lfixture/NavigationPlain;->button:Landroid/view/View;",
             "shared-call Lapp/hushgram/extension/fixture/settings/NavigationSettings;->remember(Landroid/view/View;Ljava/lang/Object;Landroid/view/View$OnLongClickListener;)Landroid/view/View$OnLongClickListener; in instance (Landroid/view/View$OnLongClickListener;)V calling instance Landroid/view/View;->setOnLongClickListener(Landroid/view/View$OnLongClickListener;)V holding Lfixture/NavigationLitho;->button:Landroid/view/View;",
-            "once-call Lapp/hushgram/extension/fixture/settings/NavigationSettings;->bind(Landroid/view/View;Ljava/lang/Object;)V in static (Ljava/lang/Object;)Landroid/view/View; holding InstagramMainActivity.createTabButton(");
+            "once-call Lapp/hushgram/extension/fixture/settings/NavigationSettings;->bind(Landroid/view/View;Ljava/lang/Object;)V in static (Ljava/lang/Object;)Landroid/view/View; holding InstagramMainActivity.createTabButton(",
+            "shared-call Lapp/hushgram/extension/fixture/feed/TabSwipe;->input(Landroid/view/View;I)Z in instance (Landroid/view/MotionEvent;)Z calling instance Lfixture/TabList;->onInterceptTouchEvent(Landroid/view/MotionEvent;)Z holding Lfixture/TabPager;->paging:Z",
+            "shared-call Lapp/hushgram/extension/fixture/feed/TabSwipe;->input(Landroid/view/View;I)Z in instance (Landroid/view/MotionEvent;)Z calling instance Lfixture/TabList;->onTouchEvent(Landroid/view/MotionEvent;)Z holding Lfixture/TabPager;->paging:Z",
+            "shared-call Lapp/hushgram/extension/fixture/feed/HomeFeed;->filter(Ljava/lang/Object;)Ljava/lang/Object; in instance ([B)Ljava/lang/Object; sites 2 holding feed_store_items");
 
     /**
      * One of the framework calls a patch sends to an extension stand-in (the settings patch's
@@ -1389,6 +1406,90 @@ public class BadDexFixture {
                 define(NAV_ENTRY, "bind", "V", true, body(2, op(Opcode.RETURN_VOID)), VIEW, OBJECT)));
     }
 
+    /**
+     * The list ViewPager2 makes: its two touch methods, of one shape, each read the paging field
+     * and pass it through the tab swipe check [interceptHooks] and [touchHooks] times before the
+     * list's own call, intercept to onInterceptTouchEvent and touch to onTouchEvent. Beside them
+     * fling reads the field too, and with [flingHooked] passes it through the check, without
+     * either call.
+     */
+    private static ClassDef tabPager(int interceptHooks, int touchHooks, boolean flingHooked) {
+        return new ImmutableClassDef(TAB_PAGER, AccessFlags.PUBLIC.getValue(), VIEW, null, null, null,
+                Arrays.asList(new ImmutableField(TAB_PAGER, "paging", "Z", AccessFlags.PUBLIC.getValue(), null, null, null),
+                        new ImmutableField(TAB_PAGER, "list", TAB_LIST, AccessFlags.PUBLIC.getValue(), null, null, null)),
+                Arrays.asList(touchMethod("intercept", interceptHooks, "onInterceptTouchEvent"),
+                        touchMethod("touch", touchHooks, "onTouchEvent"), touchMethod("fling", flingHooked ? 1 : 0, null)));
+    }
+
+    /** v0 the paging field and the answer, v1 the list and its answer, v2 this, v3 the event. */
+    private static Method touchMethod(String name, int hooks, String listCall) {
+        List<Instruction> code = new ArrayList<>();
+        code.add(new ImmutableInstruction22c(Opcode.IGET_BOOLEAN, 0, 2, TAB_PAGING));
+        for (int i = 0; i < hooks; i++) {
+            code.add(new ImmutableInstruction35c(Opcode.INVOKE_STATIC, 2, 2, 0, 0, 0, 0, TAB_SWIPE_INPUT));
+            code.add(op(Opcode.MOVE_RESULT, 0));
+        }
+        if (listCall != null) {
+            code.add(new ImmutableInstruction22c(Opcode.IGET_OBJECT, 1, 2, new ImmutableFieldReference(TAB_PAGER, "list", TAB_LIST)));
+            code.add(new ImmutableInstruction35c(Opcode.INVOKE_VIRTUAL, 2, 1, 3, 0, 0, 0, method(TAB_LIST, listCall, "Z", MOTION_EVENT)));
+            code.add(op(Opcode.MOVE_RESULT, 1));
+            code.add(new ImmutableInstruction12x(Opcode.OR_INT_2ADDR, 0, 1));
+        }
+        code.add(op(Opcode.RETURN, 0));
+        return define(TAB_PAGER, name, "Z", false, body(4, code.toArray(new Instruction[0])), MOTION_EVENT);
+    }
+
+    private static ClassDef tabList() {
+        return new ImmutableClassDef(TAB_LIST, AccessFlags.PUBLIC.getValue(), OBJECT, null, null, null, null, Arrays.asList(
+                define(TAB_LIST, "onInterceptTouchEvent", "Z", false, body(3, new ImmutableInstruction11n(Opcode.CONST_4, 0, 0),
+                        op(Opcode.RETURN, 0)), MOTION_EVENT),
+                define(TAB_LIST, "onTouchEvent", "Z", false, body(3, new ImmutableInstruction11n(Opcode.CONST_4, 0, 0),
+                        op(Opcode.RETURN, 0)), MOTION_EVENT)));
+    }
+
+    private static ClassDef tabSwipe() {
+        return new ImmutableClassDef(TAB_SWIPE, AccessFlags.PUBLIC.getValue(), OBJECT, null, null, null, null,
+                Collections.singletonList(define(TAB_SWIPE, "input", "Z", true, body(2, op(Opcode.RETURN, 1)), VIEW, "I")));
+    }
+
+    /**
+     * The read of Home's store of the last run: two helper reads, merged. [hooks] filter calls go
+     * on them, the first read taking the odd one, so two puts one on each.
+     */
+    private static ClassDef feedStore(int hooks) {
+        ImmutableMethodReference first = method(FEED_STORE, "first", OBJECT, "[B");
+        ImmutableMethodReference second = method(FEED_STORE, "second", OBJECT, "[B");
+        ImmutableMethodReference merge = method(FEED_STORE, "merge", OBJECT, OBJECT, OBJECT);
+        List<Instruction> code = new ArrayList<>();
+        code.add(new ImmutableInstruction21c(Opcode.CONST_STRING, 0, new ImmutableStringReference("feed_store_items")));
+        code.add(invoke(first, 4));
+        code.add(op(Opcode.MOVE_RESULT_OBJECT, 0));
+        for (int i = 0; i < (hooks + 1) / 2; i++) {
+            code.add(invoke(HOME_FEED_FILTER, 0));
+            code.add(op(Opcode.MOVE_RESULT_OBJECT, 0));
+        }
+        code.add(invoke(second, 4));
+        code.add(op(Opcode.MOVE_RESULT_OBJECT, 1));
+        for (int i = 0; i < hooks / 2; i++) {
+            code.add(invoke(HOME_FEED_FILTER, 1));
+            code.add(op(Opcode.MOVE_RESULT_OBJECT, 1));
+        }
+        code.add(invoke(merge, 0, 1));
+        code.add(op(Opcode.MOVE_RESULT_OBJECT, 0));
+        code.add(op(Opcode.RETURN_OBJECT, 0));
+        ImmutableMethodImplementation helper = body(2, new ImmutableInstruction11n(Opcode.CONST_4, 0, 0), op(Opcode.RETURN_OBJECT, 0));
+        return new ImmutableClassDef(FEED_STORE, AccessFlags.PUBLIC.getValue(), OBJECT, null, null, null, null, Arrays.asList(
+                define(FEED_STORE, "read", OBJECT, false, body(5, code.toArray(new Instruction[0])), "[B"),
+                define(FEED_STORE, "first", OBJECT, true, helper, "[B"),
+                define(FEED_STORE, "second", OBJECT, true, helper, "[B"),
+                define(FEED_STORE, "merge", OBJECT, true, body(2, op(Opcode.RETURN_OBJECT, 0)), OBJECT, OBJECT)));
+    }
+
+    private static ClassDef homeFeed() {
+        return new ImmutableClassDef(HOME_FEED, AccessFlags.PUBLIC.getValue(), OBJECT, null, null, null, null,
+                Collections.singletonList(define(HOME_FEED, "filter", OBJECT, true, body(1, op(Opcode.RETURN_OBJECT, 0)), OBJECT)));
+    }
+
     private static ClassDef inboxFilter() {
         return new ImmutableClassDef(META_AI, AccessFlags.PUBLIC.getValue(), OBJECT, null, null, null, null,
                 Collections.singletonList(define(META_AI, "inboxRow", OBJECT, true, body(1, op(Opcode.RETURN_OBJECT, 0)), OBJECT)));
@@ -2288,7 +2389,8 @@ public class BadDexFixture {
                 tabBuilder(STATIC_CHECK, true, false), reelsTab(), dmReceipts(1, false), visualSeen(),
                 inboxSections(true), inboxFilter(), familyProviders(1, true, false), trustedProvider(), instagramSignature(),
                 setupPresenter(true), setupOpeners(true), setupData(), analyticsSetup(), swipeMovement(1), swipeConfig(), swipeGate(), storyLoopViewer("", true), storyAdvance(),
-                navigationBinding(NAV_PLAIN, 1, false), navigationBinding(NAV_LITHO, 1, false), navigationFactory(1), navigationSettings());
+                navigationBinding(NAV_PLAIN, 1, false), navigationBinding(NAV_LITHO, 1, false), navigationFactory(1), navigationSettings(),
+                tabPager(1, 1, false), tabList(), tabSwipe(), feedStore(2), homeFeed());
     }
 
     /** The clean host, Facebook's classes as they ship, with the batcher's flush making [handOver]. */
@@ -2309,7 +2411,8 @@ public class BadDexFixture {
                 seenStore(Collections.<Instruction>emptyList(), Collections.<Instruction>emptyList(), false),
                 seenCache(Collections.<Instruction>emptyList(), false), tabBuilder(STATIC_CHECK, false, false),
                 dmReceipts(0, false), inboxSections(false), familyProviders(0, false, false), trustedProvider(), setupPresenter(false), setupOpeners(false), setupData(), storyRetryQueue(0, false, false), swipeMovement(0), swipeConfig(), storyLoopViewer("", false),
-                navigationBinding(NAV_PLAIN, 0, false), navigationBinding(NAV_LITHO, 0, false), navigationFactory(0));
+                navigationBinding(NAV_PLAIN, 0, false), navigationBinding(NAV_LITHO, 0, false), navigationFactory(0),
+                tabPager(0, 0, false), tabList(), feedStore(0));
     }
 
     /**
@@ -3012,6 +3115,13 @@ public class BadDexFixture {
         dexes.put("bad-navigation-plain-late", replaced(good(), navigationBinding(NAV_PLAIN, 1, true)));
         dexes.put("bad-navigation-factory-missing", replaced(good(), navigationFactory(0)));
         dexes.put("bad-navigation-factory-twice", replaced(good(), navigationFactory(2)));
+        // contract: the tab swipe check also in fling, a third method reading the paging field that
+        // neither sibling rule picks, so each of them still finds it there.
+        dexes.put("bad-tab-swipe-third-holder", replaced(good(), tabPager(1, 1, true)));
+        // contract: the store read filtering one helper read, and then one of them twice, where its
+        // rule says sites 2.
+        dexes.put("bad-feed-sites-once", replaced(good(), feedStore(1)));
+        dexes.put("bad-feed-sites-thrice", replaced(good(), feedStore(3)));
         dexes.put("bad-dm-visual-guard-twice", replaced(good(), dmReceipts(2, false)));
         dexes.put("metai-inbox-row-missing", replaced(good(), inboxSections(false)));
         dexes.put("bad-swipe-gate-missing", replaced(good(), swipeMovement(0)));

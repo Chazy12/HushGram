@@ -911,16 +911,36 @@ try {
     $setupHeld = '"FragmentActivity is required to open CDS bottom sheet", "foa_bottom_sheet_config" and "cds_bloks" with the shape static ' + $setupShape
     $setupRule = "shared-call $setupHook in static $setupShape holding FragmentActivity\sis\srequired\sto\sopen\sCDS\sbottom\ssheet foa_bottom_sheet_config cds_bloks"
     $setupOtherCalls = @('fullScreen', 'push', 'sheet') | ForEach-Object { "Lfixture/SetupOpeners;->$_(Landroid/content/Context;Lcom/instagram/bloks/hosting/IgBloksScreenConfig;)V" }
+    # The list ViewPager2 makes passes its paging field through the tab swipe check in both touch
+    # methods, which share a shape and the field, so two rules tell them apart by the call each
+    # makes. Neither may count the other's method as somewhere else the check went. And the read of
+    # Home's store filters each of its two helper reads, so its rule says sites 2.
+    $tabSwipeHook = 'Lapp/hushgram/extension/fixture/feed/TabSwipe;->input(Landroid/view/View;I)Z'
+    $tabIntercept = 'Lfixture/TabPager;->intercept(Landroid/view/MotionEvent;)Z'
+    $tabTouch = 'Lfixture/TabPager;->touch(Landroid/view/MotionEvent;)Z'
+    $tabFling = 'Lfixture/TabPager;->fling(Landroid/view/MotionEvent;)Z'
+    $tabListCall = { param($Name) "Lfixture/TabList;->$Name(Landroid/view/MotionEvent;)Z" }
+    $tabInterceptRule = "shared-call $tabSwipeHook in instance (Landroid/view/MotionEvent;)Z calling instance " +
+        "$(& $tabListCall 'onInterceptTouchEvent') holding Lfixture/TabPager;->paging:Z"
+    $tabTouchRule = "shared-call $tabSwipeHook in instance (Landroid/view/MotionEvent;)Z calling instance " +
+        "$(& $tabListCall 'onTouchEvent') holding Lfixture/TabPager;->paging:Z"
+    $tabPagingHeld = { param($Name) """Lfixture/TabPager;->paging:Z"" with the shape instance (Landroid/view/MotionEvent;)Z and an instance call to $(& $tabListCall $Name)" }
+    $feedHook = 'Lapp/hushgram/extension/fixture/feed/HomeFeed;->filter(Ljava/lang/Object;)Ljava/lang/Object;'
+    $feedRead = 'Lfixture/FeedStore;->read([B)Ljava/lang/Object;'
+    $feedRule = "shared-call $feedHook in instance ([B)Ljava/lang/Object; sites 2 holding feed_store_items"
     $sharedCallRules = @(Get-Content -LiteralPath $contracts | Where-Object { $_ -match '^\s*shared-call\s' } |
         ForEach-Object { ($_.Trim() -split '\s+') -join ' ' })
-    Assert-True ($sharedCallRules.Count -eq 6 -and $sharedCallRules[0] -ceq $postRule -and $sharedCallRules[1] -ceq $storyRule -and
+    Assert-True ($sharedCallRules.Count -eq 9 -and $sharedCallRules[0] -ceq $postRule -and $sharedCallRules[1] -ceq $storyRule -and
         $sharedCallRules[2] -ceq $providerRule -and $sharedCallRules[3] -ceq $setupRule -and
-        $sharedCallRules[4] -ceq $navPlainRule -and $sharedCallRules[5] -ceq $navLithoRule) `
+        $sharedCallRules[4] -ceq $navPlainRule -and $sharedCallRules[5] -ceq $navLithoRule -and
+        $sharedCallRules[6] -ceq $tabInterceptRule -and $sharedCallRules[7] -ceq $tabTouchRule -and $sharedCallRules[8] -ceq $feedRule) `
         "The contract file has a shared-call rule without exact negative coverage:`n$($sharedCallRules -join "`n")"
-    foreach ($pair in @(@($postRule, $postParser), @($storyRule, $storyParser), @($providerRule, $providerSite), @($setupRule, $setupSite), @($navPlainRule, $navPlain), @($navLithoRule, $navLitho))) {
+    foreach ($pair in @(@($postRule, $postParser), @($storyRule, $storyParser), @($providerRule, $providerSite), @($setupRule, $setupSite), @($navPlainRule, $navPlain), @($navLithoRule, $navLitho), @($tabInterceptRule, $tabIntercept), @($tabTouchRule, $tabTouch))) {
         Assert-True (($good.Output -join "`n") -match [regex]::Escape("contract $($pair[0]): once in $($pair[1])")) `
             "The good build's shared hook was not reported once in $($pair[1]).`n$($good.Output -join "`n")"
     }
+    Assert-True (($good.Output -join "`n") -match [regex]::Escape("contract $feedRule`: 2 times in $feedRead")) `
+        "The good build's store read filter was not reported twice in the store read.`n$($good.Output -join "`n")"
     # View stories anonymously puts its guard first in the send of Instagram's store of stories
     # you've seen, which holds no string, so its rule picks the send by what the store's methods hold
     # between them, and by its shape. The store's constructor takes two objects, so the send is the
@@ -951,11 +971,12 @@ try {
     $tabHeld = """default"" with the shape static $tabShape and a static call to $tabCall"
     $callingRules = @(Get-Content -LiteralPath $contracts | Where-Object { $_ -match '^\s*[a-z-]+-call\s.*\scalling\s' } |
         ForEach-Object { ($_.Trim() -split '\s+') -join ' ' })
-    Assert-True ($callingRules.Count -eq 9 -and $callingRules[0] -ceq $tabRule -and $callingRules[1] -ceq $providerRule -and
+    Assert-True ($callingRules.Count -eq 11 -and $callingRules[0] -ceq $tabRule -and $callingRules[1] -ceq $providerRule -and
         $callingRules[2] -ceq $swipeRule -and $callingRules[3] -ceq $retryRule -and $callingRules[4] -ceq $retryRouteRule -and
         $callingRules[5] -ceq ($navPlainRule -replace '^shared-call', 'start-call') -and
         $callingRules[6] -ceq ($navLithoRule -replace '^shared-call', 'start-call') -and
-        $callingRules[7] -ceq $navPlainRule -and $callingRules[8] -ceq $navLithoRule) `
+        $callingRules[7] -ceq $navPlainRule -and $callingRules[8] -ceq $navLithoRule -and
+        $callingRules[9] -ceq $tabInterceptRule -and $callingRules[10] -ceq $tabTouchRule) `
         "The contract file has a calling rule without exact negative coverage:`n$($callingRules -join "`n")"
     Assert-True (($good.Output -join "`n") -match [regex]::Escape("contract $tabRule`: once in $tabHome")) `
         "The good build's home tab call was not reported once in the home tab, picked by its static check.`n$($good.Output -join "`n")"
@@ -1151,6 +1172,9 @@ try {
         'bad-navigation-plain-late' = 'contract'
         'bad-navigation-factory-missing' = 'contract'
         'bad-navigation-factory-twice' = 'contract'
+        'bad-tab-swipe-third-holder' = 'contract'
+        'bad-feed-sites-once' = 'contract'
+        'bad-feed-sites-thrice' = 'contract'
         'bad-dm-visual-guard-twice' = 'contract'
         'metai-inbox-row-missing' = 'contract'
         'bad-swipe-gate-missing' = 'contract'
@@ -1421,6 +1445,26 @@ try {
         'bad-story-retry-two-loops' = "[diff] FAIL: contract: 2 methods $retryMany, and exactly one must, so the rule can't say " +
             "which one calls ${retryHook}: $retrySite, Lfixture/StoryRetryQueue;->runAgain()V"
     }
+    # The check in a third method reading the paging field: each sibling rule still finds it there,
+    # since only the other sibling's own method is left out. The store read's filter once and three
+    # times: each is held to the two its rule says.
+    $tabFlingFail = "[diff] FAIL: contract: $tabSwipeHook is called in $tabFling as well as in"
+    $siteFails = [ordered]@{
+        'bad-tab-swipe-third-holder' = @(
+            "$tabFlingFail $tabIntercept, the one method holding $(& $tabPagingHeld 'onInterceptTouchEvent')",
+            "$tabFlingFail $tabTouch, the one method holding $(& $tabPagingHeld 'onTouchEvent')")
+        'bad-feed-sites-once' = @("[diff] FAIL: contract: $feedHook has 1 call site in $feedRead, and must have exactly 2")
+        'bad-feed-sites-thrice' = @("[diff] FAIL: contract: $feedHook has 3 call sites in $feedRead, and must have exactly 2")
+    }
+    foreach ($case in $siteFails.GetEnumerator()) {
+        $fails = @((Get-Findings $badResults[$case.Key]).Fails)
+        Assert-True (($fails -join "`n") -ceq ($case.Value -join "`n")) `
+            "$($case.Key) did not fail only its expected contracts.`nExpected:`n$($case.Value -join "`n")`nGot:`n$($fails -join "`n")"
+    }
+    # HushGram's file may count sites only while the fixture exercises it.
+    $sitesRules = { param($Path) @(Get-Content -LiteralPath $Path | Where-Object { $_ -match '^\s*[a-z-]+-call\s.*\ssites\s' }).Count }
+    Assert-True ((& $sitesRules $realContracts) -eq 0 -or (& $sitesRules $contracts) -ne 0) `
+        "HushGram's contract file counts call sites, which the fixture doesn't exercise."
     foreach ($case in $newContractFails.GetEnumerator()) {
         $fails = @((Get-Findings $badResults[$case.Key]).Fails)
         $expectedCount = if (($case.Key -like 'bad-story-retry-*' -or $case.Key -eq 'bad-navigation-plain-missing')) { 2 } else { 1 }
