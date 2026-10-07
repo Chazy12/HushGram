@@ -434,3 +434,37 @@ Empties Home on purpose, so you get the stories row and nothing under it. Profil
 Hide the home feed	Ana Sayfa akışını gizle
 On a phone under 1440 pixels wide, Instagram tells its server your screen is 1440 pixels wide and asks for photos at that width, so there's a larger size to load. This uses more data. Restart Instagram after changing it.	Genişliği 1440 pikselden az olan bir telefonda Instagram, sunucusuna ekranın 1440 piksel genişliğinde olduğunu söyler ve fotoğrafları o genişlikte ister, böylece yüklenecek daha büyük bir boyut olur. Bu daha fazla veri kullanır. Değiştirdikten sonra Instagram'ı yeniden başlat.
 Stop swiping between tabs	Sekmeler arasında kaydırmayı durdur
+%d notifications	%d bildirim
+1 hour	1 saat
+1 minute	1 dakika
+15 minutes	15 dakika
+5 minutes	5 dakika
+A group for each kind of notification, such as comments or messages, in place of one group.	Tek bir grup yerine, yorumlar veya mesajlar gibi her bildirim türü için ayrı bir grup.
+After 1 hour	1 saat sonra
+After 1 minute	1 dakika sonra
+After 15 minutes	15 dakika sonra
+After 5 minutes	5 dakika sonra
+All of Instagram stays covered until your fingerprint, face or screen lock says it's you, your messages too.	Parmak izin, yüzün veya ekran kilidin sen olduğunu doğrulayana kadar mesajların dahil tüm Instagram kapalı kalır.
+Group by type	Türe göre grupla
+Group notifications	Bildirimleri grupla
+Hide shopping	Alışverişi gizle
+Hide surveys	Anketleri gizle
+Instagram is locked	Instagram kilitli
+Instagram locks as soon as you leave it or the screen turns off.	Instagram'dan çıktığın veya ekran kapandığı anda Instagram kilitlenir.
+Instagram locks once you've been away from it for %1$s.	Instagram'dan %1$s boyunca uzak kaldığında Instagram kilitlenir.
+Lock again	Yeniden kilitle
+Lock all of Instagram	Tüm Instagram'ı kilitle
+Lock your messages	Mesajlarını kilitle
+New message	Yeni mesaj
+Notifications	Bildirimler
+Puts every notification from Instagram in one group that shows how many it holds, so they don't fill your notification shade. Tapping one still opens it.	Instagram'ın her bildirimini kaç tane içerdiğini gösteren tek bir gruba koyar, böylece bildirim panelini doldurmazlar. Birine dokunmak yine onu açar.
+Right away	Hemen
+Set a screen lock on your phone so HushGram can lock Instagram.	HushGram'ın Instagram'ı kilitleyebilmesi için telefonunda bir ekran kilidi ayarla.
+Set a screen lock on your phone so HushGram can lock your messages.	HushGram'ın mesajlarını kilitleyebilmesi için telefonunda bir ekran kilidi ayarla.
+The cards between posts that ask you to rate what you saw.	Gönderiler arasında gördüğünü puanlamanı isteyen kartlar.
+The rows of products to shop and live shopping that Instagram puts between posts.	Instagram'ın gönderiler arasına koyduğu alışveriş ürünü satırları ve canlı alışveriş.
+Unlock	Kilidi aç
+Unlock Instagram	Instagram'ın kilidini aç
+Unlock your messages	Mesajlarının kilidini aç
+Your inbox and chats stay covered until your fingerprint, face or screen lock says it's you. Message notifications say only that a message came.	Parmak izin, yüzün veya ekran kilidin sen olduğunu doğrulayana kadar gelen kutun ve sohbetlerin kapalı kalır. Mesaj bildirimleri yalnızca bir mesaj geldiğini söyler.
+Your messages are locked	Mesajların kilitli

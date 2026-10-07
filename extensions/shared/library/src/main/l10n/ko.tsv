@@ -433,3 +433,37 @@ Empties Home on purpose, so you get the stories row and nothing under it. Profil
 Hide the home feed	홈 피드 숨기기
 On a phone under 1440 pixels wide, Instagram tells its server your screen is 1440 pixels wide and asks for photos at that width, so there's a larger size to load. This uses more data. Restart Instagram after changing it.	너비가 1440픽셀 미만인 휴대폰에서는 Instagram이 서버에 화면 너비가 1440픽셀이라고 알리고 그 너비의 사진을 요청하므로 더 큰 크기를 불러올 수 있습니다. 데이터를 더 많이 사용합니다. 변경한 후 Instagram을 다시 시작하세요.
 Stop swiping between tabs	탭 사이 스와이프 정지
+%d notifications	알림 %d개
+1 hour	1시간
+1 minute	1분
+15 minutes	15분
+5 minutes	5분
+A group for each kind of notification, such as comments or messages, in place of one group.	하나의 그룹 대신 댓글이나 메시지 같은 알림 종류마다 그룹을 하나씩 만듭니다.
+After 1 hour	1시간 후
+After 1 minute	1분 후
+After 15 minutes	15분 후
+After 5 minutes	5분 후
+All of Instagram stays covered until your fingerprint, face or screen lock says it's you, your messages too.	지문, 얼굴 또는 화면 잠금으로 본인임이 확인될 때까지 메시지를 포함한 Instagram 전체가 가려집니다.
+Group by type	종류별로 묶기
+Group notifications	알림 묶기
+Hide shopping	쇼핑 숨기기
+Hide surveys	설문 숨기기
+Instagram is locked	Instagram이 잠겨 있습니다
+Instagram locks as soon as you leave it or the screen turns off.	Instagram을 나가거나 화면이 꺼지면 바로 잠깁니다.
+Instagram locks once you've been away from it for %1$s.	Instagram을 %1$s 동안 떠나 있으면 잠깁니다.
+Lock again	다시 잠그기
+Lock all of Instagram	Instagram 전체 잠그기
+Lock your messages	메시지 잠그기
+New message	새 메시지
+Notifications	알림
+Puts every notification from Instagram in one group that shows how many it holds, so they don't fill your notification shade. Tapping one still opens it.	Instagram의 모든 알림을 개수가 표시되는 하나의 그룹에 넣어 알림 창을 채우지 않게 합니다. 알림을 누르면 그대로 열립니다.
+Right away	바로
+Set a screen lock on your phone so HushGram can lock Instagram.	HushGram이 Instagram을 잠글 수 있도록 휴대폰에 화면 잠금을 설정하세요.
+Set a screen lock on your phone so HushGram can lock your messages.	HushGram이 메시지를 잠글 수 있도록 휴대폰에 화면 잠금을 설정하세요.
+The cards between posts that ask you to rate what you saw.	본 콘텐츠를 평가해 달라고 요청하는 게시물 사이의 카드입니다.
+The rows of products to shop and live shopping that Instagram puts between posts.	Instagram이 게시물 사이에 넣는 쇼핑 상품 줄과 라이브 쇼핑입니다.
+Unlock	잠금 해제
+Unlock Instagram	Instagram 잠금 해제
+Unlock your messages	메시지 잠금 해제
+Your inbox and chats stay covered until your fingerprint, face or screen lock says it's you. Message notifications say only that a message came.	지문, 얼굴 또는 화면 잠금으로 본인임이 확인될 때까지 받은 메시지함과 채팅이 가려집니다. 메시지 알림에는 메시지가 왔다는 것만 표시됩니다.
+Your messages are locked	메시지가 잠겨 있습니다
