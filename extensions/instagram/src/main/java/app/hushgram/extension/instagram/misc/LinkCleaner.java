@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,7 +46,10 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  * goes through the stand-ins below, which clean the Instagram links in the text on its way out,
  * and move the links to instagram.com to the Sharing domain when one is set ({@link SharingDomain}).
  * The same activity-start stand-ins send a link opened from a bio straight to its page, not
- * through Instagram's click tracker. Nothing here goes online.
+ * through Instagram's click tracker. Instagram's in-app browser hands the address of the page
+ * you're on to {@link #browserLink} when you tap Share or Copy link in its menu, and that's the one
+ * place a link to another site loses keys too: Meta's click id and the utm_ keys an ad's page opens
+ * with. Nothing here goes online.
  */
 public final class LinkCleaner {
 
@@ -66,6 +70,15 @@ public final class LinkCleaner {
 
     /** Meta's click id alone, which a link to another site loses on its way out of the in-app browser. */
     private static final Set<String> CLICK_ID = keys("fbclid");
+
+    /**
+     * What the in-app browser's Share and Copy link take off the page's address, on any site: Meta's
+     * click id and every utm_ key. An ad's page opens with them, naming its campaign, ad set and
+     * placement. Keys the advertiser named itself stay, since a page may need them.
+     */
+    private static boolean isAdKey(String key) {
+        return key.equals("fbclid") || key.startsWith("utm_");
+    }
 
     /**
      * The link shims Instagram 449 itself reads a destination out of, by exact host: a link in a
@@ -99,6 +112,24 @@ public final class LinkCleaner {
     public static String sanitizeShared(String url) {
         HookStatus.invoked(FamilyNames.SANITIZE_SHARING_LINKS);
         return enabled() ? clean(url) : url;
+    }
+
+    /**
+     * Injected where Instagram's handler for its in-app browser's menu takes the page's address for
+     * Share or Copy link, before it goes into the share sheet's text or to the clipboard. Answers the
+     * address without Meta's click id and the utm_ keys, on any site, and an Instagram link without
+     * Instagram's tracking keys as well, or as it came while the switch is off, HushGram is paused or
+     * the settings aren't ready yet. The page itself still loads with them. Never throws.
+     */
+    public static String browserLink(String url) {
+        HookStatus.invoked(FamilyNames.SANITIZE_SHARING_LINKS);
+        if (url == null || !enabled()) return url;
+        try {
+            return withoutKeys(cleaned(url), LinkCleaner::isAdKey, false);
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.SANITIZE_SHARING_LINKS, "in-app browser menu", t);
+            return url;
+        }
     }
 
     /** Stands in for {@link ClipboardManager#setPrimaryClip}: the same clip with its Instagram links cleaned. */
@@ -323,18 +354,21 @@ public final class LinkCleaner {
     static String withoutClickId(String url) {
         if (url == null) return null;
         try {
-            return withoutKeys(url, CLICK_ID, false);
+            return withoutKeys(url, CLICK_ID::contains, false);
         } catch (Throwable t) {
             return url;
         }
     }
 
     private static String cleaned(String url) {
-        return withoutKeys(url, TRACKING, true);
+        return withoutKeys(url, TRACKING::contains, true);
     }
 
-    /** {@code url} without the pairs whose key is in {@code drop}, on an Instagram host alone when {@code instagramOnly}. */
-    private static String withoutKeys(String url, Set<String> drop, boolean instagramOnly) {
+    /**
+     * {@code url} without the pairs whose decoded, lower-cased key {@code drop} picks, on an Instagram
+     * host alone when {@code instagramOnly}.
+     */
+    private static String withoutKeys(String url, Predicate<String> drop, boolean instagramOnly) {
         int colon = url.indexOf(':');
         if (colon <= 0) return url;
         String scheme = url.substring(0, colon).toLowerCase(Locale.ROOT);
@@ -350,7 +384,7 @@ public final class LinkCleaner {
         List<String> kept = new ArrayList<>();
         boolean removed = false;
         for (String pair : url.substring(query + 1, end).split("&", -1)) {
-            if (drop.contains(keyOf(pair))) {
+            if (drop.test(keyOf(pair))) {
                 removed = true;
             } else {
                 kept.add(pair);

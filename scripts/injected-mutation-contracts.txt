@@ -274,6 +274,13 @@ once-call Lapp/hushgram/extension/instagram/reels/ReelDeclutter;->hideSocialCont
 shared-call Lapp/hushgram/extension/instagram/misc/LinkCleaner;->sanitizeShared(Ljava/lang/String;)Ljava/lang/String; in instance (*)Ljava/lang/Object; holding permalink XDTPermalinkResponse
 shared-call Lapp/hushgram/extension/instagram/misc/LinkCleaner;->sanitizeShared(Ljava/lang/String;)Ljava/lang/String; in instance (*)Ljava/lang/Object; holding XDTStoryItemThirdPartySharingUrlResponse StoryItemThirdPartySharingUrlResponseImpl
 #
+# It also hands the page address the in-app browser's menu sends for Share and for Copy link to
+# LinkCleaner.browserLink in the main app's handler for the browser's messages (0S7R.handleMessage on
+# 450), the one handleMessage logging both failure lines below: once on each branch, right before
+# the share's text and the clipboard helper take it, so two calls there and none anywhere else. Left
+# out, that menu hands out fbclid and the utm_ keys with the switch on.
+once-call Lapp/hushgram/extension/instagram/misc/LinkCleaner;->browserLink(Ljava/lang/String;)Ljava/lang/String; in instance (Landroid/os/Message;)V sites 2 holding failed\sto\sretrieve\sshareUrl,\sMessage\sobject\sis\snot\sa\sString.\sDefaulting\sto\sempty\surl failed\sto\sretrieve\scopyUrl,\sMessage\sobject\sis\snot\sa\sString.\sDefaulting\sto\sempty\surl
+#
 # The extension gets its context first thing in the application's onCreate, and the settings patch
 # calls the extension before each return of that onCreate. 449's onCreate returns once, so each is
 # one call; a build whose onCreate returns in more places gets a call per return, and the second

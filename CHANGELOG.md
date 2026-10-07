@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Sanitize sharing links now reaches Share and Copy link in the menu of Instagram's in-app browser. The address of the page they hand out loses fbclid and every utm_ key, on any site, which is what an ad's page opens with. The page itself still loads with them, and any other key stays.
+
 * **Instagram:** New patch, Change the like animation, in simple mode with its switch off. Turn it on under Reels, pick one of the animations Instagram made for Instagram Rings creators, and the heart that pops up when you double tap a post plays it.
 
 * **Instagram:** Open links in external browser checks a link again after it's unwrapped from Instagram's and Facebook's click trackers, right before it goes to your browser. Only an http or https address that names a host leaves. One with no host, or with a scheme that only starts with http, stays in Instagram's own browser.
