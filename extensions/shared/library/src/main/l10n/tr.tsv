@@ -615,3 +615,9 @@ Hide videos	Videoları gizle
 Takes every post that's one photo out of Home, even from accounts you follow. Pull to refresh Home after changing it.	Tek bir fotoğraftan oluşan her gönderiyi, takip ettiğin hesaplardan bile Ana Sayfa'dan çıkarır. Değiştirdikten sonra Ana Sayfa'yı yenilemek için aşağı çek.
 Takes every post that's one video out of Home, reels too, even from accounts you follow. Pull to refresh Home after changing it.	Tek bir videodan oluşan her gönderiyi, Reels dahil, takip ettiğin hesaplardan bile Ana Sayfa'dan çıkarır. Değiştirdikten sonra Ana Sayfa'yı yenilemek için aşağı çek.
 Takes every post with more than one photo or video out of Home, even from accounts you follow. Pull to refresh Home after changing it.	Birden fazla fotoğraf veya video içeren her gönderiyi, takip ettiğin hesaplardan bile Ana Sayfa'dan çıkarır. Değiştirdikten sonra Ana Sayfa'yı yenilemek için aşağı çek.
+%1$d mentions	%1$d bahsetme
+%1$s, see who this story mentions	%1$s, bu hikâyede kimlerden bahsedildiğini gör
+1 mention	1 bahsetme
+A story's header says how many accounts it mentions, even when the mention is hidden. Tap that for the list, and tap someone to open their profile.	Hikâyenin üst kısmı, bahsetme gizli olsa bile kaç hesaptan bahsettiğini gösterir. Listeyi görmek için ona, profilini açmak için birine dokun.
+Mentioned in this story	Bu hikâyede bahsedilenler
+See who a story mentions	Bir hikâyede kimlerden bahsedildiğini gör

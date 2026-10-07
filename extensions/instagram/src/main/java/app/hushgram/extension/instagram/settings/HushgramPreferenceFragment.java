@@ -678,6 +678,11 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                             + "It follows your phone's language and 12 or 24-hour setting.")));
             stories.add(storyTimeModeRow(context));
         }
+        if (build.contains(PatchFamily.STORY_MENTIONS)) {
+            stories.add(toggle(context, Settings.SHOW_STORY_MENTIONS, L10n.t("See who a story mentions"),
+                    L10n.t("A story's header says how many accounts it mentions, even when the mention is hidden. "
+                            + "Tap that for the list, and tap someone to open their profile.")));
+        }
         if (build.contains(PatchFamily.STORY_SEEN)) {
             stories.add(toggle(context, Settings.VIEW_STORIES_ANONYMOUSLY, L10n.t("View stories anonymously"),
                     L10n.t("Instagram isn't told which stories you watch, so you stay off their viewer lists. "

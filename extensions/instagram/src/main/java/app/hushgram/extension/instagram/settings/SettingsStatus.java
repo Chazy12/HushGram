@@ -72,6 +72,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean storyMentions() {
+        return false;
+    }
+
     public static boolean storyLoop() {
         return false;
     }

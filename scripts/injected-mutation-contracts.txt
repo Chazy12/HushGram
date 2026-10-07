@@ -372,6 +372,12 @@ once-call Lapp/hushgram/extension/instagram/stories/StoryTime;->label(J)Ljava/la
 # relativeHeader(). The builder is the one static method taking a Context, the session, a reel and
 # a story item that holds "timestamp" on 449, and it reads the flag once.
 once-call Lapp/hushgram/extension/instagram/stories/StoryTime;->relativeHeader(I)Z in static (Landroid/content/Context;Lcom/instagram/common/session/UserSession;L*;Lcom/instagram/model/reels/ReelItem;)L*; holding timestamp
+# See who a story mentions hands each story page and its story to StoryMentions.bind() right after
+# the viewer's item binder puts the story into the page, in both methods holding the binder's trace
+# name on 450: the main viewer's static binder and the catch-up viewer's instance bridge. Left out,
+# no story gets its mentions pill.
+shared-call Lapp/hushgram/extension/instagram/stories/StoryMentions;->bind(Ljava/lang/Object;Ljava/lang/Object;)V in static (*)V holding ReelViewerItemBinder.bindMedia
+shared-call Lapp/hushgram/extension/instagram/stories/StoryMentions;->bind(Ljava/lang/Object;Ljava/lang/Object;)V in instance (L*;L*;)V holding ReelViewerItemBinder.bindMedia
 # Show a post's exact time puts PostTime.time() in place of Instagram's relative formatter call,
 # on the same registers, wherever a post's or a comment's time is written: twice in the feed post
 # footer's builder (04vZ.A02 on 450), once in the Compose comment header, and twice in the older

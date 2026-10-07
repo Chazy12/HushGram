@@ -131,6 +131,15 @@ public class Settings extends BaseSettings {
             new EnumSetting<>("hushgram_story_time_mode", StoryTimeMode.DATE_AND_TIME, parent(SHOW_STORY_TIME));
 
     /**
+     * A story's header gets a pill under the name saying how many accounts the story mentions, and
+     * a tap on it lists them ({@link app.hushgram.extension.instagram.stories.StoryMentions}). Read
+     * at each story's bind. The patch is off in the default selection, so a build that has it asked
+     * for it, and the switch starts on.
+     */
+    public static final BooleanSetting SHOW_STORY_MENTIONS =
+            new BooleanSetting("hushgram_show_story_mentions", TRUE);
+
+    /**
      * A feed post's footer and each comment show the date and time they went up instead of how
      * long ago ({@link app.hushgram.extension.instagram.feed.PostTime}), the way a story's exact
      * time writes it. Read as each time is written, so a change shows on posts and comments loaded

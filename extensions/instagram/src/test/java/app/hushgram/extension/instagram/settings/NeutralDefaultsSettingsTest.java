@@ -109,7 +109,7 @@ public class NeutralDefaultsSettingsTest {
                 Settings.HIDE_EXPLORE_GRID, Settings.HIDE_REELS_TAB, Settings.HIDE_REPOST_BUTTON,
                 Settings.KEEP_REEL_AUTO_SCROLL, Settings.REEL_SEEK_BAR, Settings.LOOP_STORIES,
                 Settings.OPEN_DEVELOPER_OPTIONS, Settings.REMOVE_BOTTOM_SPACE, Settings.SHOW_STORY_TIME,
-                Settings.START_ON_FOLLOWING, Settings.BLOCK_STORY_AUTO_ADVANCE, Settings.TAP_TO_PLAY,
+                Settings.SHOW_STORY_MENTIONS, Settings.START_ON_FOLLOWING, Settings.BLOCK_STORY_AUTO_ADVANCE, Settings.TAP_TO_PLAY,
                 Settings.TURN_OFF_DOUBLE_TAP_LIKE, Settings.VIEW_STORIES_ANONYMOUSLY};
         for (BooleanSetting setting : startsOn) assertEquals(setting.key, Boolean.TRUE, setting.defaultValue);
         // A false remembered value does not make the enabled persistence feature neutral.

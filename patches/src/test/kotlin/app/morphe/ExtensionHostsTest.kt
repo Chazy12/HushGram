@@ -14,8 +14,8 @@ import org.junit.Test
 /**
  * What the README's Privacy section says about the extension, held to its source: which web
  * addresses the code names, and the one place that opens a connection by itself, the save
- * pipeline's Downloader, which fetches only what the person saves or opens in View profile
- * picture, and only from Meta's media servers (MediaUrlPolicy).
+ * pipeline's Downloader, which fetches only what the person saves, opens in View profile picture
+ * or sees in See who a story mentions' list, and only from Meta's media servers (MediaUrlPolicy).
  *
  * <p>Comments don't count. Licence headers and design notes name hosts the code never contacts,
  * so string literals and code are read apart first, which also stops the `//` inside a URL from
@@ -104,8 +104,10 @@ class ExtensionHostsTest {
 
     private companion object {
         /**
-         * The hosts the README's Privacy section names: the source code link, and the loopback
-         * address Disable analytics sends Instagram's events to, which never leaves the phone.
+         * The hosts the README's Privacy section names: the source code link, the loopback address
+         * Disable analytics sends Instagram's events to, which never leaves the phone, and Instagram's
+         * own site, for the link Send downloads to another app builds and the profile link See who a
+         * story mentions opens inside Instagram.
          */
         val ALLOWED_HOSTS = setOf("github.com", "127.0.0.1", "www.instagram.com")
 
