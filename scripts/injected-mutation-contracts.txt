@@ -341,10 +341,13 @@ once-call Lapp/hushgram/extension/instagram/feed/FeedSuggestions;->filter(Ljava/
 once-call Lapp/hushgram/extension/instagram/feed/TabSwipe;->mainPager(Landroid/view/View;)V in static (L*;L*;Ljava/lang/String;ZZ)V holding initViewPagerIfNeeded:\sViewPager\sview\snot\sfound\sin\slayout\sfor\sid= SwipeableTabsPagerBinder
 shared-call Lapp/hushgram/extension/instagram/feed/TabSwipe;->input(Landroid/view/View;I)Z in instance (Landroid/view/MotionEvent;)Z calling instance Landroidx/recyclerview/widget/RecyclerView;->onInterceptTouchEvent(Landroid/view/MotionEvent;)Z holding Landroidx/viewpager2/widget/ViewPager2;->A0A:Z
 shared-call Lapp/hushgram/extension/instagram/feed/TabSwipe;->input(Landroid/view/View;I)Z in instance (Landroid/view/MotionEvent;)Z calling instance Landroidx/recyclerview/widget/RecyclerView;->onTouchEvent(Landroid/view/MotionEvent;)Z holding Landroidx/viewpager2/widget/ViewPager2;->A0A:Z
-# Hide the home feed passes the same item through HomeFeed.filter at the same return, whatever its
-# kind. Left out, Home keeps its posts with the switch on; twice or elsewhere, it isn't the filter
-# the patch wrote.
-once-call Lapp/hushgram/extension/instagram/feed/HomeFeed;->filter(Ljava/lang/Object;)Ljava/lang/Object; in static (L*;)LX/*; calling L*;->parseFromJsonParser(*)Ljava/lang/Object; class-holding feedContent feedItemType
+# Hide the home feed passes each item Home reads through HomeFeed.filter, whatever its kind: in
+# Home's feed response parser (the one holding Home's pull to refresh window) and in the read of
+# Home's store of the last run (the one method taking bytes in the class holding the two feed kind
+# names below). Never in the feed item helper, which Explore's chain of posts and the shop and ad
+# feeds read through too. Left out, Home keeps its posts with the switch on.
+shared-call Lapp/hushgram/extension/instagram/feed/HomeFeed;->filter(Ljava/lang/Object;)Ljava/lang/Object; in instance (L*;)Ljava/lang/Object; holding feed_items pull_to_refresh_window_ms
+shared-call Lapp/hushgram/extension/instagram/feed/HomeFeed;->filter(Ljava/lang/Object;)Ljava/lang/Object; in instance ([B)LX/*; class-holding MIXED_UNCONNECTED EXPLORE_STORY
 once-call Lapp/hushgram/extension/instagram/metaai/MetaAi;->filter(Ljava/lang/Object;)Ljava/lang/Object; in static (L*;)LX/*; calling L*;->parseFromJsonParser(*)Ljava/lang/Object; class-holding feedContent feedItemType
 #
 # Hide suggested posts answers the home feed adapter's "no next page" flag through feedEnded() at

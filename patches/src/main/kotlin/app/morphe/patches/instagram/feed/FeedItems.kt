@@ -7,6 +7,7 @@ package app.morphe.patches.instagram.feed
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.instagram.misc.extension.uniqueMethod
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -42,6 +43,31 @@ internal object FeedItemParserFingerprint : Fingerprint(
  * [requireOneKindField]. A filter that drops every item, whatever its kind, passes none.
  */
 internal fun BytecodePatchContext.filterParsedFeedItems(patch: String, filter: String, kinds: List<String>) {
+    val (itemType, helper) = findFeedItemHelper(patch, kinds)
+    val returns = helper.implementation!!.instructions.withIndex()
+        .filter { it.value.opcode == Opcode.RETURN_OBJECT }
+        .map { it.index to (it.value as OneRegisterInstruction).registerA }
+    if (returns.isEmpty()) throw PatchException("$patch: ${helper.definingClass}->${helper.name} returns no object")
+    returns.asReversed().forEach { (index, register) ->
+        // At the return's own label, so a branch straight to the return passes through the filter.
+        helper.addInstructionsAtControlFlowLabel(
+            index,
+            """
+                invoke-static { v$register }, $filter
+                move-result-object v$register
+                check-cast v$register, $itemType
+            """,
+        )
+    }
+}
+
+/**
+ * The feed item's type and its static helper parsing one from JSON, which every feed reading items
+ * goes through: Home's, Explore's chain of posts, the shop and ad feeds and more. Found from the
+ * feed item parser, the one class it makes with a [CLIPS_NETEGO] field. [kinds], when there are
+ * any, have to be named by one of the item's enum types; see [requireOneKindField].
+ */
+internal fun BytecodePatchContext.findFeedItemHelper(patch: String, kinds: List<String>): Pair<String, MutableMethod> {
     val parser = uniqueMethod(patch, "feed item parser", FeedItemParserFingerprint)
     val itemTypes = parser.implementation!!.instructions
         .filter { it.opcode == Opcode.NEW_INSTANCE }
@@ -63,21 +89,7 @@ internal fun BytecodePatchContext.filterParsedFeedItems(patch: String, filter: S
     val helper = helpers.singleOrNull() ?: throw PatchException(
         "$patch: expected one static method of $itemType that parses one from JSON, found ${helpers.size}",
     )
-    val returns = helper.implementation!!.instructions.withIndex()
-        .filter { it.value.opcode == Opcode.RETURN_OBJECT }
-        .map { it.index to (it.value as OneRegisterInstruction).registerA }
-    if (returns.isEmpty()) throw PatchException("$patch: ${helper.definingClass}->${helper.name} returns no object")
-    returns.asReversed().forEach { (index, register) ->
-        // At the return's own label, so a branch straight to the return passes through the filter.
-        helper.addInstructionsAtControlFlowLabel(
-            index,
-            """
-                invoke-static { v$register }, $filter
-                move-result-object v$register
-                check-cast v$register, $itemType
-            """,
-        )
-    }
+    return itemType to helper
 }
 
 /**

@@ -15,11 +15,12 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
 /**
  * Helper for the "Hide the home feed" patch.
  *
- * <p>The patch passes every item Instagram's home feed parse helper reads through {@link #filter},
- * beside the other feed filters. While the switch is on, each item comes back as null, whatever its
- * kind, and every caller of that helper skips a null item, so Home's pages arrive empty. The stories
- * row at the top of Home comes from a request of its own and stays. Profiles, Explore and Reels
- * don't go through that helper.
+ * <p>The patch passes each item Home reads through {@link #filter}: the ones Home's feed response
+ * parser keeps from the shared feed item helper, and the ones Home's store reads back from the last
+ * run. While the switch is on, each comes back as null, whatever its kind, and both skip a null
+ * item, so Home's pages arrive empty. The stories row at the top of Home comes from a request of its
+ * own and stays. The helper itself isn't touched, since Explore's chain of posts, the shop feeds
+ * and the ad feeds read their items through it too.
  *
  * <p>An empty Home would draw its loading row for good, since nothing asks for the next page of an
  * empty feed. {@link FeedSuggestions#feedEnded} asks {@link #emptied} and says there's no next page,
@@ -39,7 +40,7 @@ public final class HomeFeed {
     }
 
     /**
-     * Injected at the return of Instagram's feed item parse helper. Answers null for every item while
+     * Injected right after Home keeps each item it reads. Answers null for every item while
      * the switch is on, and [item] itself otherwise, or when anything goes wrong. Never throws.
      */
     public static Object filter(Object item) {
