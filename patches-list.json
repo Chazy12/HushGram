@@ -568,7 +568,8 @@
       "use": true,
       "dependencies": [
         "BytecodePatch",
-        "HushGram settings"
+        "HushGram settings",
+        "ResourcePatch"
       ],
       "compatiblePackages": {
         "com.instagram.android": [
@@ -642,7 +643,8 @@
       "use": false,
       "dependencies": [
         "BytecodePatch",
-        "HushGram settings"
+        "HushGram settings",
+        "ResourcePatch"
       ],
       "compatiblePackages": {
         "com.instagram.android": [

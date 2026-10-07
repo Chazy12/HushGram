@@ -341,7 +341,7 @@ HushGram doesn't collect anything and has no server. The one connection it opens
 - `www.instagram.com`, in the link Send downloads to another app hands to the app you pick. HushGram only builds the link. It never opens it.
 - `127.0.0.1`, your phone's own loopback address. Disable analytics hands it to Instagram in place of its logging servers. Nothing sent there leaves the phone, and nothing on the phone answers.
 
-Open in another player hands the player you pick the address of the video on Meta's media servers. That player fetches the video itself, the way Instagram would, and HushGram doesn't open the address.
+Open in another player hands the player you pick the address of the video on Meta's media servers. That player fetches the video itself, the way Instagram would, and HushGram doesn't open the address. So it can tell when no app on the phone plays videos, Download any reel and Download any video add one query to Instagram's manifest, which lets Instagram see the apps that open a video from a web address.
 
 The diagnostic report stays on your phone until you copy or share it yourself.
 

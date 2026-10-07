@@ -8,6 +8,7 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 
 import java.util.ArrayList;
@@ -80,9 +81,28 @@ public final class ExternalPlayer {
         return on() && address(media) != null;
     }
 
-    /** The chooser that asks for a player for [address], started from [context]. */
-    static Intent chooser(Context context, String address) {
-        Intent view = new Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(address), TYPE);
+    /** The view of the video at [address] a player is asked to open. */
+    static Intent view(String address) {
+        return new Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(address), TYPE);
+    }
+
+    /**
+     * Whether an app on the phone takes [view]. Android's chooser always opens, empty when nothing
+     * does, so this is asked first. From Android 11 the answer covers only the apps Instagram may
+     * see, which the patch widens to every app that views a video at a web address. A lookup that
+     * fails leaves it to the chooser.
+     */
+    static boolean playable(Context context, Intent view) {
+        try {
+            PackageManager packages = context.getPackageManager();
+            return packages == null || !packages.queryIntentActivities(view, PackageManager.MATCH_DEFAULT_ONLY).isEmpty();
+        } catch (RuntimeException lookupFailed) {
+            return true;
+        }
+    }
+
+    /** The chooser that asks for a player for [view], started from [context]. */
+    static Intent chooser(Context context, Intent view) {
         Intent chooser = Intent.createChooser(view, L10n.t(context, "Open with"));
         if (!(context instanceof Activity)) chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         return chooser;
@@ -90,7 +110,7 @@ public final class ExternalPlayer {
 
     /**
      * Opens Android's chooser of players on [media]'s video, from [context], and answers whether it
-     * opened. With no file to hand over, or when the chooser can't open, it says so in a toast.
+     * opened. With no file to hand over, or no app on the phone that plays it, it says so in a toast.
      * [family] is the menu's, for the report. Never throws.
      */
     static boolean open(Context context, Object media, String family) {
@@ -103,18 +123,25 @@ public final class ExternalPlayer {
                 say(application, L10n.t(application, "This video has no file another player can open"));
                 return false;
             }
-            context.startActivity(chooser(context, address));
+            Intent view = view(address);
+            if (!playable(context, view)) return noPlayer(application, family);
+            context.startActivity(chooser(context, view));
             HookStatus.counted(family, OPENED);
             return true;
         } catch (ActivityNotFoundException none) {
-            HookStatus.counted(family, NO_PLAYER);
-            say(application, L10n.t(application, "No app on this phone can play this video"));
-            return false;
+            // A phone without Android's chooser.
+            return noPlayer(application, family);
         } catch (Throwable t) {
             Logger.diagnosticError(DiagnosticCategory.DOWNLOADS, SOURCE, () -> "the chooser of players didn't open", t);
             say(application, L10n.t(application, "Couldn't open another player"));
             return false;
         }
+    }
+
+    private static boolean noPlayer(Context application, String family) {
+        HookStatus.counted(family, NO_PLAYER);
+        say(application, L10n.t(application, "No app on this phone can play this video"));
+        return false;
     }
 
     private static Context applicationOf(Context context) {

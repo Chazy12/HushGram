@@ -18,6 +18,7 @@ import app.morphe.patches.instagram.download.MEDIA
 import app.morphe.patches.instagram.download.imageBridges
 import app.morphe.patches.instagram.download.mediaBridges
 import app.morphe.patches.instagram.download.pandoGetter
+import app.morphe.patches.instagram.download.playerQueriesPatch
 import app.morphe.patches.instagram.download.reel.DOWNLOAD
 import app.morphe.patches.instagram.download.reel.ELIGIBLE_MARKER
 import app.morphe.patches.instagram.download.reel.OPTION
@@ -141,7 +142,7 @@ val downloadVideoPatch = bytecodePatch(
     category("Downloads")
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.instagram())
-    dependsOn(instagramExtensionPatch)
+    dependsOn(instagramExtensionPatch, playerQueriesPatch)
 
     execute {
         requireStatusMethod("videoDownload")

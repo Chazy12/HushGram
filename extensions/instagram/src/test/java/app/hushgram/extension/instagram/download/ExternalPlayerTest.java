@@ -11,9 +11,9 @@ import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
 import android.app.Application;
-import android.content.ActivityNotFoundException;
-import android.content.ContextWrapper;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Looper;
 
@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,6 +51,19 @@ public class ExternalPlayerTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
     private static final String META = "https://scontent.cdninstagram.com/v/t50.2886-16/";
+
+    /** A player on the phone, one that views a video at a web address. */
+    private static final ComponentName PLAYER = new ComponentName("org.example.player", "org.example.player.Play");
+
+    @Before
+    public void playerInstalled() throws IntentFilter.MalformedMimeTypeException {
+        IntentFilter view = new IntentFilter(Intent.ACTION_VIEW);
+        view.addCategory(Intent.CATEGORY_DEFAULT);
+        view.addDataScheme("https");
+        view.addDataType("video/*");
+        Shadows.shadowOf(RuntimeEnvironment.getApplication().getPackageManager()).addActivityIfNotPresent(PLAYER);
+        Shadows.shadowOf(RuntimeEnvironment.getApplication().getPackageManager()).addIntentFilterForActivity(PLAYER, view);
+    }
 
     @After
     public void tearDown() {
@@ -141,20 +155,20 @@ public class ExternalPlayerTest {
         assertTrue(String.valueOf(HookStatus.report()), String.valueOf(HookStatus.report()).contains(ExternalPlayer.NO_FILE + " 1"));
     }
 
-    /** When nothing can take the chooser, a toast says no app plays the video. */
+    /**
+     * With no app on the phone that views the video, the chooser, which would open empty, doesn't
+     * open, and a toast says no app plays it.
+     */
     @Test
     public void noPlayerSaysSo() {
         twoFiles();
-        ContextWrapper nothing = new ContextWrapper(RuntimeEnvironment.getApplication()) {
-            @Override
-            public void startActivity(Intent intent) {
-                throw new ActivityNotFoundException("no player");
-            }
-        };
+        Shadows.shadowOf(RuntimeEnvironment.getApplication().getPackageManager()).removeActivity(PLAYER);
+        Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
 
-        assertFalse(ExternalPlayer.open(nothing, new Object(), FamilyNames.REEL_DOWNLOAD));
+        assertFalse(ExternalPlayer.open(activity, new Object(), FamilyNames.REEL_DOWNLOAD));
         Shadows.shadowOf(Looper.getMainLooper()).idle();
 
+        assertNull("no empty chooser", Shadows.shadowOf(activity).getNextStartedActivity());
         assertEquals("No app on this phone can play this video", String.valueOf(ShadowToast.getTextOfLatestToast()));
         assertTrue(String.valueOf(HookStatus.report()), String.valueOf(HookStatus.report()).contains(ExternalPlayer.NO_PLAYER + " 1"));
     }
