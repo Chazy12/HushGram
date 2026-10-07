@@ -148,6 +148,24 @@ final class ResumePoints {
         return true;
     }
 
+    /**
+     * Forgets, durably, every point whose key starts with [prefix]: one account's, its
+     * {@link #owner} and a slash. Answers how many went.
+     */
+    synchronized int removeOwner(String prefix, long now) {
+        load(now);
+        List<String> gone = new ArrayList<>();
+        for (String key : points.keySet()) {
+            if (key.startsWith(prefix)) gone.add(key);
+        }
+        if (gone.isEmpty()) return 0;
+        SharedPreferences.Editor edit = store.edit();
+        for (String key : gone) edit.remove(key);
+        if (!edit.commit()) throw new IllegalStateException("Could not forget an account's resume points");
+        for (String key : gone) points.remove(key);
+        return gone.size();
+    }
+
     /** How many points are kept. */
     synchronized int size(long now) {
         load(now);

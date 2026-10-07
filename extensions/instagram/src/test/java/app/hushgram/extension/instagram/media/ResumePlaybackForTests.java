@@ -53,6 +53,30 @@ public final class ResumePlaybackForTests {
         }
     }
 
+    /** Stands in for a UserSession as it ends: its account's user ID and whether it signed out. */
+    public static final class Session {
+        public final String userId;
+        public final boolean loggedOut;
+
+        public Session(String userId, boolean loggedOut) {
+            this.userId = userId;
+            this.loggedOut = loggedOut;
+        }
+    }
+
+    /** What the patched session stubs do, on {@link Session}s. */
+    static final ResumePlayback.Session SESSIONS = new ResumePlayback.Session() {
+        @Override
+        public String userId(Object session) {
+            return ((Session) session).userId;
+        }
+
+        @Override
+        public boolean loggedOut(Object session) {
+            return ((Session) session).loggedOut;
+        }
+    };
+
     /** Resumes the rule posted, not yet run. */
     static final Deque<Runnable> LATER = new ArrayDeque<>();
 
@@ -99,6 +123,7 @@ public final class ResumePlaybackForTests {
         LATER.clear();
         ResumePlayback.access = ACCESS;
         ResumePlayback.later = LATER::add;
+        ResumePlayback.sessions = SESSIONS;
     }
 
     /** Runs every resume posted so far. */

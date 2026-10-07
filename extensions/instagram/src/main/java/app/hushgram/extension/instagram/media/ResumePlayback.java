@@ -20,6 +20,7 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -54,6 +55,10 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  *   <li>{@link #seeking}, first thing in its seek, so a seek someone else makes before the resume
  *       (your drag of the scrubber, or Instagram carrying a position over) wins.</li>
  * </ul>
+ *
+ * <p>The patch also tells it when Instagram lets an account's session go ({@link #sessionEnded}),
+ * at an account switch and when an account signs out or is removed from the phone. That account's
+ * resumes still waiting to seek are dropped, and a signed-out account's points go with it.
  *
  * <p>A point is saved only for a video of at least {@link #MIN_DURATION_MS} that was stopped at
  * least {@link #MIN_SAVED_MS} in and more than {@link #END_MARGIN_MS} before its end. A stop
@@ -99,6 +104,8 @@ public final class ResumePlayback {
     static final String SEEKED_FIRST = "seek before the resume";
     static final String PAST_START = "started past the start";
     static final String MOVED_ON = "moved on before the resume";
+    static final String SESSION_ENDED = "an account's session ended";
+    static final String ACCOUNT_FORGOTTEN = "a signed-out account's points forgotten";
 
     /** Instagram's ProductType constants this leaves alone, by the names Instagram keeps. */
     static final String LIVE_PRODUCT = "LIVE";
@@ -305,7 +312,64 @@ public final class ResumePlayback {
         return false;
     }
 
+    /**
+     * Filled in by the patch: the user ID of [session], a UserSession, or null. Only a session may
+     * be passed. The ID goes no further than {@link ResumePoints#owner}, which hashes it.
+     */
+    @Nullable
+    public static String sessionUserId(Object session) {
+        return null;
+    }
+
+    /**
+     * Filled in by the patch: whether [session], a UserSession, ends because its account signed out
+     * or was removed from the phone, rather than because another account was switched to.
+     */
+    public static boolean sessionLoggedOut(Object session) {
+        return false;
+    }
+
+    /** What this class reads from a UserSession. {@link #SESSION_STUBS} is the patch's; tests stand in. */
+    interface Session {
+        @Nullable
+        String userId(Object session);
+
+        boolean loggedOut(Object session);
+    }
+
+    static final Session SESSION_STUBS = new Session() {
+        @Override
+        public String userId(Object session) {
+            return sessionUserId(session);
+        }
+
+        @Override
+        public boolean loggedOut(Object session) {
+            return sessionLoggedOut(session);
+        }
+    };
+
+    static volatile Session sessions = SESSION_STUBS;
+
     // ------------------------------------------------------------------ hooks
+
+    /**
+     * The hook, first thing in UserSession.completeEndSession(), where Instagram lets an account's
+     * session go: at an account switch, once the old account's screens have let go of it, and at
+     * once when the account signs out or is removed from the phone. Runs with the switch off and
+     * while paused, as Clear remembered positions does, since all it does is forget. See
+     * {@link #forgetAccount}. Never throws.
+     */
+    public static void sessionEnded(Object session) {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (session == null) return;
+            HookStatus.bound(FAMILY, "session end");
+            forgetAccount(sessions.userId(session), sessions.loggedOut(session), System.currentTimeMillis());
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "session end", failure);
+        }
+    }
 
     /** The hook, first thing in IgVideoPlayerImpl's playback-started callback. */
     public static void started(Object player) {
@@ -384,6 +448,34 @@ public final class ResumePlayback {
             if (positionMs > START_WINDOW_MS) PLAYERS.positioned(player);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "player seek", failure);
+        }
+    }
+
+    /**
+     * An account's session ended: every resume its players have waiting is dropped, so none seeks
+     * once another account is on screen, and when it [loggedOut] its points go too, from the file
+     * and from the copy Undo would bring back. A session whose user ID isn't known can't be told
+     * from another, so every waiting resume is dropped and no point is touched.
+     */
+    static void forgetAccount(@Nullable String userId, boolean loggedOut, long now) {
+        synchronized (POINTS_LOCK) {
+            count(SESSION_ENDED);
+            if (userId == null || userId.isEmpty()) {
+                PLAYERS.clear();
+                log(() -> "Resume long videos: a session whose account isn't known ended, so no resume waits");
+                return;
+            }
+            String prefix = ResumePoints.owner(userId) + '/';
+            int waiting = PLAYERS.forget(prefix);
+            if (!loggedOut) {
+                log(() -> "Resume long videos: an account's session ended, " + waiting + " player(s) let go");
+                return;
+            }
+            ResumePoints store = points();
+            int forgotten = store == null ? 0 : store.removeOwner(prefix, now);
+            if (clearedPoints != null) clearedPoints.keySet().removeIf(key -> key.startsWith(prefix));
+            count(ACCOUNT_FORGOTTEN);
+            log(() -> "Resume long videos: an account signed out, " + forgotten + " point(s) forgotten");
         }
     }
 
@@ -747,6 +839,21 @@ public final class ResumePlayback {
             return states.size();
         }
 
+        /**
+         * Lets go of every player whose video's key starts with [prefix], one account's, so a resume
+         * one of them has waiting finds it isn't current. Answers how many.
+         */
+        synchronized int forget(String prefix) {
+            purge();
+            int dropped = 0;
+            for (Iterator<State> known = states.values().iterator(); known.hasNext(); ) {
+                if (!known.next().videoId.startsWith(prefix)) continue;
+                known.remove();
+                dropped++;
+            }
+            return dropped;
+        }
+
         synchronized void clear() {
             states.clear();
             soughtBeforeStart.clear();
@@ -798,6 +905,7 @@ public final class ResumePlayback {
         }
         access = PATCHED;
         later = ON_MAIN_LOOPER;
+        sessions = SESSION_STUBS;
         pointsForTests = null;
     }
 

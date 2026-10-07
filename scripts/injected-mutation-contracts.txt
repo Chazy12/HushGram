@@ -688,6 +688,8 @@ start-call Lapp/hushgram/extension/instagram/media/ResumePlayback;->rebound(Ljav
 once-call Lapp/hushgram/extension/instagram/media/ResumePlayback;->rebound(Ljava/lang/Object;)V in instance (*)V holding IgVideoPlayerImpl.prepareVideoInternal reportVideoPlayerShouldStart
 start-call Lapp/hushgram/extension/instagram/media/ResumePlayback;->seeking(Ljava/lang/Object;I)V in instance (IZZ)V holding clips_viewer resume
 once-call Lapp/hushgram/extension/instagram/media/ResumePlayback;->seeking(Ljava/lang/Object;I)V in instance (IZZ)V holding clips_viewer resume
+start-call Lapp/hushgram/extension/instagram/media/ResumePlayback;->sessionEnded(Ljava/lang/Object;)V in instance ()V holding Lcom/instagram/common/session/UserSession;->isLoggedOut:Z Check\sfailed.
+once-call Lapp/hushgram/extension/instagram/media/ResumePlayback;->sessionEnded(Ljava/lang/Object;)V in instance ()V holding Lcom/instagram/common/session/UserSession;->isLoggedOut:Z Check\sfailed.
 #
 # Default playback quality tells firstChoice() about the DASH format evaluator right after its
 # choice of a track first keeps its tracks, so the call isn't first. The choice is the one method

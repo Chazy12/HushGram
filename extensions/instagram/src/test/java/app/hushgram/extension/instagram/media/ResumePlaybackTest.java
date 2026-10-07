@@ -650,6 +650,131 @@ public class ResumePlaybackTest {
         assertEquals("the known account's point", Collections.singletonList(600_000), opened(video).seeks);
     }
 
+    // ---- an account's session ending -----------------------------------------------------------
+
+    private static final String OTHER = "17841400000000002";
+
+    /** [video]'s point for the other account, at [at]. */
+    private static void leftByOther(Video video, int at) {
+        Player other = new Player(video);
+        other.account = OTHER;
+        other.position = at;
+        ResumePlayback.stopped(other, "scroll");
+    }
+
+    private static Player othersPlayer(Video video) {
+        Player player = new Player(video);
+        player.account = OTHER;
+        return player;
+    }
+
+    private static SharedPreferences pointsFile() {
+        return RuntimeEnvironment.getApplication().getSharedPreferences(ResumePoints.FILE, Context.MODE_PRIVATE);
+    }
+
+    /**
+     * An account switch ends the old account's session. A resume its player still had waiting is
+     * dropped and never seeks, the other account's player resumes as usual, and the old account's
+     * point stays for when it's back.
+     */
+    @Test
+    public void aSwitchDropsTheOldAccountsWaitingResume() {
+        Video video = longVideo("3712345678901234567");
+        leftAt(video, 5 * MINUTE);
+        leftByOther(video, 9 * MINUTE);
+
+        Player mine = new Player(video);
+        ResumePlayback.started(mine);
+        Player theirs = othersPlayer(video);
+        ResumePlayback.started(theirs);
+        ResumePlayback.sessionEnded(new ResumePlaybackForTests.Session(ResumePlaybackForTests.ACCOUNT, false));
+        ResumePlaybackForTests.runLater();
+
+        assertEquals("the ended account's player sought", Collections.emptyList(), mine.seeks);
+        assertEquals(Collections.singletonList(9 * MINUTE), theirs.seeks);
+        assertEquals(2, pointsFile().getAll().size());
+        assertEquals("its point stays for when it's back", Collections.singletonList(5 * MINUTE), opened(video).seeks);
+        String report = report();
+        assertTrue(report, report.contains(ResumePlayback.SESSION_ENDED + " 1"));
+        assertTrue(report, report.contains(ResumePlayback.MOVED_ON + " 1"));
+        assertFalse(report, report.contains(ResumePlayback.ACCOUNT_FORGOTTEN));
+    }
+
+    /**
+     * Signing out, or removing the account from the phone, forgets that account's points at once,
+     * in the file too, with the switch off as well. Another account's points stay.
+     */
+    @Test
+    public void signingOutForgetsThatAccountsPoints() {
+        Video video = longVideo("3712345678901234567");
+        leftAt(video, 5 * MINUTE);
+        leftAt(longVideo("3712345678901234568"), 6 * MINUTE);
+        leftByOther(video, 9 * MINUTE);
+        assertEquals(3, pointsFile().getAll().size());
+
+        Settings.RESUME_LONG_VIDEOS.save(false);
+        ResumePlayback.sessionEnded(new ResumePlaybackForTests.Session(ResumePlaybackForTests.ACCOUNT, true));
+        assertEquals("only the other account's point is left", 1, pointsFile().getAll().size());
+
+        Settings.RESUME_LONG_VIDEOS.save(true);
+        assertEquals("a signed-out account's point moved it", Collections.emptyList(), opened(video).seeks);
+        assertEquals(Collections.singletonList(9 * MINUTE), openedWith(othersPlayer(video)).seeks);
+        assertTrue(report(), report().contains(ResumePlayback.ACCOUNT_FORGOTTEN + " 1"));
+    }
+
+    /** Undo of an earlier Clear brings back the other account's points, never a signed-out one's. */
+    @Test
+    public void undoDoesntBringBackASignedOutAccountsPoints() {
+        Video video = longVideo("3712345678901234567");
+        leftAt(video, 5 * MINUTE);
+        leftByOther(video, 9 * MINUTE);
+        ResumePlayback.clearHistory();
+        assertTrue(pointsFile().getAll().isEmpty());
+
+        ResumePlayback.sessionEnded(new ResumePlaybackForTests.Session(ResumePlaybackForTests.ACCOUNT, true));
+        assertTrue(ResumePlayback.undoHistory());
+
+        assertEquals(1, pointsFile().getAll().size());
+        assertEquals(Collections.emptyList(), opened(video).seeks);
+        assertEquals(Collections.singletonList(9 * MINUTE), openedWith(othersPlayer(video)).seeks);
+    }
+
+    /**
+     * A session whose account the stub can't read can't be told from another, so every waiting
+     * resume is dropped and no point is touched. No session at all does nothing.
+     */
+    @Test
+    public void aSessionWithoutAnAccountDropsEveryWaitingResume() {
+        Video video = longVideo("3712345678901234567");
+        leftAt(video, 5 * MINUTE);
+        leftByOther(video, 9 * MINUTE);
+        ResumePlayback.sessionEnded(null);
+        assertFalse(report(), report().contains(ResumePlayback.SESSION_ENDED));
+
+        Player mine = new Player(video);
+        ResumePlayback.started(mine);
+        Player theirs = othersPlayer(video);
+        ResumePlayback.started(theirs);
+        ResumePlayback.sessionEnded(new ResumePlaybackForTests.Session(null, true));
+        ResumePlaybackForTests.runLater();
+
+        assertEquals(Collections.emptyList(), mine.seeks);
+        assertEquals(Collections.emptyList(), theirs.seeks);
+        assertEquals(2, pointsFile().getAll().size());
+        assertFalse(report(), report().contains(ResumePlayback.ACCOUNT_FORGOTTEN));
+    }
+
+    /** Until the patch fills the stubs, a session reads as unknown and as a switch: points stay. */
+    @Test
+    public void theUnfilledStubsForgetNoPoint() {
+        assertNull(ResumePlayback.sessionUserId(new Object()));
+        assertFalse(ResumePlayback.sessionLoggedOut(new Object()));
+        leftAt(longVideo("3712345678901234567"), 5 * MINUTE);
+        ResumePlayback.sessions = ResumePlayback.SESSION_STUBS;
+        ResumePlayback.sessionEnded(new Object());
+        assertEquals(1, pointsFile().getAll().size());
+    }
+
     @Test
     public void pointsFromBeforeAccountsAreDeleted() {
         android.content.SharedPreferences unowned = RuntimeEnvironment.getApplication()
