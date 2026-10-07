@@ -468,3 +468,21 @@ Unlock Instagram	Instagram'ın kilidini aç
 Unlock your messages	Mesajlarının kilidini aç
 Your inbox and chats stay covered until your fingerprint, face or screen lock says it's you. Message notifications say only that a message came.	Parmak izin, yüzün veya ekran kilidin sen olduğunu doğrulayana kadar gelen kutun ve sohbetlerin kapalı kalır. Mesaj bildirimleri yalnızca bir mesaj geldiğini söyler.
 Your messages are locked	Mesajların kilitli
+Allow screenshots	Ekran görüntülerine izin ver
+Couldn't change every Ghost mode switch. Check them below.	Hayalet modu anahtarlarının hepsi değiştirilemedi. Aşağıdan kontrol et.
+Couldn't reset overrides. Open settings from Home while signed in. Nothing changed.	Geçersiz kılmalar sıfırlanamadı. Oturum açıkken ayarları Ana Sayfa'dan aç. Hiçbir şey değişmedi.
+Don't report screenshots	Ekran görüntülerini bildirme
+Ghost mode	Hayalet modu
+Ghost mode is off, and so is each of its switches.	Hayalet modu kapalı, anahtarlarının her biri de kapalı.
+Ghost mode is on, and so is each of its switches.	Hayalet modu açık, anahtarlarının her biri de açık.
+Instagram doesn't notice when you take a screenshot, so whoever sent you a disappearing photo or video isn't told. Your screenshots save as usual.	Ekran görüntüsü aldığında Instagram bunu fark etmez, böylece sana kaybolan bir fotoğraf veya video gönderen kişiye haber verilmez. Ekran görüntülerin her zamanki gibi kaydedilir.
+Keep in chat	Sohbette tut
+Lives you watch don't put you on the host's viewer list, so they aren't told you're there. Commenting or reacting still shows you, and the viewer count you see stops updating.	İzlediğin canlı yayınlar seni yayıncının izleyici listesine eklemez, böylece orada olduğun ona söylenmez. Yorum yapmak veya tepki vermek seni yine gösterir ve gördüğün izleyici sayısı güncellenmeyi bırakır.
+Removed %1$d overrides. Restart Instagram to go back to its own flags.	%1$d geçersiz kılma kaldırıldı. Kendi bayraklarına dönmesi için Instagram'ı yeniden başlat.
+Reset all overrides	Tüm geçersiz kılmaları sıfırla
+Screenshots and screen recordings work wherever Instagram blocks them, like disappearing photos and videos. Turn on Don't report screenshots too if the sender shouldn't hear about it.	Ekran görüntüleri ve ekran kayıtları, kaybolan fotoğraf ve videolar gibi Instagram'ın engellediği her yerde çalışır. Gönderen bunu duymamalıysa Ekran görüntülerini bildirme'yi de aç.
+Take every override in this signed-in session away, so Instagram goes back to its own flags. The current overrides are saved for Restore first.	Bu oturumdaki her geçersiz kılmayı kaldırır, böylece Instagram kendi bayraklarına döner. Mevcut geçersiz kılmalar önce Geri yükle için kaydedilir.
+There are no overrides to reset. Nothing changed.	Sıfırlanacak geçersiz kılma yok. Hiçbir şey değişmedi.
+Turns the switches that keep what you do to yourself on or off in one go, like View stories anonymously and Hide that you're typing. Each one keeps its own switch.	Yaptıklarını kendine saklayan anahtarları, Hikayeleri anonim olarak izle ve Yazdığını gizle gibi, tek seferde açar veya kapatır. Her biri kendi anahtarını korur.
+View live anonymously	Canlı yayınları anonim izle
+View once and replayable photos and videos you get stay in the chat, as if they'd been sent with Keep in chat, so you can open them again.	Aldığın tek seferlik ve tekrar oynatılabilir fotoğraf ve videolar, Sohbette tut ile gönderilmiş gibi sohbette kalır, böylece onları yeniden açabilirsin.

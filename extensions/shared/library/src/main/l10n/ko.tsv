@@ -467,3 +467,21 @@ Unlock Instagram	Instagram 잠금 해제
 Unlock your messages	메시지 잠금 해제
 Your inbox and chats stay covered until your fingerprint, face or screen lock says it's you. Message notifications say only that a message came.	지문, 얼굴 또는 화면 잠금으로 본인임이 확인될 때까지 받은 메시지함과 채팅이 가려집니다. 메시지 알림에는 메시지가 왔다는 것만 표시됩니다.
 Your messages are locked	메시지가 잠겨 있습니다
+Allow screenshots	스크린샷 허용
+Couldn't change every Ghost mode switch. Check them below.	고스트 모드 스위치를 모두 바꾸지 못했습니다. 아래에서 확인하세요.
+Couldn't reset overrides. Open settings from Home while signed in. Nothing changed.	재정의를 초기화하지 못했습니다. 로그인한 상태에서 홈에서 설정을 여세요. 아무것도 바뀌지 않았습니다.
+Don't report screenshots	스크린샷 알리지 않기
+Ghost mode	고스트 모드
+Ghost mode is off, and so is each of its switches.	고스트 모드가 꺼졌고 각 스위치도 모두 꺼졌습니다.
+Ghost mode is on, and so is each of its switches.	고스트 모드가 켜졌고 각 스위치도 모두 켜졌습니다.
+Instagram doesn't notice when you take a screenshot, so whoever sent you a disappearing photo or video isn't told. Your screenshots save as usual.	스크린샷을 찍어도 Instagram이 알아채지 못하므로 사라지는 사진이나 동영상을 보낸 사람에게 알림이 가지 않습니다. 스크린샷은 평소처럼 저장됩니다.
+Keep in chat	채팅에 보관
+Lives you watch don't put you on the host's viewer list, so they aren't told you're there. Commenting or reacting still shows you, and the viewer count you see stops updating.	시청하는 라이브에서 호스트의 시청자 목록에 표시되지 않으므로 호스트는 내가 있다는 것을 모릅니다. 댓글을 달거나 반응하면 여전히 표시되며, 보이는 시청자 수는 더 이상 업데이트되지 않습니다.
+Removed %1$d overrides. Restart Instagram to go back to its own flags.	재정의 %1$d개를 삭제했습니다. Instagram의 기본 플래그로 돌아가려면 Instagram을 다시 시작하세요.
+Reset all overrides	모든 재정의 초기화
+Screenshots and screen recordings work wherever Instagram blocks them, like disappearing photos and videos. Turn on Don't report screenshots too if the sender shouldn't hear about it.	사라지는 사진과 동영상처럼 Instagram이 막는 곳에서도 스크린샷과 화면 녹화가 됩니다. 보낸 사람이 알면 안 된다면 스크린샷 알리지 않기도 켜세요.
+Take every override in this signed-in session away, so Instagram goes back to its own flags. The current overrides are saved for Restore first.	로그인한 이 세션의 모든 재정의를 없애 Instagram이 기본 플래그로 돌아가게 합니다. 현재 재정의는 복원할 수 있도록 먼저 저장됩니다.
+There are no overrides to reset. Nothing changed.	초기화할 재정의가 없습니다. 아무것도 바뀌지 않았습니다.
+Turns the switches that keep what you do to yourself on or off in one go, like View stories anonymously and Hide that you're typing. Each one keeps its own switch.	스토리 몰래보기와 입력 중 표시 숨기기처럼 내 활동을 숨기는 스위치를 한 번에 켜거나 끕니다. 각 스위치는 그대로 남습니다.
+View live anonymously	라이브 몰래보기
+View once and replayable photos and videos you get stay in the chat, as if they'd been sent with Keep in chat, so you can open them again.	받은 한 번 보기 및 다시 보기 가능 사진과 동영상이 채팅에 보관으로 보낸 것처럼 채팅에 남아 다시 열 수 있습니다.
