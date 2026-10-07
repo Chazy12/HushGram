@@ -933,7 +933,7 @@
     },
     {
       "name": "Hide suggested stories",
-      "description": "Removes the stories from accounts you don't follow, and the accounts Instagram suggests, from the row of stories at the top of Home. A second switch, off to start, takes the whole row away.",
+      "description": "Removes the stories from accounts you don't follow, and the accounts Instagram suggests, from the row of stories at the top of Home. More switches, off to start, take out rewinds, memories and recaps, stop the row's stories loading, or take the whole row away.",
       "category": "Feed",
       "use": true,
       "dependencies": [

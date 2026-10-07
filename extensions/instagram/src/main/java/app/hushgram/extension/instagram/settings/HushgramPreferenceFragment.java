@@ -583,6 +583,9 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             stories.add(toggle(context, Settings.HIDE_STORY_RECAPS, L10n.t("Hide memories and recaps"),
                     L10n.t("Takes the memories, recaps, follow anniversaries and birthday cards Instagram makes out "
                             + "of the row of stories at the top of Home. Stories people post stay.")));
+            stories.add(toggle(context, Settings.STOP_LOADING_STORIES, L10n.t("Stop loading stories"),
+                    L10n.t("Nothing in the row of stories at the top of Home loads, your own story included, which "
+                            + "saves data. A story ring on a profile or in a chat still opens its stories.")));
             stories.add(toggle(context, Settings.HIDE_STORIES_TRAY, L10n.t("Hide the Stories tray"),
                     L10n.t("Takes the whole row of stories off the top of Home, Your story included. Stories still "
                             + "open from a profile or a message.")));

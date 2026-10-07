@@ -4,10 +4,14 @@
  */
 package app.hushgram.extension.instagram.stories;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -98,6 +102,27 @@ public class StoriesTrayTest {
         } finally {
             Settings.HIDE_STORY_RECAPS.save(false);
         }
+    }
+
+    /** Stop loading stories drops every item, yours included, and the reels left to fetch, while it's on. */
+    @Test
+    public void stopLoadingStoriesDropsEveryItemAndTheReelsLeftToFetch() {
+        ArrayList<Object> ids = new ArrayList<>(Arrays.asList("1", "2"));
+        TrayItem story = new TrayItem(ReelType.USER_REEL);
+        assertFalse(Settings.STOP_LOADING_STORIES.get());
+        assertSame(story, StoriesTray.filter(story));
+        assertSame(ids, StoriesTray.remaining(ids));
+
+        Settings.STOP_LOADING_STORIES.save(true);
+        try {
+            for (ReelType kind : ReelType.values()) assertNull(kind.name(), StoriesTray.filter(new TrayItem(kind)));
+            assertTrue(StoriesTray.remaining(ids).isEmpty());
+            assertEquals("the list Instagram read is left as it was", 2, ids.size());
+            assertNull(StoriesTray.remaining(null));
+        } finally {
+            Settings.STOP_LOADING_STORIES.save(false);
+        }
+        assertSame(story, StoriesTray.filter(story));
     }
 
     /** The whole tray stays until its own switch, off to start, is turned on. */

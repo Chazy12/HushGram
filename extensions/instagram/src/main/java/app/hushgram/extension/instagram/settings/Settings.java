@@ -283,6 +283,13 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting HIDE_STORY_RECAPS =
             new BooleanSetting("hushgram_hide_story_recaps", FALSE);
 
+    /**
+     * Nothing in the stories tray at the top of Home loads: its items and the reels it fetches after
+     * them are dropped as the tray's response is read. Off to start.
+     */
+    public static final BooleanSetting STOP_LOADING_STORIES =
+            new BooleanSetting("hushgram_stop_loading_stories", FALSE);
+
     /** The whole row of stories at the top of Home, Your story included. Off until you turn it on. */
     public static final BooleanSetting HIDE_STORIES_TRAY =
             new BooleanSetting("hushgram_hide_stories_tray", FALSE);

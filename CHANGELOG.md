@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Stop loading stories, a new switch under Stories that starts off. With it on, nothing in the row of stories at the top of Home loads, your own story included, which saves data. A story ring on a profile or in a chat still opens its stories.
+
 * **Instagram:** Hide suggested stories has two more switches under Stories, both off to start. Hide story rewinds takes the rewind cards that bring back old highlights out of the row of stories at the top of Home, and Hide memories and recaps does the same for Instagram's memories, your week, the year in review, follow anniversaries and birthday cards. Stories people post stay either way.
 
 * **Instagram:** Lock your messages is harder to get around. When it locks again, message notifications already in the shade lose their text, and the update Instagram posts after an inline reply is hidden too. On Android 9 to 12 an open inbox or chat now stays out of the recent apps picture, which also keeps screenshots of it out while it's open. Pausing HushGram or safe mode no longer turns a lock off. While paused, a lock that's on covers all of Instagram. A second Instagram screen opening over a locked one doesn't uncover it anymore, screen readers skip what's under a cover, and Android 10 asks through the phone's own lock screen check, which also takes over whenever the prompt over Instagram can't ask.

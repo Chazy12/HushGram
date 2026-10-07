@@ -4,6 +4,7 @@
  */
 package app.hushgram.extension.instagram.stories;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -30,7 +31,8 @@ import app.hushgram.extension.shared.settings.BooleanSetting;
  * through {@link #filter}, which answers null for a suggested one while Hide suggested stories is
  * on, a rewind card while Hide story rewinds is on, and a card Instagram made from what's been
  * posted before while Hide memories and recaps is on. The parser skips it the way it skips an item
- * that didn't parse.
+ * that didn't parse. With Stop loading stories on, every item goes, and {@link #remaining} empties
+ * the list of reels the tray would fetch after them, so nothing in the row loads.
  */
 public final class StoriesTray {
     /**
@@ -64,6 +66,7 @@ public final class StoriesTray {
     static final String ROUTE = "Suggested stories";
     static final String REWIND_ROUTE = "Story rewinds";
     static final String RECAP_ROUTE = "Memories and recaps";
+    static final String STOP_ROUTE = "Stop loading stories";
 
     private static volatile boolean loggedTray;
 
@@ -99,6 +102,10 @@ public final class StoriesTray {
         if (item == null) return null;
         try {
             HookStatus.invoked(FamilyNames.STORIES_TRAY);
+            if (stopLoading()) {
+                FeedFilterCounters.removed(STOP_ROUTE, 1, "any");
+                return null;
+            }
             String kind = FeedItemKinds.kindIn(item, FILTERED, FamilyNames.STORIES_TRAY);
             if (kind == null) return item;
             String route = SUGGESTED.contains(kind) ? ROUTE : REWINDS.contains(kind) ? REWIND_ROUTE : RECAP_ROUTE;
@@ -111,6 +118,28 @@ public final class StoriesTray {
             HookStatus.threw(FamilyNames.STORIES_TRAY, "tray item", failure);
             return item;
         }
+    }
+
+    /**
+     * Injected where the tray's parser reads the ids of the reels it fetches after the tray's items.
+     * Answers an empty list while Stop loading stories is on, and [ids] itself otherwise, or when
+     * anything goes wrong. Never throws.
+     */
+    public static ArrayList<?> remaining(ArrayList<?> ids) {
+        if (ids == null || ids.isEmpty()) return ids;
+        try {
+            HookStatus.invoked(FamilyNames.STORIES_TRAY);
+            if (!stopLoading()) return ids;
+            FeedFilterCounters.removed(STOP_ROUTE, ids.size(), "reel left to fetch");
+            return new ArrayList<>();
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.STORIES_TRAY, "reels left to fetch", failure);
+            return ids;
+        }
+    }
+
+    private static boolean stopLoading() {
+        return Utils.settingsReady() && Settings.STOP_LOADING_STORIES.get();
     }
 
     private static BooleanSetting switchFor(String kind) {
