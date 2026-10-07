@@ -97,6 +97,27 @@ public class ReelDownloadTest {
         assertTrue(ReelDownload.withhold(2));
     }
 
+    /**
+     * The filters of a builder that hands Download to the adder of one row answer as offer() and
+     * withhold() do while Open in another player is off, ints and all, and hold nothing back for the
+     * adder.
+     */
+    @Test
+    public void theAdderBuildersFiltersMatchThePlainOnesWithThePlayerOff() {
+        assertTrue(ReelDownload.offerRow(0));
+        assertTrue(ReelDownload.offerRow(1));
+        assertFalse(ReelDownload.withholdRow(1));
+        assertFalse(ReelDownload.withholdRow(0));
+        Settings.DOWNLOAD_REELS.save(false);
+        assertFalse(ReelDownload.offerRow(0));
+        assertTrue(ReelDownload.offerRow(1));
+        assertTrue("2 is a yes too", ReelDownload.offerRow(2));
+        assertTrue(ReelDownload.withholdRow(1));
+        assertFalse(ReelDownload.withholdRow(0));
+        assertFalse("Instagram's own Download row stays", ReelDownload.rows(null, new Object(), null, null, null));
+        assertTrue(Item.rows.isEmpty());
+    }
+
     /** Instagram's option names, as the reduced reel menu's list holds them. */
     private enum Option { SHOP_SIMILAR, SAVE, UNSAVE, PLAYBACK_CONTROLS, DOWNLOAD, WHY_AM_I_SEEING_THIS, REPORT }
 

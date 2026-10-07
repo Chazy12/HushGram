@@ -33,10 +33,12 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
@@ -56,6 +58,13 @@ private const val FRAGMENT_ACTIVITY = "Landroidx/fragment/app/FragmentActivity;"
 private const val REEL_DOWNLOAD = "$EXTENSION_PACKAGE/download/ReelDownload;"
 internal const val OFFER = "$REEL_DOWNLOAD->offer(I)Z"
 internal const val WITHHOLD = "$REEL_DOWNLOAD->withhold(I)Z"
+
+/**
+ * The filters of a builder that hands Download straight to the menu's adder of one row, which also
+ * let it in for Open in another player alone: the adder then puts the player row in its place.
+ */
+internal const val OFFER_ROW = "$REEL_DOWNLOAD->offerRow(I)Z"
+internal const val WITHHOLD_ROW = "$REEL_DOWNLOAD->withholdRow(I)Z"
 internal const val SAVE = "$REEL_DOWNLOAD->save(Ljava/lang/Object;Ljava/lang/Object;Landroid/app/Activity;)Z"
 internal const val OURS = "$REEL_DOWNLOAD->ours(Ljava/lang/Object;)Z"
 internal const val ROWS = "$REEL_DOWNLOAD->rows(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Z"
@@ -95,6 +104,10 @@ internal const val REDUCED_MARKER = "ClipsOrganicMediaItemViewMoreOptionsControl
  * any story uses, which this patch writes too (#71). When the post's music has a track to fetch,
  * the menu's adder of one row puts Download as video and Download as photo in Download's place,
  * two options made the way Download is, and the handler hands a tap on either to the extension.
+ *
+ * A builder that hands Download straight to that adder also lets it in when only Open in another
+ * player is on, and the adder then puts the player row alone in its place, so a reel Instagram keeps
+ * Download off still gets the player row. Builders that put Download anywhere else don't.
  *
  * Everything is found before anything changes, so a build that differs stops the patch naming
  * what it couldn't find, and nothing is half done.
@@ -157,13 +170,6 @@ internal fun BytecodePatchContext.offerDownloadOnEveryReel() {
         throw PatchException("$PATCH: ${eligible.definingClass}->${eligible.name}, the download check, doesn't answer a boolean")
     }
     val helper = handler.definingClass
-    val builders = loaders.filter { it.calls(eligible) && (it.definingClass == helper || it.uses(helper)) }
-    if (builders.isEmpty()) throw PatchException("$PATCH: no builder of the reel menu adds Download after the download check")
-    val gates = builders.associateWith { it.downloadGates(eligible) }
-    val reduced = one(reducedLists, REDUCED_MARKER)
-    val reducedReturns = reduced.optionListReturns()
-    val media = instanceField(helper, MEDIA)
-    val activity = instanceField(helper, FRAGMENT_ACTIVITY)
     val adder = one(rowAdders, ROW_MARKER)
     val adderTypes = adder.parameterTypes.map(Any::toString)
     if (adder.definingClass != helper || AccessFlags.STATIC.isSet(adder.accessFlags) || adder.returnType != "V" ||
@@ -172,6 +178,13 @@ internal fun BytecodePatchContext.offerDownloadOnEveryReel() {
     ) {
         throw PatchException("$PATCH: ${adder.definingClass}->${adder.name}, the adder of one row, takes ${adderTypes.joinToString("")}")
     }
+    val builders = loaders.filter { it.calls(eligible) && (it.definingClass == helper || it.uses(helper)) }
+    if (builders.isEmpty()) throw PatchException("$PATCH: no builder of the reel menu adds Download after the download check")
+    val gates = builders.associateWith { it.downloadGates(eligible, handsToRows(it, adder)) }
+    val reduced = one(reducedLists, REDUCED_MARKER)
+    val reducedReturns = reduced.optionListReturns()
+    val media = instanceField(helper, MEDIA)
+    val activity = instanceField(helper, FRAGMENT_ACTIVITY)
     val icon = optionIcon(PATCH)
     val writeBridges = mediaBridges(PATCH)
     val writeImageBridges = imageBridges(PATCH)
@@ -339,9 +352,11 @@ private fun BytecodePatchContext.mutable(method: Method): MutableMethod =
  * Every branch of [this] builder that keeps the Download row out, each with the filter that lets it
  * in: after the download check, the one that skips the row when the check says no, and after that,
  * each that skips it when a flag says yes. The builder must load the row once, call the check once
- * before it, and have only those two kinds of branch between them jumping past the row.
+ * before it, and have only those two kinds of branch between them jumping past the row. A builder
+ * that hands the row straight to the menu's adder of one row ([rows]) gets the filters that also let
+ * it in for Open in another player alone.
  */
-internal fun Method.downloadGates(eligible: Method): List<Gate> {
+internal fun Method.downloadGates(eligible: Method, rows: Boolean = false): List<Gate> {
     val code = code()
     val where = "$definingClass->$name"
     val row = code.indices.filter { code[it].opcode == Opcode.SGET_OBJECT && code[it].referenceText() == DOWNLOAD }.singleOrNull()
@@ -373,11 +388,40 @@ internal fun Method.downloadGates(eligible: Method): List<Gate> {
         }
         val fromCheck = call.calls(eligible)
         when {
-            fromCheck && branch.opcode == Opcode.IF_EQZ -> Gate(set + 1, register, OFFER)
-            !fromCheck && branch.opcode == Opcode.IF_NEZ -> Gate(set + 1, register, WITHHOLD)
+            fromCheck && branch.opcode == Opcode.IF_EQZ -> Gate(set + 1, register, if (rows) OFFER_ROW else OFFER)
+            !fromCheck && branch.opcode == Opcode.IF_NEZ -> Gate(set + 1, register, if (rows) WITHHOLD_ROW else WITHHOLD)
             else -> throw PatchException("$PATCH: in $where the branch at $index keeps Download out in a way this patch doesn't know")
         }
     }
+}
+
+/**
+ * Whether [builder] hands Download straight to [adder], the menu's adder of one row: the first call
+ * after it loads Download takes Download, and is the adder or a method of the adder's class that
+ * calls it. Any other builder puts Download in a list, or in a menu of its own that never reaches the
+ * adder, so it never gets the player row and must not be let in for it.
+ */
+private fun BytecodePatchContext.handsToRows(builder: Method, adder: Method): Boolean {
+    val code = builder.code()
+    val row = code.indexOfFirst { it.opcode == Opcode.SGET_OBJECT && it.referenceText() == DOWNLOAD }
+    if (row < 0) return false
+    val download = (code[row] as OneRegisterInstruction).registerA
+    val call = code.drop(row + 1).firstOrNull { (it as? ReferenceInstruction)?.reference is MethodReference } ?: return false
+    if (!call.passes(download)) return false
+    if (call.calls(adder)) return true
+    val called = (call as ReferenceInstruction).reference as MethodReference
+    if (called.definingClass != adder.definingClass) return false
+    return classDefBy(adder.definingClass).methods.any { method ->
+        method.name == called.name && method.returnType == called.returnType &&
+            method.parameterTypes.map(Any::toString) == called.parameterTypes.map(Any::toString) && method.calls(adder)
+    }
+}
+
+/** Whether [this], a call, hands [register] to the method it calls. */
+private fun Instruction.passes(register: Int): Boolean = when (this) {
+    is RegisterRangeInstruction -> register in startRegister until startRegister + registerCount
+    is FiveRegisterInstruction -> register in listOf(registerC, registerD, registerE, registerF, registerG).take(registerCount)
+    else -> false
 }
 
 /**

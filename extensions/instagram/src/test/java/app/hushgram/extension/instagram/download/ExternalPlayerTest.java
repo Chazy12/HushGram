@@ -252,6 +252,77 @@ public class ExternalPlayerTest {
         assertTrue("a manifest alone", Item.rows.isEmpty());
     }
 
+    /**
+     * With Download on reels off, a reel Instagram keeps Download off still gets the player row: the
+     * builder that hands Download to the adder lets it in, and the adder puts the player row alone in
+     * its place and leaves Instagram's out. A reel Instagram gives Download keeps its row with the
+     * player row above it. A reel with no video file gets neither. With the player off too, it's
+     * Instagram's menu.
+     */
+    @Test
+    public void withDownloadOnReelsOffAReelWithoutInstagramsDownloadGetsTheRowAlone() {
+        Settings.DOWNLOAD_REELS.save(false);
+        twoFiles();
+        assertFalse("both off, Instagram's answer", ReelDownload.offerRow(0));
+        assertTrue(ReelDownload.offerRow(1));
+        assertTrue("both off, Instagram's flag", ReelDownload.withholdRow(1));
+
+        Settings.OPEN_IN_PLAYER.save(true);
+        assertTrue("let in for the player row", ReelDownload.offerRow(0));
+        assertFalse(ReelDownload.withholdRow(0));
+        assertTrue("Instagram's own Download row is left out", ReelDownload.rows(null, new Object(), null, null, null));
+        assertEquals(Collections.singletonList("HUSHGRAM_OPEN_PLAYER=Open in another player"), Item.rows);
+        assertTrue(String.valueOf(HookStatus.report()), String.valueOf(HookStatus.report()).contains(ReelDownload.PLAYER_ALONE + " 1"));
+
+        Item.rows.clear();
+        assertFalse("the adder took the answer, so the next row is Instagram's",
+                ReelDownload.rows(null, new Object(), null, null, null));
+        assertEquals(Collections.singletonList("HUSHGRAM_OPEN_PLAYER=Open in another player"), Item.rows);
+
+        Item.rows.clear();
+        assertTrue(ReelDownload.offerRow(1));
+        assertFalse(ReelDownload.withholdRow(0));
+        assertFalse("Instagram's Download stays", ReelDownload.rows(null, new Object(), null, null, null));
+        assertEquals(Collections.singletonList("HUSHGRAM_OPEN_PLAYER=Open in another player"), Item.rows);
+
+        Item.rows.clear();
+        assertTrue(ReelDownload.offerRow(1));
+        assertFalse("let in past Instagram's flag for the player row", ReelDownload.withholdRow(1));
+        assertTrue(ReelDownload.rows(null, new Object(), null, null, null));
+        assertEquals(Collections.singletonList("HUSHGRAM_OPEN_PLAYER=Open in another player"), Item.rows);
+
+        Item.rows.clear();
+        Item.videos = null;
+        Item.manifest = "<MPD/>";
+        assertTrue(ReelDownload.offerRow(0));
+        assertTrue("no video file, and still no Download of Instagram's", ReelDownload.rows(null, new Object(), null, null, null));
+        assertTrue(Item.rows.isEmpty());
+    }
+
+    /**
+     * The reduced reel menu, which never lists Download, gets it for the player row alone, and the
+     * adder leaves Instagram's out. With the player off its list is Instagram's.
+     */
+    @Test
+    public void theReducedMenuGetsThePlayerRowAlone() {
+        Settings.DOWNLOAD_REELS.save(false);
+        twoFiles();
+        List<Object> reduced = new ArrayList<>(Arrays.asList("PLAYBACK_CONTROLS", "REPORT"));
+        ReelDownload.addTo(reduced, Native.DOWNLOAD);
+        assertEquals(Arrays.asList("PLAYBACK_CONTROLS", "REPORT"), reduced);
+
+        Settings.OPEN_IN_PLAYER.save(true);
+        ReelDownload.addTo(reduced, Native.DOWNLOAD);
+        assertEquals(Arrays.asList(Native.DOWNLOAD, "PLAYBACK_CONTROLS", "REPORT"), reduced);
+        assertTrue(ReelDownload.rows(null, new Object(), null, null, null));
+        assertEquals(Collections.singletonList("HUSHGRAM_OPEN_PLAYER=Open in another player"), Item.rows);
+
+        Item.rows.clear();
+        ReelDownload.addTo(reduced, Native.DOWNLOAD);
+        assertEquals("a list that has it is left alone", Arrays.asList(Native.DOWNLOAD, "PLAYBACK_CONTROLS", "REPORT"), reduced);
+        assertFalse("Instagram listed it, so it stays", ReelDownload.rows(null, new Object(), null, null, null));
+    }
+
     /** On, the feed menu gets the row for a post with a video file, and a tap opens the chooser. */
     @Test
     public void aFeedVideoGetsTheRowAndItsTap() {

@@ -546,12 +546,14 @@ once-call Lapp/hushgram/extension/instagram/stories/StoriesTray;->remaining(Ljav
 # that holds the row back goes through withhold() in the two redesigned ones. Each builder is the one
 # method holding its marker (the legacy one's marker is also in a static string table, which answers
 # a string, so the shape leaves it out). offer() and withhold() are in several builders, so
-# shared-call. The menu's handler of a tapped option asks save() when the option is Download, after
+# shared-call. The redesigned builder that hands Download straight to the menu's adder of one row
+# gets offerRow() and withholdRow() in their place, which also let Download in for Open in another
+# player alone. The menu's handler of a tapped option asks save() when the option is Download, after
 # comparing the option, so the call isn't first and the rule is once-call.
 shared-call Lapp/hushgram/extension/instagram/download/ReelDownload;->offer(I)Z in static (*)V holding android_purge_26_q3_ClipsDownloadUtil_shouldShowProducerDownloadControls
-shared-call Lapp/hushgram/extension/instagram/download/ReelDownload;->offer(I)Z holding android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_showRedesignBottomSheet_2
+shared-call Lapp/hushgram/extension/instagram/download/ReelDownload;->offerRow(I)Z holding android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_showRedesignBottomSheet_2
 shared-call Lapp/hushgram/extension/instagram/download/ReelDownload;->offer(I)Z holding android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_addNonAuthorSpecificRows
-shared-call Lapp/hushgram/extension/instagram/download/ReelDownload;->withhold(I)Z holding android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_showRedesignBottomSheet_2
+shared-call Lapp/hushgram/extension/instagram/download/ReelDownload;->withholdRow(I)Z holding android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_showRedesignBottomSheet_2
 shared-call Lapp/hushgram/extension/instagram/download/ReelDownload;->withhold(I)Z holding android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_addNonAuthorSpecificRows
 once-call Lapp/hushgram/extension/instagram/download/ReelDownload;->save(Ljava/lang/Object;Ljava/lang/Object;Landroid/app/Activity;)Z holding android_purge_26_q3_ClipsOrganicMoreOptionsHelper_handleOptionSelected
 once-call Lapp/hushgram/extension/instagram/download/ReelDownload;->ours(Ljava/lang/Object;)Z holding android_purge_26_q3_ClipsOrganicMoreOptionsHelper_handleOptionSelected

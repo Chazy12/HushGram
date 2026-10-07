@@ -31,7 +31,9 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  * <ul>
  *   <li>Each builder of the menu asks {@link #offer} with Instagram's answer to whether the reel
  *       may be downloaded, and, in the builders that also read a server flag that holds the row
- *       back, {@link #withhold} with the flag. With the switch on, every reel gets the row.
+ *       back, {@link #withhold} with the flag. With the switch on, every reel gets the row. A
+ *       builder that hands Download straight to the menu's adder of one row asks {@link #offerRow}
+ *       and {@link #withholdRow} instead, which also let it in for Open in another player.
  *   <li>The menu's handler asks {@link #save} first when Download is tapped. With the switch on,
  *       the reel is saved from the addresses its Media already holds, through {@link MediaSave},
  *       and Instagram's own download never starts. A photo the Reels viewer shows with its music
@@ -48,7 +50,8 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  *       player in Download's place, after Download cover when that's on too. A tap on it hands the
  *       file's address to a player picked from Android's chooser ({@link ExternalPlayer}). With
  *       Download on reels off, the row goes above Instagram's own Download row where Instagram
- *       shows one, and that row stays Instagram's.
+ *       shows one, and that row stays Instagram's. Where Instagram shows none, Download is let in
+ *       for the adder all the same, which puts the player row alone in its place.
  * </ul>
  *
  * <p>Every hook fails open: until the settings are ready, while HushGram is paused, with the switch
@@ -102,6 +105,9 @@ public final class ReelDownload {
      */
     static final String PLAYER_OPTION = ExternalPlayer.OPTION;
 
+    /** Counted when a reel Instagram keeps Download off gets the player row alone. */
+    static final String PLAYER_ALONE = "player row alone";
+
     /** Every row of ours, by name. */
     private static final List<String> OUR_ROWS = Arrays.asList(VIDEO_OPTION, PHOTO_OPTION, REEL_OPTION, COVER_OPTION,
             PLAYER_OPTION);
@@ -120,6 +126,7 @@ public final class ReelDownload {
 
     /** Instagram's answer [eligible] to whether this reel has a Download row, or yes with the switch on. Never throws. */
     public static boolean offer(boolean eligible) {
+        playerOnly = false;
         return eligible || on();
     }
 
@@ -133,23 +140,70 @@ public final class ReelDownload {
         return held && !on();
     }
 
+    /**
+     * Whether the Download the reel menu was just let into is there only for Open in another player:
+     * Instagram keeps Download off this reel, Download on reels is off, and the player's switch is
+     * on. The builders that let it in this way hand it straight to the menu's adder of one row, where
+     * {@link #rows} takes the answer back, adds the player row alone and leaves Instagram's out.
+     */
+    private static boolean playerOnly;
+
+    /** {@link #offerRow(boolean)} for the patch, handed an int as {@link #offer(int)} is. */
+    public static boolean offerRow(int eligible) {
+        return offerRow(eligible != 0);
+    }
+
+    /**
+     * {@link #offer(boolean)} for a builder that hands Download straight to the menu's adder of one
+     * row: also yes when only Open in another player is on, since the adder then puts the player row
+     * in Download's place without Instagram's. Never throws.
+     */
+    public static boolean offerRow(boolean eligible) {
+        playerOnly = false;
+        if (eligible || on()) return true;
+        playerOnly = ExternalPlayer.on();
+        return playerOnly;
+    }
+
+    /** {@link #withholdRow(boolean)} for the patch, handed an int as {@link #offer(int)} is. */
+    public static boolean withholdRow(int held) {
+        return withholdRow(held != 0);
+    }
+
+    /**
+     * {@link #withhold(boolean)} for the same builders as {@link #offerRow(boolean)}: with only Open
+     * in another player on, Instagram's flag lets the row in for the player row alone. Never throws.
+     */
+    public static boolean withholdRow(boolean held) {
+        if (!held || on()) return false;
+        if (!ExternalPlayer.on()) return true;
+        playerOnly = true;
+        return false;
+    }
+
     /** The options the reduced reel menu lists above Download, by the names Instagram keeps. */
     private static final List<String> ABOVE_DOWNLOAD = Arrays.asList("SHOP_SIMILAR", "SAVE", "UNSAVE");
 
     /**
      * Adds [download], Instagram's Download option, to [options], the list the reduced reel menu
-     * shows, with the switch on. It goes after the save rows, which puts it above Playback as in the
-     * full menu. A list that has it already is left alone. Never throws.
+     * shows, with the switch on, or with only Open in another player on, for the player row alone:
+     * the menu hands each option of the list to its adder of one row. It goes after the save rows,
+     * which puts it above Playback as in the full menu. A list that has it already is left alone.
+     * Never throws.
      */
     public static void addTo(List<Object> options, Object download) {
+        playerOnly = false;
         try {
-            if (options == null || download == null || !on() || options.contains(download)) return;
+            if (options == null || download == null || options.contains(download)) return;
+            boolean player = !on();
+            if (player && !ExternalPlayer.on()) return;
             int at = 0;
             for (int i = 0; i < options.size(); i++) {
                 Object option = options.get(i);
                 if (option instanceof Enum && ABOVE_DOWNLOAD.contains(((Enum<?>) option).name())) at = i + 1;
             }
             options.add(at, download);
+            playerOnly = player;
         } catch (Throwable t) {
             HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "reduced reel menu", t);
         }
@@ -162,16 +216,21 @@ public final class ReelDownload {
      * [context], [sheet] and [rowState] are what its adder of one row was handed for Download. Any
      * other reel answers false and gets the one Download row. With Download on reels off and Open in
      * another player on, a reel with a video file gets that row above Instagram's own Download row,
-     * which stays. Never throws.
+     * which stays, or in its place when Download is there only for the player row ({@link #playerOnly}),
+     * which answers true. Never throws.
      */
     public static boolean rows(Object menu, Object media, Object context, Object sheet, Object rowState) {
+        boolean alone = playerOnly;
+        playerOnly = false;
         try {
-            if (media == null) return false;
-            if (!on()) {
-                Object player = ExternalPlayer.offers(media) ? InstagramMedia.reelOption(PLAYER_OPTION) : null;
-                if (player != null) playerRow(menu, context, player, sheet, rowState);
-                return false;
+            if (alone || !on()) {
+                Object player = media != null && ExternalPlayer.offers(media) ? InstagramMedia.reelOption(PLAYER_OPTION) : null;
+                if (player != null && playerRow(menu, context, player, sheet, rowState) && alone) {
+                    HookStatus.counted(FamilyNames.REEL_DOWNLOAD, PLAYER_ALONE);
+                }
+                return alone;
             }
+            if (media == null) return false;
             if (!renditions(media).isEmpty() || InstagramMedia.dashManifest(media) != null) {
                 return videoRows(menu, media, context, sheet, rowState);
             }
@@ -199,7 +258,8 @@ public final class ReelDownload {
             }
         } catch (Throwable t) {
             HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "reel menu rows", t);
-            return false;
+            // Instagram keeps Download off a reel it was let into only for the player row.
+            return alone;
         }
     }
 

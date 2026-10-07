@@ -64,10 +64,36 @@ class DownloadReelHookTest {
     private val clipsMetadata = "Lfixture/ClipsMetadata;"
     private val rowTypes = listOf("Landroid/content/Context;", OPTION, sheet, rowState, "Ljava/lang/Integer;", "Ljava/lang/String;")
 
+    // What the redesigned builder does with Download once it's let in, after its gates. Instagram's
+    // hands it to the adder's shorthand. A0R takes an option and never reaches the adder.
+    private val toShorthand = """
+        sget-object v3, $DOWNLOAD
+        invoke-virtual { v1, v2, v3, v2, v2 }, $helper->A0P(${rowTypes.take(4).joinToString("")})V
+    """
+    private val toAdder = """
+        sget-object v6, $DOWNLOAD
+        move-object v4, v1
+        const/4 v5, 0x0
+        const/4 v7, 0x0
+        const/4 v8, 0x0
+        const/4 v9, 0x0
+        const/4 v10, 0x0
+        invoke-virtual/range { v4 .. v10 }, $helper->A0Q(${rowTypes.joinToString("")})V
+    """
+    private val toAnotherMethod = """
+        sget-object v3, $DOWNLOAD
+        invoke-virtual { v1, v3 }, $helper->A0R($OPTION)V
+    """
+    private val afterAnotherCall = """
+        sget-object v3, $DOWNLOAD
+        invoke-virtual { v1 }, $helper->A0S()V
+        invoke-virtual { v1, v2, v3, v2, v2 }, $helper->A0P(${rowTypes.take(4).joinToString("")})V
+    """
+
     /** The hooks the patch writes are in the extension the bundle ships, public and static. */
     @Test
     fun theHooksAreInTheExtension() {
-        for (hook in listOf(OFFER, WITHHOLD, SAVE, OURS, ROWS, ADD_TO)) {
+        for (hook in listOf(OFFER, WITHHOLD, OFFER_ROW, WITHHOLD_ROW, SAVE, OURS, ROWS, ADD_TO)) {
             val declared = ExtensionDex.classDef(hook.substringBefore("->")).methods
                 .filter { AccessFlags.PUBLIC.isSet(it.accessFlags) && AccessFlags.STATIC.isSet(it.accessFlags) }
                 .map { "${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" }
@@ -76,9 +102,11 @@ class DownloadReelHookTest {
     }
 
     /**
-     * Both reel menu builders let Download in with the switch on: the legacy one past the download
-     * check, the redesigned one past the check and the flag. The feed's menu, which isn't the reel
-     * menu's, stays Instagram's.
+     * Every reel menu builder lets Download in with the switch on: the legacy one past the download
+     * check, the redesigned ones past the check and the flag. The redesigned one that hands Download
+     * to the adder of one row gets the filters that also let it in for the player row alone, and the
+     * one with a menu of its own the plain ones. The feed's menu, which isn't the reel menu's, stays
+     * Instagram's.
      */
     @Test
     fun theReelMenusOfferDownload() {
@@ -89,9 +117,32 @@ class DownloadReelHookTest {
         val legacy = context.method(helper, "A06").code()
         assertFiltered(legacy, check, OFFER)
         val redesign = context.method(controller, "A08").code()
-        assertFiltered(redesign, check, OFFER)
-        assertFiltered(redesign, "Lfixture/MobileConfig;->A1A(Ljava/lang/Object;J)Z", WITHHOLD)
+        assertFiltered(redesign, check, OFFER_ROW)
+        assertFiltered(redesign, "Lfixture/MobileConfig;->A1A(Ljava/lang/Object;J)Z", WITHHOLD_ROW)
+        val ownMenu = context.method(controller, "A0Y").code()
+        assertFiltered(ownMenu, check, OFFER)
+        assertFiltered(ownMenu, "Lfixture/MobileConfig;->A1B(Ljava/lang/Object;)Z", WITHHOLD)
         assertEquals("the feed's menu was touched", feedSheetCode().size, context.method(feedSheet, "invoke").code().size)
+    }
+
+    /**
+     * Only a builder whose first call after loading Download hands it to the adder, or to a method
+     * of the adder's class that calls the adder, gets the filters that let it in for the player row.
+     * Download handed to another method of that class, or after another call, gets the plain ones,
+     * since nothing would put the player row in its place there.
+     */
+    @Test
+    fun onlyABuilderHandingDownloadToTheAdderLetsItInForThePlayer() {
+        val flag = "Lfixture/MobileConfig;->A1A(Ljava/lang/Object;J)Z"
+        for ((handOff, rows) in listOf(toShorthand to true, toAdder to true, toAnotherMethod to false, afterAnotherCall to false)) {
+            val context = PatchContexts.of(classes(handOff = handOff))
+
+            context.offerDownloadOnEveryReel()
+
+            val redesign = context.method(controller, "A08").code()
+            assertFiltered(redesign, check, if (rows) OFFER_ROW else OFFER)
+            assertFiltered(redesign, flag, if (rows) WITHHOLD_ROW else WITHHOLD)
+        }
     }
 
     /**
@@ -375,14 +426,22 @@ class DownloadReelHookTest {
                 }
                 assertTrue("${bundle.name}: no reel menu builder", builders.isNotEmpty())
                 var flags = 0
+                var toRows = 0
                 builders.forEach { builder ->
                     val code = context.method(builder.definingClass, builder.name, builder.parameterTypes.map(Any::toString)).code()
-                    assertEquals("${bundle.name}: ${builder.definingClass}->${builder.name} offers", 1, code.count { it.referenceText() == OFFER })
-                    val withheld = code.count { it.referenceText() == WITHHOLD }
-                    assertTrue("${bundle.name}: ${builder.definingClass}->${builder.name} withholds $withheld times", withheld <= 1)
+                    val where = "${bundle.name}: ${builder.definingClass}->${builder.name}"
+                    val rows = code.any { it.referenceText() == OFFER_ROW }
+                    val (offer, withhold) = if (rows) OFFER_ROW to WITHHOLD_ROW else OFFER to WITHHOLD
+                    assertEquals("$where offers", 1, code.count { it.referenceText() == offer })
+                    assertTrue("$where mixes the two kinds of filter",
+                        code.none { it.referenceText() in setOf(OFFER, WITHHOLD, OFFER_ROW, WITHHOLD_ROW) - setOf(offer, withhold) })
+                    val withheld = code.count { it.referenceText() == withhold }
+                    assertTrue("$where withholds $withheld times", withheld <= 1)
                     flags += withheld
+                    if (rows) toRows++
                 }
                 assertTrue("${bundle.name}: no builder read the flag", flags > 0)
+                assertTrue("${bundle.name}: no builder hands Download to the adder of one row", toRows > 0)
                 val reduced = all.single { REDUCED_MARKER in it.markers() }
                 val list = context.method(reduced.definingClass, reduced.name, reduced.parameterTypes.map(Any::toString)).code()
                 val returns = list.indices.filter { list[it].opcode == Opcode.RETURN_OBJECT }
@@ -426,7 +485,8 @@ class DownloadReelHookTest {
 
     private fun assertUntouched(context: BytecodePatchContext) {
         assertTrue("a builder changed", context.method(helper, "A06").code().none { it.referenceText() == OFFER })
-        assertTrue("a builder changed", context.method(controller, "A08").code().none { it.referenceText() == OFFER })
+        assertTrue("a builder changed", context.method(controller, "A08").code().none { it.referenceText() == OFFER_ROW })
+        assertTrue("a builder changed", context.method(controller, "A0Y").code().none { it.referenceText() == OFFER })
         assertTrue("the reduced menu changed", context.method(controller, "A03").code().none { it.referenceText() == ADD_TO })
         assertEquals("the handler changed", Opcode.CONST_STRING, context.method(helper, "A0T").code().first().opcode)
         assertEquals("a bridge was written", Opcode.CONST_4, context.method(INSTAGRAM_MEDIA, "videoVersions").code().first().opcode)
@@ -458,6 +518,7 @@ class DownloadReelHookTest {
         reducedMarker: String = REDUCED_MARKER,
         leaveOutCandidates: Boolean = false,
         rowParameters: List<String> = rowTypes,
+        handOff: String = toShorthand,
     ): List<ClassDef> {
         val helperFields = listOfNotNull(
             field(helper, "media", MEDIA),
@@ -483,7 +544,21 @@ class DownloadReelHookTest {
                     :skip
                     return-void
                 """),
-                method(helper, "A0P", listOf(OPTION), "V", 2, static = false, body = "return-void"),
+                // Instagram's shorthand for one row: the adder with no icon and no label of its own.
+                method(helper, "A0P", rowTypes.take(4), "V", 12, static = false, body = """
+                    const/4 v5, 0x0
+                    move-object v0, p0
+                    move-object v1, p1
+                    move-object v2, p2
+                    move-object v3, p3
+                    move-object v4, p4
+                    move-object v6, v5
+                    invoke-virtual/range { v0 .. v6 }, $helper->A0Q(${rowTypes.joinToString("")})V
+                    return-void
+                """),
+                // A method of the helper's that takes an option and never reaches the adder.
+                method(helper, "A0R", listOf(OPTION), "V", 2, static = false, body = "return-void"),
+                method(helper, "A0S", emptyList(), "V", 1, static = false, body = "return-void"),
                 // The adder of one row: 5 locals, then this and six parameters.
                 method(helper, "A0Q", rowParameters, "V", 6 + rowParameters.size, static = false, body = """
                     const-string v0, "android_purge_26_q3_$ROW_MARKER"
@@ -495,7 +570,7 @@ class DownloadReelHookTest {
         val controllerClass = classDef(
             controller,
             listOf(
-                method(controller, "A08", emptyList(), "V", 7, static = false, body = """
+                method(controller, "A08", emptyList(), "V", 12, static = false, body = """
                     const-string v0, "android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_showRedesignBottomSheet_2"
                     iget-object v1, p0, $controller->helper:$helper
                     const/4 v2, 0x0
@@ -506,11 +581,28 @@ class DownloadReelHookTest {
                     invoke-static { v2, v4, v5 }, Lfixture/MobileConfig;->A1A(Ljava/lang/Object;J)Z
                     move-result v3
                     $flagSkipsWhen v3, :skip
-                    sget-object v3, $DOWNLOAD
-                    invoke-virtual { v1, v3 }, $helper->A0P($OPTION)V
+                    $handOff
                     :skip
                     return-void
                 """),
+                // The older sheet's builder, which hands Download to a menu of its own, never the adder.
+                method(controller, "A0Y", emptyList(), "V", 7, static = false, body = """
+                    const-string v0, "android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_addNonAuthorSpecificRows"
+                    iget-object v1, p0, $controller->helper:$helper
+                    invoke-virtual { v1 }, $helper->A0S()V
+                    const/4 v2, 0x0
+                    invoke-virtual { v2, v2, v2 }, $check
+                    move-result v3
+                    if-eqz v3, :skip
+                    invoke-static { v2 }, Lfixture/MobileConfig;->A1B(Ljava/lang/Object;)Z
+                    move-result v3
+                    if-nez v3, :skip
+                    sget-object v3, $DOWNLOAD
+                    invoke-direct { p0, v3 }, $controller->A0C($OPTION)V
+                    :skip
+                    return-void
+                """),
+                method(controller, "A0C", listOf(OPTION), "V", 2, static = false, body = "return-void"),
                 // The reduced menu's list, which never had Download. Its return is also a jump's target.
                 method(controller, "A03", listOf("Lfixture/ClipsItem;", MEDIA), "Ljava/util/ArrayList;", 6, static = false, body = """
                     const-string v0, "android_purge_26_q3_$reducedMarker"
