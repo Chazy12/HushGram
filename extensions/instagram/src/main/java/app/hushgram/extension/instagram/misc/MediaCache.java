@@ -7,6 +7,7 @@ package app.hushgram.extension.instagram.misc;
 import android.app.Application;
 import android.content.ComponentCallbacks2;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 
 import java.io.File;
@@ -26,6 +27,8 @@ import app.hushgram.extension.instagram.settings.SettingsStatus;
 import app.hushgram.extension.shared.Logger;
 import app.hushgram.extension.shared.Utils;
 import app.hushgram.extension.shared.diagnostics.HookStatus;
+import app.hushgram.extension.shared.settings.HushgramPause;
+import app.hushgram.extension.shared.settings.Setting;
 
 /**
  * Helper for the "Clear the media cache" patch.
@@ -84,6 +87,14 @@ public final class MediaCache {
 
     /** The start of the name a start moves the video cache to, before deleting it there. */
     static final String OLD_VIDEOS = "hushgram_old_videos_";
+
+    /**
+     * The saved keys of the switch, Pause and safe mode, read straight from the settings file
+     * before the settings can be loaded. Their settings carry the same keys, which a test holds.
+     */
+    static final String SWITCH_KEY = "hushgram_clear_media_cache";
+    static final String PAUSED_KEY = "hushgram_paused";
+    static final String SAFE_MODE_KEY = "hushgram_safe_mode";
 
     /** The step a failed clear is reported under. */
     static final String CLEAR = "clear";
@@ -221,14 +232,15 @@ public final class MediaCache {
     static void restartForTests() {
         videoCacheNamed = false;
         linked = LINKED;
+        early = MediaCache::currentApplication;
     }
 
     /**
      * Moves the video cache under [cache] aside when Clear now asked for it, or a clear over the
      * limit did and the switch is still [on], then deletes on a background thread whatever an earlier
      * start moved aside and didn't get to delete. With the switch off, a clear over the limit's note
-     * goes unheeded, and so do both notes when the video cache is a link. Before the settings can be
-     * read, [on] is null and a clear over the limit's note waits for a start that can read them.
+     * goes unheeded, and so do both notes when the video cache is a link. When the switch can't be
+     * read at all, [on] is null and a clear over the limit's note waits for a start that can.
      */
     private static void clearVideosAtStart(File cache, Boolean on) {
         File asked = new File(cache, VIDEOS_AT_START);
@@ -325,7 +337,46 @@ public final class MediaCache {
     }
 
     /** The switch, or null while the settings can't be read yet. */
+    /**
+     * The switch as this start reads it. Instagram can name its video cache before its application's
+     * onCreate, where HushGram's settings come ready, and this runs once a process: waiting for a
+     * start that can read the settings could wait forever. So before they're ready the saved value
+     * is read straight from the settings file, through the application Android already has.
+     */
     private static Boolean switchAnswer() {
-        return Utils.settingsReady() ? Settings.CLEAR_MEDIA_CACHE.get() : null;
+        if (Utils.settingsReady()) return Settings.CLEAR_MEDIA_CACHE.get();
+        return savedAnswer(early.get());
+    }
+
+    /** The application before HushGram is handed one. Tests swap it. */
+    static volatile Supplier<Context> early = MediaCache::currentApplication;
+
+    /** Android's application for this process, set before any provider or onCreate runs, or null. */
+    static Context currentApplication() {
+        try {
+            Object application = Class.forName("android.app.ActivityThread").getMethod("currentApplication").invoke(null);
+            return application instanceof Context ? (Context) application : null;
+        } catch (Throwable failure) {
+            return null;
+        }
+    }
+
+    /**
+     * The switch as its saved value in [context]'s settings file has it, the way a setting answers
+     * once the settings are ready: off while HushGram is paused, by the Pause switch, safe mode or
+     * the marker file. Null when there's no context or the file can't be read. Loads no setting,
+     * which can't be done before HushGram has a context.
+     */
+    static Boolean savedAnswer(Context context) {
+        if (context == null) return null;
+        try {
+            File files = context.getExternalFilesDir(null);
+            if (files != null && new File(files, HushgramPause.MARKER_FILE_NAME).exists()) return false;
+            SharedPreferences saved = context.getSharedPreferences(Setting.PREFERENCES_NAME, Context.MODE_PRIVATE);
+            if (saved.getBoolean(PAUSED_KEY, false) || saved.getBoolean(SAFE_MODE_KEY, false)) return false;
+            return saved.getBoolean(SWITCH_KEY, false);
+        } catch (Throwable failure) {
+            return null;
+        }
     }
 }

@@ -9,6 +9,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 
 import org.junit.After;
 import org.junit.Before;
@@ -24,9 +25,13 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 
 import app.hushgram.extension.instagram.settings.FamilyNames;
+import app.hushgram.extension.instagram.settings.Settings;
 import app.hushgram.extension.shared.SettingsContextRule;
 import app.hushgram.extension.shared.Utils;
 import app.hushgram.extension.shared.diagnostics.HookStatus;
+import app.hushgram.extension.shared.settings.BaseSettings;
+import app.hushgram.extension.shared.settings.HushgramPause;
+import app.hushgram.extension.shared.settings.Setting;
 
 /** What Clear the media cache deletes, what it keeps, and when it leaves the cache alone. */
 @RunWith(RobolectricTestRunner.class)
@@ -167,6 +172,54 @@ public class MediaCacheTest {
         assertFalse("the switch is off, so the note goes", MediaCache.videosWaiting(context));
         assertFalse(moved.exists());
         assertFalse(HookStatus.report().toString().contains(MediaCache.VIDEOS_CLEARED));
+    }
+
+    /**
+     * Before HushGram's settings are ready the switch is read from the settings file itself, so a
+     * start that names the video cache that early still drops or carries out a clear over the limit.
+     * Paused, by the switch, safe mode or the marker file, it reads as off, the way the setting would.
+     */
+    @Test
+    public void beforeTheSettingsAreReadyTheSavedSwitchAnswers() throws Exception {
+        assertEquals(Settings.CLEAR_MEDIA_CACHE.key, MediaCache.SWITCH_KEY);
+        assertEquals(BaseSettings.PAUSED.key, MediaCache.PAUSED_KEY);
+        assertEquals(BaseSettings.SAFE_MODE.key, MediaCache.SAFE_MODE_KEY);
+        assertEquals(null, MediaCache.savedAnswer(null));
+        assertEquals("Android's own application is there before any onCreate", context, MediaCache.currentApplication());
+
+        SharedPreferences saved = context.getSharedPreferences(Setting.PREFERENCES_NAME, Context.MODE_PRIVATE);
+        saved.edit().clear().commit();
+        assertEquals(Boolean.FALSE, MediaCache.savedAnswer(context));
+        saved.edit().putBoolean(MediaCache.SWITCH_KEY, true).commit();
+        assertEquals(Boolean.TRUE, MediaCache.savedAnswer(context));
+        saved.edit().putBoolean(MediaCache.PAUSED_KEY, true).commit();
+        assertEquals(Boolean.FALSE, MediaCache.savedAnswer(context));
+        saved.edit().putBoolean(MediaCache.PAUSED_KEY, false).putBoolean(MediaCache.SAFE_MODE_KEY, true).commit();
+        assertEquals(Boolean.FALSE, MediaCache.savedAnswer(context));
+        saved.edit().putBoolean(MediaCache.SAFE_MODE_KEY, false).commit();
+        File marker = new File(context.getExternalFilesDir(null), HushgramPause.MARKER_FILE_NAME);
+        assertTrue(marker.createNewFile());
+        assertEquals(Boolean.FALSE, MediaCache.savedAnswer(context));
+        assertTrue(marker.delete());
+
+        // Saved on: the clear over the limit happens at a start that names the cache that early.
+        File span = file("ExoPlayerCacheDir/videocache/1.0.1.v3.exo", 900, OLD);
+        assertEquals(0, MediaCache.clearIfOver(context, 100, NOW));
+        MediaCache.beforeVideoCache(cache.getPath(), () -> MediaCache.savedAnswer(context));
+        Utils.awaitBackgroundTasksForTests();
+        assertFalse(span.exists());
+        assertFalse(MediaCache.videosWaiting(context));
+
+        // Saved off: the next one's note goes, and the videos stay.
+        File again = file("ExoPlayerCacheDir/videocache/3.0.1.v3.exo", 900, OLD);
+        assertEquals(0, MediaCache.clearIfOver(context, 100, NOW));
+        saved.edit().putBoolean(MediaCache.SWITCH_KEY, false).commit();
+        MediaCache.restartForTests();
+        MediaCache.beforeVideoCache(cache.getPath(), () -> MediaCache.savedAnswer(context));
+        Utils.awaitBackgroundTasksForTests();
+        assertTrue(again.exists());
+        assertFalse(MediaCache.videosWaiting(context));
+        saved.edit().clear().commit();
     }
 
     /** Clear now asked for the videos itself, so they go at the next start whatever the switch says. */
