@@ -76,6 +76,7 @@ import app.hushgram.extension.instagram.media.ResumePlayback;
 import app.hushgram.extension.instagram.misc.OverrideExchange;
 import app.hushgram.extension.instagram.misc.MediaCache;
 import app.hushgram.extension.instagram.misc.OverrideImport;
+import app.hushgram.extension.instagram.misc.SpoofLocation;
 import app.hushgram.extension.instagram.stories.StoryRingSize;
 import app.hushgram.extension.instagram.stories.StoryTimeMode;
 import app.hushgram.extension.instagram.download.FileNameTemplate;
@@ -340,6 +341,12 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     L10n.t("View DM photos and videos anonymously"),
                     L10n.t("Holds back seen receipts for view-once photos and videos. Media still expires. "
                             + "This is a test feature, off to start.")));
+        }
+        if (build.contains(PatchFamily.SPOOF_LOCATION)) {
+            privacy.add(toggle(context, Settings.SPOOF_LOCATION, L10n.t("Spoof location"),
+                    L10n.t("Instagram is told the phone is at the place below, for the location sticker, nearby "
+                            + "places and maps. Photos keep their own places.")));
+            privacy.add(placeRow(context));
         }
         if (!privacy.isEmpty()) {
             PreferenceCategory section = category(screen, L10n.t("Ads and privacy"));
@@ -2410,6 +2417,41 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
      * way the folder is, and held to the gallery's naming, so the row, the setting and the next
      * save all show the one template the save will use.
      */
+    /**
+     * The place Spoof location reports, typed as a latitude and a longitude. Anything else is
+     * refused with a toast and the place stays as it was.
+     */
+    static PlaceRow placeRow(Context context) {
+        PlaceRow row = new PlaceRow(context);
+        row.setKey(Settings.SPOOF_LOCATION_PLACE.key);
+        row.setTitle(L10n.t("Place"));
+        row.setDialogTitle(L10n.t("Place"));
+        row.setDialogMessage(L10n.t("The latitude and the longitude in degrees, with a comma between them, "
+                + "like 40.758, -73.9855. North and east are positive, south and west negative. A map app shows "
+                + "both when you press and hold a spot."));
+        row.setPositiveButtonText(L10n.t("Save"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        EditText field = row.getEditText();
+        field.setSingleLine(true);
+        field.setHint("40.758, -73.9855");
+        row.setText(Settings.SPOOF_LOCATION_PLACE.savedValue());
+        row.setOnPreferenceChangeListener((preference, typed) -> {
+            String text = typed == null ? "" : typed.toString().trim();
+            if (text.isEmpty() || SpoofLocation.parse(text) != null) return true;
+            Utils.showToastShort(L10n.t("That isn't a place. Type a latitude and a longitude with a comma between them."));
+            return false;
+        });
+        return row;
+    }
+
+    /** What the place row says: the place, or that there's none and what a fix answers then. */
+    static String placeSummary(String text) {
+        double[] place = SpoofLocation.parse(text);
+        return place == null
+                ? L10n.t("No place set. Until there is one, Instagram is told 0, 0 while Spoof location is on.")
+                : L10n.f("Instagram is told the phone is at %1$s.", L10n.isolate(SpoofLocation.describe(place)));
+    }
+
     static FileNameRow fileNameRow(Context context) {
         FileNameRow row = new FileNameRow(context);
         row.setKey(Settings.FILENAME_TEMPLATE.key);
@@ -2715,6 +2757,34 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
      * shared page syncing it from the setting, or an import. Its dialog shows what the typed
      * template names a video, as it's typed.
      */
+    static final class PlaceRow extends EditTextPreference {
+        PlaceRow(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void setText(String text) {
+            super.setText(text);
+            setSummary(placeSummary(text));
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setAccessibilityDelegate(new RowSemantics(this, Button.class));
+        }
+
+        /** Its edit dialog takes the screen's colors, as the file name's does. */
+        @Override
+        protected void showDialog(Bundle state) {
+            super.showDialog(state);
+            if (getDialog() instanceof AlertDialog) ScreenColors.dialog((AlertDialog) getDialog());
+            fitAboveKeyboard(getDialog());
+        }
+    }
+
     static final class FileNameRow extends EditTextPreference {
         @Nullable private TextView preview;
         private java.util.Date previewDate;

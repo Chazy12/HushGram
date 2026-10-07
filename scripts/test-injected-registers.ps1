@@ -708,6 +708,7 @@ try {
     # publisher makes each one from a method of its own (Caller).
     $shortcutManager = 'Landroid/content/pm/ShortcutManager;'
     $notificationManager = 'Landroid/app/NotificationManager;'
+    $location = 'Landroid/location/Location;'
     $window = 'Landroid/view/Window;'
     $shortcutCalls = @(
         [pscustomobject]@{ Case = 'push'; Manager = $shortcutManager; Call = 'pushDynamicShortcut'; Takes = 'Landroid/content/pm/ShortcutInfo;'; Answers = 'V'; Caller = 'push' }
@@ -719,6 +720,9 @@ try {
         [pscustomobject]@{ Case = 'notify-tagged'; Manager = $notificationManager; Call = 'notify'; Takes = 'Ljava/lang/String;ILandroid/app/Notification;'; Answers = 'V'; Caller = 'notifyTagged' }
         [pscustomobject]@{ Case = 'set-flags'; Manager = $window; Call = 'setFlags'; Takes = 'II'; Answers = 'V'; Caller = 'setFlags' }
         [pscustomobject]@{ Case = 'add-flags'; Manager = $window; Call = 'addFlags'; Takes = 'I'; Answers = 'V'; Caller = 'addFlags' }
+        [pscustomobject]@{ Case = 'latitude'; Manager = $location; Call = 'getLatitude'; Takes = ''; Answers = 'D'; Caller = 'latitude' }
+        [pscustomobject]@{ Case = 'longitude'; Manager = $location; Call = 'getLongitude'; Takes = ''; Answers = 'D'; Caller = 'longitude' }
+        [pscustomobject]@{ Case = 'distance-to'; Manager = $location; Call = 'distanceTo'; Takes = 'Landroid/location/Location;'; Answers = 'F'; Caller = 'distance' }
     )
     foreach ($shortcut in $shortcutCalls) {
         $shortcut | Add-Member -NotePropertyName Callee -NotePropertyValue (

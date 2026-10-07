@@ -84,6 +84,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean spoofLocation() {
+        return false;
+    }
+
     public static boolean threadSeen() {
         return false;
     }

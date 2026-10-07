@@ -219,6 +219,7 @@ public class BadDexFixture {
     private static final String SHORTCUTS = "Lfixture/Shortcuts;";
     private static final String NOTIFICATION_MANAGER = "Landroid/app/NotificationManager;";
     private static final String NOTIFICATION = "Landroid/app/Notification;";
+    private static final String LOCATION = "Landroid/location/Location;";
     private static final String WINDOW = "Landroid/view/Window;";
     private static final String SETTINGS_ENTRY = "Lapp/hushgram/extension/fixture/settings/SettingsEntry;";
     private static final String OVERRIDE_TABLE = "Lcom/facebook/mobileconfig/MobileConfigOverridesTableHolder;";
@@ -414,6 +415,9 @@ public class BadDexFixture {
             "no-call Landroid/app/NotificationManager;->notify(Ljava/lang/String;ILandroid/app/Notification;)V outside Lapp/hushgram/extension/",
             "no-call Landroid/view/Window;->setFlags(II)V outside Lapp/hushgram/extension/",
             "no-call Landroid/view/Window;->addFlags(I)V outside Lapp/hushgram/extension/",
+            "no-call Landroid/location/Location;->getLatitude()D outside Lapp/hushgram/extension/",
+            "no-call Landroid/location/Location;->getLongitude()D outside Lapp/hushgram/extension/",
+            "no-call Landroid/location/Location;->distanceTo(Landroid/location/Location;)F outside Lapp/hushgram/extension/",
             "no-call Lcom/facebook/mobileconfig/troubleshooting/MobileConfigOverridesWriterHolder;->importOverridesFromUser(Ljava/lang/String;)Ljava/lang/String; outside Lcom/facebook/mobileconfig/",
             "no-call Lcom/facebook/mobileconfig/MobileConfigOverridesTableHolder;->reload()V outside Lcom/facebook/mobileconfig/",
             "no-call Lcom/facebook/mobileconfig/MobileConfigOverridesTableHolder;->removeAllOverrides()V outside Lcom/facebook/mobileconfig/",
@@ -491,7 +495,7 @@ public class BadDexFixture {
         }
     }
 
-    /** All nine, as the contract file names them. The update goes as a range call. */
+    /** All twelve, as the contract file names them. The update goes as a range call. */
     private static final List<ShortcutCall> SHORTCUT_CALLS = Arrays.asList(
             new ShortcutCall(SHORTCUT_MANAGER, "pushDynamicShortcut", "V", "push", "push", false, SHORTCUT_INFO),
             new ShortcutCall(SHORTCUT_MANAGER, "addDynamicShortcuts", "Z", "add", "add", false, SHORTCUT_LIST),
@@ -502,7 +506,10 @@ public class BadDexFixture {
             new ShortcutCall(NOTIFICATION_MANAGER, "notify", "V", "notifyTagged", "notify-tagged", false,
                     "Ljava/lang/String;", "I", NOTIFICATION),
             new ShortcutCall(WINDOW, "setFlags", "V", "setFlags", "set-flags", false, "I", "I"),
-            new ShortcutCall(WINDOW, "addFlags", "V", "addFlags", "add-flags", false, "I"));
+            new ShortcutCall(WINDOW, "addFlags", "V", "addFlags", "add-flags", false, "I"),
+            new ShortcutCall(LOCATION, "getLatitude", "D", "latitude", "latitude", false),
+            new ShortcutCall(LOCATION, "getLongitude", "D", "longitude", "longitude", false),
+            new ShortcutCall(LOCATION, "distanceTo", "F", "distance", "distance-to", false, LOCATION));
 
     /** A real native override boundary, with a receiver followed by its exact typed arguments. */
     private static final class OverrideCall {
@@ -1470,8 +1477,9 @@ public class BadDexFixture {
      * answers keeps its answer in v0, so its parameters start at v1.
      */
     private static Instruction shortcutInvoke(ShortcutCall call, boolean sent) {
-        int first = call.answers.equals("V") ? 0 : 1;
-        int count = call.parameters().length;
+        int first = width(call.answers);
+        int count = 0;
+        for (String parameter : call.parameters()) count += width(parameter);
         ImmutableMethodReference callee = sent ? call.standIn() : call.framework();
         if (call.range) {
             return new ImmutableInstruction3rc(sent ? Opcode.INVOKE_STATIC_RANGE : Opcode.INVOKE_VIRTUAL_RANGE,
@@ -1483,18 +1491,31 @@ public class BadDexFixture {
                 r[0], r[1], r[2], r[3], r[4], callee);
     }
 
+    /** The registers a value of [type] takes: none for void, two for a long or a double, one otherwise. */
+    private static int width(String type) {
+        if (type.equals("V")) return 0;
+        return type.equals("J") || type.equals("D") ? 2 : 1;
+    }
+
     /** A static method of [owner] taking what [call] takes, the manager first: [invoke], then its answer returned. */
     private static Method shortcutMethod(String owner, String name, ShortcutCall call, Instruction invoke) {
-        boolean answers = !call.answers.equals("V");
+        int answer = width(call.answers);
         List<Instruction> instructions = new ArrayList<>();
         instructions.add(invoke);
-        if (answers) {
+        if (answer == 0) {
+            instructions.add(op(Opcode.RETURN_VOID));
+        } else if (answer == 2) {
+            instructions.add(op(Opcode.MOVE_RESULT_WIDE, 0));
+            instructions.add(op(Opcode.RETURN_WIDE, 0));
+        } else if (call.answers.startsWith("L") || call.answers.startsWith("[")) {
+            instructions.add(op(Opcode.MOVE_RESULT_OBJECT, 0));
+            instructions.add(op(Opcode.RETURN_OBJECT, 0));
+        } else {
             instructions.add(op(Opcode.MOVE_RESULT, 0));
             instructions.add(op(Opcode.RETURN, 0));
-        } else {
-            instructions.add(op(Opcode.RETURN_VOID));
         }
-        int registers = call.parameters().length + (answers ? 1 : 0);
+        int registers = answer;
+        for (String parameter : call.parameters()) registers += width(parameter);
         return define(owner, name, call.answers, true,
                 new ImmutableMethodImplementation(registers, instructions, null, null), call.parameters());
     }

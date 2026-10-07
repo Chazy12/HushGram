@@ -134,6 +134,21 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_view_dm_media_anonymously", FALSE);
 
     /**
+     * A fix from the phone answers {@link #SPOOF_LOCATION_PLACE} wherever Instagram reads its
+     * latitude, longitude or distance ({@link app.hushgram.extension.instagram.misc.SpoofLocation}).
+     * Read at each read. Off to start.
+     */
+    public static final BooleanSetting SPOOF_LOCATION =
+            new BooleanSetting("hushgram_spoof_location", FALSE);
+
+    /**
+     * The place a fix answers, as "latitude, longitude" in degrees. Empty or unreadable answers 0, 0
+     * while {@link #SPOOF_LOCATION} is on, never the phone's place. A value control, not a switch.
+     */
+    public static final StringSetting SPOOF_LOCATION_PLACE =
+            new StringSetting("hushgram_spoof_location_place", "", parent(SPOOF_LOCATION));
+
+    /**
      * The seen receipt a chat sends when you open it, the one that puts Seen under the other
      * person's message ({@link app.hushgram.extension.instagram.direct.ThreadSeen}). Read each time
      * Instagram goes to send one, so a change applies to the next receipt. Off to start.

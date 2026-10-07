@@ -29,6 +29,7 @@ public final class FamilyNames {
     public static final String STORY_LOOP = "Loop a story";
     public static final String STORY_SEEN = "View stories anonymously";
     public static final String DM_MEDIA_SEEN = "View DM photos and videos anonymously";
+    public static final String SPOOF_LOCATION = "Spoof location";
     public static final String THREAD_SEEN = "Read messages without the seen receipt";
     public static final String TYPING = "Hide that you're typing";
     public static final String MESSAGES_LOCK = "Lock your messages";

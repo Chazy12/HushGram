@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** New opt-in patch, Spoof location. Set a place under Ads and privacy and turn it on, and Instagram is told the phone is there, for the location sticker, nearby places and maps. Photos keep their own places.
+
 * **Instagram:** New patch, Don't save recent searches, in simple mode with its switch off. With it on, what you open from search stays out of Recent, both in the app and on Instagram's side.
 
 * **Instagram:** New patch, Data saver, in simple mode with its switch off. With it on, photos load at a smaller size and videos, reels and stories start at the lowest quality, on mobile data only unless you turn that second switch off.

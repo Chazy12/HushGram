@@ -213,6 +213,7 @@
         "patches/src/main/kotlin/app/morphe/patches/instagram/misc/theme/**",
         "patches/src/main/kotlin/app/morphe/patches/instagram/misc/versioncode/**",
         "patches/src/main/kotlin/app/morphe/patches/instagram/misc/bottomspace/**",
+        "patches/src/main/kotlin/app/morphe/patches/instagram/misc/location/**",
         "patches/src/main/kotlin/app/morphe/patches/instagram/profile/**",
         "extensions/instagram/src/main/java/app/hushgram/extension/instagram/profile/**",
         "patches/src/main/kotlin/app/morphe/patches/instagram/reels/**",
