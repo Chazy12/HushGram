@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Save comment photo now offers Save on photo comments in Instagram 450. Instagram 450 leaves the media type out of a comment's photo, and Save used to wait for it, so the row never showed. It now goes by the photo itself, and GIFs, videos and text replies still don't get the row. Asked for in #1.
+
 * **Instagram:** New Change version code patch, off by default. It gives the patched build the highest version code Android allows, so Google Play stops offering Meta's updates over it, and Instagram's own checks of its version still see the real code. Once it's installed, going back to an unpatched Instagram means uninstalling first, which deletes Instagram's data on your phone, and later HushGram builds need the patch too or they won't install over it. Settings lists it under Set when you patched, and the diagnostic report names the code Meta built. Asked in #68.
 
 * **Instagram:** Open developer options adds Open Whitehat settings under Developer in HushGram settings. It opens Instagram's own Whitehat screen, whose switch lets Instagram trust the certificates installed on your phone for 24 hours so you can check the app's traffic. Turn it on there and restart Instagram. Instagram turns it back off by itself once the day is up, and HushGram doesn't force or stretch that trust. Asked in #1.
