@@ -11,6 +11,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ContextWrapper;
@@ -24,9 +25,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
+import org.robolectric.Shadows;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowAlertDialog;
+import org.robolectric.shadows.ShadowApplication;
 import org.robolectric.shadows.ShadowLooper;
 
 import java.util.ArrayList;
@@ -245,6 +249,41 @@ public class CallConfirmTest {
         } finally {
             over.close();
         }
+    }
+
+    /**
+     * With the microphone already allowed, Instagram doesn't come back to a voice call's start, so
+     * Call lets nothing else through: a stray tap on the same button right after is asked about. A
+     * video call still comes back while the camera isn't allowed, and that repeat goes through
+     * once. With both allowed, a video call's next tap is asked about too.
+     */
+    @Test
+    public void thePassIsOnlyForAStartInstagramComesBackTo() {
+        ShadowApplication app = Shadows.shadowOf(RuntimeEnvironment.getApplication());
+        assertTrue(CallConfirm.comesBack(controller.get(), false));
+        app.grantPermissions(Manifest.permission.RECORD_AUDIO);
+        assertFalse(CallConfirm.comesBack(controller.get(), false));
+        assertTrue(CallConfirm.comesBack(controller.get(), true));
+
+        assertTrue(hold(false, true));
+        asked().getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+        assertTrue("a stray tap right after the call", hold(false, true));
+        dismiss();
+
+        assertTrue(hold(true, true));
+        asked().getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+        assertFalse("the start Instagram repeats after the camera question", hold(true, true));
+
+        app.grantPermissions(Manifest.permission.CAMERA);
+        assertFalse(CallConfirm.comesBack(controller.get(), true));
+        assertTrue(hold(true, true));
+        asked().getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+        assertTrue("a stray tap right after the video call", hold(true, true));
+        dismiss();
+        assertEquals(3, started.size());
     }
 
     private void dismiss() {

@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** After you tap Call, Ask before a call lets Instagram's repeat of that call through only when Instagram has to ask for the microphone or camera first. When they're already allowed, a tap on the same call button right after you hang up is asked about like any other.
+
 * **Instagram:** A call question left up on one screen no longer holds call taps on a screen opened over it, like a chat you open from a notification. That tap gets its own question and the old one closes.
 
 * **Instagram:** Ask before a call no longer stops every later call when its question was left behind by a screen that closed without dismissing it, as switching dark mode while it was up can do. The next call is asked about again.
