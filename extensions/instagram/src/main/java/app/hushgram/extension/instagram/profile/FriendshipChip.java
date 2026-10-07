@@ -24,6 +24,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -57,7 +58,11 @@ final class FriendshipChip {
     /** Set by tests that have no Instagram resources: the followers count's id. */
     static int followersCountIdForTests;
 
-    /** The chips showing, by the counts block they're under. Blocks go when their screen does. */
+    /**
+     * The chips showing, by the counts block they're under. Blocks go when their screen does: a
+     * chip holds its block only weakly, so the entry doesn't keep the key, the header or the
+     * Activity alive, and goes with them.
+     */
     private static final Map<View, Chip> SHOWN = new WeakHashMap<>();
 
     private FriendshipChip() {
@@ -152,16 +157,20 @@ final class FriendshipChip {
         }
     }
 
-    /** One counts block's chip: the room it took and the drawing in the block's overlay. */
+    /**
+     * One counts block's chip: the room it took and the drawing in the block's overlay. It's the
+     * value [SHOWN] keeps for the block, so it holds the block weakly: a strong hold would keep the
+     * key alive and the entry forever.
+     */
     static final class Chip implements View.OnLayoutChangeListener {
-        final View block;
+        final WeakReference<View> block;
         final Pill pill;
         /** The block's own bottom padding, which the chip's room goes on top of. */
         int ownBottom;
         final int room;
 
         Chip(View block) {
-            this.block = block;
+            this.block = new WeakReference<>(block);
             pill = new Pill(block.getContext());
             room = pill.getIntrinsicHeight() + pill.dp(8);
             ownBottom = block.getPaddingBottom();
@@ -170,6 +179,8 @@ final class FriendshipChip {
         }
 
         void show(Relation relation, @Nullable TextView style) {
+            View block = this.block.get();
+            if (block == null) return;
             Context context = block.getContext();
             boolean follows = relation != Relation.DOESNT_FOLLOW_YOU;
             Drawable icon = icon(context, follows ? FOLLOWING_ICON : NOT_FOLLOWING_ICON);
@@ -181,10 +192,12 @@ final class FriendshipChip {
                 ownBottom = bottom;
                 block.setPaddingRelative(block.getPaddingStart(), block.getPaddingTop(), block.getPaddingEnd(), ownBottom + room);
             }
-            place();
+            place(block);
         }
 
         void remove() {
+            View block = this.block.get();
+            if (block == null) return;
             block.getOverlay().remove(pill);
             block.removeOnLayoutChangeListener(this);
             if (block.getPaddingBottom() == ownBottom + room) {
@@ -195,11 +208,11 @@ final class FriendshipChip {
         @Override
         public void onLayoutChange(View view, int left, int top, int right, int bottom,
                                    int oldLeft, int oldTop, int oldRight, int oldBottom) {
-            place();
+            place(view);
         }
 
-        /** Puts the pill at the start of the room under the counts, lined up with them. */
-        void place() {
+        /** Puts the pill at the start of the room under the counts of [block], lined up with them. */
+        void place(View block) {
             int width = pill.getIntrinsicWidth();
             int height = pill.getIntrinsicHeight();
             boolean rtl = block.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;

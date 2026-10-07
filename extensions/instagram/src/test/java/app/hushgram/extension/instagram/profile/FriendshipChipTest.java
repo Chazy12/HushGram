@@ -12,8 +12,10 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
+import android.content.Context;
 import android.graphics.Color;
 import android.view.View;
+import android.view.ViewParent;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -28,6 +30,10 @@ import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 import org.robolectric.annotation.Implementation;
 import org.robolectric.annotation.Implements;
+
+import java.lang.ref.Reference;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 
 import app.hushgram.extension.instagram.profile.FriendshipStatus.Relation;
 import app.hushgram.extension.instagram.settings.Settings;
@@ -207,6 +213,30 @@ public class FriendshipChipTest {
         counts.setVisibility(View.GONE);
         FriendshipChip.followersCountIdForTests = followersId;
         assertNull("counts that aren't on screen", FriendshipChip.counts(pronouns));
+    }
+
+    /**
+     * The map of chips is weak on the counts block, so its value mustn't hold the block, or any
+     * view or context that leads back to it, strongly: the entry would keep the header and the
+     * Activity alive, and anyShown() true, for as long as the app runs. Neither the chip nor its
+     * drawing has a field that does, and the chip reaches its block through a weak reference.
+     */
+    @Test
+    public void aChipDoesntKeepItsBlockAlive() {
+        FriendshipStatus.besidePronouns(pronouns, new Profile(true, true));
+        FriendshipChip.Chip chip = FriendshipChip.shownUnder(counts);
+        assertNotNull(chip);
+        assertSame(counts, chip.block.get());
+        for (Class<?> type : new Class<?>[]{FriendshipChip.Chip.class, FriendshipChip.Pill.class}) {
+            for (Field field : type.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers())) continue;
+                Class<?> held = field.getType();
+                boolean leads = View.class.isAssignableFrom(held) || Context.class.isAssignableFrom(held)
+                        || ViewParent.class.isAssignableFrom(held);
+                assertFalse(type.getSimpleName() + "." + field.getName() + " holds a " + held.getName() + " strongly", leads);
+                if (field.getName().equals("block")) assertTrue(Reference.class.isAssignableFrom(held));
+            }
+        }
     }
 
     /** Your own profile gets no chip. */

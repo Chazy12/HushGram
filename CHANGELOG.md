@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** With Show it as a chip on, a profile you've left no longer stays in memory until Instagram closes. The chip kept hold of each profile's header, and through it the whole screen, so opening a lot of profiles in one go slowly used up memory. Turning the phone or switching dark mode while a profile was open left the old screen behind the same way.
+
 ## 0.0.6 (2026-10-07)
 
 * **Instagram:** HushGram 0.0.6 adds 27 patches, for 75 in all, and moves to Instagram 450.0.0.50.77 (build 385611438, arm64-v8a) on Android 9 and newer. It needs Morphe Manager 1.34.0 or newer.
