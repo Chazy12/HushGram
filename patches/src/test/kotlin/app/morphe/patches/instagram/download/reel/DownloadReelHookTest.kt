@@ -117,7 +117,7 @@ class DownloadReelHookTest {
         val legacy = context.method(helper, "A06").code()
         assertFiltered(legacy, check, OFFER)
         val redesign = context.method(controller, "A08").code()
-        assertFiltered(redesign, check, OFFER_ROW)
+        assertFiltered(redesign, check, OFFER_ROW, media = 2)
         assertFiltered(redesign, "Lfixture/MobileConfig;->A1A(Ljava/lang/Object;J)Z", WITHHOLD_ROW)
         val ownMenu = context.method(controller, "A0Y").code()
         assertFiltered(ownMenu, check, OFFER)
@@ -140,9 +140,26 @@ class DownloadReelHookTest {
             context.offerDownloadOnEveryReel()
 
             val redesign = context.method(controller, "A08").code()
-            assertFiltered(redesign, check, if (rows) OFFER_ROW else OFFER)
+            if (rows) assertFiltered(redesign, check, OFFER_ROW, media = 2) else assertFiltered(redesign, check, OFFER)
             assertFiltered(redesign, flag, if (rows) WITHHOLD_ROW else WITHHOLD)
         }
+    }
+
+    /**
+     * The filter that lets Download in for the player row is handed the reel the check was asked
+     * about, so a reel with no video file for the player is never let in, and the builder's divider
+     * after Download stays out with it. A check whose answer lands in the register that held the reel
+     * leaves nothing to hand over, and the builder gets the plain filters.
+     */
+    @Test
+    fun theFilterForThePlayerRowIsHandedTheReel() {
+        val context = PatchContexts.of(classes(checkCall = "invoke-virtual { v2, v2, v3 }, $check"))
+
+        context.offerDownloadOnEveryReel()
+
+        val redesign = context.method(controller, "A08").code()
+        assertFiltered(redesign, check, OFFER)
+        assertFiltered(redesign, "Lfixture/MobileConfig;->A1A(Ljava/lang/Object;J)Z", WITHHOLD)
     }
 
     /**
@@ -438,7 +455,26 @@ class DownloadReelHookTest {
                     val withheld = code.count { it.referenceText() == withhold }
                     assertTrue("$where withholds $withheld times", withheld <= 1)
                     flags += withheld
-                    if (rows) toRows++
+                    if (rows) {
+                        toRows++
+                        // The player row's filter sits right after the check's move-result and is
+                        // handed the Media register the check was called with, so a reel with no
+                        // video file for the player is never let in, nor the divider after it.
+                        val at = code.indexOfFirst { it.referenceText() == OFFER_ROW }
+                        val call = code[at - 2]
+                        assertEquals("$where: the check before the filter", check, call.referenceText())
+                        val hook = code[at] as Instruction35c
+                        val (answer, reel) = hook.registerC to hook.registerD
+                        assertEquals("$where: the filter's arguments", 2, hook.registerCount)
+                        assertEquals("$where: the check's answer", (code[at - 1] as OneRegisterInstruction).registerA, answer)
+                        val types = eligible.parameterTypes.map(Any::toString)
+                        val index = (if (AccessFlags.STATIC.isSet(eligible.accessFlags)) 0 else 1) + types.indexOf(MEDIA)
+                        val handed = when (call) {
+                            is RegisterRangeInstruction -> call.startRegister + index
+                            else -> (call as Instruction35c).let { listOf(it.registerC, it.registerD, it.registerE, it.registerF, it.registerG)[index] }
+                        }
+                        assertEquals("$where: the reel handed to the filter", handed, reel)
+                    }
                 }
                 assertTrue("${bundle.name}: no builder read the flag", flags > 0)
                 assertTrue("${bundle.name}: no builder hands Download to the adder of one row", toRows > 0)
@@ -472,13 +508,15 @@ class DownloadReelHookTest {
         "trackFastStartUrl", "musicStartMs", "musicLengthMs",
     )
 
-    private fun assertFiltered(code: List<Instruction>, call: String, hook: String) {
+    private fun assertFiltered(code: List<Instruction>, call: String, hook: String, media: Int? = null) {
         val at = code.indexOfFirst { it.referenceText() == call }
         assertTrue("$call is not called", at >= 0)
         val register = (code[at + 1] as OneRegisterInstruction).registerA
         assertEquals("$call: after the move-result", Opcode.MOVE_RESULT, code[at + 1].opcode)
         assertEquals("$call: the filter", hook, code[at + 2].referenceText())
         assertEquals("$call: the filter's argument", register, (code[at + 2] as Instruction35c).registerC)
+        assertEquals("$call: the filter's arguments", if (media == null) 1 else 2, (code[at + 2] as Instruction35c).registerCount)
+        if (media != null) assertEquals("$call: the reel handed over", media, (code[at + 2] as Instruction35c).registerD)
         assertEquals("$call: the filtered answer", register, (code[at + 3] as OneRegisterInstruction).registerA)
         assertEquals(Opcode.MOVE_RESULT, code[at + 3].opcode)
     }
@@ -519,6 +557,7 @@ class DownloadReelHookTest {
         leaveOutCandidates: Boolean = false,
         rowParameters: List<String> = rowTypes,
         handOff: String = toShorthand,
+        checkCall: String = "invoke-virtual { v2, v2, v2 }, $check",
     ): List<ClassDef> {
         val helperFields = listOfNotNull(
             field(helper, "media", MEDIA),
@@ -574,7 +613,7 @@ class DownloadReelHookTest {
                     const-string v0, "android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_showRedesignBottomSheet_2"
                     iget-object v1, p0, $controller->helper:$helper
                     const/4 v2, 0x0
-                    invoke-virtual { v2, v2, v2 }, $check
+                    $checkCall
                     move-result v3
                     if-eqz v3, :skip
                     const-wide v4, 0x81034200060c62L

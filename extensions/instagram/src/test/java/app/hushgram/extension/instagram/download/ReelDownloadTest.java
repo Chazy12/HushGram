@@ -104,14 +104,14 @@ public class ReelDownloadTest {
      */
     @Test
     public void theAdderBuildersFiltersMatchThePlainOnesWithThePlayerOff() {
-        assertTrue(ReelDownload.offerRow(0));
-        assertTrue(ReelDownload.offerRow(1));
+        assertTrue(ReelDownload.offerRow(0, new Object()));
+        assertTrue(ReelDownload.offerRow(1, new Object()));
         assertFalse(ReelDownload.withholdRow(1));
         assertFalse(ReelDownload.withholdRow(0));
         Settings.DOWNLOAD_REELS.save(false);
-        assertFalse(ReelDownload.offerRow(0));
-        assertTrue(ReelDownload.offerRow(1));
-        assertTrue("2 is a yes too", ReelDownload.offerRow(2));
+        assertFalse(ReelDownload.offerRow(0, new Object()));
+        assertTrue(ReelDownload.offerRow(1, new Object()));
+        assertTrue("2 is a yes too", ReelDownload.offerRow(2, new Object()));
         assertTrue(ReelDownload.withholdRow(1));
         assertFalse(ReelDownload.withholdRow(0));
         assertFalse("Instagram's own Download row stays", ReelDownload.rows(null, new Object(), null, null, null));

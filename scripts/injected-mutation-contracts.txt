@@ -551,7 +551,7 @@ once-call Lapp/hushgram/extension/instagram/stories/StoriesTray;->remaining(Ljav
 # player alone. The menu's handler of a tapped option asks save() when the option is Download, after
 # comparing the option, so the call isn't first and the rule is once-call.
 shared-call Lapp/hushgram/extension/instagram/download/ReelDownload;->offer(I)Z in static (*)V holding android_purge_26_q3_ClipsDownloadUtil_shouldShowProducerDownloadControls
-shared-call Lapp/hushgram/extension/instagram/download/ReelDownload;->offerRow(I)Z holding android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_showRedesignBottomSheet_2
+shared-call Lapp/hushgram/extension/instagram/download/ReelDownload;->offerRow(ILjava/lang/Object;)Z holding android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_showRedesignBottomSheet_2
 shared-call Lapp/hushgram/extension/instagram/download/ReelDownload;->offer(I)Z holding android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_addNonAuthorSpecificRows
 shared-call Lapp/hushgram/extension/instagram/download/ReelDownload;->withholdRow(I)Z holding android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_showRedesignBottomSheet_2
 shared-call Lapp/hushgram/extension/instagram/download/ReelDownload;->withhold(I)Z holding android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_addNonAuthorSpecificRows

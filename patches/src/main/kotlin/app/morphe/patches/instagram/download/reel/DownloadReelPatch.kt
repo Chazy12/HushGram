@@ -61,9 +61,11 @@ internal const val WITHHOLD = "$REEL_DOWNLOAD->withhold(I)Z"
 
 /**
  * The filters of a builder that hands Download straight to the menu's adder of one row, which also
- * let it in for Open in another player alone: the adder then puts the player row in its place.
+ * let it in for Open in another player alone: the adder then puts the player row in its place. The
+ * first is handed the reel the download check was asked about too, so a reel the player row can't go
+ * on is never let in, and its menu stays Instagram's, dividers and all.
  */
-internal const val OFFER_ROW = "$REEL_DOWNLOAD->offerRow(I)Z"
+internal const val OFFER_ROW = "$REEL_DOWNLOAD->offerRow(ILjava/lang/Object;)Z"
 internal const val WITHHOLD_ROW = "$REEL_DOWNLOAD->withholdRow(I)Z"
 internal const val SAVE = "$REEL_DOWNLOAD->save(Ljava/lang/Object;Ljava/lang/Object;Landroid/app/Activity;)Z"
 internal const val OURS = "$REEL_DOWNLOAD->ours(Ljava/lang/Object;)Z"
@@ -106,8 +108,10 @@ internal const val REDUCED_MARKER = "ClipsOrganicMediaItemViewMoreOptionsControl
  * two options made the way Download is, and the handler hands a tap on either to the extension.
  *
  * A builder that hands Download straight to that adder also lets it in when only Open in another
- * player is on, and the adder then puts the player row alone in its place, so a reel Instagram keeps
- * Download off still gets the player row. Builders that put Download anywhere else don't.
+ * player is on and the reel has a video file for it, and the adder then puts the player row alone in
+ * its place, so a reel Instagram keeps Download off still gets the player row. Any other reel isn't
+ * let in, so its menu, divider included, stays Instagram's. Builders that put Download anywhere else
+ * never let it in for the player.
  *
  * Everything is found before anything changes, so a build that differs stops the patch naming
  * what it couldn't find, and nothing is half done.
@@ -134,9 +138,10 @@ val downloadReelPatch = bytecodePatch(
 
 /**
  * Where a builder of the reel menu decides on the Download row: after the move-result at [at] - 1,
- * which leaves Instagram's answer in [register], [hook] filters it.
+ * which leaves Instagram's answer in [register], [hook] filters it, handed [media] too when it isn't
+ * null, the register still holding the reel the download check was asked about.
  */
-internal class Gate(val at: Int, val register: Int, val hook: String)
+internal class Gate(val at: Int, val register: Int, val hook: String, val media: Int? = null)
 
 internal fun BytecodePatchContext.offerDownloadOnEveryReel() {
     val handlers = mutableListOf<Method>()
@@ -199,7 +204,11 @@ internal fun BytecodePatchContext.offerDownloadOnEveryReel() {
         val method = mutable(builder)
         found.sortedByDescending { it.at }.forEach { gate ->
             val register = "v${gate.register}"
-            val call = if (gate.register > 15) "invoke-static/range { $register .. $register }" else "invoke-static { $register }"
+            val call = when {
+                gate.media != null -> "invoke-static { $register, v${gate.media} }"
+                gate.register > 15 -> "invoke-static/range { $register .. $register }"
+                else -> "invoke-static { $register }"
+            }
             method.addInstructions(
                 gate.at,
                 """
@@ -354,7 +363,8 @@ private fun BytecodePatchContext.mutable(method: Method): MutableMethod =
  * each that skips it when a flag says yes. The builder must load the row once, call the check once
  * before it, and have only those two kinds of branch between them jumping past the row. A builder
  * that hands the row straight to the menu's adder of one row ([rows]) gets the filters that also let
- * it in for Open in another player alone.
+ * it in for Open in another player alone, when the check's Media argument is in a register the first
+ * filter can be handed, apart from the check's answer. Otherwise it gets the plain ones.
  */
 internal fun Method.downloadGates(eligible: Method, rows: Boolean = false): List<Gate> {
     val code = code()
@@ -364,6 +374,11 @@ internal fun Method.downloadGates(eligible: Method, rows: Boolean = false): List
     val check = code.indices.filter { code[it].calls(eligible) }.singleOrNull()
         ?: throw PatchException("$PATCH: $where doesn't call the download check once")
     if (check > row) throw PatchException("$PATCH: $where calls the download check after adding Download")
+    val media = if (!rows) null else code.mediaArgument(check, eligible)?.takeIf { register ->
+        val answer = (code.getOrNull(check + 1) as? OneRegisterInstruction)?.registerA
+        register <= 15 && answer != null && answer <= 15 && answer != register
+    }
+    val toRows = media != null
 
     val address = IntArray(code.size + 1)
     code.forEachIndexed { index, instruction -> address[index + 1] = address[index] + instruction.codeUnits }
@@ -388,8 +403,9 @@ internal fun Method.downloadGates(eligible: Method, rows: Boolean = false): List
         }
         val fromCheck = call.calls(eligible)
         when {
-            fromCheck && branch.opcode == Opcode.IF_EQZ -> Gate(set + 1, register, if (rows) OFFER_ROW else OFFER)
-            !fromCheck && branch.opcode == Opcode.IF_NEZ -> Gate(set + 1, register, if (rows) WITHHOLD_ROW else WITHHOLD)
+            fromCheck && branch.opcode == Opcode.IF_EQZ ->
+                if (toRows) Gate(set + 1, register, OFFER_ROW, media) else Gate(set + 1, register, OFFER)
+            !fromCheck && branch.opcode == Opcode.IF_NEZ -> Gate(set + 1, register, if (toRows) WITHHOLD_ROW else WITHHOLD)
             else -> throw PatchException("$PATCH: in $where the branch at $index keeps Download out in a way this patch doesn't know")
         }
     }
@@ -414,6 +430,23 @@ private fun BytecodePatchContext.handsToRows(builder: Method, adder: Method): Bo
     return classDefBy(adder.definingClass).methods.any { method ->
         method.name == called.name && method.returnType == called.returnType &&
             method.parameterTypes.map(Any::toString) == called.parameterTypes.map(Any::toString) && method.calls(adder)
+    }
+}
+
+/**
+ * The register the call at [at] hands [eligible], the download check, its one Media in, or null when
+ * the check takes none, or more than one.
+ */
+private fun List<Instruction>.mediaArgument(at: Int, eligible: Method): Int? {
+    val types = eligible.parameterTypes.map(Any::toString)
+    if (types.count { it == MEDIA } != 1) return null
+    val before = types.takeWhile { it != MEDIA }.sumOf { if (it == "J" || it == "D") 2 else 1 }
+    val index = (if (AccessFlags.STATIC.isSet(eligible.accessFlags)) 0 else 1) + before
+    return when (val call = this[at]) {
+        is RegisterRangeInstruction -> (call.startRegister + index).takeIf { index < call.registerCount }
+        is FiveRegisterInstruction ->
+            listOf(call.registerC, call.registerD, call.registerE, call.registerF, call.registerG).take(call.registerCount).getOrNull(index)
+        else -> null
     }
 }
 

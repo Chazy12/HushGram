@@ -127,6 +127,7 @@ public final class ReelDownload {
     /** Instagram's answer [eligible] to whether this reel has a Download row, or yes with the switch on. Never throws. */
     public static boolean offer(boolean eligible) {
         playerOnly = false;
+        playerFits = false;
         return eligible || on();
     }
 
@@ -148,20 +149,32 @@ public final class ReelDownload {
      */
     private static boolean playerOnly;
 
-    /** {@link #offerRow(boolean)} for the patch, handed an int as {@link #offer(int)} is. */
-    public static boolean offerRow(int eligible) {
-        return offerRow(eligible != 0);
+    /**
+     * Whether the reel the builder asked {@link #offerRow} about gets Open in another player with
+     * Download on reels off: the player's switch is on and the reel has a video file to hand over.
+     * Only such a reel is let in past Instagram's flag by {@link #withholdRow}.
+     */
+    private static boolean playerFits;
+
+    /** {@link #offerRow(boolean, Object)} for the patch, handed an int as {@link #offer(int)} is. */
+    public static boolean offerRow(int eligible, Object media) {
+        return offerRow(eligible != 0, media);
     }
 
     /**
      * {@link #offer(boolean)} for a builder that hands Download straight to the menu's adder of one
-     * row: also yes when only Open in another player is on, since the adder then puts the player row
-     * in Download's place without Instagram's. Never throws.
+     * row, with [media], the reel Instagram's check was asked about: also yes when only Open in
+     * another player is on and the reel has a video file for it, since the adder then puts the
+     * player row in Download's place without Instagram's. A reel the player row can't go on keeps
+     * Instagram's answer, so its menu stays Instagram's. Never throws.
      */
-    public static boolean offerRow(boolean eligible) {
+    public static boolean offerRow(boolean eligible, Object media) {
         playerOnly = false;
-        if (eligible || on()) return true;
-        playerOnly = ExternalPlayer.on();
+        playerFits = false;
+        if (on()) return true;
+        playerFits = ExternalPlayer.offers(media);
+        if (eligible) return true;
+        playerOnly = playerFits;
         return playerOnly;
     }
 
@@ -171,12 +184,13 @@ public final class ReelDownload {
     }
 
     /**
-     * {@link #withhold(boolean)} for the same builders as {@link #offerRow(boolean)}: with only Open
-     * in another player on, Instagram's flag lets the row in for the player row alone. Never throws.
+     * {@link #withhold(boolean)} for the same builders as {@link #offerRow(boolean, Object)}: with
+     * only Open in another player on, Instagram's flag lets the row in for the player row alone, on
+     * a reel {@link #offerRow(boolean, Object)} found a video file on. Never throws.
      */
     public static boolean withholdRow(boolean held) {
         if (!held || on()) return false;
-        if (!ExternalPlayer.on()) return true;
+        if (!playerFits) return true;
         playerOnly = true;
         return false;
     }
@@ -222,6 +236,7 @@ public final class ReelDownload {
     public static boolean rows(Object menu, Object media, Object context, Object sheet, Object rowState) {
         boolean alone = playerOnly;
         playerOnly = false;
+        playerFits = false;
         try {
             if (alone || !on()) {
                 Object player = media != null && ExternalPlayer.offers(media) ? InstagramMedia.reelOption(PLAYER_OPTION) : null;
