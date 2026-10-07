@@ -16,7 +16,6 @@ import app.morphe.patches.instagram.download.pandoGetter
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.instagram.misc.extension.classesHolding
 import app.morphe.patches.instagram.misc.extension.enableStatus
-import app.morphe.patches.instagram.misc.extension.freeLocalsAt
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
 import app.morphe.patches.instagram.misc.extension.requireStatusMethod
 import app.morphe.patches.instagram.misc.settings.settingsPatch
@@ -206,28 +205,16 @@ internal fun BytecodePatchContext.storyMentionStubs(): StoryMentionStubs {
 }
 
 /**
- * Right after each binder puts the story into its page, hands both to [BIND]. A register past
- * v15, which an invoke can't name, is copied into a local nothing reads there first.
+ * Right after each binder puts the story into its page, hands both to [BIND]. The put is an
+ * `iput-object`, whose two registers fit in four bits each, so the invoke names them as they are:
+ * nothing is copied, no local is borrowed, and nothing here can refuse after [findStoryMentions] passes.
  */
 internal fun BytecodePatchContext.hookStoryBinds(found: StoryMentionSites) {
     for (bind in found.binds) {
         val method = mutableClassDefBy(bind.type).methods.single {
             it.name == bind.name && it.parameterTypes.map(CharSequence::toString) == bind.parameters
         }
-        val at = bind.index + 1
-        if (bind.page <= 15 && bind.item <= 15) {
-            method.addInstructions(at, "invoke-static { v${bind.page}, v${bind.item} }, $BIND")
-        } else {
-            val (page, item) = method.freeLocalsAt(PATCH, at, 2)
-            method.addInstructions(
-                at,
-                """
-                    move-object/from16 v$page, v${bind.page}
-                    move-object/from16 v$item, v${bind.item}
-                    invoke-static { v$page, v$item }, $BIND
-                """,
-            )
-        }
+        method.addInstructions(bind.index + 1, "invoke-static { v${bind.page}, v${bind.item} }, $BIND")
     }
 }
 
