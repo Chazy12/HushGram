@@ -125,31 +125,55 @@ internal fun BytecodePatchContext.imageBridges(patch: String): () -> Unit {
  * The same for an account's picture: the one its profile shows, read as a picture's candidate, and
  * its full size, read through the interface both of Instagram's classes for it implement, whose
  * getters keep their names. The account's username names the save, and it and the account's bio
- * are what Copy username and Copy bio copy.
+ * are what Copy username and Copy bio copy. Only Copy bio reads the bio, so a build where its
+ * getter can't be told leaves that bridge answering null, after the patch log says why, and the
+ * patch goes in without Copy bio.
  */
 internal fun BytecodePatchContext.profilePictureBridges(patch: String): () -> Unit {
     val shown = pandoGetter(patch, USER, "profile_pic_url", IMAGE_URL)
     val full = pandoGetter(patch, USER, "hd_profile_pic_url_info", PROFILE_PICTURE_INFO)
     val username = pandoGetter(patch, USER, "username", "Ljava/lang/String;")
-    val biography = pandoGetter(patch, USER, "biography", "Ljava/lang/String;")
-    fun kept(type: String, name: String, returns: String): String {
-        if (anInterface(patch, type).methods.none { it.name == name && it.parameterTypes.isEmpty() && it.returnType == returns }) {
-            throw PatchException("$patch: $type has no $name()$returns")
-        }
-        return "invoke-interface {p0}, $type->$name()$returns"
+    val biography = try {
+        pandoGetter(patch, USER, "biography", "Ljava/lang/String;")
+    } catch (unknown: PatchException) {
+        patchLog.warning("${unknown.message}. $patch goes in without Copy bio.")
+        null
     }
-    return bridgeWriter(patch, listOf(
+    return bridgeWriter(patch, listOfNotNull(
         Bridge("profilePicture", USER, virtual(shown)),
         Bridge("fullSizeProfilePicture", USER, virtual(full)),
         Bridge("username", USER, virtual(username)),
-        Bridge("biography", USER, virtual(biography)),
-        Bridge("profilePictureUrl", PROFILE_PICTURE_INFO, kept(PROFILE_PICTURE_INFO, "getUrl", "Ljava/lang/String;")),
-        Bridge("profilePictureWidth", PROFILE_PICTURE_INFO, kept(PROFILE_PICTURE_INFO, "getWidth", "I"), primitive = true),
-        Bridge("profilePictureHeight", PROFILE_PICTURE_INFO, kept(PROFILE_PICTURE_INFO, "getHeight", "I"), primitive = true),
-        Bridge("candidateUrl", IMAGE_URL, kept(IMAGE_URL, "getUrl", "Ljava/lang/String;")),
-        Bridge("candidateWidth", IMAGE_URL, kept(IMAGE_URL, "getWidth", "I"), primitive = true),
-        Bridge("candidateHeight", IMAGE_URL, kept(IMAGE_URL, "getHeight", "I"), primitive = true),
+        biography?.let { Bridge("biography", USER, virtual(it)) },
+        Bridge("profilePictureUrl", PROFILE_PICTURE_INFO, kept(patch, PROFILE_PICTURE_INFO, "getUrl", "Ljava/lang/String;")),
+        Bridge("profilePictureWidth", PROFILE_PICTURE_INFO, kept(patch, PROFILE_PICTURE_INFO, "getWidth", "I"), primitive = true),
+        Bridge("profilePictureHeight", PROFILE_PICTURE_INFO, kept(patch, PROFILE_PICTURE_INFO, "getHeight", "I"), primitive = true),
+        Bridge("candidateUrl", IMAGE_URL, kept(patch, IMAGE_URL, "getUrl", "Ljava/lang/String;")),
+        Bridge("candidateWidth", IMAGE_URL, kept(patch, IMAGE_URL, "getWidth", "I"), primitive = true),
+        Bridge("candidateHeight", IMAGE_URL, kept(patch, IMAGE_URL, "getHeight", "I"), primitive = true),
     ))
+}
+
+/**
+ * The same for an account in a list: its username and the address of the picture its profile
+ * shows, and nothing a profile's own patches read besides, so a build where the full size picture
+ * or the bio moved doesn't stop a patch that only lists accounts.
+ */
+internal fun BytecodePatchContext.accountBridges(patch: String): () -> Unit {
+    val shown = pandoGetter(patch, USER, "profile_pic_url", IMAGE_URL)
+    val username = pandoGetter(patch, USER, "username", "Ljava/lang/String;")
+    return bridgeWriter(patch, listOf(
+        Bridge("profilePicture", USER, virtual(shown)),
+        Bridge("username", USER, virtual(username)),
+        Bridge("candidateUrl", IMAGE_URL, kept(patch, IMAGE_URL, "getUrl", "Ljava/lang/String;")),
+    ))
+}
+
+/** A call through [type]'s getter [name], which keeps its name, after checking the interface has it. */
+private fun BytecodePatchContext.kept(patch: String, type: String, name: String, returns: String): String {
+    if (anInterface(patch, type).methods.none { it.name == name && it.parameterTypes.isEmpty() && it.returnType == returns }) {
+        throw PatchException("$patch: $type has no $name()$returns")
+    }
+    return "invoke-interface {p0}, $type->$name()$returns"
 }
 
 /**

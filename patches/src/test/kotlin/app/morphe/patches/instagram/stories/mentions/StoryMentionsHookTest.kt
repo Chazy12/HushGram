@@ -14,7 +14,7 @@ import app.morphe.patches.instagram.download.INSTAGRAM_MEDIA
 import app.morphe.patches.instagram.download.MEDIA
 import app.morphe.patches.instagram.download.PROFILE_PICTURE_INFO
 import app.morphe.patches.instagram.download.USER
-import app.morphe.patches.instagram.download.profilePictureBridges
+import app.morphe.patches.instagram.download.accountBridges
 import app.morphe.patches.instagram.stories.time.STORY_ITEM
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -222,7 +222,10 @@ class StoryMentionsHookTest {
 
                 val found = context.findStoryMentions()
                 val stubs = context.storyMentionStubs()
-                val pictures = context.profilePictureBridges(PATCH)
+                val pictures = context.accountBridges(PATCH)
+                val cast = { context.mutableClassDefBy(INSTAGRAM_MEDIA).methods
+                    .filter { it.instructions().firstOrNull()?.opcode == Opcode.CHECK_CAST }.map { it.name }.toSet() }
+                val castBefore = cast()
                 stubs.fill(found)
                 pictures()
                 context.hookStoryBinds(found)
@@ -235,6 +238,8 @@ class StoryMentionsHookTest {
                     assertEquals("${bundle.name}: ${bind.type}->${bind.name} calls bind once", 1, code.count { it.referenceText() == BIND })
                 }
                 for (name in STUBS) assertEquals("${bundle.name}: $name", Opcode.CHECK_CAST, context.stub(name)[0].opcode)
+                // The account's username and picture, and nothing only a profile's own patches read.
+                assertEquals("${bundle.name}: the bridges written", setOf("profilePicture", "username", "candidateUrl"), cast() - castBefore)
                 checked++
             }
         }

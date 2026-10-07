@@ -11,8 +11,8 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.instagram.download.MEDIA
 import app.morphe.patches.instagram.download.USER
+import app.morphe.patches.instagram.download.accountBridges
 import app.morphe.patches.instagram.download.pandoGetter
-import app.morphe.patches.instagram.download.profilePictureBridges
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.instagram.misc.extension.classesHolding
 import app.morphe.patches.instagram.misc.extension.enableStatus
@@ -76,7 +76,7 @@ val storyMentionsPatch = bytecodePatch(
         requireStatusMethod("storyMentions")
         val found = findStoryMentions()
         val stubs = storyMentionStubs()
-        val pictures = profilePictureBridges(PATCH)
+        val pictures = accountBridges(PATCH)
         stubs.fill(found)
         pictures()
         hookStoryBinds(found)

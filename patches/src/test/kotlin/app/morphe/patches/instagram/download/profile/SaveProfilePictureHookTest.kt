@@ -175,6 +175,39 @@ class SaveProfilePictureHookTest {
         assertTrue("no fixture of a declared build", checked > 0)
     }
 
+    /** With the bio's getter gone, every other bridge goes in and the bio's keeps answering null, so only Copy bio is left out. */
+    @Test
+    fun aBioThatCantBeToldLeavesOnlyCopyBioOut() {
+        val versions = AppCompatibilities.instagram().single().targets.mapNotNull { it.version }.toSet()
+        var checked = 0
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apks" && it.name.contains("-$version-") }) {
+                val models = FixtureDex.classes(bundle, setOf(USER, PROFILE_PICTURE_INFO, IMAGE_URL))
+                val key = "biography".hashCode()
+                val user = models.getValue(USER).let { user ->
+                    ImmutableClassDef(
+                        user.type, user.accessFlags, user.superclass, user.interfaces, user.sourceFile, user.annotations, user.fields,
+                        user.methods.filterNot { method ->
+                            method.parameterTypes.isEmpty() && method.returnType == "Ljava/lang/String;" &&
+                                method.instructions().any { (it as? NarrowLiteralInstruction)?.narrowLiteral == key }
+                        },
+                    )
+                }
+                val context = PatchContexts.of(models.values.filter { it.type != USER } + user + ExtensionDex.classDef(INSTAGRAM_MEDIA))
+                val stubBefore = context.method(INSTAGRAM_MEDIA, "biography").instructions().map { it.opcode }
+
+                context.profilePictureBridges(PROFILE_PICTURE_PATCH)()
+
+                for (bridge in PICTURE_BRIDGES - "biography") {
+                    assertEquals("${bundle.name}: $bridge", Opcode.CHECK_CAST, context.method(INSTAGRAM_MEDIA, bridge).instructions().first().opcode)
+                }
+                assertEquals("${bundle.name}: the bio's stub", stubBefore, context.method(INSTAGRAM_MEDIA, "biography").instructions().map { it.opcode })
+                checked++
+            }
+        }
+        assertTrue("no fixture of a declared build", checked > 0)
+    }
+
     private fun refuses(reason: String, patch: () -> Unit) {
         val refusal = assertThrows(PatchException::class.java) { patch() }
         assertTrue("refused for another reason: ${refusal.message}", refusal.message.orEmpty().contains(reason))
