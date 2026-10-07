@@ -41,6 +41,7 @@ import org.robolectric.shadows.ShadowLooper;
 
 import app.hushgram.extension.instagram.settings.Settings;
 import app.hushgram.extension.shared.SettingsContextRule;
+import app.hushgram.extension.shared.Utils;
 import app.hushgram.extension.shared.diagnostics.HookStatus;
 import app.hushgram.extension.shared.settings.BaseSettings;
 import app.hushgram.extension.shared.settings.HushgramPause;
@@ -94,6 +95,30 @@ public class PostInfoTest {
         return post;
     }
 
+    /** A 1080p and a 720p H.264 track with sound, as Meta's manifests list them. */
+    private static final String MANIFEST = "<MPD><Period><AdaptationSet mimeType=\"video/mp4\">"
+            + track(1080, 1920, 3_000_000, "1080p", "t1080")
+            + track(720, 1280, 1_500_000, "720p", "t720")
+            + "</AdaptationSet><AdaptationSet mimeType=\"audio/mp4\">"
+            + "<Representation codecs=\"mp4a.40.5\" bandwidth=\"64000\">"
+            + "<BaseURL>https://video-iad3-1.xx.fbcdn.net/o1/v/t2/f2/m69/sound.mp4?oh=1&amp;oe=2</BaseURL>"
+            + "</Representation></AdaptationSet></Period></MPD>";
+
+    private static String track(int width, int height, long bandwidth, String label, String name) {
+        return "<Representation codecs=\"avc1.64001f\" width=\"" + width + "\" height=\"" + height
+                + "\" bandwidth=\"" + bandwidth + "\" FBQualityLabel=\"" + label + "\">"
+                + "<BaseURL>https://video-iad3-1.xx.fbcdn.net/o1/v/t2/f2/m69/" + name + ".mp4?oh=1&amp;oe=2</BaseURL>"
+                + "</Representation>";
+    }
+
+    /** A feed video with a 720p single file and the manifest's 1080p track, as review found it. */
+    private static Post streamed() {
+        Post post = video();
+        post.videos = Collections.singletonList(new MediaSave.Rendition(META + "720.mp4", 720, 1280, 0));
+        post.manifest = MANIFEST;
+        return post;
+    }
+
     private String when() {
         return DateUtils.formatDateTime(activity, POSTED * 1000L, PostInfo.FORMAT);
     }
@@ -144,6 +169,55 @@ public class PostInfoTest {
         PostInfo.Facts foreign = PostInfo.Facts.of(post, post);
         assertNull("only Meta's media servers", foreign.link());
         assertTrue(foreign.text(activity).endsWith("No direct link for this one"));
+    }
+
+    /**
+     * With a manifest, the size is what Download saves, the manifest's 1080p joined with its sound,
+     * and the link, the 720p single file, says its own size. A quality the single file meets as
+     * well saves the file, so the two agree; with no single file there's no link to copy.
+     */
+    @Test
+    public void aVideoWithAManifestShowsWhatDownloadSaves() {
+        Post post = streamed();
+        PostInfo.Facts facts = PostInfo.Facts.of(post, post);
+        assertEquals(META + "720.mp4", facts.link());
+        assertEquals("Posted " + when() + "\nBy @⁨someone⁩\nSize 1080 × 1920\nMedia ID ⁨3712345678901234568_51234567⁩"
+                + "\nMedia link is the 720 × 1280 file", facts.text(activity));
+
+        Settings.DOWNLOAD_QUALITY.save(DownloadQuality.P720);
+        facts = PostInfo.Facts.of(post, post);
+        assertEquals(META + "720.mp4", facts.link());
+        assertTrue(facts.text(activity), facts.text(activity).contains("Size 720 × 1280"));
+        assertFalse(facts.text(activity), facts.text(activity).contains("Media link is"));
+
+        Settings.DOWNLOAD_QUALITY.resetToDefault();
+        post.videos = null;
+        facts = PostInfo.Facts.of(post, post);
+        assertNull(facts.link());
+        assertTrue(facts.text(activity), facts.text(activity).contains("Size 1080 × 1920"));
+        assertTrue(facts.text(activity).endsWith("No direct link for this one"));
+    }
+
+    /** The tap reads a manifest on a worker, then shows the details on the app's own thread. */
+    @Test
+    public void theTapReadsAManifestOffTheDrawingThread() throws Exception {
+        Settings.POST_DETAILS.save(true);
+        PostInfo.show(streamed(), null, activity);
+        Utils.awaitBackgroundTasksForTests();
+        ShadowLooper.idleMainLooper();
+        AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
+        assertTrue(dialog != null && dialog.isShowing());
+        String shown = Shadows.shadowOf(dialog).getMessage().toString();
+        assertTrue(shown, shown.contains("Size 1080 × 1920") && shown.endsWith("Media link is the 720 × 1280 file"));
+        dialog.dismiss();
+
+        // Switched off before the worker is done, nothing shows.
+        ShadowAlertDialog.reset();
+        PostInfo.show(streamed(), null, activity);
+        Settings.POST_DETAILS.save(false);
+        Utils.awaitBackgroundTasksForTests();
+        ShadowLooper.idleMainLooper();
+        assertNull(ShadowAlertDialog.getLatestAlertDialog());
     }
 
     /**
@@ -246,6 +320,7 @@ public class PostInfoTest {
         List<MediaSave.Rendition> videos;
         List<MediaSave.Rendition> pictures;
         List<Post> pages;
+        String manifest;
 
         Post(String id, String owner, Long takenAt) {
             this.id = id;
@@ -260,7 +335,7 @@ public class PostInfoTest {
         static CharSequence label;
 
         @Implementation protected static List<?> videoVersions(Object media) { return ((Post) media).videos; }
-        @Implementation protected static String dashManifest(Object media) { return null; }
+        @Implementation protected static String dashManifest(Object media) { return ((Post) media).manifest; }
         @Implementation protected static String versionUrl(Object version) { return ((MediaSave.Rendition) version).url; }
         @Implementation protected static Integer versionWidth(Object version) { return ((MediaSave.Rendition) version).width; }
         @Implementation protected static Integer versionHeight(Object version) { return ((MediaSave.Rendition) version).height; }

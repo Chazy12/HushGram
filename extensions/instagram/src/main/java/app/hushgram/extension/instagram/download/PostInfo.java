@@ -27,9 +27,11 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  * <p>The row is offered beside Save all and Open in another player, before the builder splits into
  * your own and others' rows, so every post gets it, and the short menu keeps it after them. A tap
  * shows what Instagram already holds for the post, or for a carousel the page on screen: when it
- * went up, who posted it, its media ID, the page's place in the carousel and the size of the file a
- * Download would fetch, with a button that copies that file's direct address. Nothing is fetched to
- * show it.
+ * went up, who posted it, its media ID, the page's place in the carousel and the size a Download
+ * would save, with a button that copies the direct address of the single file Instagram lists for
+ * it. A video Download would join from its manifest's picture and sound tracks has no one address,
+ * so the button copies that single file, and its own size is shown beside the saved one. Nothing is
+ * fetched to show it.
  *
  * <p>The address is a signed link to the file on Meta's servers, so it goes on the clipboard marked
  * sensitive and never into a log.
@@ -109,8 +111,43 @@ public final class PostInfo {
      */
     public static void show(Object media, Object itemState, Activity activity) {
         try {
-            if (!on() || media == null || activity == null || activity.isFinishing() || activity.isDestroyed()) return;
-            Facts facts = Facts.of(VideoDownload.shown(media, itemState), media);
+            if (!on() || media == null || gone(activity)) return;
+            Source source = Source.read(VideoDownload.shown(media, itemState), media);
+            if (source.manifest == null) {
+                present(activity, source.facts());
+                return;
+            }
+            // A manifest is parsed on a worker, as a save parses it, never on the thread that draws
+            // the app. Only a full queue parses it here, so the tap still answers.
+            boolean queued = Utils.runOnBackgroundThread(() -> {
+                Facts facts = facts(source);
+                if (facts != null) Utils.runOnMainThread(() -> present(activity, facts));
+            });
+            if (!queued) present(activity, source.facts());
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "feed details", failure);
+        }
+    }
+
+    private static boolean gone(Activity activity) {
+        return activity == null || activity.isFinishing() || activity.isDestroyed();
+    }
+
+    /** [source]'s facts, on the worker. Null when they can't be read. */
+    @Nullable
+    private static Facts facts(Source source) {
+        try {
+            return source.facts();
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "feed details", failure);
+            return null;
+        }
+    }
+
+    /** Shows [facts] over [activity], unless the switch went off or the screen went away meanwhile. */
+    private static void present(Activity activity, Facts facts) {
+        try {
+            if (!on() || gone(activity)) return;
             AlertDialog.Builder builder = new AlertDialog.Builder(activity)
                     .setTitle(L10n.t(activity, "Details"))
                     .setMessage(facts.text(activity))
@@ -142,40 +179,46 @@ public final class PostInfo {
         }
     }
 
-    /** What the details show of one post or page, read on the tap. */
-    static final class Facts {
-        /** When it went up, in seconds since 1970, or null. */
+    /**
+     * What Details reads of one post or page on the tap, on the thread that draws the app, before
+     * anything is picked: the facts, and the single files and manifest a Download would choose from.
+     */
+    static final class Source {
         @Nullable final Long posted;
-        /** Who posted it, or null. */
         @Nullable final String owner;
-        /** Instagram's media ID, {@code <media pk>_<owner's pk>}, or null. */
         @Nullable final String id;
-        /** Its place in the carousel, counted from 1, and the carousel's pages, or 0 and 0. */
         final int page;
         final int pages;
-        /** The file a Download would fetch, or null when there's none. */
-        @Nullable final MediaSave.Rendition file;
+        /** Whether it's a video: single video files or a manifest. */
+        final boolean video;
+        @Nullable final List<MediaSave.Rendition> videos;
+        @Nullable final String manifest;
+        @Nullable final List<MediaSave.Rendition> pictures;
 
-        Facts(@Nullable Long posted, @Nullable String owner, @Nullable String id, int page, int pages,
-              @Nullable MediaSave.Rendition file) {
+        Source(@Nullable Long posted, @Nullable String owner, @Nullable String id, int page, int pages, boolean video,
+               @Nullable List<MediaSave.Rendition> videos, @Nullable String manifest,
+               @Nullable List<MediaSave.Rendition> pictures) {
             this.posted = posted;
             this.owner = owner;
             this.id = id;
             this.page = page;
             this.pages = pages;
-            this.file = file;
+            this.video = video;
+            this.videos = videos;
+            this.manifest = manifest;
+            this.pictures = pictures;
         }
 
         /**
-         * The facts of [shown], the post [post] itself or the page of its carousel on screen. A page
-         * keeps its own ID, and takes the poster and the time from the post when it doesn't list them.
-         * A carousel whose page on screen isn't known, [shown] null, shows the post's facts and no
-         * file, since its first page might not be the one on screen.
+         * [shown], the post [post] itself or the page of its carousel on screen. A page keeps its
+         * own ID, and takes the poster and the time from the post when it doesn't list them. A
+         * carousel whose page on screen isn't known, [shown] null, has the post's facts and no file,
+         * since its first page might not be the one on screen.
          */
-        static Facts of(@Nullable Object shown, Object post) {
+        static Source read(@Nullable Object shown, Object post) {
             if (shown == null) {
-                Facts known = of(post, post);
-                return new Facts(known.posted, known.owner, known.id, 0, 0, null);
+                Source known = read(post, post);
+                return new Source(known.posted, known.owner, known.id, 0, 0, false, null, null, null);
             }
             Long posted = InstagramMedia.takenAt(shown);
             if ((posted == null || posted <= 0) && shown != post) posted = InstagramMedia.takenAt(post);
@@ -186,11 +229,61 @@ public final class PostInfo {
             List<?> carousel = InstagramMedia.carouselMedia(post);
             int pages = carousel == null || shown == post ? 0 : carousel.size();
             int page = pages == 0 ? 0 : VideoDownload.pageOf(shown, post);
-            MediaSave.Rendition file = VideoDownload.hasVideo(shown)
-                    ? MediaSave.picked(ReelDownload.renditions(shown), true)
-                    : MediaSave.picked(StoryDownload.pictures(shown), false);
-            return new Facts(posted == null || posted <= 0 ? null : posted, empty(owner) ? null : owner,
-                    empty(id) ? null : id, page, page == 0 ? 0 : pages, file);
+            List<MediaSave.Rendition> videos = ReelDownload.renditions(shown);
+            String manifest = InstagramMedia.dashManifest(shown);
+            boolean video = !videos.isEmpty() || manifest != null;
+            return new Source(posted == null || posted <= 0 ? null : posted, Facts.empty(owner) ? null : owner,
+                    Facts.empty(id) ? null : id, page, page == 0 ? 0 : pages, video, videos, manifest,
+                    video ? null : StoryDownload.pictures(shown));
+        }
+
+        /**
+         * The facts, with the single file a link copies and the size a Download saves: for a video,
+         * as {@link MediaSave#plannedVideo} picks it, which reads the manifest.
+         */
+        Facts facts() {
+            if (!video) {
+                MediaSave.Rendition picture = pictures == null ? null : MediaSave.picked(pictures, false);
+                return new Facts(posted, owner, id, page, pages, picture,
+                        picture == null ? 0 : picture.width, picture == null ? 0 : picture.height);
+            }
+            MediaSave.Planned planned = MediaSave.plannedVideo(videos, manifest);
+            return new Facts(posted, owner, id, page, pages, planned.file, planned.width(), planned.height());
+        }
+    }
+
+    /** What the details show of one post or page. */
+    static final class Facts {
+        /** When it went up, in seconds since 1970, or null. */
+        @Nullable final Long posted;
+        /** Who posted it, or null. */
+        @Nullable final String owner;
+        /** Instagram's media ID, {@code <media pk>_<owner's pk>}, or null. */
+        @Nullable final String id;
+        /** Its place in the carousel, counted from 1, and the carousel's pages, or 0 and 0. */
+        final int page;
+        final int pages;
+        /** The single file with an address of its own, the one Copy media link copies, or null. */
+        @Nullable final MediaSave.Rendition file;
+        /** The size a Download saves, which a video joined from its manifest's tracks has apart from [file], or 0. */
+        final int width;
+        final int height;
+
+        Facts(@Nullable Long posted, @Nullable String owner, @Nullable String id, int page, int pages,
+              @Nullable MediaSave.Rendition file, int width, int height) {
+            this.posted = posted;
+            this.owner = owner;
+            this.id = id;
+            this.page = page;
+            this.pages = pages;
+            this.file = file;
+            this.width = width;
+            this.height = height;
+        }
+
+        /** The facts of [shown] and [post], as {@link Source#read} reads them, picked at once. */
+        static Facts of(@Nullable Object shown, Object post) {
+            return Source.read(shown, post).facts();
         }
 
         /** The address to copy, or null when there's no file. */
@@ -207,15 +300,18 @@ public final class PostInfo {
             }
             if (owner != null) lines.add(L10n.f(context, "By @%1$s", L10n.isolate(owner)));
             if (page > 0) lines.add(L10n.f(context, "Page %1$d of %2$d", page, pages));
-            if (file != null && file.width > 0 && file.height > 0) {
-                lines.add(L10n.f(context, "Size %1$d × %2$d", file.width, file.height));
-            }
+            if (width > 0 && height > 0) lines.add(L10n.f(context, "Size %1$d × %2$d", width, height));
             if (id != null) lines.add(L10n.f(context, "Media ID %1$s", L10n.isolate(id)));
-            if (file == null) lines.add(L10n.t(context, "No direct link for this one"));
+            if (file == null) {
+                lines.add(L10n.t(context, "No direct link for this one"));
+            } else if (file.width > 0 && file.height > 0 && (file.width != width || file.height != height)) {
+                // Download joins its picture from the manifest, so the link is a file of its own size.
+                lines.add(L10n.f(context, "Media link is the %1$d × %2$d file", file.width, file.height));
+            }
             return String.join("\n", lines);
         }
 
-        private static boolean empty(String text) {
+        static boolean empty(String text) {
             return text == null || text.trim().isEmpty();
         }
     }

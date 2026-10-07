@@ -12,7 +12,7 @@ Every HushGram release, newest first.
 
 * **Instagram:** Resume long videos doesn't save a place again for an account that just signed out. Its videos close a moment after the sign-out clears its places, and that close used to put one back.
 
-* **Instagram:** Download any video has a new switch under Downloads, Details in a post's menu, that starts off. With it on, a feed post's menu gets Details, which shows when the post went up, who posted it, its media ID and the size of the file Download would save, with Copy media link to put that file's direct address on the clipboard. On a carousel it shows the page you're on.
+* **Instagram:** Download any video has a new switch under Downloads, Details in a post's menu, that starts off. With it on, a feed post's menu gets Details, which shows when the post went up, who posted it, its media ID and the size Download would save, with Copy media link to put the post's file's direct address on the clipboard. When Download would build a sharper video from the picture and sound Instagram streams separately, Details shows that size and says the linked file's own. On a carousel it shows the page you're on.
 
 * **Instagram:** Clear the media cache leaves a clear over the limit for a later start when the last one crashed early, since that start might be the one that turns safe mode on.
 
