@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** New patch, Hide the Share button, in simple mode with its switch off. Turn it on under Sharing and the Share button and its count come off the posts in your feed and off reels. Asked for in #1.
+
 * **Instagram:** Turn off double tap to like has an On comments switch under it, off to start. With it on, a double tap on a comment doesn't like it.
 
 * **Instagram:** Resume long videos keeps each signed-in account's places apart, so a video another account on the phone left partway starts at the beginning for you. Places saved before this update are cleared once, since they don't say which account they belong to.

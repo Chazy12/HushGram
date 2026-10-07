@@ -140,6 +140,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean hideShareButton() {
+        return false;
+    }
+
     public static boolean bottomSpace() {
         return false;
     }

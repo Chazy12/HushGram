@@ -400,6 +400,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_hide_repost_button", TRUE);
 
     /**
+     * Feed's action rows and the reels leave out the Share button and its count
+     * ({@link app.hushgram.extension.instagram.share.ShareButton}). Read as each row's state is
+     * built and as each reel is drawn, so a post or reel already on screen changes the next time
+     * it's drawn. Off to start.
+     */
+    public static final BooleanSetting HIDE_SHARE_BUTTON =
+            new BooleanSetting("hushgram_hide_share_button", FALSE);
+
+    /**
      * The space Instagram leaves under its tab bar for a navigation bar the phone says isn't there:
      * when the phone reports no bottom inset, Instagram's guess from the system's navigation bar
      * height becomes 0 ({@link app.hushgram.extension.instagram.misc.BottomSpace}). Read each time

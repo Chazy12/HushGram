@@ -831,6 +831,11 @@ shared-call Lapp/hushgram/extension/instagram/share/RepostButton;->eligible(Ljav
 # CommentsButton.feedState right before the constructor stores each. No rule, for the same
 # reason: it's called twice there. HideCommentsHookTest checks on the 450 fixture that both land
 # right before their write, with Hide the Repost button's hooks in the same constructor.
+# Hide the Share button passes the same state's Share button flag and share count flag through
+# ShareButton.feedState the same way, with no rule for the same reason. Its Reels guard is first in
+# the check that decides whether a reel shows the Share button, and in no other method.
+start-call Lapp/hushgram/extension/instagram/share/ShareButton;->hideInReels()Z in static (Lcom/instagram/clips/intf/ClipsViewerConfig;LX/011g;LX/03EL;LX/074e;)Z holding android_purge_26_q3_UfiUseCase_shouldShowShareButton
+once-call Lapp/hushgram/extension/instagram/share/ShareButton;->hideInReels()Z in static (Lcom/instagram/clips/intf/ClipsViewerConfig;LX/011g;LX/03EL;LX/074e;)Z holding android_purge_26_q3_UfiUseCase_shouldShowShareButton
 # Remove the empty space at the bottom passes the navigation bar height Instagram's window insets
 # listener guesses, when the phone reports none, through BottomSpace.navigationBarHeight right after
 # the listener reads it (00OO.Exr on 449, the one method loading both strings below). Left out, the

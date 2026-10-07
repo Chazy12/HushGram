@@ -52,7 +52,7 @@ public class NeutralDefaultsSettingsTest {
 
     @Before public void prepare() {
         RuntimeEnvironment.getApplication().getApplicationInfo().targetSdkVersion = 36;
-        initiallyOff = new BooleanSetting[]{Settings.COPY_COMMENTS, Settings.SAVE_COMMENT_PHOTOS, Settings.HIDE_COMMENTS,
+        initiallyOff = new BooleanSetting[]{Settings.COPY_COMMENTS, Settings.SAVE_COMMENT_PHOTOS, Settings.HIDE_COMMENTS, Settings.HIDE_SHARE_BUTTON,
                 Settings.HIDE_HIGHLIGHTS, Settings.HIDE_NOTES_ROW, Settings.HIDE_INSTANTS,
                 Settings.STOP_SWIPE_TO_CREATE, Settings.STOP_REELS_SCROLLING, Settings.REEL_CAP, Settings.FULL_RESOLUTION_PHOTOS, Settings.ASK_FOR_LARGER_PHOTOS,
                 Settings.HIDE_HOME_FEED, Settings.STOP_TAB_SWIPING, Settings.TURN_OFF_HDR_BOOSTS, Settings.DONT_SAVE_RECENT_SEARCHES, Settings.DATA_SAVER, Settings.CLEAR_MEDIA_CACHE, Settings.GROUP_NOTIFICATIONS,
@@ -64,7 +64,7 @@ public class NeutralDefaultsSettingsTest {
         restoreDefaults();
         BaseSettings.SAFE_MODE.save(false);
         Settings.SIGN_IN_NOTICE_HIDDEN.save(true);
-        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.COMMENT_COPY, PatchFamily.COMMENT_PHOTO, PatchFamily.HIDE_COMMENTS,
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.COMMENT_COPY, PatchFamily.COMMENT_PHOTO, PatchFamily.HIDE_COMMENTS, PatchFamily.HIDE_SHARE_BUTTON,
                 PatchFamily.PROFILE_HIGHLIGHTS, PatchFamily.NOTES_ROW, PatchFamily.INSTANTS, PatchFamily.SWIPE_TO_CREATE,
                 PatchFamily.REEL_SCROLLING, PatchFamily.STORY_RING, PatchFamily.FULL_RESOLUTION, PatchFamily.HOME_FEED,
                 PatchFamily.TAB_SWIPE, PatchFamily.HDR_BOOST, PatchFamily.RECENT_SEARCHES, PatchFamily.DATA_SAVER, PatchFamily.MEDIA_CACHE, PatchFamily.NOTIFICATION_GROUPS, PatchFamily.MESSAGES_LOCK, PatchFamily.SCREENSHOT_REPORTS, PatchFamily.SCREENSHOT_BLOCK, PatchFamily.KEEP_IN_CHAT, PatchFamily.LIVE_SEEN);
@@ -187,6 +187,8 @@ public class NeutralDefaultsSettingsTest {
         assertSame(sections, NotesRow.sections(sections));
         assertFalse(Instants.hide());
         assertTrue(app.hushgram.extension.instagram.feed.CommentsButton.feedState(1));
+        assertTrue(app.hushgram.extension.instagram.share.ShareButton.feedState(1));
+        assertFalse(app.hushgram.extension.instagram.share.ShareButton.hideInReels());
         assertEquals(lockOn, MessagesLock.holdBanner());
         assertFalse(app.hushgram.extension.instagram.stories.LiveSeen.hold());
         assertEquals("once", app.hushgram.extension.instagram.direct.KeepInChat.viewMode("once"));

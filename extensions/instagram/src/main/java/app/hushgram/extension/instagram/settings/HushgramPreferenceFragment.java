@@ -695,7 +695,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             }
         }
 
-        if (build.contains(PatchFamily.SHARE_SHEET) || build.contains(PatchFamily.REPOST_BUTTON)) {
+        if (build.contains(PatchFamily.SHARE_SHEET) || build.contains(PatchFamily.REPOST_BUTTON)
+                || build.contains(PatchFamily.HIDE_SHARE_BUTTON)) {
             PreferenceCategory sharing = category(screen, L10n.t("Sharing"));
             if (build.contains(PatchFamily.SHARE_SHEET)) {
                 sharing.addPreference(toggle(context, Settings.HIDE_SHARE_SHEET_GROUP, L10n.t("Hide group buttons"),
@@ -706,6 +707,10 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                 sharing.addPreference(toggle(context, Settings.HIDE_REPOST_BUTTON, L10n.t("Hide the Repost button"),
                         L10n.t("Takes Repost and its count off posts and reels, so nothing gets reposted to your "
                                 + "followers by mistake. Share still sends a post or reel to someone.")));
+            }
+            if (build.contains(PatchFamily.HIDE_SHARE_BUTTON)) {
+                sharing.addPreference(toggle(context, Settings.HIDE_SHARE_BUTTON, L10n.t("Hide the Share button"),
+                        L10n.t("Takes the Share button and its count off the posts in your feed and off reels.")));
             }
         }
 
