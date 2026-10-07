@@ -722,6 +722,45 @@ public class ResumePlaybackTest {
         assertTrue(report(), report().contains(ResumePlayback.ACCOUNT_FORGOTTEN + " 1"));
     }
 
+    /**
+     * At a sign-out Instagram ends the session without waiting for its players, so they stop and
+     * pause after the account's points are gone. Those save nothing, and a player still on that
+     * session resumes nothing.
+     */
+    @Test
+    public void aSignedOutAccountsPlayersSaveNothingAsTheyGo() {
+        Video video = longVideo("3712345678901234567");
+        Player mine = new Player(video);
+        mine.position = 5 * MINUTE;
+        ResumePlayback.stopped(mine, "scroll");
+        assertEquals("a stop before the sign-out saves", 1, pointsFile().getAll().size());
+
+        mine.signedOut = true;
+        ResumePlayback.sessionEnded(new ResumePlaybackForTests.Session(ResumePlaybackForTests.ACCOUNT, true));
+        assertTrue(pointsFile().getAll().isEmpty());
+        mine.position = 7 * MINUTE;
+        ResumePlayback.stopped(mine, "teardown");
+        ResumePlayback.rebound(mine);
+        assertTrue("the teardown saved a point again", pointsFile().getAll().isEmpty());
+
+        leftAt(video, 9 * MINUTE);
+        Player stale = new Player(video);
+        stale.signedOut = true;
+        assertEquals("a signed-out session's player resumed", Collections.emptyList(), openedWith(stale).seeks);
+        assertEquals("signing back in finds the new point", Collections.singletonList(9 * MINUTE), opened(video).seeks);
+    }
+
+    @Test
+    public void onlyASignedInSessionOwnsAPoint() {
+        ResumePlayback.Session sessions = ResumePlaybackForTests.SESSIONS;
+        String account = ResumePlaybackForTests.ACCOUNT;
+        assertEquals(account, ResumePlayback.owner(new ResumePlaybackForTests.Session(account, false), sessions));
+        assertNull(ResumePlayback.owner(new ResumePlaybackForTests.Session(account, true), sessions));
+        assertNull(ResumePlayback.owner(null, sessions));
+        assertNull("the unfilled stubs", ResumePlayback.owner(new Object(), ResumePlayback.SESSION_STUBS));
+        assertNull(ResumePlayback.playerSession(new Object()));
+    }
+
     /** Undo of an earlier Clear brings back the other account's points, never a signed-out one's. */
     @Test
     public void undoDoesntBringBackASignedOutAccountsPoints() {

@@ -50,7 +50,7 @@ class ResumeLongVideosHookTest {
             "position(Ljava/lang/Object;)I", "duration(Ljava/lang/Object;)I",
             "videoSource(Ljava/lang/Object;)Ljava/lang/Object;", "videoId(Ljava/lang/Object;)Ljava/lang/String;",
             "productType(Ljava/lang/Object;)Ljava/lang/Object;", "sponsored(Ljava/lang/Object;)Z",
-            "seekPlayer(Ljava/lang/Object;IZZ)Z", "accountId(Ljava/lang/Object;)Ljava/lang/String;",
+            "seekPlayer(Ljava/lang/Object;IZZ)Z", "playerSession(Ljava/lang/Object;)Ljava/lang/Object;",
             "sessionUserId(Ljava/lang/Object;)Ljava/lang/String;", "sessionLoggedOut(Ljava/lang/Object;)Z",
         )
         for (member in hooks.map { it.substringAfter("->") } + stubs) {
@@ -96,7 +96,7 @@ class ResumeLongVideosHookTest {
         assertEquals(listOf(source, "$source->A0A:$PRODUCT_TYPE"), stub("productType"))
         assertEquals(listOf(source, "$source->A0e:Z"), stub("sponsored"))
         assertEquals(listOf(player, "$player->A0X(IZZ)V"), stub("seekPlayer"))
-        assertEquals(listOf(player, "$player->A0t:$RESUME_SESSION", "$RESUME_SESSION->userId:$string"), stub("accountId"))
+        assertEquals(listOf(player, "$player->A0t:$RESUME_SESSION"), stub("playerSession"))
         assertEquals(listOf(RESUME_SESSION, "$RESUME_SESSION->userId:$string"), stub("sessionUserId"))
         assertEquals(listOf(RESUME_SESSION, "$RESUME_SESSION->isLoggedOut:Z"), stub("sessionLoggedOut"))
 

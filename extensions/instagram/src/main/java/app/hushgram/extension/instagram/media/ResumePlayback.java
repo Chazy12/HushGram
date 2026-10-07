@@ -152,7 +152,8 @@ public final class ResumePlayback {
             Object source = videoSource(player);
             if (source == NOT_PATCHED) return Facts.NOT_PATCHED;
             if (source == null) return null;
-            return factsOf(ownedKey(accountId(player), videoId(source)), productType(source), sponsored(source));
+            return factsOf(ownedKey(owner(playerSession(player), sessions), videoId(source)), productType(source),
+                sponsored(source));
         }
 
         @Override
@@ -276,14 +277,23 @@ public final class ResumePlayback {
         return NOT_PATCHED;
     }
 
+    /** Filled in by the patch: the UserSession [player] was made for, or null. Only a player may be passed. */
+    @Nullable
+    public static Object playerSession(Object player) {
+        return null;
+    }
+
     /**
-     * Filled in by the patch: the user ID of the account [player] was made for, read from the
-     * player's own UserSession, or null. Only a player may be passed. The ID goes no further than
+     * The user ID of the account [session] belongs to, or null when there's no session or its
+     * account has signed out. At a sign-out Instagram ends the session without waiting for its
+     * players, so they stop, pause and let go of their views after {@link #forgetAccount} has
+     * deleted the account's points, and a save then would put one back. The ID goes no further than
      * {@link #ownedKey}, which hashes it.
      */
     @Nullable
-    public static String accountId(Object player) {
-        return null;
+    static String owner(@Nullable Object session, Session sessions) {
+        if (session == null || sessions.loggedOut(session)) return null;
+        return sessions.userId(session);
     }
 
     /** Filled in by the patch: the media id an IgVideoSource plays. */

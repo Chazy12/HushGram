@@ -47,6 +47,8 @@ public final class ResumePlaybackForTests {
         public Runnable duringSeek;
         /** The user ID of the account it was made for, as its UserSession holds it. */
         public String account = ACCOUNT;
+        /** Whether that UserSession's account has signed out since. */
+        public boolean signedOut;
 
         public Player(Video video) {
             this.video = video;
@@ -98,8 +100,10 @@ public final class ResumePlaybackForTests {
         public ResumePlayback.Facts facts(Object player) {
             Player playing = (Player) player;
             Video video = playing.video;
-            return video == null ? null
-                    : ResumePlayback.factsOf(ResumePlayback.ownedKey(playing.account, video.id), video.product, video.sponsored);
+            if (video == null) return null;
+            Session session = playing.account == null ? null : new Session(playing.account, playing.signedOut);
+            String owner = ResumePlayback.owner(session, SESSIONS);
+            return ResumePlayback.factsOf(ResumePlayback.ownedKey(owner, video.id), video.product, video.sponsored);
         }
 
         @Override

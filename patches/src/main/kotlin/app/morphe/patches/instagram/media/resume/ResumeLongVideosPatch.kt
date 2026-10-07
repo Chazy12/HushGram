@@ -84,8 +84,9 @@ private const val OBJECT = "Ljava/lang/Object;"
  * sponsored flag. The extension decides the rest; see its ResumePlayback.
  *
  * UserSession's completeEndSession tells the extension when an account's session ends, at an
- * account switch or a sign-out, with stubs for the session's user ID and its isLoggedOut flag, so
- * the extension drops that account's waiting resumes and, at a sign-out, its points.
+ * account switch or a sign-out, with stubs for the player's session, that session's user ID and its
+ * isLoggedOut flag, so the extension drops that account's waiting resumes and, at a sign-out, its
+ * points, and a signed-out session's players save nothing as they let go.
  *
  * Everything is found before anything changes, so a build that differs stops the patch naming
  * what it couldn't find, and nothing is half done.
@@ -337,7 +338,7 @@ private class ResumeStubs(
     val productType: MutableMethod,
     val sponsored: MutableMethod,
     val seekPlayer: MutableMethod,
-    val accountId: MutableMethod,
+    val playerSession: MutableMethod,
     val sessionUserId: MutableMethod,
     val sessionLoggedOut: MutableMethod,
 ) {
@@ -384,18 +385,11 @@ private class ResumeStubs(
                 return p0
             """,
         )
-        // Each way out returns on its own. Joined, a session and a String in p0 would merge to
-        // Object, and ART rejects a class that answers that where a String is declared.
-        accountId.addInstructionsWithLabels(
+        playerSession.addInstructionsWithLabels(
             0,
             """
                 check-cast p0, $player
                 iget-object p0, p0, ${found.session}
-                if-eqz p0, :none
-                iget-object p0, p0, ${found.userId}
-                return-object p0
-                :none
-                const/4 p0, 0x0
                 return-object p0
             """,
         )
@@ -444,7 +438,7 @@ private fun BytecodePatchContext.resumeStubs(): ResumeStubs {
         productType = stub("productType", listOf(OBJECT), OBJECT),
         sponsored = stub("sponsored", listOf(OBJECT), "Z"),
         seekPlayer = stub("seekPlayer", listOf(OBJECT, "I", "Z", "Z"), "Z"),
-        accountId = stub("accountId", listOf(OBJECT), STRING),
+        playerSession = stub("playerSession", listOf(OBJECT), OBJECT),
         sessionUserId = stub("sessionUserId", listOf(OBJECT), STRING),
         sessionLoggedOut = stub("sessionLoggedOut", listOf(OBJECT), "Z"),
     )
