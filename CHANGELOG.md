@@ -172,7 +172,8 @@ Every HushGram release, newest first.
 
 * **Tooling:** Verification fixtures find the compiler beside the selected Java executable when Java comes from PATH.
 
-* **Instagram:** Hide the Repost button covers another Feed layout and rows that skipped the hide check. Reused rows restore their previous state when you turn the switch off or pause HushGram. Share stays in place.
+* **Instagram:** Hide the Repost button stays hidden in the feed. The button used to go away and then come back about half a second later, because Instagram redraws each post's buttons from a saved state that still said the post could be reposted. That state now says no from the moment it's made, so a redraw, a refresh or scrolling back can't bring the button back. It also covers another Feed layout and rows that skipped the hide check, and reused rows restore their previous state when you turn the switch off or pause HushGram. Share stays in place. Reported in #69.
+* **Instagram:** Downloads work on a photo that plays music in the Reels viewer (Explore, search and Suggested). Download there used to say "Download failed" because the item has no video file. Its menu now has two rows instead: Download as photo saves the picture at its largest size, and Download as video makes an MP4 of the picture with its music, saved to Movies/Instagram. A photo without music in the same viewer saves with plain Download. Reported in #71.
 
 * **Tooling:** Advisory checks now hold unread or conflicting severity for review, including CVSS 4 beside a low label. Package ratings stay tied to the queried dependency and version, and aliases retain the strongest evidence. Malformed, repeated or whitespace-terminated CVSS 3 metrics are refused. Known HIGH and CRITICAL ratings remain visible beside unread evidence.
 
