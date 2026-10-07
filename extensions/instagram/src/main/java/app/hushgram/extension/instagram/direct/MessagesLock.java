@@ -31,6 +31,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.RequiresApi;
+
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
@@ -232,7 +234,7 @@ public final class MessagesLock {
         if (Notification.CATEGORY_MESSAGE.equals(notification.category)) return true;
         Bundle extras = notification.extras;
         if (extras != null && extras.containsKey(Notification.EXTRA_MESSAGES)) return true;
-        String channel = Build.VERSION.SDK_INT >= 26 ? notification.getChannelId() : null;
+        String channel = notification.getChannelId();
         return channel != null && channel.startsWith("ig_direct") && !channel.contains("video_chat");
     }
 
@@ -242,9 +244,7 @@ public final class MessagesLock {
      * buttons, and the conversation it belongs to, which Android would show with the sender's name.
      */
     static Notification hide(Context context, Notification original) {
-        Notification.Builder builder = Build.VERSION.SDK_INT >= 26
-                ? new Notification.Builder(context, original.getChannelId())
-                : new Notification.Builder(context);
+        Notification.Builder builder = new Notification.Builder(context, original.getChannelId());
         builder.setSmallIcon(original.getSmallIcon())
                 .setContentTitle(appName(context))
                 .setContentText(L10n.t("New message"))
@@ -261,22 +261,10 @@ public final class MessagesLock {
                 .setColor(original.color)
                 .setNumber(original.number)
                 .setVisibility(Notification.VISIBILITY_PRIVATE);
-        if (Build.VERSION.SDK_INT >= 26) {
-            builder.setTimeoutAfter(original.getTimeoutAfter())
-                    .setGroupAlertBehavior(original.getGroupAlertBehavior())
-                    .setBadgeIconType(original.getBadgeIconType());
-        } else {
-            setLegacyAlerts(builder, original);
-        }
+        builder.setTimeoutAfter(original.getTimeoutAfter())
+                .setGroupAlertBehavior(original.getGroupAlertBehavior())
+                .setBadgeIconType(original.getBadgeIconType());
         return builder.build();
-    }
-
-    @SuppressWarnings("deprecation")
-    private static void setLegacyAlerts(Notification.Builder builder, Notification original) {
-        builder.setPriority(original.priority)
-                .setDefaults(original.defaults)
-                .setSound(original.sound)
-                .setVibrate(original.vibrate);
     }
 
     private static String appName(Context context) {
@@ -540,9 +528,10 @@ public final class MessagesLock {
 
     /** Android 13 and up: an open inbox or chat stays out of the recent apps picture. */
     private static void keepOutOfRecents(Activity activity, boolean keepOut) {
-        if (Build.VERSION.SDK_INT < 33 || Boolean.valueOf(keepOut).equals(keptOutOfRecents)) return;
-        keptOutOfRecents = keepOut;
-        activity.setRecentsScreenshotEnabled(!keepOut);
+        if (Build.VERSION.SDK_INT >= 33 && !Boolean.valueOf(keepOut).equals(keptOutOfRecents)) {
+            keptOutOfRecents = keepOut;
+            activity.setRecentsScreenshotEnabled(!keepOut);
+        }
     }
 
     // ---------------------------------------------------------------- asking the phone's lock
@@ -590,6 +579,11 @@ public final class MessagesLock {
         }
     }
 
+    /**
+     * Android 10 and up ask over Instagram. Android 10 has only the older way to take the phone's
+     * own lock as well, and Android 9 never comes here: it opens the phone's lock screen check.
+     */
+    @RequiresApi(29)
     @SuppressWarnings("deprecation")
     private static void prompt(Activity activity, Runnable confirmed, Runnable notConfirmed) {
         BiometricPrompt.Builder builder = new BiometricPrompt.Builder(activity)
