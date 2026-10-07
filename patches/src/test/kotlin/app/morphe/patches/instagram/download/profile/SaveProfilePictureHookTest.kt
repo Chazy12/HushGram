@@ -87,7 +87,7 @@ class SaveProfilePictureHookTest {
         assertEquals("$SHEET->add(${ROW_ADDER_PARAMETERS.joinToString("")})V", (adds as Instruction).referenceText())
         assertEquals(6, adds.registerCount)
         assertEquals("no icon, as the newer menu's own rows", -1, stub.literal(adds.startRegister + 4))
-        assertEquals("the usual text color", 1, stub.literal(adds.startRegister + 5))
+        assertEquals("the plain text color, not Report's red", 0, stub.literal(adds.startRegister + 5))
         assertEquals("the stub says the row went in", Opcode.RETURN, stub.last().opcode)
     }
 
@@ -161,8 +161,11 @@ class SaveProfilePictureHookTest {
                 }
                 assertEquals("${bundle.name}: one offer per menu", 2, host.instructions().count { it.referenceText() == OFFER_PICTURE })
                 val stub = context.method(PROFILE_PICTURE, ADD_ROW_STUB).instructions()
+                val adds = stub.single { it.opcode == Opcode.INVOKE_VIRTUAL_RANGE }
                 assertEquals("${bundle.name}: the stub's adder", menus.sheetType,
-                    (stub.single { it.opcode == Opcode.INVOKE_VIRTUAL_RANGE }.reference() as com.android.tools.smali.dexlib2.iface.reference.MethodReference).definingClass)
+                    (adds.reference() as com.android.tools.smali.dexlib2.iface.reference.MethodReference).definingClass)
+                assertEquals("${bundle.name}: the plain text color, not Report's red", 0,
+                    stub.literal((adds as RegisterRangeInstruction).startRegister + 5))
                 for (bridge in PICTURE_BRIDGES) {
                     assertEquals("${bundle.name}: $bridge", Opcode.CHECK_CAST, context.method(INSTAGRAM_MEDIA, bridge).instructions().first().opcode)
                 }

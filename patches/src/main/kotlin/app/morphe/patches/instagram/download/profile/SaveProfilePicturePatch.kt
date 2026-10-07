@@ -201,7 +201,8 @@ internal fun BytecodePatchContext.findProfileMenus(): ProfileMenus {
 /** Only called once [findProfileMenus] found everything. */
 internal fun BytecodePatchContext.applyProfileMenus(menus: ProfileMenus) {
     val adder = "${menus.sheetType}->${menus.adder.name}(${ROW_ADDER_PARAMETERS.joinToString("")})V"
-    // Six locals for the adder's arguments in a row, then the stub's four parameters.
+    // Six locals for the adder's arguments in a row, then the stub's four parameters. No icon (-1), and
+    // false for the plain text color: true draws the row in the red Instagram gives Report.
     replace(stub(), 10, """
         check-cast p0, ${menus.sheetType}
         move-object v0, p0
@@ -209,7 +210,7 @@ internal fun BytecodePatchContext.applyProfileMenus(menus: ProfileMenus) {
         move-object v2, p2
         move-object v3, p3
         const/4 v4, -0x1
-        const/4 v5, 0x1
+        const/4 v5, 0x0
         invoke-virtual/range { v0 .. v5 }, $adder
         const/4 v0, 0x1
         return v0
