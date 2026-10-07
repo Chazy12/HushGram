@@ -100,6 +100,7 @@ public enum PatchFamily {
     PROFILE_HIGHLIGHTS(FamilyNames.PROFILE_HIGHLIGHTS, "profileHighlights", null, Settings.HIDE_HIGHLIGHTS),
     COMMENT_COPY(FamilyNames.COMMENT_COPY, "commentCopy", null, Settings.COPY_COMMENTS),
     COMMENT_PHOTO(FamilyNames.COMMENT_PHOTO, "commentPhoto", null, Settings.SAVE_COMMENT_PHOTOS),
+    PROFILE_PICTURE(FamilyNames.PROFILE_PICTURE, "profilePicture", null, Settings.SAVE_PROFILE_PICTURES),
     HIDE_COMMENTS(FamilyNames.HIDE_COMMENTS, "hideComments", null, Settings.HIDE_COMMENTS),
     REEL_DECLUTTER(FamilyNames.REEL_DECLUTTER, "reelDeclutter", null, Settings.HIDE_REEL_FOLLOW_BUTTON,
             Settings.HIDE_REEL_CHIPS, Settings.HIDE_REEL_SOCIAL_FOOTER),

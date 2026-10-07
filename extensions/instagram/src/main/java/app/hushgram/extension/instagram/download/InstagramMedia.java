@@ -114,6 +114,31 @@ public final class InstagramMedia {
         return 0;
     }
 
+    /** A User's {@code profile_pic_url}: the picture the profile shows, one size, read as a candidate. */
+    public static Object profilePicture(Object user) {
+        return null;
+    }
+
+    /** A User's {@code hd_profile_pic_url_info}: the picture's full size, when Instagram has it. */
+    public static Object fullSizeProfilePicture(Object user) {
+        return null;
+    }
+
+    /** The full size picture's address. */
+    public static String profilePictureUrl(Object info) {
+        return null;
+    }
+
+    /** The full size picture's width in pixels, or 0 as built. */
+    public static int profilePictureWidth(Object info) {
+        return 0;
+    }
+
+    /** The full size picture's height in pixels, or 0 as built. */
+    public static int profilePictureHeight(Object info) {
+        return 0;
+    }
+
     /**
      * A Media's {@code music_metadata}, where a photo post keeps its music. Its type is one of
      * Instagram's with a single getter of the music, which {@link #metadataMusic} calls.

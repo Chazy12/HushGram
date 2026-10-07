@@ -27,6 +27,9 @@ internal const val PANDO_IMAGE_INFO = "Lcom/instagram/model/mediasize/ImmutableP
 /** One size of a picture. Its getters keep their names. */
 internal const val IMAGE_URL = "Lcom/instagram/common/typedurl/ImageUrl;"
 
+/** An account's full size picture. Its getters keep their names too. */
+internal const val PROFILE_PICTURE_INFO = "Lcom/instagram/api/schemas/ProfilePicUrlInfo;"
+
 /** The extension's bridges to Instagram's media model, whose bodies [mediaBridges] and [imageBridges] write. */
 internal const val INSTAGRAM_MEDIA = "$EXTENSION_PACKAGE/download/InstagramMedia;"
 
@@ -113,6 +116,34 @@ internal fun BytecodePatchContext.imageBridges(patch: String): () -> Unit {
         Bridge("candidateUrl", IMAGE_URL, kept("getUrl", "Ljava/lang/String;")),
         Bridge("candidateWidth", IMAGE_URL, kept("getWidth", "I"), primitive = true),
         Bridge("candidateHeight", IMAGE_URL, kept("getHeight", "I"), primitive = true),
+    ))
+}
+
+/**
+ * The same for an account's picture: the one its profile shows, read as a picture's candidate, and
+ * its full size, read through the interface both of Instagram's classes for it implement, whose
+ * getters keep their names. The account's username names the save.
+ */
+internal fun BytecodePatchContext.profilePictureBridges(patch: String): () -> Unit {
+    val shown = pandoGetter(patch, USER, "profile_pic_url", IMAGE_URL)
+    val full = pandoGetter(patch, USER, "hd_profile_pic_url_info", PROFILE_PICTURE_INFO)
+    val username = pandoGetter(patch, USER, "username", "Ljava/lang/String;")
+    fun kept(type: String, name: String, returns: String): String {
+        if (anInterface(patch, type).methods.none { it.name == name && it.parameterTypes.isEmpty() && it.returnType == returns }) {
+            throw PatchException("$patch: $type has no $name()$returns")
+        }
+        return "invoke-interface {p0}, $type->$name()$returns"
+    }
+    return bridgeWriter(patch, listOf(
+        Bridge("profilePicture", USER, virtual(shown)),
+        Bridge("fullSizeProfilePicture", USER, virtual(full)),
+        Bridge("username", USER, virtual(username)),
+        Bridge("profilePictureUrl", PROFILE_PICTURE_INFO, kept(PROFILE_PICTURE_INFO, "getUrl", "Ljava/lang/String;")),
+        Bridge("profilePictureWidth", PROFILE_PICTURE_INFO, kept(PROFILE_PICTURE_INFO, "getWidth", "I"), primitive = true),
+        Bridge("profilePictureHeight", PROFILE_PICTURE_INFO, kept(PROFILE_PICTURE_INFO, "getHeight", "I"), primitive = true),
+        Bridge("candidateUrl", IMAGE_URL, kept(IMAGE_URL, "getUrl", "Ljava/lang/String;")),
+        Bridge("candidateWidth", IMAGE_URL, kept(IMAGE_URL, "getWidth", "I"), primitive = true),
+        Bridge("candidateHeight", IMAGE_URL, kept(IMAGE_URL, "getHeight", "I"), primitive = true),
     ))
 }
 

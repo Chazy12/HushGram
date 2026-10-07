@@ -1013,3 +1013,8 @@ once-call Lapp/hushgram/extension/instagram/feed/LikeConfirm;->hold(Ljava/lang/O
 # the layout's listener field), once, right after the read. Left out, a pull never asks.
 # AskBeforeRefreshHookTest checks where it lands on each declared build.
 once-call Lapp/hushgram/extension/instagram/feed/RefreshConfirm;->listener(Landroid/view/View;Ljava/lang/Object;Landroid/view/animation/Animation$AnimationListener;)Ljava/lang/Object; in instance (Landroid/view/animation/Animation;)V holding LX/05VS;->A0D:LX/0Jbl;
+# Save profile picture hands ProfilePicture.offer the sheet, the account and the context right
+# before each of the profile menu's two sheets is shown (09D9.A02 on 450), the one method loading
+# both helper names. Left out, the menu never gets the row; a third call, or one elsewhere, isn't
+# what the patch wrote. SaveProfilePictureHookTest checks where both land on each declared build.
+once-call Lapp/hushgram/extension/instagram/download/ProfilePicture;->offer(Ljava/lang/Object;Ljava/lang/Object;Landroid/content/Context;)V in instance (Landroid/view/View;)V sites 2 holding UserOptionsBottomSheetOverflowHelper UserOptionsOverflowHelper

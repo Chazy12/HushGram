@@ -205,6 +205,11 @@ public final class SettingsStatus {
         return false;
     }
 
+    /** Rewritten by the Save profile picture patch. */
+    public static boolean profilePicture() {
+        return false;
+    }
+
     public static boolean hideComments() {
         return false;
     }

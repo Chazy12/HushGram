@@ -827,7 +827,7 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
 
         // Any download patch brings this section, so each one that saves joins this condition.
         if (build.contains(PatchFamily.REEL_DOWNLOAD) || build.contains(PatchFamily.STORY_DOWNLOAD)
-                || build.contains(PatchFamily.VIDEO_DOWNLOAD)) {
+                || build.contains(PatchFamily.VIDEO_DOWNLOAD) || build.contains(PatchFamily.PROFILE_PICTURE)) {
             PreferenceCategory downloads = category(screen, L10n.t("Downloads"));
             this.downloads = downloads;
             if (build.contains(PatchFamily.VIDEO_DOWNLOAD)) {
@@ -837,6 +837,11 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                 downloads.addPreference(toggle(context, Settings.DOWNLOAD_PHOTOS, L10n.t("Download feed photos"),
                         L10n.t("The same Download on a photo post, and on a carousel showing a photo. Saves the largest "
                                 + "size Instagram has.")));
+            }
+            if (build.contains(PatchFamily.PROFILE_PICTURE)) {
+                downloads.addPreference(toggle(context, Settings.SAVE_PROFILE_PICTURES, L10n.t("Save profile picture"),
+                        L10n.t("Adds Save profile picture to the menu on someone's profile. Saves their picture at the "
+                                + "largest size Instagram has.")));
             }
             if (build.contains(PatchFamily.REEL_DOWNLOAD) || build.contains(PatchFamily.VIDEO_DOWNLOAD)) {
                 downloads.addPreference(toggle(context, Settings.OPEN_IN_PLAYER, L10n.t("Open in another player"),
@@ -1083,7 +1088,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     belongs |= family == PatchFamily.MESSAGES_LOCK && Settings.LOCK_AGAIN.key.equals(key);
                     belongs |= family == PatchFamily.RESUME_LONG_VIDEOS && row == clearPositions;
                     belongs |= (family == PatchFamily.REEL_DOWNLOAD || family == PatchFamily.STORY_DOWNLOAD
-                            || family == PatchFamily.VIDEO_DOWNLOAD) && (Settings.DOWNLOAD_QUALITY.key.equals(key)
+                            || family == PatchFamily.VIDEO_DOWNLOAD || family == PatchFamily.PROFILE_PICTURE)
+                            && (Settings.DOWNLOAD_QUALITY.key.equals(key)
                             || Settings.SAVE_FOLDER.key.equals(key) || Settings.FILENAME_TEMPLATE.key.equals(key)
                             || Settings.DOWNLOAD_COMPATIBLE.key.equals(key));
                     belongs |= family == PatchFamily.RESTORE_TRUST && L10n.t("Re-signed build fix").equals(row.getTitle());

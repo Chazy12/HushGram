@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** New patch, Save profile picture, in simple mode with its switch off. Turn it on under Downloads and the menu on someone's profile gets Save profile picture, which saves their picture at the largest size Instagram has.
+
 * **Instagram:** Resume long videos forgets an account's places as soon as that account signs out or is removed from Instagram, and a resume that was about to happen when you switch accounts is dropped, so a video on the new account never jumps to the old account's place. Places of an account you only switched away from stay for when you're back.
 
 * **Instagram:** Name saves by account and post time, a new switch under Downloads that starts off. With it on, every photo and video you save is named for the account that posted it and the time the post went up, like `username_20261005_143012`, so an account's saves sort by date. Each carousel page gets its number on the end, and saving the same thing twice adds the time of the second save instead of overwriting or piling up numbered copies. A save that doesn't know who posted or when keeps its usual name. Asked for in #20.

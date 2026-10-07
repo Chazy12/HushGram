@@ -1,0 +1,178 @@
+/*
+ * Copyright 2026 HushGram contributors
+ * https://github.com/SysAdminDoc/HushGram
+ */
+package app.hushgram.extension.instagram.download;
+
+import android.content.Context;
+import android.view.View;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import app.hushgram.extension.instagram.settings.FamilyNames;
+import app.hushgram.extension.instagram.settings.Settings;
+import app.hushgram.extension.shared.L10n;
+import app.hushgram.extension.shared.Utils;
+import app.hushgram.extension.shared.diagnostics.HookStatus;
+
+/**
+ * Save profile picture: a row at the end of the menu on someone's profile that saves their picture
+ * at the largest size Instagram has, through the same save as a post's photo.
+ *
+ * <p>Instagram builds that menu's sheet and shows it in one method. Right before it shows, the
+ * patch hands {@link #offer} the sheet, the profile's account and the menu's context. The sizes are
+ * read then, so the row saves the picture the menu was opened on, and the row goes in through
+ * {@link #addRow}, whose body the patch writes as a call to the sheet's own adder of a plain row.
+ * Instagram draws it like its own rows and closes the sheet when it's tapped.
+ */
+public final class ProfilePicture {
+    private ProfilePicture() {
+    }
+
+    /** Instagram's reads and the sheet's row adder, each one native call. */
+    interface Native {
+        boolean addRow(Object sheet, Context context, View.OnClickListener listener, String label);
+        /** The account's full size picture, its {@code hd_profile_pic_url_info}, or null. */
+        Object fullSize(Object user);
+        String fullSizeUrl(Object info);
+        int fullSizeWidth(Object info);
+        int fullSizeHeight(Object info);
+        /** The picture Instagram shows on the profile, its {@code profile_pic_url}, or null. */
+        Object shown(Object user);
+        String shownUrl(Object image);
+        int shownWidth(Object image);
+        int shownHeight(Object image);
+        String username(Object user);
+    }
+
+    interface Save {
+        boolean photo(Context context, List<MediaSave.Rendition> sizes, PostDetails details);
+    }
+
+    private static final Native NATIVE = new Native() {
+        public boolean addRow(Object sheet, Context context, View.OnClickListener listener, String label) {
+            return ProfilePicture.addRow(sheet, context, listener, label);
+        }
+        public Object fullSize(Object user) { return InstagramMedia.fullSizeProfilePicture(user); }
+        public String fullSizeUrl(Object info) { return InstagramMedia.profilePictureUrl(info); }
+        public int fullSizeWidth(Object info) { return InstagramMedia.profilePictureWidth(info); }
+        public int fullSizeHeight(Object info) { return InstagramMedia.profilePictureHeight(info); }
+        public Object shown(Object user) { return InstagramMedia.profilePicture(user); }
+        public String shownUrl(Object image) { return InstagramMedia.candidateUrl(image); }
+        public int shownWidth(Object image) { return InstagramMedia.candidateWidth(image); }
+        public int shownHeight(Object image) { return InstagramMedia.candidateHeight(image); }
+        public String username(Object user) { return InstagramMedia.username(user); }
+    };
+
+    private static final Save SAVE = MediaSave::savePictureBySize;
+
+    // What the diagnostic report counts when the menu opens. Fixed text: nothing read from the
+    // account goes in.
+    static final String FULL_SIZE = "full size picture";
+    static final String SHOWN_ONLY = "shown size only";
+    static final String NO_PICTURE = "no profile picture";
+    static final String NOT_ADDED = "row not added";
+
+    /**
+     * Adds Save profile picture to [sheet], the menu on [user]'s profile, when the switch is on and
+     * the account has a picture. [context] is the menu's. Never throws.
+     */
+    public static void offer(Object sheet, Object user, Context context) {
+        offer(sheet, user, context, NATIVE, SAVE);
+    }
+
+    static void offer(Object sheet, Object user, Context context, Native reads, Save save) {
+        try {
+            HookStatus.invoked(FamilyNames.PROFILE_PICTURE);
+            if (sheet == null || user == null || context == null || !on()) return;
+            List<MediaSave.Rendition> sizes = sizes(user, reads);
+            if (sizes.isEmpty()) return;
+            String owner = reads.username(user);
+            Row row = new Row(context, sizes, owner, save);
+            if (!reads.addRow(sheet, context, row, L10n.t(context, "Save profile picture"))) {
+                HookStatus.counted(FamilyNames.PROFILE_PICTURE, NOT_ADDED);
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.PROFILE_PICTURE, "profile menu", failure);
+        }
+    }
+
+    /**
+     * The sizes of [user]'s picture with an address on Meta's media servers: the full size one when
+     * Instagram has it, and the one the profile shows, so the save keeps the larger. Unmodifiable,
+     * empty when there's neither.
+     */
+    static List<MediaSave.Rendition> sizes(Object user, Native reads) {
+        List<MediaSave.Rendition> sizes = new ArrayList<>(2);
+        Object full = reads.fullSize(user);
+        if (full != null) add(sizes, reads.fullSizeUrl(full), reads.fullSizeWidth(full), reads.fullSizeHeight(full));
+        boolean fullSize = !sizes.isEmpty();
+        Object shown = reads.shown(user);
+        if (shown != null) add(sizes, reads.shownUrl(shown), reads.shownWidth(shown), reads.shownHeight(shown));
+        HookStatus.counted(FamilyNames.PROFILE_PICTURE, fullSize ? FULL_SIZE : sizes.isEmpty() ? NO_PICTURE : SHOWN_ONLY);
+        return Collections.unmodifiableList(sizes);
+    }
+
+    private static void add(List<MediaSave.Rendition> sizes, String url, int width, int height) {
+        if (url == null || MediaUrlPolicy.shapeRefusal(url) != null) return;
+        for (MediaSave.Rendition kept : sizes) {
+            if (kept.url.equals(url)) return;
+        }
+        sizes.add(new MediaSave.Rendition(url, Math.max(width, 0), Math.max(height, 0), 0));
+    }
+
+    static boolean on() {
+        try {
+            return Utils.settingsReady() && Settings.SAVE_PROFILE_PICTURES.get();
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.PROFILE_PICTURE, "profile picture switch", t);
+            return false;
+        }
+    }
+
+    /**
+     * Adds a plain row labeled [label] to [sheet], one of Instagram's menu sheets, that runs
+     * [listener] when tapped. The patch writes the body as the sheet's own call. Answers whether the
+     * row went in, which as built it never does.
+     */
+    @SuppressWarnings("unused")
+    public static boolean addRow(Object sheet, Context context, View.OnClickListener listener, String label) {
+        return false;
+    }
+
+    /** The row: the sizes read when the menu opened, and the menu's context, held as long as the sheet is. */
+    static final class Row implements View.OnClickListener {
+        final Context context;
+        final List<MediaSave.Rendition> sizes;
+        final String owner;
+        final Save save;
+
+        Row(Context context, List<MediaSave.Rendition> sizes, String owner, Save save) {
+            this.context = context;
+            this.sizes = sizes;
+            this.owner = owner;
+            this.save = save;
+        }
+
+        /** Instagram may tap it with no view, from a sheet drawn without one. */
+        @Override public void onClick(View view) {
+            try {
+                if (!on()) return;
+                if (!save.photo(context, sizes, PostDetails.of(null, owner, null))) failed(context);
+            } catch (Throwable failure) {
+                HookStatus.threw(FamilyNames.PROFILE_PICTURE, "save profile picture", failure);
+                failed(context);
+            }
+        }
+    }
+
+    /** Download failed, in the phone's language. Never throws. */
+    private static void failed(Context context) {
+        try {
+            Context application = context == null ? null : context.getApplicationContext();
+            if (application != null) Feedback.show(application, L10n.t(application, "Download failed"), true);
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.PROFILE_PICTURE, "save feedback", t);
+        }
+    }
+}

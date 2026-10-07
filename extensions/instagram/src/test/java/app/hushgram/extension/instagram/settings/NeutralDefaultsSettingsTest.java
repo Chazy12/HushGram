@@ -52,7 +52,7 @@ public class NeutralDefaultsSettingsTest {
 
     @Before public void prepare() {
         RuntimeEnvironment.getApplication().getApplicationInfo().targetSdkVersion = 36;
-        initiallyOff = new BooleanSetting[]{Settings.ASK_BEFORE_CALL, Settings.COPY_COMMENTS, Settings.SAVE_COMMENT_PHOTOS, Settings.HIDE_COMMENTS, Settings.HIDE_SHARE_BUTTON, Settings.CHANGE_LIKE_ANIMATION,
+        initiallyOff = new BooleanSetting[]{Settings.ASK_BEFORE_CALL, Settings.COPY_COMMENTS, Settings.SAVE_COMMENT_PHOTOS, Settings.SAVE_PROFILE_PICTURES, Settings.HIDE_COMMENTS, Settings.HIDE_SHARE_BUTTON, Settings.CHANGE_LIKE_ANIMATION,
                 Settings.ASK_BEFORE_LIKE, Settings.ASK_BEFORE_REFRESH,
                 Settings.HIDE_HIGHLIGHTS, Settings.HIDE_NOTES_ROW, Settings.HIDE_INSTANTS,
                 Settings.STOP_SWIPE_TO_CREATE, Settings.STOP_REELS_SCROLLING, Settings.REEL_CAP, Settings.FULL_RESOLUTION_PHOTOS, Settings.ASK_FOR_LARGER_PHOTOS,
@@ -65,7 +65,7 @@ public class NeutralDefaultsSettingsTest {
         restoreDefaults();
         BaseSettings.SAFE_MODE.save(false);
         Settings.SIGN_IN_NOTICE_HIDDEN.save(true);
-        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.ASK_BEFORE_CALL, PatchFamily.COMMENT_COPY, PatchFamily.COMMENT_PHOTO, PatchFamily.HIDE_COMMENTS, PatchFamily.HIDE_SHARE_BUTTON, PatchFamily.LIKE_ANIMATION,
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.ASK_BEFORE_CALL, PatchFamily.COMMENT_COPY, PatchFamily.COMMENT_PHOTO, PatchFamily.PROFILE_PICTURE, PatchFamily.HIDE_COMMENTS, PatchFamily.HIDE_SHARE_BUTTON, PatchFamily.LIKE_ANIMATION,
                 PatchFamily.ASK_BEFORE_LIKE, PatchFamily.ASK_BEFORE_REFRESH,
                 PatchFamily.PROFILE_HIGHLIGHTS, PatchFamily.NOTES_ROW, PatchFamily.INSTANTS, PatchFamily.SWIPE_TO_CREATE,
                 PatchFamily.REEL_SCROLLING, PatchFamily.STORY_RING, PatchFamily.FULL_RESOLUTION, PatchFamily.HOME_FEED,

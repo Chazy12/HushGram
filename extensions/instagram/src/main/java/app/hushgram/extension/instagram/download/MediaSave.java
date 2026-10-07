@@ -311,6 +311,39 @@ public final class MediaSave {
         }
     }
 
+    /**
+     * Save a picture by the sizes the app states for it: the largest of [renditions] on Meta's
+     * media servers. For a picture whose address names its size, such as a profile picture, which
+     * {@link #savePhoto}'s ranking takes for a thumbnail's and turns down. A rendition with no
+     * stated size loses to any with one.
+     *
+     * @return whether a save started. Never throws.
+     */
+    public static boolean savePictureBySize(Context context, List<Rendition> renditions, PostDetails details) {
+        try {
+            Context safe = ready(context);
+            if (safe == null) return false;
+            List<Rendition> found = metaOnly(usable(renditions));
+            Rendition chosen = null;
+            for (Rendition rendition : found) {
+                if (chosen == null || pixels(rendition) > pixels(chosen)) chosen = rendition;
+            }
+            if (chosen == null) {
+                failure(() -> "nothing to save: no picture address on Meta's media servers", null);
+                return false;
+            }
+            saving(false, chosen, found, null, Dash.SINGLE_FILE, null);
+            return start(safe, false, details, fileJob(safe, chosen.url, Downloader.Kind.IMAGE)) != null;
+        } catch (Throwable t) {
+            failure(() -> "the picture save could not start", t);
+            return false;
+        }
+    }
+
+    private static long pixels(Rendition rendition) {
+        return (long) rendition.width * rendition.height;
+    }
+
     // ---------------------------------------------------------------- internals
 
     /** The renditions whose address {@code HttpURLConnection} can fetch at all. Never null. */

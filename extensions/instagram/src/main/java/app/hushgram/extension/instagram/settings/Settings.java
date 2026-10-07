@@ -528,6 +528,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_save_comment_photos", FALSE);
 
     /**
+     * The menu on someone's profile gets Save profile picture
+     * ({@link app.hushgram.extension.instagram.download.ProfilePicture}). Off until enabled.
+     */
+    public static final BooleanSetting SAVE_PROFILE_PICTURES =
+            new BooleanSetting("hushgram_save_profile_pictures", FALSE);
+
+    /**
      * Feed's action rows leave out the Comment button and the comment count
      * ({@link app.hushgram.extension.instagram.feed.CommentsButton}). Read as each row's state is
      * built, so a post already drawn changes the next time Feed draws it. Off to start.

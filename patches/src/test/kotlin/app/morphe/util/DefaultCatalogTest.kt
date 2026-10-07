@@ -46,6 +46,7 @@ import app.morphe.patches.instagram.misc.bottomspace.removeBottomSpacePatch
 import app.morphe.patches.instagram.misc.buildexpiry.removeBuildExpiredPopupPatch
 import app.morphe.patches.instagram.misc.comment.copyCommentPatch
 import app.morphe.patches.instagram.misc.comment.saveCommentPhotoPatch
+import app.morphe.patches.instagram.download.profile.saveProfilePicturePatch
 import app.morphe.patches.instagram.misc.developeroptions.openDeveloperOptionsPatch
 import app.morphe.patches.instagram.misc.externalbrowser.openLinksExternallyPatch
 import app.morphe.patches.instagram.misc.resignedtrust.restoreTrustPatch
@@ -107,6 +108,7 @@ class DefaultCatalogTest {
         allowScreenshotsPatch,
         dontReportScreenshotsPatch,
         saveCommentPhotoPatch,
+        saveProfilePicturePatch,
         stopReelsScrollingPatch,
         stopSwipeToCreatePatch,
         stopTabSwipingPatch,
@@ -171,7 +173,7 @@ class DefaultCatalogTest {
     }
 
     @Test fun initiallyNeutralControlsAreAvailableInSimpleMode() {
-        assertEquals(27, neutral.size)
+        assertEquals(28, neutral.size)
         neutral.forEach { assertEquals(it.name, true, it.use) }
     }
 
@@ -183,7 +185,7 @@ class DefaultCatalogTest {
     @Test fun generatedCatalogMatchesAllReviewedDeclarations() {
         val all = prior + neutral + optIn
         val declarations = all.associate { it.name!! to it.use }
-        assertEquals("every named patch needs one reviewed decision", 72, all.size)
+        assertEquals("every named patch needs one reviewed decision", 73, all.size)
         assertEquals("the review must not name a patch twice", all.size, declarations.size)
         val file = File("patches-list.json").takeIf(File::isFile) ?: File("../patches-list.json")
         val rows = JsonParser.parseString(file.readText()).asJsonObject.getAsJsonArray("patches")
