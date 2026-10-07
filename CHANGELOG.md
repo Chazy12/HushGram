@@ -175,19 +175,19 @@ Every HushGram release, newest first.
 
 * **Instagram:** Patching is quicker. Many patches used to read every one of Instagram's 200,000 classes to find their spot, and now they look it up in the patcher's index first. On a desktop, Hide Meta AI went from 32 seconds to under one, and the patch step for all 48 patches from 147 to 78 seconds. Reported in #60.
 
-* **Instagram:** Keep the reel speed no longer speeds up video ads. After you locked a reel at 2x, Instagram's own reset on the scroll to the next reel handed an ad the kept speed too, and the ad played at 2x. An ad now goes back to normal speed when it starts, and the reels after it still play at your speed. On a test phone the same ad ran twice as fast before the change.
+* **Instagram:** Keep the reel speed no longer speeds up video ads. After you locked a reel at 2x, Instagram's own reset on the scroll to the next reel handed an ad the kept speed too, and the ad played at 2x. An ad now goes back to normal speed when it starts, and the reels after it still play at your speed. Measured on a phone, the same ad ran twice as fast before the change.
 
 * **Instagram:** Download any video adds Download to the menu on your own posts too, whenever a tap would save the video or photo. Instagram only lists its own Download on posts it allows outside downloads for, some accounts get it in the share sheet instead of the menu, and HushGram's row was only on other people's posts. Reported in #57.
 
-* **Instagram:** Pure black dark mode now reaches the Direct inbox and the Notifications screen, which kept Instagram's near-black gray because they draw from a second color palette the patch didn't change. On a test phone both screens went from the gray to pure black, and the tab bar icons stayed visible. Reported in #51 and #58.
+* **Instagram:** Pure black dark mode now reaches the Direct inbox and the Notifications screen, which kept Instagram's near-black gray because they draw from a second color palette the patch didn't change. On a phone both screens went from the gray to pure black, and the tab bar icons stayed visible. Reported in #51 and #58.
 
 * **Instagram:** Replaced navigation-tab listeners can no longer open settings or call an old native action. Each callback belongs to its current button binding, including tabs with no native long-press handler.
 
 * **Instagram:** Settings backups now include the chosen navigation tab for opening HushGram. Import reports when the change needs a restart, and Undo preserves any choice made after the import. Older backups leave this choice unchanged.
 
-* **Instagram:** Verified About and saved diagnostic reports on two Galaxy S22 builds sharing version 0.0.5. Each showed its own production identity matching the bundle and external receipt, with installed patch facts and no account identifiers, media URLs or tokens in either report.
+* **Instagram:** About and the saved diagnostic report tell two builds with the same version number apart, since each names the exact build it came from. Neither one includes your account, media links or tokens.
 
-* **Instagram:** Settings can be opened by a long press on one chosen navigation tab. The choice starts off and replaces that tab's usual long-press action. Normal taps and other tabs keep their native behavior. Turning it off or pausing restores the native handler. Restart Instagram after changing the chosen tab. Galaxy S22 checks cover Home and Reels, native Home developer options, Off/Pause/Resume, both recovery entries, signed-out routing and the chooser at 200% text in right-to-left layout.
+* **Instagram:** Settings can be opened by a long press on one chosen navigation tab. The choice starts off and replaces that tab's usual long-press action. Normal taps and other tabs keep their native behavior. Turning it off or pausing restores the native handler. Restart Instagram after changing the chosen tab.
 
 * **Instagram:** TalkBack reads each settings switch's name and explanation instead of announcing only its state. Action rows expose their current value or disabled reason too. TalkBack and Switch Access checks cover right-to-left layout, 200% text, paused choices and refusal of stale actions.
 
@@ -207,7 +207,7 @@ Every HushGram release, newest first.
 
 * **Instagram:** Settings import and playback-history Undo follow Android's accessibility timeout and show their deadline. Reopening settings doesn't extend it. Old taps can't undo newer operations, and settings Undo keeps choices changed after the import.
 
-* **Settings:** If the settings page can't open, the dialog keeps an explanation, Retry and Back. Retry removes any partial page, and buttons from an old or closed dialog can't reopen it.
+* **Instagram:** If the settings page can't open, the dialog keeps an explanation, Retry and Back. Retry removes any partial page, and buttons from an old or closed dialog can't reopen it.
 
 * **Tooling:** Verification fixtures find the compiler beside the selected Java executable when Java comes from PATH.
 
