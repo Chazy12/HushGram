@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Open settings with a tab long press works as soon as you pick a tab. Before, the choice saved but only reached the tabs after Instagram restarted, so until then the tab's long press still did what it always had, which looked like the choice hadn't stuck. Reported in #82.
+
 * **Instagram:** Download cover no longer fails with Download failed on a reel whose cover address has its size written into it, which the photo save mistook for a thumbnail. It saves the largest size the reel lists for its cover. Reported in #79, and thanks to @talhaeenss for finding the cause in #81.
 
 * **Instagram:** Download any reel saves every page of a carousel that turns up in Reels, in order. Before, it saved the first page whichever one you were looking at. Download as photo on a carousel with music saves them all too. Reported in #78.

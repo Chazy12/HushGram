@@ -107,6 +107,46 @@ public class NavigationSettingsTest {
         assertEquals(0, stock.get());
     }
 
+    /**
+     * A choice reached the tabs only on the next start, so until then the chosen tab's long press
+     * did what it always had, which read as the choice not saving (#82). It reaches the tabs
+     * already built now, gives the tab it leaves its own long press back, and a tab with none of
+     * its own gains none while nobody chooses it.
+     */
+    @Test public void aChoiceReachesTheTabsAlreadyBuilt() {
+        Settings.NAVIGATION_SETTINGS_TARGET.save(NavigationTarget.OFF);
+        nativeBind(NativeTab.PROFILE, nativeListener);
+        View search = new View(activity);
+        bar.addView(search, new LinearLayout.LayoutParams(60, 60));
+        search.layout(60, 0, 120, 60);
+        NavigationSettings.bind(search, NativeTab.SEARCH);
+        assertFalse("an unchosen tab gained a long press", search.isLongClickable());
+
+        Settings.NAVIGATION_SETTINGS_TARGET.save(NavigationTarget.PROFILE);
+        NavigationSettings.applyChoice();
+        assertFalse(search.isLongClickable());
+        assertTrue(button.performLongClick());
+        assertEquals(0, stock.get());
+        assertEquals(1, shown());
+
+        SettingsEntry.onClosedByUser();
+        activity.getFragmentManager().beginTransaction()
+                .remove(activity.getFragmentManager().findFragmentByTag(SettingsEntry.DIALOG_TAG)).commit();
+        activity.getFragmentManager().executePendingTransactions();
+        Settings.NAVIGATION_SETTINGS_TARGET.save(NavigationTarget.SEARCH);
+        NavigationSettings.applyChoice();
+        assertTrue(button.performLongClick());
+        assertEquals("Profile didn't get its own long press back", 1, stock.get());
+        assertTrue(search.performLongClick());
+        assertEquals(1, shown());
+
+        Settings.NAVIGATION_SETTINGS_TARGET.save(NavigationTarget.OFF);
+        NavigationSettings.applyChoice();
+        assertFalse("a tab with no long press of its own kept one", search.isLongClickable());
+        assertTrue(button.performLongClick());
+        assertEquals(2, stock.get());
+    }
+
     @Test public void offAndUnselectedReturnTheExactNativeListener() {
         Settings.NAVIGATION_SETTINGS_TARGET.save(NavigationTarget.OFF);
         assertSame(nativeListener, NavigationSettings.remember(button, NativeTab.FEED, nativeListener));

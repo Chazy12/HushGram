@@ -34,9 +34,12 @@ import app.hushgram.extension.shared.settings.StringSetting;
  */
 @SuppressWarnings("unused")
 public class Settings extends BaseSettings {
-    /** Navigation listeners are installed at native tab binding, so the choice applies after restart. */
+    /**
+     * Navigation listeners are installed at native tab binding, and a change in settings puts the
+     * choice on the tabs already built ({@link NavigationSettings#applyChoice}), so no restart (#82).
+     */
     public static final EnumSetting<NavigationTarget> NAVIGATION_SETTINGS_TARGET =
-            new EnumSetting<>("hushgram_navigation_settings_target", NavigationTarget.OFF, true);
+            new EnumSetting<>("hushgram_navigation_settings_target", NavigationTarget.OFF, false);
 
     /**
      * HushGram's settings list their categories, and a tap opens one as its own page. Search still

@@ -3293,7 +3293,12 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
     static final class NavigationRow extends ListPreference {
         private String summary;
         NavigationRow(Context context) { super(context); }
-        @Override public void setValue(String value) { super.setValue(value); showSummary(); }
+        /** The tabs take the choice once the setting has it, after this change's own sync (#82). */
+        @Override public void setValue(String value) {
+            super.setValue(value);
+            showSummary();
+            Utils.runOnMainThread(NavigationSettings::applyChoice);
+        }
         void showSummary() {
             NavigationTarget target = NavigationTarget.OFF;
             for (NavigationTarget candidate : NavigationTarget.values()) {
@@ -3302,8 +3307,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             summary = target == NavigationTarget.OFF
                     ? L10n.t("Tab long presses keep Instagram's own action. Choose one to open HushGram instead.")
                     : L10n.f("Long-press %1$s to open HushGram instead of that tab's usual action. "
-                            + "Normal taps and other tabs stay the same. Only tabs your account shows can be used. "
-                            + "Restart Instagram after changing it.", navigationLabel(target));
+                            + "Normal taps and other tabs stay the same. Only tabs your account shows can be used.",
+                            navigationLabel(target));
             setSummary(summary);
         }
         @Override public CharSequence getSummary() { return summary != null ? summary : super.getSummary(); }
