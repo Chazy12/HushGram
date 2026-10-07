@@ -128,6 +128,7 @@ public class ProfilePictureTest {
         assertThrows(UnsupportedOperationException.class, () -> sizes.add(MediaSave.Rendition.of(FULL)));
         assertEquals("someone", named.get(0).owner);
         assertFalse(named.get(0).hasPosted());
+        assertTrue("named as a profile picture", named.get(0).profile);
         assertEquals(Collections.singletonList(FamilyNames.PROFILE_PICTURE
                 + ": invoked 1, 0 found, 0 missing. Counted: full size picture 1"), counted());
     }

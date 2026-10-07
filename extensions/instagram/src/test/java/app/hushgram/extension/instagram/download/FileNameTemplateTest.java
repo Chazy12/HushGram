@@ -908,6 +908,50 @@ public class FileNameTemplateTest {
         assertEquals(4, new MediaSave.Item(false, null, null, page).details.page);
     }
 
+    /**
+     * A profile picture has an account and no post time, so a name by post is the account,
+     * {@code _profile_} and the time of the save. Taken can only mean the same second, so it keeps
+     * the name for MediaStore to number. With no account it gets none, like any other save.
+     */
+    @Test
+    public void aProfilePictureIsNamedForTheAccountAndTheTimeOfTheSave() {
+        PostDetails picture = PostDetails.profilePicture("Stevi Ous");
+        assertTrue(picture.profile);
+        assertEquals("Stevi Ous", picture.owner);
+        assertFalse(picture.hasPosted());
+        assertFalse(full().profile);
+        assertEquals("Stevi Ous_profile_" + STAMP, FileNameTemplate.postName(when(), picture, false));
+        assertEquals("Stevi Ous_profile_" + STAMP, FileNameTemplate.postName(when(), picture, true));
+        assertEquals("Stevi_Ous_profile_" + STAMP,
+                FileNameTemplate.postName(when(), PostDetails.profilePicture(" Stevi/Ous. "), false));
+        assertSame(PostDetails.NONE, PostDetails.profilePicture(null));
+        assertNull(FileNameTemplate.postName(when(), PostDetails.profilePicture(" .. "), false));
+        assertEquals("PostDetails(id unknown, poster known, posted unknown, profile picture)", picture.toString());
+
+        String emoji = new String(Character.toChars(0x1F3AC));
+        String name = FileNameTemplate.postName(when(), PostDetails.profilePicture(repeat(emoji, 80)), false);
+        assertTrue(name, name.endsWith("_profile_" + STAMP));
+        assertTrue(name, name.startsWith(emoji));
+        assertTrue(name, name.getBytes(StandardCharsets.UTF_8).length <= FileNameTemplate.MAX_NAME_BYTES);
+    }
+
+    /** Through to the gallery: on, the account's name; off, the IG_IMG_ name every photo gets. */
+    @Test
+    @Config(sdk = 37)
+    public void aSavedProfilePictureCarriesTheAccountWithNamesByPostOn() throws Exception {
+        FolderGallery gallery = folderGallery();
+        writableBoth(1, 2);
+        Settings.SAVE_NAME_BY_POST.save(true);
+        savePhoto(new MediaStoreWriter(context, false, PostDetails.profilePicture("Stevi Ous")));
+        Settings.SAVE_NAME_BY_POST.save(false);
+        savePhoto(new MediaStoreWriter(context, false, PostDetails.profilePicture("Stevi Ous")));
+
+        assertTrue(nameOf(gallery.rows.get(1L)), nameOf(gallery.rows.get(1L)).matches("Stevi Ous_profile_\\d{8}_\\d{6}\\.jpg"));
+        assertTrue(nameOf(gallery.rows.get(2L)), nameOf(gallery.rows.get(2L)).matches("IG_IMG_\\d{8}_\\d{6}\\.jpg"));
+        String report = LogBufferManager.buildExportText();
+        assertFalse(report, report.contains("Stevi"));
+    }
+
     private void writableBoth(long... ids) {
         for (long id : ids) {
             writable(null, VIDEOS, id);

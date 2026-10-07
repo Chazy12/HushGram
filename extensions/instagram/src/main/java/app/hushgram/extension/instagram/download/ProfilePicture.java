@@ -188,7 +188,7 @@ public final class ProfilePicture {
         @Override public void onClick(View view) {
             try {
                 if (!on()) return;
-                if (!save.photo(context, sizes, PostDetails.of(null, owner, null))) failed(context);
+                if (!save.photo(context, sizes, PostDetails.profilePicture(owner))) failed(context);
             } catch (Throwable failure) {
                 HookStatus.threw(FamilyNames.PROFILE_PICTURE, "save profile picture", failure);
                 failed(context);

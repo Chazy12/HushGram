@@ -250,7 +250,7 @@ final class ProfilePictureViewer {
             save.setOnClickListener(view -> {
                 try {
                     if (!ProfilePicture.viewing()) return;
-                    if (!saver.photo(activity, sizes, PostDetails.of(null, owner, null))) ProfilePicture.failed(activity);
+                    if (!saver.photo(activity, sizes, PostDetails.profilePicture(owner))) ProfilePicture.failed(activity);
                 } catch (Throwable failure) {
                     HookStatus.threw(FamilyNames.PROFILE_PICTURE, "save from viewer", failure);
                     ProfilePicture.failed(activity);

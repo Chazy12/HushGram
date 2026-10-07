@@ -141,6 +141,7 @@ public class ProfilePictureSaveTest {
             assertArrayEquals(body(), published.toByteArray());
         }
         assertEquals("someone", named.get(0).owner);
+        assertTrue("named as a profile picture", named.get(0).profile);
     }
 
     /** Why the row doesn't use the photo save: its ranking takes these addresses for thumbnails. */

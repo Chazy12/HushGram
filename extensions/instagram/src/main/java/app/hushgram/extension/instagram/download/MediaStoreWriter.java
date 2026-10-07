@@ -350,9 +350,11 @@ final class MediaStoreWriter implements Downloader.Sink {
                 String name = byPost + suffix;
                 if (!inSaveFolder(collection, name)) return name;
                 // Saved before. MediaStore would number it, up to (31), and then refuse the save.
-                Logger.diagnosticInfo(DiagnosticCategory.DOWNLOADS, SOURCE,
+                // A profile picture's name has the time of the save already, so it keeps it.
+                String again = FileNameTemplate.postName(now, details, true);
+                if (!byPost.equals(again)) Logger.diagnosticInfo(DiagnosticCategory.DOWNLOADS, SOURCE,
                         () -> "the file name was already in the save folder, so the time of the save went on the end");
-                return FileNameTemplate.postName(now, details, true) + suffix;
+                return again + suffix;
             }
             reportUnnamedByPost();
         }

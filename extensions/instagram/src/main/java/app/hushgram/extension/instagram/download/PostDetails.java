@@ -37,16 +37,27 @@ public final class PostDetails {
     /** Which page of a carousel the media is, counted from 1, or 0 when it isn't one or that's unknown. */
     public final int page;
 
+    /**
+     * Whether it's an account's profile picture rather than a post's media. It has no post time,
+     * so Name saves by account and post time names it for the account and the time of the save.
+     */
+    public final boolean profile;
+
     PostDetails(String videoId, String owner, Date posted) {
         this(videoId, owner, posted, 0);
     }
 
     PostDetails(String videoId, String owner, Date posted, int page) {
+        this(videoId, owner, posted, page, false);
+    }
+
+    private PostDetails(String videoId, String owner, Date posted, int page, boolean profile) {
         this.videoId = videoId;
         String clean = owner == null ? "" : SaveFolder.clean(owner, FileNameTemplate.MAX_OWNER_CODE_POINTS);
         this.owner = clean.isEmpty() ? null : clean;
         this.posted = posted;
         this.page = page > 0 && page <= MAX_PAGE ? page : 0;
+        this.profile = profile;
     }
 
     /**
@@ -56,7 +67,15 @@ public final class PostDetails {
     public PostDetails onPage(int page) {
         int known = page > 0 && page <= MAX_PAGE ? page : 0;
         if (known == this.page) return this;
-        return new PostDetails(videoId, owner, posted == null ? null : new Date(posted.getTime()), known);
+        return new PostDetails(videoId, owner, posted == null ? null : new Date(posted.getTime()), known, profile);
+    }
+
+    /**
+     * A save of [owner]'s profile picture, which knows the account and nothing else. Null [owner]
+     * knows nothing.
+     */
+    public static PostDetails profilePicture(String owner) {
+        return owner == null ? NONE : new PostDetails(null, owner, null, 0, true);
     }
 
     /** A save that knows the media's id and nothing else. */
@@ -102,6 +121,7 @@ public final class PostDetails {
     public String toString() {
         // Never the poster's name or the id: a details object can end up in a diagnostic line.
         return "PostDetails(id " + (hasVideoId() ? "known" : "unknown") + ", poster " + (hasOwner() ? "known" : "unknown")
-            + ", posted " + (hasPosted() ? "known" : "unknown") + (hasPage() ? ", page " + page : "") + ")";
+            + ", posted " + (hasPosted() ? "known" : "unknown") + (hasPage() ? ", page " + page : "")
+            + (profile ? ", profile picture" : "") + ")";
     }
 }

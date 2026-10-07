@@ -148,6 +148,7 @@ public class ProfilePictureViewerTest {
         assertEquals(1, saved.size());
         assertSame(sizes, saved.get(0));
         assertEquals("someone", named.get(0).owner);
+        assertTrue("named as a profile picture", named.get(0).profile);
         labeled(root, "Close").performClick();
         assertFalse(dialog.isShowing());
     }

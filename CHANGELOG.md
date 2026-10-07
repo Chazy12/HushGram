@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** With Name saves by account and post time on, a saved profile picture is named for the account and the time you saved it, like `username_profile_20261007_105151.jpg`, instead of IG_IMG_. Off, it keeps the IG_IMG_ name.
+
 * **Instagram:** Hide the comment bar on reposted reels now keeps the bar hidden after Instagram tucks it away for a moment and brings it back, which some reposted reels do and which used to put the bar back under them. Asked for in #64.
 
 * **Instagram:** Save profile picture has a second switch under Downloads, View profile picture, that starts off. With it on, the menu on someone's profile also gets View profile picture, which opens their picture full screen at the largest size Instagram has, with pinch zoom and a Save button. Back closes it.
