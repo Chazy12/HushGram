@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** New patch, Emoji style. Instagram already loads Google's emoji font through Google Play services, but it only uses it for emoji your phone's own font is missing. Turn on Google's emoji everywhere under Layout and every emoji Instagram runs through Android's emoji support draws in Google's style instead. It's in the default selection with its switch off, and a change shows fully after Instagram restarts.
+
 * **Instagram:** New opt-in patch, See who a story mentions. A story that mentions someone gets a pill under the name in its header, like 2 mentions, even when the mention sticker is hidden or off screen. Tap it to see who's mentioned, with their picture, name and username, and tap someone to open their profile. Its switch is under Stories. Asked for in #13 and #44.
 
 * **Instagram:** Hide suggested posts gets Hide videos, Hide photos and Hide carousels under Feed, and they start off. Each takes every post of its type out of Home, from accounts you follow too, and leaves profiles, Explore and Reels as they were. Reels count as videos.

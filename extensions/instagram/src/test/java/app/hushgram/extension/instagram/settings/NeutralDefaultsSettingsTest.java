@@ -65,7 +65,7 @@ public class NeutralDefaultsSettingsTest {
                 Settings.HIDE_SCREENSHOTS,
                 Settings.ALLOW_SCREENSHOTS,
                 Settings.KEEP_IN_CHAT,
-                Settings.VIEW_LIVE_ANONYMOUSLY};
+                Settings.VIEW_LIVE_ANONYMOUSLY, Settings.NOTO_EMOJI};
         restoreDefaults();
         BaseSettings.SAFE_MODE.save(false);
         Settings.SIGN_IN_NOTICE_HIDDEN.save(true);
@@ -73,7 +73,8 @@ public class NeutralDefaultsSettingsTest {
                 PatchFamily.ASK_BEFORE_LIKE, PatchFamily.ASK_BEFORE_REFRESH,
                 PatchFamily.PROFILE_HIGHLIGHTS, PatchFamily.NOTES_ROW, PatchFamily.INSTANTS, PatchFamily.SWIPE_TO_CREATE,
                 PatchFamily.REEL_SCROLLING, PatchFamily.STORY_RING, PatchFamily.FULL_RESOLUTION, PatchFamily.HOME_FEED,
-                PatchFamily.TAB_SWIPE, PatchFamily.HDR_BOOST, PatchFamily.RECENT_SEARCHES, PatchFamily.DATA_SAVER, PatchFamily.MEDIA_CACHE, PatchFamily.NOTIFICATION_GROUPS, PatchFamily.MESSAGES_LOCK, PatchFamily.SCREENSHOT_REPORTS, PatchFamily.SCREENSHOT_BLOCK, PatchFamily.KEEP_IN_CHAT, PatchFamily.LIVE_SEEN);
+                PatchFamily.TAB_SWIPE, PatchFamily.HDR_BOOST, PatchFamily.RECENT_SEARCHES, PatchFamily.DATA_SAVER, PatchFamily.MEDIA_CACHE, PatchFamily.NOTIFICATION_GROUPS, PatchFamily.MESSAGES_LOCK, PatchFamily.SCREENSHOT_REPORTS, PatchFamily.SCREENSHOT_BLOCK, PatchFamily.KEEP_IN_CHAT, PatchFamily.LIVE_SEEN,
+                PatchFamily.EMOJI_STYLE);
     }
 
     @After public void restore() throws Exception {
@@ -216,5 +217,6 @@ public class NeutralDefaultsSettingsTest {
         assertSame(feedItem, HomeFeed.filter(feedItem));
         assertFalse(ReelDeclutter.hideCommentBar(StockSource.REPOSTS_GRID));
         assertEquals(270f, StoryRing.size(270f), 0f);
+        assertEquals(0, app.hushgram.extension.instagram.misc.EmojiStyle.replaceStrategy(0));
     }
 }

@@ -157,6 +157,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean emojiStyle() {
+        return false;
+    }
+
     public static boolean notificationGroups() {
         return false;
     }

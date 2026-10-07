@@ -811,12 +811,19 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             }
         }
 
-        if (build.contains(PatchFamily.BOTTOM_SPACE)) {
+        if (build.contains(PatchFamily.BOTTOM_SPACE) || build.contains(PatchFamily.EMOJI_STYLE)) {
             PreferenceCategory layout = category(screen, L10n.t("Layout"));
-            layout.addPreference(toggle(context, Settings.REMOVE_BOTTOM_SPACE, L10n.t("Remove the empty space at the bottom"),
-                    L10n.t("Instagram can leave empty room under its tab bar for a navigation bar that isn't there, when "
-                            + "your phone hides its navigation bar or Instagram is in a pop-up window. This takes that room "
-                            + "away. Restart Instagram after changing it.")));
+            if (build.contains(PatchFamily.BOTTOM_SPACE)) {
+                layout.addPreference(toggle(context, Settings.REMOVE_BOTTOM_SPACE, L10n.t("Remove the empty space at the bottom"),
+                        L10n.t("Instagram can leave empty room under its tab bar for a navigation bar that isn't there, when "
+                                + "your phone hides its navigation bar or Instagram is in a pop-up window. This takes that room "
+                                + "away. Restart Instagram after changing it.")));
+            }
+            if (build.contains(PatchFamily.EMOJI_STYLE)) {
+                layout.addPreference(toggle(context, Settings.NOTO_EMOJI, L10n.t("Google's emoji everywhere"),
+                        L10n.t("Every emoji draws in Google's style, from the emoji font Instagram gets through Google Play "
+                                + "services, instead of your phone's own style. Restart Instagram after changing it.")));
+            }
         }
 
         if (build.contains(PatchFamily.NOTIFICATION_GROUPS)) {

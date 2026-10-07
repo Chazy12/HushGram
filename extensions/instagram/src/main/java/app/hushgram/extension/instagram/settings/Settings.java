@@ -475,6 +475,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_remove_bottom_space", TRUE, true);
 
     /**
+     * Every emoji draws in Google's style: EmojiCompat is asked to replace every emoji it knows
+     * from the font it loads from Google Play services, not only the ones the phone lacks
+     * ({@link app.hushgram.extension.instagram.misc.EmojiStyle}). Read for each piece of text, but
+     * text already drawn keeps its style, so a change shows fully after a restart. Off to start.
+     */
+    public static final BooleanSetting NOTO_EMOJI =
+            new BooleanSetting("hushgram_noto_emoji", FALSE, true);
+
+    /**
      * Every notification Instagram posts joins one group with a count
      * ({@link app.hushgram.extension.instagram.misc.NotificationGroups}). Read at each post. Off to
      * start.
