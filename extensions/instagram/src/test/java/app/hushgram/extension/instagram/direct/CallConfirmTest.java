@@ -6,7 +6,9 @@ package app.hushgram.extension.instagram.direct;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
@@ -35,7 +37,7 @@ import app.hushgram.extension.instagram.settings.FamilyNames;
 import app.hushgram.extension.shared.SettingsContextRule;
 import app.hushgram.extension.shared.diagnostics.HookStatus;
 
-/** Ask before a call: off, nothing changes; on, the call waits for the question, and only Call starts it. */
+/** Ask before a call: off, nothing changes; on, the call waits for the question, only Call starts it, and only that call's one repeat skips it. */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = {28, 37})
 public class CallConfirmTest {
@@ -56,17 +58,7 @@ public class CallConfirmTest {
         ShadowAlertDialog.reset();
         controller = Robolectric.buildActivity(Activity.class).setup();
         screen = new ContextWrapper(controller.get());
-        CallConfirm.access = new CallConfirm.Starter() {
-            @Override
-            public void start(Object starter, Object thread, Object entry, Object coWatch, boolean video) {
-                started.add(Arrays.asList(starter, thread, entry, coWatch, video));
-            }
-
-            @Override
-            public Object context(Object of) {
-                return of == starter ? screen : null;
-            }
-        };
+        CallConfirm.access = recorder();
     }
 
     @After
@@ -120,7 +112,7 @@ public class CallConfirmTest {
         assertEquals(Arrays.asList(starter, thread, entry, coWatch, true), started.get(0));
     }
 
-    /** After Call, Instagram coming back to its own start goes through, and the question returns once the pass is over. */
+    /** After Call, Instagram coming back to that start goes through once, and the question returns once the pass is over. */
     @Test
     public void theStartersOwnRepeatGoesThroughForAWhile() {
         assertTrue(hold(false, true));
@@ -128,8 +120,90 @@ public class CallConfirmTest {
         ShadowLooper.idleMainLooper();
 
         long now = SystemClock.uptimeMillis();
-        assertFalse(CallConfirm.hold(starter, thread, entry, coWatch, false, () -> true, now + 1_000));
         assertTrue(CallConfirm.hold(starter, thread, entry, coWatch, false, () -> true, now + CallConfirm.PASS_MILLIS));
+        CallConfirm.resetForTests();
+        CallConfirm.access = recorder();
+        assertTrue(hold(false, true));
+        asked().getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+        assertFalse(CallConfirm.hold(starter, thread, entry, coWatch, false, () -> true, SystemClock.uptimeMillis() + 1_000));
+    }
+
+    /** The pass is that one call's: its second repeat, another chat or the other kind of call is asked about. */
+    @Test
+    public void thePassIsUsedOnceForThatCallOnly() {
+        assertTrue(hold(false, true));
+        asked().getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+        long now = SystemClock.uptimeMillis();
+
+        assertTrue("another chat", CallConfirm.hold(starter, new Object(), entry, coWatch, false, () -> true, now));
+        dismiss();
+        assertTrue("a video call", CallConfirm.hold(starter, thread, entry, coWatch, true, () -> true, now));
+        dismiss();
+        assertFalse("its repeat", CallConfirm.hold(starter, thread, entry, coWatch, false, () -> true, now));
+        assertTrue("its second repeat", CallConfirm.hold(starter, thread, entry, coWatch, false, () -> true, now));
+        assertEquals(1, started.size());
+    }
+
+    /** Call's own start goes through the hook again on its way in, and that doesn't use up the pass. */
+    @Test
+    public void callsOwnStartGoesThroughTheHook() {
+        List<Boolean> inner = new ArrayList<>();
+        CallConfirm.access = new CallConfirm.Starter() {
+            @Override
+            public void start(Object starter, Object thread, Object entry, Object coWatch, boolean video) {
+                inner.add(CallConfirm.hold(starter, thread, entry, coWatch, video, () -> true, SystemClock.uptimeMillis()));
+                started.add(Arrays.asList(starter, thread, entry, coWatch, video));
+            }
+
+            @Override
+            public Object context(Object of) {
+                return of == starter ? screen : null;
+            }
+        };
+        assertTrue(hold(false, true));
+        asked().getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals(Arrays.asList(false), inner);
+        assertEquals(1, started.size());
+        assertFalse(hold(false, true));
+    }
+
+    /** A second tap while the question is up waits for it: no second question, and nothing starts. */
+    @Test
+    public void oneQuestionAtATime() {
+        assertTrue(hold(false, true));
+        AlertDialog first = asked();
+        assertTrue(hold(false, true));
+        assertTrue(hold(true, true));
+        assertSame(first, ShadowAlertDialog.getLatestAlertDialog());
+        assertTrue(started.isEmpty());
+
+        first.getButton(DialogInterface.BUTTON_NEGATIVE).performClick();
+        ShadowLooper.idleMainLooper();
+        assertTrue(hold(false, true));
+        assertNotSame(first, asked());
+    }
+
+    private void dismiss() {
+        asked().getButton(DialogInterface.BUTTON_NEGATIVE).performClick();
+        ShadowLooper.idleMainLooper();
+    }
+
+    private CallConfirm.Starter recorder() {
+        return new CallConfirm.Starter() {
+            @Override
+            public void start(Object starter, Object thread, Object entry, Object coWatch, boolean video) {
+                started.add(Arrays.asList(starter, thread, entry, coWatch, video));
+            }
+
+            @Override
+            public Object context(Object of) {
+                return of == starter ? screen : null;
+            }
+        };
     }
 
     /** With no screen to ask on, or a failure, the call starts as it always did. */
