@@ -340,6 +340,17 @@ public final class MediaSave {
         }
     }
 
+    /**
+     * The single file a save of [renditions] would fetch: for a [video] the one that suits the
+     * Download quality setting, and for a picture the largest. Only addresses on Meta's media
+     * servers count. Null when none does. A video save can still take a better track from its
+     * manifest; this is the file that has an address of its own.
+     */
+    static Rendition picked(List<Rendition> renditions, boolean video) {
+        List<Rendition> found = metaOnly(usable(renditions));
+        return video ? RenditionPicker.pickVideo(found, quality()) : RenditionPicker.pickImage(found);
+    }
+
     private static long pixels(Rendition rendition) {
         return (long) rendition.width * rendition.height;
     }

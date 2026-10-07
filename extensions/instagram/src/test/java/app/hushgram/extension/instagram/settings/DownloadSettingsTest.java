@@ -68,6 +68,7 @@ public class DownloadSettingsTest {
         Settings.SAVE_NAME_BY_POST.resetToDefault();
         Settings.SEND_DOWNLOADS_TO_APP.resetToDefault();
         Settings.OPEN_IN_PLAYER.resetToDefault();
+        Settings.POST_DETAILS.resetToDefault();
         Settings.DOWNLOAD_REELS.resetToDefault();
         Settings.DOWNLOAD_REEL_COVER.resetToDefault();
     }
@@ -235,6 +236,31 @@ public class DownloadSettingsTest {
         try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
             assertEquals(-1, indexOfKey(rowsOf(pageIn(controller)), Settings.OPEN_IN_PLAYER.key));
             assertFalse(ConfigurationBackup.eligible().containsKey(Settings.OPEN_IN_PLAYER.key));
+        }
+    }
+
+    /**
+     * Details in a post's menu is under Downloads right below Download feed photos, with the feed
+     * video download in the build, starts off, belongs to that patch and goes in a settings file.
+     * A build with only reel downloads has no feed menu for it, so no row.
+     */
+    @Test
+    public void postDetailsSitsUnderDownloadFeedPhotos() {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.VIDEO_DOWNLOAD);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            List<Preference> rows = rowsOf(pageIn(controller));
+            int details = indexOfKey(rows, Settings.POST_DETAILS.key);
+            assertEquals(indexOfKey(rows, Settings.DOWNLOAD_PHOTOS.key) + 1, details);
+            Preference row = rows.get(details);
+            assertEquals("Details in a post's menu", String.valueOf(row.getTitle()));
+            assertFalse(((SwitchPreference) row).isChecked());
+            assertTrue(PatchFamily.VIDEO_DOWNLOAD.switches.contains(Settings.POST_DETAILS));
+            assertTrue(ConfigurationBackup.eligible().containsKey(Settings.POST_DETAILS.key));
+        }
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.REEL_DOWNLOAD);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            assertEquals(-1, indexOfKey(rowsOf(pageIn(controller)), Settings.POST_DETAILS.key));
+            assertFalse(ConfigurationBackup.eligible().containsKey(Settings.POST_DETAILS.key));
         }
     }
 

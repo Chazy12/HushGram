@@ -848,6 +848,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_open_in_player", FALSE);
 
     /**
+     * A feed post's menu gets Details: when it went up, who posted it, its media ID and the size a
+     * Download would save, with a button that copies the file's direct link. Starts off.
+     */
+    public static final BooleanSetting POST_DETAILS =
+            new BooleanSetting("hushgram_post_details", FALSE);
+
+    /**
      * Video saves keep to what other apps open: H.264 video with AAC-LC or HE-AAC sound, within
      * {@link #DOWNLOAD_QUALITY}, or the app's single MP4 file when the manifest has no such pair.
      * The sharpest version Meta streams is often AV1 with xHE-AAC sound, which Gallery and VLC play

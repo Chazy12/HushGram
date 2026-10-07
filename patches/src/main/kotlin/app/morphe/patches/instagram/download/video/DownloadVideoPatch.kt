@@ -72,6 +72,11 @@ internal const val OFFER_PLAYER = "$VIDEO_DOWNLOAD->offerPlayer(Ljava/lang/Objec
 internal const val PLAYER_OPTION = "$VIDEO_DOWNLOAD->playerOption()Ljava/lang/Object;"
 internal const val PLAY_VIDEO = "$VIDEO_DOWNLOAD->play(Ljava/lang/Object;Ljava/lang/Object;Landroid/app/Activity;)V"
 
+private const val POST_INFO = "$EXTENSION_PACKAGE/download/PostInfo;"
+internal const val OFFER_DETAILS = "$POST_INFO->offer(Ljava/lang/Object;Ljava/util/ArrayList;)V"
+internal const val DETAILS_OPTION = "$POST_INFO->option()Ljava/lang/Object;"
+internal const val SHOW_DETAILS = "$POST_INFO->show(Ljava/lang/Object;Ljava/lang/Object;Landroid/app/Activity;)V"
+
 /** The options the short feed menu's list of kept options reads first and last: "Why you're seeing this" and Report. */
 internal const val WHY_OPTION = "$OPTION->WHY_AM_I_SEEING_THIS:$OPTION"
 internal const val REPORT_OPTION = "$OPTION->REPORT:$OPTION"
@@ -127,6 +132,7 @@ private const val CAROUSEL_FIELD = "carousel_media"
  *
  * Open in another player is a row of the same kind as Save all, offered beside it and made with
  * its own option, which the handler hands to the extension with the post and its feed state.
+ * Details, with its own switch, is one more row of that kind, offered after it.
  *
  * Everything is found before anything changes, so a build that differs stops the patch naming
  * what it couldn't find, and nothing is half done.
@@ -136,7 +142,8 @@ val downloadVideoPatch = bytecodePatch(
     name = "Download any video",
     description = "Adds Download to the menu of a post in your feed with a video, and of a carousel showing a video. " +
         "Videos save at the Download quality you set, without Instagram's watermark. " +
-        "A second switch does the same for photo posts.",
+        "A second switch does the same for photo posts. " +
+        "Another adds Details, with the post's time, who posted it, its media ID and a button that copies its direct link.",
     default = false,
 ) {
     category("Downloads")
@@ -306,6 +313,7 @@ internal fun BytecodePatchContext.offerDownloadOnEveryVideo() {
         """
             invoke-static { v${others.state}, v${others.rows} }, $OFFER_ALL
             invoke-static { v${others.state}, v${others.rows} }, $OFFER_PLAYER
+            invoke-static { v${others.state}, v${others.rows} }, $OFFER_DETAILS
         """,
     )
 
@@ -326,6 +334,18 @@ internal fun BytecodePatchContext.offerDownloadOnEveryVideo() {
             :player
             invoke-static {}, $PLAYER_OPTION
             move-result-object v1
+            if-eqz v1, :details
+            if-ne v0, v1, :details
+            move-object/from16 v0, p0
+            invoke-static { v0 }, $type->${media.name}($type)$MEDIA
+            move-result-object v1
+            iget-object v2, v0, $type->${activity.name}:$FRAGMENT_ACTIVITY
+            iget-object v0, v0, ${page.menuState}
+            invoke-static { v1, v0, v2 }, $PLAY_VIDEO
+            return-void
+            :details
+            invoke-static {}, $DETAILS_OPTION
+            move-result-object v1
             if-eqz v1, :current
             if-ne v0, v1, :current
             move-object/from16 v0, p0
@@ -333,7 +353,7 @@ internal fun BytecodePatchContext.offerDownloadOnEveryVideo() {
             move-result-object v1
             iget-object v2, v0, $type->${activity.name}:$FRAGMENT_ACTIVITY
             iget-object v0, v0, ${page.menuState}
-            invoke-static { v1, v0, v2 }, $PLAY_VIDEO
+            invoke-static { v1, v0, v2 }, $SHOW_DETAILS
             return-void
             :current
             move-object/from16 v0, p1

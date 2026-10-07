@@ -48,6 +48,8 @@ import app.hushgram.extension.shared.settings.BooleanSetting;
  *       a row that hands the file to a player picked from Android's chooser ({@link ExternalPlayer}).
  *       It's offered next to Save all, before the builder splits into your own and others' rows,
  *       and the short menu keeps it after Download and Save all.
+ *   <li>With Details on, every post gets a Details row there too ({@link PostInfo}), kept last of
+ *       these in the short menu.
  * </ul>
  *
  * <p>Every hook fails open: until the settings are ready, while HushGram is paused, with the switch
@@ -249,15 +251,17 @@ public final class VideoDownload {
      * Download option, in front when the switch is on. The menu keeps a row only when its option is
      * on this list and orders the rows by it, so without this the row {@link #offer} added never
      * shows there. Save all follows Download, keeping native options in their existing order, and
-     * with its own switch on, Open in another player follows them. A list with every action or the
-     * switches off comes back as it came. Never throws.
+     * with its own switch on, Open in another player follows them, then Details with its switch on
+     * ({@link PostInfo}). A list with every action or the switches off comes back as it came. Never
+     * throws.
      */
     public static List<?> allow(List<?> options, Object download) {
         try {
             HookStatus.invoked(FamilyNames.VIDEO_DOWNLOAD);
             if (options == null) return options;
             List<?> allowed = download == null || !videos() && !photos() ? options : withSaves(options, download);
-            return ExternalPlayer.on() ? withPlayer(allowed, download) : allowed;
+            if (ExternalPlayer.on()) allowed = withPlayer(allowed, download);
+            return PostInfo.on() ? PostInfo.withDetails(allowed, download, batchOption, playerOption) : allowed;
         } catch (Throwable t) {
             HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "short feed menu", t);
             return options;
