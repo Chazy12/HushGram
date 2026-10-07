@@ -946,6 +946,12 @@ once-call Lapp/hushgram/extension/instagram/profile/ProfileSuggestions;->keepSta
 # the patch wrote. HideHighlightsHookTest checks on the 449 fixture where it lands, with and
 # without Hide suggested people on profiles in the same method.
 once-call Lapp/hushgram/extension/instagram/profile/ProfileHighlights;->keepTray()I in instance (L*;Ljava/lang/Object;Ljava/lang/Object;)V class-holding ProfileHeaderBinderGroup.bindView ProfileHeaderBinderGroup.createView
+# Hide the Threads button hands the list a profile's top bar builds its buttons from to
+# ThreadsButton.buttons right after the bar's binder reads it (ProfileActionBar.A00 on 450, the one
+# method of its shape reading the bar's A06 group), and builds from the answer. Left out, the
+# Threads button stays; twice or elsewhere, it isn't the hook the patch wrote.
+# HideThreadsButtonHookTest checks on the 450 fixture that it lands right after the read.
+once-call Lapp/hushgram/extension/instagram/profile/ThreadsButton;->buttons(Ljava/util/List;)Ljava/util/List; in instance (Lcom/instagram/common/session/UserSession;Landroid/app/Activity;LX/*;LX/*;Landroid/content/Context;Lkotlin/jvm/functions/Function1;)V holding userSession activity Lcom/instagram/profile/actionbar/ProfileActionBar;->A06:Lcom/instagram/common/ui/base/IgLinearLayout;
 
 # Hide suggested accounts in Reels hands the item Instagram's Reels converter makes from a netego
 # unit, with the unit's type, to ReelsSuggestions.netego before it's returned (03TH.A02 on 449,

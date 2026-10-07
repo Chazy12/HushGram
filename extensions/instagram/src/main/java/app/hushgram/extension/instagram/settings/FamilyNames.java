@@ -60,6 +60,7 @@ public final class FamilyNames {
     public static final String FRIENDSHIP_STATUS = "Show if a profile follows you";
     public static final String PROFILE_SUGGESTIONS = "Hide suggested people on profiles";
     public static final String PROFILE_HIGHLIGHTS = "Hide highlights";
+    public static final String THREADS_BUTTON = "Hide the Threads button";
     public static final String COMMENT_COPY = "Copy comment";
     public static final String COMMENT_PHOTO = "Save comment photo";
     public static final String PROFILE_PICTURE = "Save profile picture";

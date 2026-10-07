@@ -543,6 +543,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_hide_highlights", FALSE);
 
     /**
+     * The Threads button on profiles' top bar
+     * ({@link app.hushgram.extension.instagram.profile.ThreadsButton}). Read each time Instagram
+     * builds a profile's top bar, so a change shows on the next profile opened. Off to start.
+     */
+    public static final BooleanSetting HIDE_THREADS_BUTTON =
+            new BooleanSetting("hushgram_hide_threads_button", FALSE);
+
+    /**
      * A sideways swipe on Home that would open the camera
      * ({@link app.hushgram.extension.instagram.feed.SwipeToCreate}). Read at each step of a swipe,
      * so a change shows on the next one. Off to start.

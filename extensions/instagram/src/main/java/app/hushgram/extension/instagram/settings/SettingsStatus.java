@@ -190,6 +190,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean threadsButton() {
+        return false;
+    }
+
     public static boolean homeFeed() {
         return false;
     }

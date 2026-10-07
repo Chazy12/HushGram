@@ -784,7 +784,7 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         }
 
         if (build.contains(PatchFamily.FRIENDSHIP_STATUS) || build.contains(PatchFamily.PROFILE_SUGGESTIONS)
-                || build.contains(PatchFamily.PROFILE_HIGHLIGHTS)) {
+                || build.contains(PatchFamily.PROFILE_HIGHLIGHTS) || build.contains(PatchFamily.THREADS_BUTTON)) {
             PreferenceCategory profiles = category(screen, L10n.t("Profiles"));
             if (build.contains(PatchFamily.FRIENDSHIP_STATUS)) {
                 profiles.addPreference(toggle(context, Settings.SHOW_FRIENDSHIP_STATUS, L10n.t("Show if a profile follows you"),
@@ -808,6 +808,11 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                 profiles.addPreference(toggle(context, Settings.HIDE_HIGHLIGHTS, L10n.t("Hide highlights"),
                         L10n.t("Takes the row of story highlights off profiles, yours included. Bios, counts and "
                                 + "posts stay, and so does Add to highlight on your stories.")));
+            }
+            if (build.contains(PatchFamily.THREADS_BUTTON)) {
+                profiles.addPreference(toggle(context, Settings.HIDE_THREADS_BUTTON, L10n.t("Hide the Threads button"),
+                        L10n.t("Takes the Threads button off the top of profiles, yours included. The menu and "
+                                + "the other buttons stay where they were.")));
             }
         }
 
