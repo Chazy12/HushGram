@@ -217,6 +217,8 @@ public class BadDexFixture {
     private static final String SHORTCUT_INFO = "Landroid/content/pm/ShortcutInfo;";
     private static final String SHORTCUT_LIST = "Ljava/util/List;";
     private static final String SHORTCUTS = "Lfixture/Shortcuts;";
+    private static final String NOTIFICATION_MANAGER = "Landroid/app/NotificationManager;";
+    private static final String NOTIFICATION = "Landroid/app/Notification;";
     private static final String SETTINGS_ENTRY = "Lapp/hushgram/extension/fixture/settings/SettingsEntry;";
     private static final String OVERRIDE_TABLE = "Lcom/facebook/mobileconfig/MobileConfigOverridesTableHolder;";
     private static final String OVERRIDE_WRITER = "Lcom/facebook/mobileconfig/troubleshooting/MobileConfigOverridesWriterHolder;";
@@ -407,6 +409,8 @@ public class BadDexFixture {
             "no-call Landroid/content/pm/ShortcutManager;->setDynamicShortcuts(Ljava/util/List;)Z outside Lapp/hushgram/extension/",
             "no-call Landroid/content/pm/ShortcutManager;->updateShortcuts(Ljava/util/List;)Z outside Lapp/hushgram/extension/",
             "no-call Landroid/content/pm/ShortcutManager;->removeAllDynamicShortcuts()V outside Lapp/hushgram/extension/",
+            "no-call Landroid/app/NotificationManager;->notify(ILandroid/app/Notification;)V outside Lapp/hushgram/extension/",
+            "no-call Landroid/app/NotificationManager;->notify(Ljava/lang/String;ILandroid/app/Notification;)V outside Lapp/hushgram/extension/",
             "no-call Lcom/facebook/mobileconfig/troubleshooting/MobileConfigOverridesWriterHolder;->importOverridesFromUser(Ljava/lang/String;)Ljava/lang/String; outside Lcom/facebook/mobileconfig/",
             "no-call Lcom/facebook/mobileconfig/MobileConfigOverridesTableHolder;->reload()V outside Lcom/facebook/mobileconfig/",
             "no-call Lcom/facebook/mobileconfig/MobileConfigOverridesTableHolder;->removeAllOverrides()V outside Lcom/facebook/mobileconfig/",
@@ -439,19 +443,24 @@ public class BadDexFixture {
             "once-call Lapp/hushgram/extension/fixture/settings/NavigationSettings;->bind(Landroid/view/View;Ljava/lang/Object;)V in static (Ljava/lang/Object;)Landroid/view/View; holding InstagramMainActivity.createTabButton(");
 
     /**
-     * One of the ShortcutManager calls the settings patch sends to SettingsEntry: its name, what it
-     * takes after the manager and what it answers, the publisher method that makes it and whether
-     * that method makes it as a range call. Its bad build is "bad-shortcut-[caseName]-left".
+     * One of the framework calls a patch sends to an extension stand-in (the settings patch's
+     * ShortcutManager calls, Group notifications' NotificationManager.notify): the manager it's made
+     * on, its name, what it answers, the publisher method that makes it, whether that method makes
+     * it as a range call and what it takes after the manager. Its bad build is
+     * "bad-shortcut-[caseName]-left". The case name tells the two notify calls apart.
      */
     private static final class ShortcutCall {
+        final String manager;
         final String name;
-        final String takes;
+        final String[] takes;
         final String answers;
         final String caller;
         final String caseName;
         final boolean range;
 
-        ShortcutCall(String name, String takes, String answers, String caller, String caseName, boolean range) {
+        ShortcutCall(String manager, String name, String answers, String caller, String caseName, boolean range,
+                String... takes) {
+            this.manager = manager;
             this.name = name;
             this.takes = takes;
             this.answers = answers;
@@ -462,11 +471,14 @@ public class BadDexFixture {
 
         /** The manager, then what the call takes. */
         String[] parameters() {
-            return takes == null ? new String[]{SHORTCUT_MANAGER} : new String[]{SHORTCUT_MANAGER, takes};
+            String[] all = new String[takes.length + 1];
+            all[0] = manager;
+            System.arraycopy(takes, 0, all, 1, takes.length);
+            return all;
         }
 
         ImmutableMethodReference framework() {
-            return takes == null ? method(SHORTCUT_MANAGER, name, answers) : method(SHORTCUT_MANAGER, name, answers, takes);
+            return method(manager, name, answers, takes);
         }
 
         /** The stand-in: static, of the same name, the manager first, the same answer. */
@@ -475,13 +487,16 @@ public class BadDexFixture {
         }
     }
 
-    /** All five, as the contract file names them. The update goes as a range call. */
+    /** All seven, as the contract file names them. The update goes as a range call. */
     private static final List<ShortcutCall> SHORTCUT_CALLS = Arrays.asList(
-            new ShortcutCall("pushDynamicShortcut", SHORTCUT_INFO, "V", "push", "push", false),
-            new ShortcutCall("addDynamicShortcuts", SHORTCUT_LIST, "Z", "add", "add", false),
-            new ShortcutCall("setDynamicShortcuts", SHORTCUT_LIST, "Z", "set", "set", false),
-            new ShortcutCall("updateShortcuts", SHORTCUT_LIST, "Z", "update", "update", true),
-            new ShortcutCall("removeAllDynamicShortcuts", null, "V", "removeAll", "remove-all", false));
+            new ShortcutCall(SHORTCUT_MANAGER, "pushDynamicShortcut", "V", "push", "push", false, SHORTCUT_INFO),
+            new ShortcutCall(SHORTCUT_MANAGER, "addDynamicShortcuts", "Z", "add", "add", false, SHORTCUT_LIST),
+            new ShortcutCall(SHORTCUT_MANAGER, "setDynamicShortcuts", "Z", "set", "set", false, SHORTCUT_LIST),
+            new ShortcutCall(SHORTCUT_MANAGER, "updateShortcuts", "Z", "update", "update", true, SHORTCUT_LIST),
+            new ShortcutCall(SHORTCUT_MANAGER, "removeAllDynamicShortcuts", "V", "removeAll", "remove-all", false),
+            new ShortcutCall(NOTIFICATION_MANAGER, "notify", "V", "notify", "notify", false, "I", NOTIFICATION),
+            new ShortcutCall(NOTIFICATION_MANAGER, "notify", "V", "notifyTagged", "notify-tagged", false,
+                    "Ljava/lang/String;", "I", NOTIFICATION));
 
     /** A real native override boundary, with a receiver followed by its exact typed arguments. */
     private static final class OverrideCall {
@@ -1486,15 +1501,15 @@ public class BadDexFixture {
     private static ClassDef shortcuts(Set<String> left) {
         List<Method> methods = new ArrayList<>();
         for (ShortcutCall call : SHORTCUT_CALLS) {
-            methods.add(shortcutMethod(SHORTCUTS, call.caller, call, shortcutInvoke(call, !left.contains(call.name))));
+            methods.add(shortcutMethod(SHORTCUTS, call.caller, call, shortcutInvoke(call, !left.contains(call.caseName))));
         }
         return new ImmutableClassDef(SHORTCUTS, AccessFlags.PUBLIC.getValue(), OBJECT, null, null, null, null, methods);
     }
 
-    /** Every call of [SHORTCUT_CALLS] by name, which the clean build makes as Facebook does. */
+    /** Every call of [SHORTCUT_CALLS] by case name, which the clean build makes as Facebook does. */
     private static Set<String> allShortcutCalls() {
         Set<String> names = new LinkedHashSet<>();
-        for (ShortcutCall call : SHORTCUT_CALLS) names.add(call.name);
+        for (ShortcutCall call : SHORTCUT_CALLS) names.add(call.caseName);
         return names;
     }
 
@@ -2833,12 +2848,12 @@ public class BadDexFixture {
                 op(Opcode.MOVE_RESULT_OBJECT, 1),
                 op(Opcode.RETURN_OBJECT, 1))));
 
-        // contract: one of Facebook's shortcut calls left as it was, not sent to the extension's
-        // stand-in, one build for each call. The other four go to theirs.
+        // contract: one of the framework calls left as it was, not sent to the extension's
+        // stand-in, one build for each call. The others go to theirs.
         for (ShortcutCall call : SHORTCUT_CALLS) {
             List<ClassDef> shortcutLeft = new ArrayList<>(good());
             shortcutLeft.removeIf(cd -> cd.getType().equals(SHORTCUTS));
-            shortcutLeft.add(shortcuts(Collections.singleton(call.name)));
+            shortcutLeft.add(shortcuts(Collections.singleton(call.caseName)));
             dexes.put("bad-shortcut-" + call.caseName + "-left", shortcutLeft);
         }
         for (OverrideCall call : OVERRIDE_CALLS) {

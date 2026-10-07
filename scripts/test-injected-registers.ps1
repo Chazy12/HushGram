@@ -702,20 +702,25 @@ try {
         'Lapp/hushgram/extension/: calls Lfixture/Attributions;->A02(Lfixture/ReelModel;Ljava/lang/String;)Lfixture/Model; ' +
         'before its first return')) `
         "The good build's GenAI reel stub was not reported calling Facebook's attribution finder.`n$($good.Output -join "`n")"
-    # The settings patch sends each of these ShortcutManager calls to SettingsEntry, and the fixture's
+    # The settings patch sends each of these ShortcutManager calls to SettingsEntry, and Group
+    # notifications sends both NotificationManager.notify calls to its stand-ins. The fixture's
     # publisher makes each one from a method of its own (Caller).
+    $shortcutManager = 'Landroid/content/pm/ShortcutManager;'
+    $notificationManager = 'Landroid/app/NotificationManager;'
     $shortcutCalls = @(
-        [pscustomobject]@{ Case = 'push'; Call = 'pushDynamicShortcut'; Takes = 'Landroid/content/pm/ShortcutInfo;'; Answers = 'V'; Caller = 'push' }
-        [pscustomobject]@{ Case = 'add'; Call = 'addDynamicShortcuts'; Takes = 'Ljava/util/List;'; Answers = 'Z'; Caller = 'add' }
-        [pscustomobject]@{ Case = 'set'; Call = 'setDynamicShortcuts'; Takes = 'Ljava/util/List;'; Answers = 'Z'; Caller = 'set' }
-        [pscustomobject]@{ Case = 'update'; Call = 'updateShortcuts'; Takes = 'Ljava/util/List;'; Answers = 'Z'; Caller = 'update' }
-        [pscustomobject]@{ Case = 'remove-all'; Call = 'removeAllDynamicShortcuts'; Takes = ''; Answers = 'V'; Caller = 'removeAll' }
+        [pscustomobject]@{ Case = 'push'; Manager = $shortcutManager; Call = 'pushDynamicShortcut'; Takes = 'Landroid/content/pm/ShortcutInfo;'; Answers = 'V'; Caller = 'push' }
+        [pscustomobject]@{ Case = 'add'; Manager = $shortcutManager; Call = 'addDynamicShortcuts'; Takes = 'Ljava/util/List;'; Answers = 'Z'; Caller = 'add' }
+        [pscustomobject]@{ Case = 'set'; Manager = $shortcutManager; Call = 'setDynamicShortcuts'; Takes = 'Ljava/util/List;'; Answers = 'Z'; Caller = 'set' }
+        [pscustomobject]@{ Case = 'update'; Manager = $shortcutManager; Call = 'updateShortcuts'; Takes = 'Ljava/util/List;'; Answers = 'Z'; Caller = 'update' }
+        [pscustomobject]@{ Case = 'remove-all'; Manager = $shortcutManager; Call = 'removeAllDynamicShortcuts'; Takes = ''; Answers = 'V'; Caller = 'removeAll' }
+        [pscustomobject]@{ Case = 'notify'; Manager = $notificationManager; Call = 'notify'; Takes = 'ILandroid/app/Notification;'; Answers = 'V'; Caller = 'notify' }
+        [pscustomobject]@{ Case = 'notify-tagged'; Manager = $notificationManager; Call = 'notify'; Takes = 'Ljava/lang/String;ILandroid/app/Notification;'; Answers = 'V'; Caller = 'notifyTagged' }
     )
     foreach ($shortcut in $shortcutCalls) {
         $shortcut | Add-Member -NotePropertyName Callee -NotePropertyValue (
-            "Landroid/content/pm/ShortcutManager;->$($shortcut.Call)($($shortcut.Takes))$($shortcut.Answers)")
+            "$($shortcut.Manager)->$($shortcut.Call)($($shortcut.Takes))$($shortcut.Answers)")
         $shortcut | Add-Member -NotePropertyName Site -NotePropertyValue (
-            "Lfixture/Shortcuts;->$($shortcut.Caller)(Landroid/content/pm/ShortcutManager;$($shortcut.Takes))$($shortcut.Answers)")
+            "Lfixture/Shortcuts;->$($shortcut.Caller)($($shortcut.Manager)$($shortcut.Takes))$($shortcut.Answers)")
     }
     # The override reader must never call these native writers or reloads. The good build makes
     # real calls inside the exact allowed prefix; each bad build adds one extension call outside it.
@@ -1212,7 +1217,7 @@ try {
         Assert-True ($fails.Count -eq 1 -and $fails[0] -ceq $expected) `
             "$name did not fail with its own no-call finding alone.`nExpected: $expected`nGot:`n$($fails -join "`n")"
         foreach ($other in $shortcutCalls) {
-            $count = if ($other.Call -eq $shortcut.Call) { '1 call site, in ' } else { '0 call sites' }
+            $count = if ($other.Case -eq $shortcut.Case) { '1 call site, in ' } else { '0 call sites' }
             Assert-True (($badResults[$name].Output -join "`n") -match [regex]::Escape(
                 "no-call $($other.Callee) outside Lapp/hushgram/extension/: $count")) `
                 "$name reported $($other.Call) wrong: expected '$count'.`n$($badResults[$name].Output -join "`n")"
