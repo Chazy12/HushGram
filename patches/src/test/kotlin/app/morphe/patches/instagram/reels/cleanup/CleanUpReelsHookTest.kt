@@ -89,6 +89,7 @@ class CleanUpReelsHookTest {
             "unVanish not reading the controller after its trace" to classes(unVanish = "no read"),
             "unVanish jumping past the hook" to classes(unVanish = "jumped"),
             "unVanish without a trace" to classes(unVanish = "no trace"),
+            "unVanish's hide reading what's written after the trace" to classes(unVanish = "rewritten"),
         )) {
             val failure = assertThrows(case, PatchException::class.java) { PatchContexts.of(classes).hideReelParts() }
             assertTrue("$case: ${failure.message}", failure.message!!.contains("comment bar"))
@@ -424,6 +425,9 @@ class CleanUpReelsHookTest {
         val read = if (shape == "no read") "const/4 v0, 0x0" else "iget-boolean v0, v2, $BAR->vanished:Z"
         val again = if (shape == "jumped") "if-nez v1, :again" else ""
         val twice = if (shape == "twice") "invoke-virtual { v2 }, $BAR->A0r()V" else ""
+        // The hidden branch answers a value written after the trace, which the hook's jump would skip.
+        val rewrite = if (shape == "rewritten") "iget-object v1, v2, $BAR->bar:$VIEW" else ""
+        val hiddenEnd = if (shape == "rewritten") "return-object v1" else "goto :done"
         return classOf(
             UNVANISH, "Ljava/lang/Object;",
             method(UNVANISH, "A0B", listOf(UNVANISH), "Ljava/lang/Object;", 3, """
@@ -434,6 +438,7 @@ class CleanUpReelsHookTest {
                 $trace
                 :again
                 $read
+                $rewrite
                 if-nez v0, :hide
                 iget-object v1, v2, $BAR->bar:$VIEW
                 $again
@@ -443,7 +448,7 @@ class CleanUpReelsHookTest {
                 :hide
                 $twice
                 invoke-virtual { v2 }, $BAR->A0r()V
-                goto :done
+                $hiddenEnd
             """),
         )
     }

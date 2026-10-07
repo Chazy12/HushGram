@@ -25,10 +25,13 @@ import app.morphe.patches.instagram.misc.extension.requireThisIntact
 import app.morphe.patches.instagram.misc.extension.typesMarked
 import app.morphe.patches.instagram.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.ControlFlow
+import app.morphe.util.RegisterLiveness
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
@@ -230,8 +233,32 @@ private fun unVanished(method: Method, hide: Method): UnVanish {
         (next as TwoRegisterInstruction).registerB != controller
     ) throw PatchException("$what doesn't read the controller in v$controller right after its trace, so the hook can't tell it's there")
     if (at in method.jumpTargets()) throw PatchException("$what jumps to just after its trace, so the hook would be skipped")
+    // The hook's jump reaches the hide with each register as it is at the hook. What the hide's
+    // path reads before writing has to hold the same there as on Instagram's own way to the hide,
+    // so nothing on a path from the hook to the hide may write it.
+    val flow = ControlFlow.of(method)
+    val between = mutableSetOf<Int>()
+    val pending = ArrayDeque(listOf(at))
+    while (pending.isNotEmpty()) {
+        val index = pending.removeFirst()
+        if (index == hidden || !between.add(index)) continue
+        pending += flow.normal[index] + flow.exceptional[index]
+    }
+    val rewritten = RegisterLiveness.of(method).liveInto(hidden).filter { register -> between.any { code[it].writes(register) } }
+    if (rewritten.isNotEmpty()) {
+        throw PatchException(
+            "$what writes ${rewritten.sorted().joinToString { "v$it" }} between its trace and the hide, and the hide's path reads it, " +
+                "so the hook can't jump to the hide",
+        )
+    }
     val free = method.freeLocalsAt(what, at, 1, listOf(hidden)).single()
     return UnVanish(method, at, controller, hidden, free)
+}
+
+private fun Instruction.writes(register: Int): Boolean {
+    if (!opcode.setsRegister()) return false
+    val destination = (this as? OneRegisterInstruction)?.registerA ?: return false
+    return destination == register || (opcode.setsWideRegister() && destination + 1 == register)
 }
 
 private val INSTANCE_READS = setOf(
