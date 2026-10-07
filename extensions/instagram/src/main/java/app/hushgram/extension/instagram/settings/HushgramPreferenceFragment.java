@@ -544,6 +544,9 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             reels.add(toggle(context, Settings.STOP_REELS_SCROLLING, L10n.t("Stop Reels scrolling"),
                     L10n.t("A swipe in Reels no longer moves on to the next reel, and pulling down doesn't load new "
                             + "ones. The reel you opened still plays. Restart Instagram after changing it.")));
+            reels.add(toggle(context, Settings.REEL_CAP, L10n.t("Stop after 20 reels"),
+                    L10n.t("After 20 reels, swiping in Reels stops until Instagram has been in the background for "
+                            + "15 minutes. A reel you open from a message or a post still plays.")));
         }
         if (!reels.isEmpty()) {
             PreferenceCategory section = category(screen, L10n.t("Reels"));

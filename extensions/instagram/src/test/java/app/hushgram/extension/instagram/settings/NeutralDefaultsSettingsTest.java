@@ -54,7 +54,7 @@ public class NeutralDefaultsSettingsTest {
         RuntimeEnvironment.getApplication().getApplicationInfo().targetSdkVersion = 36;
         initiallyOff = new BooleanSetting[]{Settings.COPY_COMMENTS, Settings.SAVE_COMMENT_PHOTOS,
                 Settings.HIDE_HIGHLIGHTS, Settings.HIDE_NOTES_ROW, Settings.HIDE_INSTANTS,
-                Settings.STOP_SWIPE_TO_CREATE, Settings.STOP_REELS_SCROLLING, Settings.FULL_RESOLUTION_PHOTOS, Settings.ASK_FOR_LARGER_PHOTOS,
+                Settings.STOP_SWIPE_TO_CREATE, Settings.STOP_REELS_SCROLLING, Settings.REEL_CAP, Settings.FULL_RESOLUTION_PHOTOS, Settings.ASK_FOR_LARGER_PHOTOS,
                 Settings.HIDE_HOME_FEED, Settings.STOP_TAB_SWIPING, Settings.CLEAR_MEDIA_CACHE, Settings.GROUP_NOTIFICATIONS,
                 Settings.LOCK_MESSAGES, Settings.LOCK_APP,
                 Settings.HIDE_SCREENSHOTS,

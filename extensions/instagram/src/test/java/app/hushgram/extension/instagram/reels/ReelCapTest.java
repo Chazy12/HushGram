@@ -1,0 +1,146 @@
+/*
+ * Copyright 2026 HushGram contributors
+ * https://github.com/SysAdminDoc/HushGram
+ */
+package app.hushgram.extension.instagram.reels;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import app.hushgram.extension.instagram.settings.FamilyNames;
+import app.hushgram.extension.instagram.settings.Settings;
+import app.hushgram.extension.shared.SettingsContextRule;
+import app.hushgram.extension.shared.diagnostics.HookStatus;
+import app.hushgram.extension.shared.settings.BaseSettings;
+import app.hushgram.extension.shared.settings.PauseForTests;
+
+/** Stop after 20 reels: when a session's reels run out, what it stops, and when a break starts a new one. */
+@RunWith(RobolectricTestRunner.class)
+@Config(sdk = {28, 37})
+public class ReelCapTest {
+    @Rule public final SettingsContextRule settings = new SettingsContextRule();
+
+    /** Stands in for the Reels pager, recording what its input is set to. */
+    public static final class Pager {
+        public final List<Boolean> inputs = new ArrayList<>();
+
+        public void setUserInputEnabled(boolean enabled) {
+            inputs.add(enabled);
+        }
+    }
+
+    @Before
+    public void setUp() {
+        BaseSettings.PAUSED.save(false);
+        PauseForTests.resume();
+        Settings.STOP_REELS_SCROLLING.save(false);
+        Settings.REEL_CAP.save(true);
+        ReelScrolling.forget();
+        HookStatus.clear();
+    }
+
+    @After
+    public void tearDown() {
+        Settings.STOP_REELS_SCROLLING.resetToDefault();
+        Settings.REEL_CAP.resetToDefault();
+        ReelScrolling.forget();
+        HookStatus.clear();
+    }
+
+    private static void play(Pager pager, int from, int reels) {
+        for (int position = from; position < from + reels; position++) ReelScrolling.page(pager, position);
+    }
+
+    @Test
+    public void theTwentiethReelTurnsSwipingOff() {
+        Pager pager = new Pager();
+        assertEquals(1, ReelScrolling.pager(pager));
+
+        play(pager, 0, ReelScrolling.CAP - 1);
+        assertTrue(pager.inputs.isEmpty());
+        assertEquals(1, ReelScrolling.userInput(pager, 1));
+
+        ReelScrolling.page(pager, ReelScrolling.CAP - 1);
+        assertEquals(java.util.Collections.singletonList(false), pager.inputs);
+        assertEquals("Instagram turning it back on is refused", 0, ReelScrolling.userInput(pager, 1));
+        assertEquals("a reel opened from a message still plays, without swipes", 0, ReelScrolling.pager(new Pager()));
+        assertEquals(0, ReelScrolling.pull());
+        String report = HookStatus.report().toString();
+        assertTrue(report, report.contains(FamilyNames.REEL_SCROLLING) && report.contains(ReelScrolling.CAPPED + " 1"));
+    }
+
+    @Test
+    public void theSamePageAndOtherPagersDontCount() {
+        Pager reels = new Pager();
+        ReelScrolling.pager(reels);
+        Pager other = new Pager();
+        for (int i = 0; i < ReelScrolling.CAP * 2; i++) {
+            ReelScrolling.page(reels, 3);
+            ReelScrolling.page(other, i);
+        }
+        assertTrue(reels.inputs.isEmpty());
+        assertEquals(1, ReelScrolling.userInput(reels, 1));
+    }
+
+    @Test
+    public void offItNeverCaps() {
+        Settings.REEL_CAP.save(false);
+        Pager pager = new Pager();
+        ReelScrolling.pager(pager);
+        play(pager, 0, ReelScrolling.CAP * 2);
+        assertTrue(pager.inputs.isEmpty());
+        assertEquals(1, ReelScrolling.userInput(pager, 1));
+    }
+
+    @Test
+    public void aLongEnoughBreakStartsANewSession() {
+        Pager pager = new Pager();
+        ReelScrolling.pager(pager);
+        play(pager, 0, ReelScrolling.CAP);
+        assertEquals(0, ReelScrolling.userInput(pager, 1));
+
+        ReelScrolling.hidden(1_000);
+        ReelScrolling.shown(1_000 + ReelScrolling.BREAK_MILLIS - 1);
+        assertEquals("a short break keeps the cap", 0, ReelScrolling.userInput(pager, 1));
+
+        ReelScrolling.hidden(5_000_000);
+        ReelScrolling.shown(5_000_000 + ReelScrolling.BREAK_MILLIS);
+        assertEquals(java.util.Arrays.asList(false, true), pager.inputs);
+        assertEquals(1, ReelScrolling.userInput(pager, 1));
+        play(pager, 100, ReelScrolling.CAP - 1);
+        assertEquals(1, ReelScrolling.userInput(pager, 1));
+    }
+
+    @Test
+    public void stopReelsScrollingKeepsSwipesOffAfterABreak() {
+        Pager pager = new Pager();
+        ReelScrolling.pager(pager);
+        play(pager, 0, ReelScrolling.CAP);
+        Settings.STOP_REELS_SCROLLING.save(true);
+        ReelScrolling.hidden(1_000);
+        ReelScrolling.shown(1_000 + ReelScrolling.BREAK_MILLIS);
+        assertEquals(java.util.Collections.singletonList(false), pager.inputs);
+        assertEquals(0, ReelScrolling.userInput(pager, 1));
+    }
+
+    @Test
+    public void aPagerWithoutTheSetterIsReportedNotThrown() {
+        Object pager = new Object();
+        ReelScrolling.pager(pager);
+        for (int position = 0; position < ReelScrolling.CAP; position++) ReelScrolling.page(pager, position);
+        assertFalse(HookStatus.missing(FamilyNames.REEL_SCROLLING).isEmpty());
+        assertEquals(0, ReelScrolling.userInput(pager, 1));
+    }
+}

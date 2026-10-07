@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Stop Reels scrolling has a second switch, Stop after 20 reels, off to start. After 20 reels in a session, swiping in Reels stops until Instagram has been in the background for 15 minutes. A reel you open from a message still plays.
+
 * **Instagram:** New patch, Clear the media cache, in simple mode with its switch off. With it on, Instagram's cache of images and videos is emptied each time Instagram goes to the background with more than 500 MB in it. A Clear the cache now row does it at once and shows what it freed. Your sign-in, drafts and settings stay.
 
 * **Instagram:** New patch, Group Instagram's notifications, in simple mode with its switch off. With Group notifications on, every notification Instagram posts joins one group that shows how many it holds, so they stop filling the shade. Group by type gives each kind its own group. Tapping a notification still opens what it did.
