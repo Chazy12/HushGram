@@ -980,7 +980,7 @@ shared-call Lapp/hushgram/extension/instagram/misc/VersionCode;->read(Landroid/c
 # before it plays one of Instagram's own animations to LikeAnimation.allow, once each, and nowhere else.
 start-call Lapp/hushgram/extension/instagram/feed/LikeAnimation;->pick(Ljava/lang/Object;)Ljava/lang/Object; in instance (Lcom/instagram/common/session/UserSession;LX/02IM;)V holding LX/02IM;->A0W:LX/02IM;
 once-call Lapp/hushgram/extension/instagram/feed/LikeAnimation;->pick(Ljava/lang/Object;)Ljava/lang/Object; in instance (Lcom/instagram/common/session/UserSession;LX/02IM;)V holding LX/02IM;->A0W:LX/02IM;
-once-call Lapp/hushgram/extension/instagram/feed/LikeAnimation;->allow(Z)Z in instance (Lcom/instagram/common/session/UserSession;LX/02IM;)V holding LX/02IM;->A0W:LX/02IM;
+once-call Lapp/hushgram/extension/instagram/feed/LikeAnimation;->allow(I)Z in instance (Lcom/instagram/common/session/UserSession;LX/02IM;)V holding LX/02IM;->A0W:LX/02IM;
 # Clear the media cache hands MediaCache.beforeVideoCache the folder first thing in the method that
 # names the video cache's three folders (08nf.A00 on 450), the one static (Integer, String) method
 # holding all three. Instagram's only builder of its video cache asks it for the folder before it

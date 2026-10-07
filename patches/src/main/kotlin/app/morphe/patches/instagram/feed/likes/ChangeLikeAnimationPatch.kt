@@ -38,10 +38,12 @@ private const val ENUM = "Ljava/lang/Enum;"
 
 internal const val LIKE_ANIMATION = "$EXTENSION_PACKAGE/feed/LikeAnimation;"
 internal const val PICK_LIKE_ANIMATION = "$LIKE_ANIMATION->pick(Ljava/lang/Object;)Ljava/lang/Object;"
-internal const val ALLOW_LIKE_ANIMATION = "$LIKE_ANIMATION->allow(Z)Z"
+internal const val ALLOW_LIKE_ANIMATION = "$LIKE_ANIMATION->allow(I)Z"
 
-/** The extension's stubs the patch fills: Instagram's animation type, and its value for the plain heart. */
-internal const val ANIMATION_TYPE_STUB = "animationType"
+/**
+ * The extension's stub the patch fills: the animation type's value for the plain heart. The
+ * extension reads the type itself off that value.
+ */
 internal const val NO_ANIMATION_STUB = "noAnimation"
 
 /**
@@ -148,7 +150,6 @@ internal fun BytecodePatchContext.findLikeAnimation(): LikeAnimationAnchors {
                 AccessFlags.STATIC.isSet(it.accessFlags) && AccessFlags.PUBLIC.isSet(it.accessFlags)
         } ?: refuse("the extension has no $hook")
     }
-    extension.stub(ANIMATION_TYPE_STUB, "Ljava/lang/Class;") ?: refuse("$LIKE_ANIMATION has no static Class $ANIMATION_TYPE_STUB()")
     extension.stub(NO_ANIMATION_STUB, "Ljava/lang/Object;") ?: refuse("$LIKE_ANIMATION has no static Object $NO_ANIMATION_STUB()")
     return LikeAnimationAnchors(configure, animation, none, gate)
 }
@@ -156,7 +157,8 @@ internal fun BytecodePatchContext.findLikeAnimation(): LikeAnimationAnchors {
 /**
  * The check's answer goes through [ALLOW_LIKE_ANIMATION] right after it's kept, so it's yes while
  * an animation is picked; then, first thing in the set-up, Instagram's animation goes through
- * [PICK_LIKE_ANIMATION], which answers the picked one in its place. The stubs are filled last.
+ * [PICK_LIKE_ANIMATION], which answers the picked one in its place. The stub is filled last. The
+ * check's answer goes in as an int, since ART may type the register holding it as one.
  * A branch that lands on the check's test would skip the first, so one fails the patch first.
  */
 internal fun BytecodePatchContext.applyLikeAnimation(anchors: LikeAnimationAnchors) {
@@ -185,13 +187,6 @@ internal fun BytecodePatchContext.applyLikeAnimation(anchors: LikeAnimationAncho
 
     val extension = mutableClassDefBy(LIKE_ANIMATION)
     fun stub(name: String): MutableMethod = extension.methods.single { it.name == name && AccessFlags.STATIC.isSet(it.accessFlags) }
-    stub(ANIMATION_TYPE_STUB).addInstructions(
-        0,
-        """
-            const-class v0, ${anchors.animation}
-            return-object v0
-        """,
-    )
     stub(NO_ANIMATION_STUB).addInstructions(
         0,
         """

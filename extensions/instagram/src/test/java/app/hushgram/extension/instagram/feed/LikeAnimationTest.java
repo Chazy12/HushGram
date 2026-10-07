@@ -122,9 +122,19 @@ public class LikeAnimationTest {
     public void unpatchedTheHooksChangeNothing() {
         Object heart = new Object();
         assertSame(heart, LikeAnimation.pick(heart));
-        assertFalse(LikeAnimation.allow(false));
-        assertTrue(LikeAnimation.allow(true));
+        assertFalse(LikeAnimation.allow(0));
+        assertTrue(LikeAnimation.allow(1));
+        assertTrue("any non-zero answer is Instagram's yes", LikeAnimation.allow(2));
+        assertNull(LikeAnimation.animationType());
         assertTrue(LikeAnimation.names().isEmpty());
+    }
+
+    /** The type comes off the plain heart's value, the one thing the patch fills in. */
+    @Test
+    public void theTypeIsThePlainHeartsEnum() {
+        assertSame(Kind.class, LikeAnimation.typeOf(Kind.UNRECOGNIZED));
+        assertNull(LikeAnimation.typeOf(null));
+        assertNull("not an enum's value", LikeAnimation.typeOf("UNRECOGNIZED"));
     }
 
     @Test

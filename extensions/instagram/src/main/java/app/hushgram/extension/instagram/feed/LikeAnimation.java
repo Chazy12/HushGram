@@ -29,8 +29,9 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  * back. Nothing Instagram stores is written, so with the switch off or HushGram paused the plain
  * heart (or a Rings creator's own animation) is back on the next post set up.
  *
- * <p>The animations are Instagram's own enum. The patch fills {@link #animationType} and
- * {@link #noAnimation} in, which is how the settings screen lists them by name.
+ * <p>The animations are Instagram's own enum. The patch fills {@link #noAnimation} in with its
+ * plain heart, and {@link #animationType} reads the enum off that, which is how the settings
+ * screen lists them by name.
  *
  * <p>Both hooks fail open: with the switch off, nothing picked, HushGram paused, the settings not
  * read yet, a picked name this Instagram doesn't have or anything thrown, Instagram decides as it
@@ -49,10 +50,16 @@ public final class LikeAnimation {
     private LikeAnimation() {
     }
 
-    /** Filled in by the patch: Instagram's like animation type, or null unpatched. */
+    /** Instagram's like animation type, the enum of the plain heart, or null unpatched. */
     @Nullable
     static Class<?> animationType() {
-        return null;
+        return typeOf(noAnimation());
+    }
+
+    /** The enum [value] belongs to, or null when it isn't an enum's value. */
+    @Nullable
+    static Class<?> typeOf(@Nullable Object value) {
+        return value instanceof Enum<?> ? ((Enum<?>) value).getDeclaringClass() : null;
     }
 
     /** Filled in by the patch: the type's value for the plain heart, or null unpatched. */
@@ -92,8 +99,8 @@ public final class LikeAnimation {
      * Injected right after the check Instagram makes before it plays one of its own animations.
      * Answers yes while an animation is picked, and Instagram's answer otherwise. Never throws.
      */
-    public static boolean allow(boolean instagram) {
-        return allow(instagram, LikeAnimation::chosen);
+    public static boolean allow(int instagram) {
+        return allow(instagram != 0, LikeAnimation::chosen);
     }
 
     static boolean allow(boolean instagram, Supplier<Object> chosen) {

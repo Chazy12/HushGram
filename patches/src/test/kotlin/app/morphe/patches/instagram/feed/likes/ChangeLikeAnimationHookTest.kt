@@ -34,8 +34,8 @@ import org.junit.Test
 
 /**
  * The double-tap heart's set-up for a post hands Instagram's animation to LikeAnimation.pick first
- * and its check before playing one of Instagram's own to LikeAnimation.allow, and the extension's
- * stubs answer the animation type and its plain heart's value.
+ * and its check before playing one of Instagram's own to LikeAnimation.allow, as an int, and the
+ * extension's stub answers the plain heart's value. Nothing else of the extension's is filled in.
  */
 class ChangeLikeAnimationHookTest {
     @Test
@@ -62,10 +62,9 @@ class ChangeLikeAnimationHookTest {
         assertEquals("the test reads that", 0, (code[10] as OneRegisterInstruction).registerA)
         assertTrue("once each", code.count { it.calls(PICK_LIKE_ANIMATION) } == 1 && code.count { it.calls(ALLOW_LIKE_ANIMATION) } == 1)
 
-        assertEquals(listOf("const-class", "return-object"), context.stub(ANIMATION_TYPE_STUB).take(2).map { it.opcode.name })
-        assertEquals(ANIMATION, (context.stub(ANIMATION_TYPE_STUB)[0] as ReferenceInstruction).reference.toString())
         assertEquals(listOf("sget-object", "return-object"), context.stub(NO_ANIMATION_STUB).take(2).map { it.opcode.name })
         assertEquals("$ANIMATION->NONE:$ANIMATION", (context.stub(NO_ANIMATION_STUB)[0] as ReferenceInstruction).reference.toString())
+        assertTrue("the type is read off that value, not written in", context.stub("animationType").none { it.opcode == Opcode.CONST_CLASS })
     }
 
     @Test
@@ -97,7 +96,7 @@ class ChangeLikeAnimationHookTest {
     /**
      * On every declared build's fixture: the view's one set-up for a post takes the session and the
      * animation enum, compares it with the plain heart's value, checks the session once, and gets
-     * both hooks and the stubs.
+     * both hooks and the stub.
      */
     @Test
     fun eachDeclaredBuildPlaysThePickedAnimation() {
@@ -133,7 +132,6 @@ class ChangeLikeAnimationHookTest {
                 assertTrue("${bundle.name}: the set-up after", code.drop(allow).any { it.calls("$LIKE_ACTION_VIEW->$SET_UP_CUSTOM_LIKES($animation)V") })
                 assertEquals(bundle.name, 1, code.count { it.calls(PICK_LIKE_ANIMATION) })
                 assertEquals(bundle.name, 1, code.count { it.calls(ALLOW_LIKE_ANIMATION) })
-                assertEquals(bundle.name, animation, (context.stub(ANIMATION_TYPE_STUB)[0] as ReferenceInstruction).reference.toString())
                 assertEquals(bundle.name, anchors.none.toString(), (context.stub(NO_ANIMATION_STUB)[0] as ReferenceInstruction).reference.toString())
                 checked++
             }
