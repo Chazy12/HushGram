@@ -606,7 +606,7 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         }
 
         if (build.contains(PatchFamily.TAP_TO_PLAY) || build.contains(PatchFamily.RESUME_LONG_VIDEOS)
-                || build.contains(PatchFamily.PLAYBACK_QUALITY)) {
+                || build.contains(PatchFamily.PLAYBACK_QUALITY) || build.contains(PatchFamily.DATA_SAVER)) {
             PreferenceCategory playback = category(screen, L10n.t("Playback"));
             if (build.contains(PatchFamily.TAP_TO_PLAY)) {
                 playback.addPreference(toggle(context, Settings.TAP_TO_PLAY, L10n.t("Tap to play"),
@@ -629,6 +629,15 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                 playback.addPreference(toggle(context, Settings.DEFAULT_PLAYBACK_QUALITY, L10n.t("Default playback quality"),
                         L10n.t("Videos, reels and stories play at the quality below, starting with the next one you open.")));
                 playback.addPreference(playbackQualityRow(context));
+            }
+            if (build.contains(PatchFamily.DATA_SAVER)) {
+                playback.addPreference(toggle(context, Settings.DATA_SAVER, L10n.t("Data saver"),
+                        L10n.t("Photos load at a smaller size, and videos, reels and stories start at the lowest "
+                                + "quality. Grid thumbnails stay as they are. While it's saving, it wins over Full "
+                                + "resolution photos and the quality above.")));
+                playback.addPreference(toggle(context, Settings.DATA_SAVER_MOBILE_DATA_ONLY,
+                        L10n.t("Only on mobile data"),
+                        L10n.t("Wi-Fi stays as it is. Turn this off to save data on every network.")));
             }
         }
 

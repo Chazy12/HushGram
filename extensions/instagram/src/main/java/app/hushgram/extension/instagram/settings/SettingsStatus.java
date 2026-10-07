@@ -249,6 +249,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean dataSaver() {
+        return false;
+    }
+
     public static boolean translatedStart() {
         return false;
     }

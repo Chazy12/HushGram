@@ -9,6 +9,7 @@ import android.util.DisplayMetrics;
 
 import java.util.function.BooleanSupplier;
 
+import app.hushgram.extension.instagram.media.DataSaver;
 import app.hushgram.extension.instagram.settings.FamilyNames;
 import app.hushgram.extension.instagram.settings.Settings;
 import app.hushgram.extension.shared.Logger;
@@ -54,10 +55,14 @@ public final class LargerPhotos {
     /**
      * Injected at the start of Instagram's size picker, with the width it's asked to pick for.
      * Answers {@link #WIDTH} for a photo shown across a screen narrower than that, while the switch
-     * is on, and the width otherwise. Never throws.
+     * is on, and the width otherwise. Data saver answers first: while it's saving, a photo shown
+     * across the screen is asked for at its smaller width instead. Never throws.
      */
     public static int wanted(int width) {
-        return wanted(width, shorterSide(), LargerPhotos::switchedOn);
+        int shorter = shorterSide();
+        int saved = DataSaver.photoWidth(width, shorter);
+        if (saved != width) return saved;
+        return wanted(width, shorter, LargerPhotos::switchedOn);
     }
 
     static int wanted(int width, int shorter, BooleanSupplier on) {

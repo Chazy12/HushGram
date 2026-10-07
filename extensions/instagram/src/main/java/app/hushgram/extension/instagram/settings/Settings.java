@@ -627,6 +627,22 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting ASK_FOR_LARGER_PHOTOS =
             new BooleanSetting("hushgram_ask_for_larger_photos", FALSE);
 
+    /**
+     * Photos shown across the screen are asked for at a smaller width, and videos start at the
+     * lowest quality, through Full resolution photos' and Default playback quality's hooks
+     * ({@link app.hushgram.extension.instagram.media.DataSaver}). Wins over both while it's saving.
+     * Off to start.
+     */
+    public static final BooleanSetting DATA_SAVER =
+            new BooleanSetting("hushgram_data_saver", FALSE);
+
+    /**
+     * Data saver saves only while the phone is on mobile data. It picks where, not whether, so it
+     * isn't a switch Pause turns off: Data saver is. Starts on, so Wi-Fi stays as it is.
+     */
+    public static final BooleanSetting DATA_SAVER_MOBILE_DATA_ONLY =
+            new BooleanSetting("hushgram_data_saver_mobile_data_only", TRUE, parent(DATA_SAVER));
+
     // ---- Downloads -------------------------------------------------------------------------
     // What every save reads when it starts (app.hushgram.extension.instagram.download), ported
     // with the save pipeline from Hushfacebook 3a473639 with the same types and defaults, keyed

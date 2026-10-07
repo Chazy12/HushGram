@@ -65,6 +65,9 @@ public final class ConfigurationBackup {
             settings.put(Settings.GROUP_NOTIFICATIONS_BY_TYPE.key, Settings.GROUP_NOTIFICATIONS_BY_TYPE);
         }
         if (PatchFamily.PLAYBACK_QUALITY.inBuild()) settings.put(Settings.PLAYBACK_QUALITY.key, Settings.PLAYBACK_QUALITY);
+        if (PatchFamily.DATA_SAVER.inBuild()) {
+            settings.put(Settings.DATA_SAVER_MOBILE_DATA_ONLY.key, Settings.DATA_SAVER_MOBILE_DATA_ONLY);
+        }
         if (PatchFamily.TAP_TO_PLAY.inBuild()) settings.put(Settings.TAP_TO_PLAY_SCOPE.key, Settings.TAP_TO_PLAY_SCOPE);
         if (PatchFamily.STORY_TIME.inBuild()) settings.put(Settings.STORY_TIME_MODE.key, Settings.STORY_TIME_MODE);
         if (PatchFamily.REEL_DOWNLOAD.inBuild() || PatchFamily.STORY_DOWNLOAD.inBuild()

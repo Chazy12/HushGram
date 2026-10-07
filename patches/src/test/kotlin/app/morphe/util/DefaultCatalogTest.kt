@@ -28,6 +28,7 @@ import app.morphe.patches.instagram.feed.swipecreate.stopSwipeToCreatePatch
 import app.morphe.patches.instagram.feed.tabswipe.stopTabSwipingPatch
 import app.morphe.patches.instagram.misc.cache.clearMediaCachePatch
 import app.morphe.patches.instagram.misc.notifications.groupNotificationsPatch
+import app.morphe.patches.instagram.media.quality.dataSaverPatch
 import app.morphe.patches.instagram.media.quality.defaultPlaybackQualityPatch
 import app.morphe.patches.instagram.media.resume.resumeLongVideosPatch
 import app.morphe.patches.instagram.media.taptoplay.tapToPlayPatch
@@ -78,6 +79,7 @@ class DefaultCatalogTest {
         clearMediaCachePatch,
         copyCommentPatch,
         fullResolutionPhotosPatch,
+        dataSaverPatch,
         groupNotificationsPatch,
         hideHighlightsPatch,
         hideHomeFeedPatch,
@@ -151,7 +153,7 @@ class DefaultCatalogTest {
     }
 
     @Test fun initiallyNeutralControlsAreAvailableInSimpleMode() {
-        assertEquals(18, neutral.size)
+        assertEquals(19, neutral.size)
         neutral.forEach { assertEquals(it.name, true, it.use) }
     }
 
@@ -163,7 +165,7 @@ class DefaultCatalogTest {
     @Test fun generatedCatalogMatchesAllReviewedDeclarations() {
         val all = prior + neutral + optIn
         val declarations = all.associate { it.name!! to it.use }
-        assertEquals("every named patch needs one reviewed decision", 62, all.size)
+        assertEquals("every named patch needs one reviewed decision", 63, all.size)
         assertEquals("the review must not name a patch twice", all.size, declarations.size)
         val file = File("patches-list.json").takeIf(File::isFile) ?: File("../patches-list.json")
         val rows = JsonParser.parseString(file.readText()).asJsonObject.getAsJsonArray("patches")

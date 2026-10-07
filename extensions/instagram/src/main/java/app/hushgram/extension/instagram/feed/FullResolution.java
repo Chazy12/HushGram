@@ -11,6 +11,7 @@ import java.util.function.BooleanSupplier;
 
 import app.hushgram.extension.instagram.download.InstagramMedia;
 import app.hushgram.extension.instagram.settings.FamilyNames;
+import app.hushgram.extension.instagram.media.DataSaver;
 import app.hushgram.extension.instagram.settings.Settings;
 import app.hushgram.extension.shared.Logger;
 import app.hushgram.extension.shared.Utils;
@@ -222,6 +223,7 @@ public final class FullResolution {
     }
 
     static boolean switchedOn() {
-        return Utils.settingsReady() && Settings.FULL_RESOLUTION_PHOTOS.get();
+        // Data saver wins while it's saving: the smaller size it asked for stays.
+        return Utils.settingsReady() && Settings.FULL_RESOLUTION_PHOTOS.get() && !DataSaver.saving();
     }
 }

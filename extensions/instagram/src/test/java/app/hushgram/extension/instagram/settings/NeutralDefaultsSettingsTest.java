@@ -55,7 +55,7 @@ public class NeutralDefaultsSettingsTest {
         initiallyOff = new BooleanSetting[]{Settings.COPY_COMMENTS, Settings.SAVE_COMMENT_PHOTOS,
                 Settings.HIDE_HIGHLIGHTS, Settings.HIDE_NOTES_ROW, Settings.HIDE_INSTANTS,
                 Settings.STOP_SWIPE_TO_CREATE, Settings.STOP_REELS_SCROLLING, Settings.REEL_CAP, Settings.FULL_RESOLUTION_PHOTOS, Settings.ASK_FOR_LARGER_PHOTOS,
-                Settings.HIDE_HOME_FEED, Settings.STOP_TAB_SWIPING, Settings.CLEAR_MEDIA_CACHE, Settings.GROUP_NOTIFICATIONS,
+                Settings.HIDE_HOME_FEED, Settings.STOP_TAB_SWIPING, Settings.DATA_SAVER, Settings.CLEAR_MEDIA_CACHE, Settings.GROUP_NOTIFICATIONS,
                 Settings.LOCK_MESSAGES, Settings.LOCK_APP,
                 Settings.HIDE_SCREENSHOTS,
                 Settings.ALLOW_SCREENSHOTS,
@@ -67,7 +67,7 @@ public class NeutralDefaultsSettingsTest {
         PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.COMMENT_COPY, PatchFamily.COMMENT_PHOTO,
                 PatchFamily.PROFILE_HIGHLIGHTS, PatchFamily.NOTES_ROW, PatchFamily.INSTANTS, PatchFamily.SWIPE_TO_CREATE,
                 PatchFamily.REEL_SCROLLING, PatchFamily.STORY_RING, PatchFamily.FULL_RESOLUTION, PatchFamily.HOME_FEED,
-                PatchFamily.TAB_SWIPE, PatchFamily.MEDIA_CACHE, PatchFamily.NOTIFICATION_GROUPS, PatchFamily.MESSAGES_LOCK, PatchFamily.SCREENSHOT_REPORTS, PatchFamily.SCREENSHOT_BLOCK, PatchFamily.KEEP_IN_CHAT, PatchFamily.LIVE_SEEN);
+                PatchFamily.TAB_SWIPE, PatchFamily.DATA_SAVER, PatchFamily.MEDIA_CACHE, PatchFamily.NOTIFICATION_GROUPS, PatchFamily.MESSAGES_LOCK, PatchFamily.SCREENSHOT_REPORTS, PatchFamily.SCREENSHOT_BLOCK, PatchFamily.KEEP_IN_CHAT, PatchFamily.LIVE_SEEN);
     }
 
     @After public void restore() throws Exception {

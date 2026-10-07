@@ -69,6 +69,7 @@ public final class FamilyNames {
     public static final String TAP_TO_PLAY = "Tap to play";
     public static final String RESUME_LONG_VIDEOS = "Resume long videos";
     public static final String PLAYBACK_QUALITY = "Default playback quality";
+    public static final String DATA_SAVER = "Data saver";
     public static final String TRANSLATED_START = "Start on x86 devices";
     public static final String DEVELOPER_OPTIONS = "Open developer options";
     public static final String PURE_BLACK = "Pure black dark mode";
