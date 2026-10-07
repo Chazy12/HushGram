@@ -19,8 +19,10 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  * message's kind whether it can be saved, and a voice message always says no. The patch hands
  * {@link #offer} that answer and the message right after it's given, and a yes from here lets Save
  * in. Everything else Instagram checks before it shows Save, such as whether the chat allows it,
- * still decides. A voice message the server marks to be played once keeps Instagram's no, and so
- * does one whose recording isn't on Meta's media servers.
+ * still decides. Only a voice message the server marks permanent gets the yes: one marked to be
+ * played once or replayed, one with no mark, and one whose recording isn't on Meta's media servers
+ * keep Instagram's no. Instagram's own check for a photo or video sent in a chat asks the same
+ * thing, an explicit "permanent", and a voice message from the server carries that mark.
  *
  * <p>A tap on Save hands the message to Instagram's saver, which only knows photos and videos. The
  * saver's entry asks {@link #save} first: a voice message's recording is saved here, and anything
@@ -54,6 +56,7 @@ public final class VoiceMessage {
     // nothing read from the message goes in.
     static final String OFFERED = "Save offered";
     static final String PLAYED_ONCE = "sent to be played once";
+    static final String NO_MODE = "no view mode";
     static final String NOT_META = "recording not on Meta's servers";
 
     /** The view mode of a recording anyone in the chat can play again, as every voice message used to be. */
@@ -75,8 +78,9 @@ public final class VoiceMessage {
             String address = reads.audio(message);
             if (address == null) return false;
             HookStatus.invoked(FamilyNames.VOICE_MESSAGE);
-            if (!permanent(reads.viewMode(message))) {
-                HookStatus.counted(FamilyNames.VOICE_MESSAGE, PLAYED_ONCE);
+            String mode = reads.viewMode(message);
+            if (!permanent(mode)) {
+                HookStatus.counted(FamilyNames.VOICE_MESSAGE, mode == null || mode.isEmpty() ? NO_MODE : PLAYED_ONCE);
                 return false;
             }
             if (MediaUrlPolicy.shapeRefusal(address) != null) {
@@ -120,11 +124,12 @@ public final class VoiceMessage {
     }
 
     /**
-     * Whether a recording with [viewMode] can be kept: one marked permanent, and one the server
-     * gave no view mode, as it didn't before it had any other.
+     * Whether a recording with [viewMode] can be kept: only one marked permanent. No mark, or one
+     * this doesn't know, counts as not permanent, so a recording sent to be played once is never
+     * offered or saved because its mark was missing or new.
      */
     static boolean permanent(String viewMode) {
-        return viewMode == null || viewMode.isEmpty() || PERMANENT.equals(viewMode);
+        return PERMANENT.equals(viewMode);
     }
 
     static boolean on() {

@@ -11,7 +11,7 @@ Every HushGram release, newest first.
 ## 0.0.6 (2026-10-07)
 
 * **Instagram:** HushGram 0.0.6 adds 27 patches, for 75 in all, and moves to Instagram 450.0.0.50.77 (build 385611438, arm64-v8a) on Android 9 and newer. It needs Morphe Manager 1.34.0 or newer.
-* **Instagram:** New patch, Download voice messages, in simple mode with its switch off. Turn it on under Downloads and holding a voice message in a chat brings up Save, which keeps the recording as an M4A audio file in Recordings/Instagram, or Music/Instagram before Android 12. One sent to be played once never gets it. Asked for in #20.
+* **Instagram:** New patch, Download voice messages, in simple mode with its switch off. Turn it on under Downloads and holding a voice message in a chat brings up Save, which keeps the recording as an M4A audio file in Recordings/Instagram, or Music/Instagram before Android 12. It only shows on a voice message Instagram marks as one to keep, so one sent to be played once never gets it. Asked for in #20.
 
 * **Instagram:** Show if a profile follows you has a new switch under Profiles, Show it as a chip, that starts off. With it on, the answer sits in an outlined chip under the profile's posts, followers and following counts instead of the gray line by the name, and when you follow each other it says Following each other. The label by the name stays the default. Asked for in #24.
 

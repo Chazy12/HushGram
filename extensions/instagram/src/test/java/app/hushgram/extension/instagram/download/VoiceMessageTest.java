@@ -113,11 +113,27 @@ public class VoiceMessageTest {
                 + ": invoked 3, 0 found, 0 missing. Counted: sent to be played once 3"), HookStatus.report());
     }
 
-    @Test public void aPermanentOrUnmarkedOneGetsSave() {
-        for (String mode : new String[] {"permanent", "", null}) {
+    @Test public void aPermanentOneGetsSave() {
+        reads.mode = "permanent";
+        assertTrue(VoiceMessage.offer(false, message, reads));
+    }
+
+    /** A voice message whose mark can't be told is kept from Save, as Instagram's own check keeps it. */
+    @Test public void anUnmarkedOneKeepsInstagramsNo() {
+        for (String mode : new String[] {"", null, "PERMANENT", " permanent"}) {
             reads.mode = mode;
-            assertTrue(String.valueOf(mode), VoiceMessage.offer(false, message, reads));
+            assertFalse(String.valueOf(mode), VoiceMessage.offer(false, message, reads));
         }
+        assertEquals(Collections.singletonList(FamilyNames.VOICE_MESSAGE
+                + ": invoked 4, 0 found, 0 missing. Counted: no view mode 2, sent to be played once 2"), HookStatus.report());
+    }
+
+    @Test public void anUnmarkedOneIsntSaved() {
+        for (String mode : new String[] {"", null}) {
+            reads.mode = mode;
+            VoiceMessage.save(context, message, reads, save);
+        }
+        assertTrue(saved.isEmpty());
     }
 
     /** Only Meta's media servers count: a recording anywhere else, or a file on the phone, is never offered. */
