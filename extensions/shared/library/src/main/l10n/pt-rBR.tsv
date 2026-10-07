@@ -564,3 +564,5 @@ Open with	Abrir com
 This video has no file another player can open	Este vídeo não tem um arquivo que outro player consiga abrir
 Name saves by account and post time	Nomear o que é salvo por conta e hora do post
 Names each photo and video for the account that posted it and when, like username_20261005_143012, so an account's saves sort by date. A carousel page gets its number on the end. Takes the place of the video file name. A save that doesn't know who posted or when keeps its usual name.	Dá a cada foto e vídeo o nome da conta que postou e de quando, como username_20261005_143012, para que o que você salva de uma conta fique em ordem de data. Uma página de carrossel recebe o número no final. Substitui o nome do arquivo de vídeo. O que for salvo sem saber quem postou ou quando mantém o nome de sempre.
+Save profile picture	Salvar foto do perfil
+Adds Save profile picture to the menu on someone's profile. Saves their picture at the largest size Instagram has.	Adiciona Salvar foto do perfil ao menu no perfil de alguém. Salva a foto no maior tamanho que o Instagram tiver.
