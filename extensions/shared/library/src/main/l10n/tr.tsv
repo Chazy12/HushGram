@@ -562,3 +562,5 @@ No app on this phone can play this video	Bu telefonda bu videoyu oynatabilecek b
 Open in another player	Başka bir oynatıcıda aç
 Open with	Birlikte aç
 This video has no file another player can open	Bu videonun başka bir oynatıcının açabileceği bir dosyası yok
+Name saves by account and post time	Kaydedilenleri hesaba ve paylaşım zamanına göre adlandır
+Names each photo and video for the account that posted it and when, like username_20261005_143012, so an account's saves sort by date. A carousel page gets its number on the end. Takes the place of the video file name. A save that doesn't know who posted or when keeps its usual name.	Her fotoğrafı ve videoyu, paylaşan hesaba ve zamana göre adlandırır, örneğin username_20261005_143012, böylece bir hesabın kaydedilenleri tarihe göre sıralanır. Bir karusel sayfası sonuna kendi numarasını alır. Video dosya adının yerini alır. Kimin ne zaman paylaştığını bilmeyen bir kayıt her zamanki adını korur.

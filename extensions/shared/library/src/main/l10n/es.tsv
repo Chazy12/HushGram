@@ -562,3 +562,5 @@ No app on this phone can play this video	Ninguna app de este teléfono puede rep
 Open in another player	Abrir en otro reproductor
 Open with	Abrir con
 This video has no file another player can open	Este video no tiene un archivo que otro reproductor pueda abrir
+Name saves by account and post time	Nombrar lo guardado por cuenta y hora de publicación
+Names each photo and video for the account that posted it and when, like username_20261005_143012, so an account's saves sort by date. A carousel page gets its number on the end. Takes the place of the video file name. A save that doesn't know who posted or when keeps its usual name.	Nombra cada foto y video según la cuenta que lo publicó y cuándo, como username_20261005_143012, para que lo guardado de una cuenta se ordene por fecha. Una página de un carrusel lleva su número al final. Reemplaza el nombre de archivo de los videos. Lo que se guarda sin saber quién lo publicó ni cuándo mantiene su nombre de siempre.

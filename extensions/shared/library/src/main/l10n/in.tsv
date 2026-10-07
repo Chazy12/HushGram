@@ -562,3 +562,5 @@ No app on this phone can play this video	Tidak ada aplikasi di ponsel ini yang d
 Open in another player	Buka di pemutar lain
 Open with	Buka dengan
 This video has no file another player can open	Video ini tidak memiliki file yang dapat dibuka pemutar lain
+Name saves by account and post time	Beri nama simpanan menurut akun dan waktu posting
+Names each photo and video for the account that posted it and when, like username_20261005_143012, so an account's saves sort by date. A carousel page gets its number on the end. Takes the place of the video file name. A save that doesn't know who posted or when keeps its usual name.	Memberi nama setiap foto dan video menurut akun yang mempostingnya dan waktunya, seperti username_20261005_143012, sehingga simpanan dari satu akun terurut menurut tanggal. Halaman carousel mendapat nomornya di akhir. Menggantikan nama file video. Simpanan yang tidak tahu siapa yang memposting atau kapan tetap memakai nama biasanya.

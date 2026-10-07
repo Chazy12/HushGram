@@ -561,3 +561,5 @@ No app on this phone can play this video	이 휴대전화에는 이 동영상을
 Open in another player	다른 플레이어에서 열기
 Open with	다음으로 열기
 This video has no file another player can open	이 동영상에는 다른 플레이어가 열 수 있는 파일이 없습니다
+Name saves by account and post time	계정과 게시 시간으로 저장 파일 이름 짓기
+Names each photo and video for the account that posted it and when, like username_20261005_143012, so an account's saves sort by date. A carousel page gets its number on the end. Takes the place of the video file name. A save that doesn't know who posted or when keeps its usual name.	각 사진과 동영상의 이름을 username_20261005_143012처럼 게시한 계정과 게시 시간으로 지어, 한 계정의 저장 파일이 날짜순으로 정렬됩니다. 캐러셀 페이지는 끝에 번호가 붙습니다. 동영상 파일 이름 설정을 대신합니다. 누가 언제 게시했는지 모르는 저장 파일은 평소 이름을 그대로 씁니다.
