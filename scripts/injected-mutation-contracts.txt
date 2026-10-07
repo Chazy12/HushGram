@@ -726,6 +726,14 @@ once-call Lapp/hushgram/extension/instagram/reels/DoubleTapLike;->holdBackPost()
 # handler likes through the answer. It comes after the skip and forward gestures, so it isn't
 # first. The handler is the one method with the purge marker the patch finds it by.
 once-call Lapp/hushgram/extension/instagram/reels/DoubleTapLike;->likeAction(Ljava/lang/Object;)Ljava/lang/Object; in instance (*)V holding android_purge_26_q3_GestureActionHandler_handleDoubleTapMedia
+# Its On comments switch asks first thing in each comment row's double tap, which likes or unlikes
+# the comment, and returns false there the way the row does for a comment it can't like. 450 has
+# three such rows: two file fb_comment_double_tap (0SxY and 0Sxd, told apart by the field each reads
+# its row state from) and one files like_comment or unlike_comment (0SyG). Each gets a start-call;
+# no once-call, since the guard is in all three. Left out, a double tap on that row's comment likes it.
+start-call Lapp/hushgram/extension/instagram/reels/DoubleTapLike;->holdBackComment()Z in instance (Landroid/view/MotionEvent;)Z holding fb_comment_double_tap LX/0SxY;->A02:LX/0Bjh;
+start-call Lapp/hushgram/extension/instagram/reels/DoubleTapLike;->holdBackComment()Z in instance (Landroid/view/MotionEvent;)Z holding fb_comment_double_tap LX/0Sxd;->A02:LX/0ZOm;
+start-call Lapp/hushgram/extension/instagram/reels/DoubleTapLike;->holdBackComment()Z in instance (Landroid/view/MotionEvent;)Z holding like_comment unlike_comment
 #
 # Hide the Reels tab asks the extension first thing in the tab host's switch to a tab, the one
 # static method holding the report it files when it finds no pager, and the switch goes on with the

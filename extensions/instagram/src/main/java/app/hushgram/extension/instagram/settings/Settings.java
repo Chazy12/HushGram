@@ -549,6 +549,10 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting TURN_OFF_DOUBLE_TAP_LIKE_ON_REELS =
             new BooleanSetting("hushgram_turn_off_double_tap_like_on_reels", TRUE, parent(TURN_OFF_DOUBLE_TAP_LIKE));
 
+    /** Under {@link #TURN_OFF_DOUBLE_TAP_LIKE}: a double tap on a comment doesn't like it. Off to start. */
+    public static final BooleanSetting TURN_OFF_DOUBLE_TAP_LIKE_ON_COMMENTS =
+            new BooleanSetting("hushgram_turn_off_double_tap_like_on_comments", FALSE, parent(TURN_OFF_DOUBLE_TAP_LIKE));
+
     /**
      * Reels is off the tab bar, and a start or a switch meant for it lands on Home. Instagram builds
      * its tab list as it starts, so a change takes a restart. The patch is off in the default

@@ -554,6 +554,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     L10n.t("A double tap on a post doesn't like it. Turn this off to keep double tap to like on posts.")));
             reels.add(toggle(context, Settings.TURN_OFF_DOUBLE_TAP_LIKE_ON_REELS, L10n.t("On reels"),
                     L10n.t("A double tap on a reel doesn't like it. Turn this off to keep double tap to like on reels.")));
+            reels.add(toggle(context, Settings.TURN_OFF_DOUBLE_TAP_LIKE_ON_COMMENTS, L10n.t("On comments"),
+                    L10n.t("A double tap on a comment doesn't like it. Starts off, so comments keep double tap to like until you turn this on.")));
         }
         if (build.contains(PatchFamily.REELS_TAB)) {
             reels.add(toggle(context, Settings.HIDE_REELS_TAB, L10n.t("Hide the Reels tab"),
