@@ -334,6 +334,26 @@ public class CarouselSaveTest {
         assertClean();
     }
 
+    /**
+     * Download cover failed on a reel whose only cover address names its size (#79), which the
+     * photo save takes for a thumbnail's and turns down. The cover's sizes are all of the one
+     * picture, so the largest the reel states saves.
+     */
+    @Test public void aReelsCoverSavesWhenItsAddressNamesItsSize() throws Exception {
+        server.serve("/small.jpg", "image/jpeg", body(false));
+        server.serve("/cover.jpg", "image/jpeg", body(false));
+        MediaSave.Item reel = new MediaSave.Item(false, Arrays.asList(
+                new MediaSave.Rendition(server.origin() + "/small.jpg?stp=dst-jpg_e15_s150x150_tt6", 150, 266, 0),
+                new MediaSave.Rendition(server.origin() + "/cover.jpg?stp=dst-jpg_e15_p540x540_tt6", 540, 960, 0)),
+                null, PostDetails.of("7"));
+        assertNull("the photo save's ranking let a sized address in", RenditionPicker.pickImage(reel.renditions));
+        assertTrue(ReelDownload.saveCover(context, reel));
+        waitForSaves();
+        assertEquals(1, server.hits("/cover.jpg")); assertEquals(0, server.hits("/small.jpg"));
+        assertEquals(1, gallery.rows.size());
+        assertClean();
+    }
+
     /** The names the saves took, photos and videos together, sorted. Android 9 has them as files, later ones as rows. */
     private List<String> savedNames() {
         List<String> names = new ArrayList<>();

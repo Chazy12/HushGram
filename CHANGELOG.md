@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Download cover no longer fails with Download failed on a reel whose cover address has its size written into it, which the photo save mistook for a thumbnail. It saves the largest size the reel lists for its cover. Reported in #79, and thanks to @talhaeenss for finding the cause in #81.
+
 * **Instagram:** Download any reel saves every page of a carousel that turns up in Reels, in order. Before, it saved the first page whichever one you were looking at. Download as photo on a carousel with music saves them all too. Reported in #78.
 
 * **Instagram:** New patch, Hide the Threads button. Turn on its switch under Profiles and the Threads button at the top of a profile, yours or anyone else's, isn't built at all, so there's no gap where it was. The menu and the other buttons stay put. It's in the default selection with its switch off. Asked for in #50.
