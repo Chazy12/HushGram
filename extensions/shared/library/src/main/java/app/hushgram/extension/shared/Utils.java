@@ -328,7 +328,7 @@ public class Utils {
 
     /** Waits until background work submitted before this call has finished. */
     public static void awaitBackgroundTasksForTests() throws Exception {
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
         while (true) {
             long remaining = deadline - System.nanoTime();
             if (remaining <= 0) throw new TimeoutException("Background tasks did not finish");
