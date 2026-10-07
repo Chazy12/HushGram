@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Download any reel saves every page of a carousel that turns up in Reels, in order. Before, it saved the first page whichever one you were looking at. Download as photo on a carousel with music saves them all too. Reported in #78.
+
 * **Instagram:** New patch, Hide the Threads button. Turn on its switch under Profiles and the Threads button at the top of a profile, yours or anyone else's, isn't built at all, so there's no gap where it was. The menu and the other buttons stay put. It's in the default selection with its switch off. Asked for in #50.
 
 * **Instagram:** New patch, Emoji style. Instagram already loads Google's emoji font through Google Play services, but it only uses it for emoji your phone's own font is missing. Turn on Google's emoji everywhere under Layout and every emoji Instagram runs through Android's emoji support draws in Google's style instead. It's in the default selection with its switch off, and a change shows fully after Instagram restarts.

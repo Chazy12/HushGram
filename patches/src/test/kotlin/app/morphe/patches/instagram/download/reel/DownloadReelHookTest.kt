@@ -339,6 +339,7 @@ class DownloadReelHookTest {
             "trackFastStartUrl" to "$TRACK_DATA->BTF()Ljava/lang/String;",
             "musicStartMs" to "$MUSIC_CONSUMPTION->BTI()Ljava/lang/Integer;",
             "musicLengthMs" to "$MUSIC_CONSUMPTION->BwK()Ljava/lang/Integer;",
+            "carouselMedia" to "$MEDIA->A8k()Ljava/util/List;",
         )
         expected.forEach { (bridge, getter) ->
             val code = context.method(INSTAGRAM_MEDIA, bridge).code()
@@ -347,6 +348,21 @@ class DownloadReelHookTest {
             assertEquals(bridge, listOf(Opcode.CHECK_CAST, call) + answer, code.take(4).map { it.opcode })
             assertEquals(bridge, getter, code[1].referenceText())
         }
+    }
+
+    /**
+     * A carousel in the Reels viewer saved only its first page (#78), since nothing here read its
+     * pages. A build where they can't be told keeps the rest of the patch, with the bridge a stub.
+     */
+    @Test
+    fun aCarouselsPagesAreOptional() {
+        val context = PatchContexts.of(classes(leaveOutField = "carousel_media"))
+
+        context.offerDownloadOnEveryReel()
+
+        assertEquals("the carousel bridge was written", Opcode.CONST_4, context.method(INSTAGRAM_MEDIA, "carouselMedia").code().first().opcode)
+        assertEquals("a bridge was left out", Opcode.CHECK_CAST, context.method(INSTAGRAM_MEDIA, "videoVersions").code().first().opcode)
+        assertEquals("the handler was left out", Opcode.MOVE_OBJECT_FROM16, context.method(helper, "A0T").code().first().opcode)
     }
 
     /** A build whose picture has no candidates getter stops the patch before anything changes. */
@@ -500,12 +516,15 @@ class DownloadReelHookTest {
         assertEquals("a declared build has no fixture", versions, checked)
     }
 
-    /** The bridges this patch writes: the video's, and the picture's, which Download any story writes too. */
+    /**
+     * The bridges this patch writes: the video's, and the picture's, which Download any story writes
+     * too, the music's, and a carousel's pages, which Download any video writes too.
+     */
     private val reelBridges = setOf(
         "videoVersions", "dashManifest", "mediaId", "owner", "takenAt", "username", "versionUrl", "versionWidth", "versionHeight",
         "imageVersions", "imageCandidates", "candidateUrl", "candidateWidth", "candidateHeight",
         "musicMetadata", "metadataMusic", "clipsMetadata", "clipsMusic", "musicTrack", "musicConsumption", "trackUrl",
-        "trackFastStartUrl", "musicStartMs", "musicLengthMs",
+        "trackFastStartUrl", "musicStartMs", "musicLengthMs", "carouselMedia",
     )
 
     private fun assertFiltered(code: List<Instruction>, call: String, hook: String, media: Int? = null) {
@@ -676,6 +695,7 @@ class DownloadReelHookTest {
             "A2H" to ("music_metadata" to musicMetadata),
             "A33" to ("clips_metadata" to clipsMetadata),
             "ALU" to ("clips_metadata" to "Z"),
+            "A8k" to ("carousel_media" to "Ljava/util/List;"),
         ).filter { it.second.first != leaveOutField }.map { (name, field) -> getter(MEDIA, name, field.first, field.second) } +
             method(MEDIA, "getId", emptyList(), "Ljava/lang/String;", 1, static = false, body = """
                 const/4 v0, 0x0

@@ -16,6 +16,7 @@ import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.instagram.download.INSTAGRAM_MEDIA
 import app.morphe.patches.instagram.download.MEDIA
 import app.morphe.patches.instagram.download.captionBridges
+import app.morphe.patches.instagram.download.carouselBridge
 import app.morphe.patches.instagram.download.imageBridges
 import app.morphe.patches.instagram.download.mediaBridges
 import app.morphe.patches.instagram.download.pandoGetter
@@ -94,13 +95,13 @@ private const val GET_STRING = "Landroid/content/res/Resources;->getString(I)Lja
 
 /**
  * The bridges this patch writes: the post a menu is for, Instagram's Download row, the post's feed
- * state, the carousel page that state says is on screen, and a carousel's pages.
+ * state and the carousel page that state says is on screen. A carousel's pages are written by
+ * [carouselBridge], which Download on reels shares.
  */
 private const val FEED_MENU_MEDIA = "feedMenuMedia"
 private const val ADD_DOWNLOAD_ROW = "addDownloadRow"
 private const val FEED_MENU_ITEM_STATE = "feedMenuItemState"
 private const val CAROUSEL_INDEX = "carouselIndex"
-private const val CAROUSEL_MEDIA = "carouselMedia"
 
 /** Instagram's helpers on a Media, a class that keeps its name, among them the one answering a carousel's page. */
 internal const val MEDIA_EXT = "Lcom/instagram/feed/media/MediaExtKt;"
@@ -243,7 +244,6 @@ internal fun BytecodePatchContext.offerDownloadOnEveryVideo() {
     val postOf = bridge(FEED_MENU_MEDIA, "Ljava/lang/Object;")
     val itemStateOf = bridge(FEED_MENU_ITEM_STATE, "Ljava/lang/Object;")
     val indexOf = bridge(CAROUSEL_INDEX, "I")
-    val pagesOf = bridge(CAROUSEL_MEDIA, LIST)
     val rowStub = bridges.methods.singleOrNull {
         it.name == ADD_DOWNLOAD_ROW && AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" &&
             it.parameterTypes.map(Any::toString) == listOf("Ljava/lang/Object;", ARRAY_LIST)
@@ -275,6 +275,7 @@ internal fun BytecodePatchContext.offerDownloadOnEveryVideo() {
     }
     val writeBridges = mediaBridges(PATCH)
     val writeImageBridges = imageBridges(PATCH)
+    val writeCarouselBridge = carouselBridge(PATCH)
     val writeCaptionBridges = captionBridges(PATCH)
 
     // Last return first, so the indices before it stay where they were.
@@ -398,15 +399,6 @@ internal fun BytecodePatchContext.offerDownloadOnEveryVideo() {
             return p0
         """,
     )
-    pagesOf.addInstructions(
-        0,
-        """
-            check-cast p0, $MEDIA
-            invoke-virtual { p0 }, ${carousel.definingClass}->${carousel.name}()$LIST
-            move-result-object p0
-            return-object p0
-        """,
-    )
     bridges.methods.remove(rowStub)
     bridges.methods.add(downloadRow(rowStub, others))
     bridges.methods.remove(allRowStub)
@@ -429,6 +421,7 @@ internal fun BytecodePatchContext.offerDownloadOnEveryVideo() {
     })
     writeBridges()
     writeImageBridges()
+    writeCarouselBridge()
     writeCaptionBridges?.invoke()
 }
 

@@ -318,6 +318,22 @@ public class CarouselSaveTest {
         assertClean();
     }
 
+    /**
+     * A carousel's Download in the Reels viewer saved its first page whatever page was on screen
+     * (#78), since its own picture is the first page's. Every page saves now, in order, and the
+     * feed's photo and video switches, which belong to Download any video, don't leave any out.
+     */
+    @Test public void theReelsViewerSavesEveryPageOfACarousel() throws Exception {
+        Settings.DOWNLOAD_PHOTOS.save(false);
+        Settings.DOWNLOAD_VIDEOS.save(false);
+        MediaBridge.post = Arrays.asList(page(false, "/first.jpg", "1"), page(true, "/middle.mp4", "2"), page(false, "/last.jpg", "3"));
+        assertTrue(ReelDownload.saveReel(context, MediaBridge.post));
+        waitForSaves();
+        assertEquals(1, server.hits("/first.jpg")); assertEquals(1, server.hits("/middle.mp4")); assertEquals(1, server.hits("/last.jpg"));
+        assertEquals("Saved 3. Failed 0. Skipped 0.", ShadowToast.getTextOfLatestToast());
+        assertClean();
+    }
+
     /** The names the saves took, photos and videos together, sorted. Android 9 has them as files, later ones as rows. */
     private List<String> savedNames() {
         List<String> names = new ArrayList<>();
@@ -576,10 +592,16 @@ public class CarouselSaveTest {
         @Implementation protected static void addDownloadRow(Object menu, ArrayList<Object> rows) { rows.add(DOWNLOAD); }
         @Implementation protected static List<?> carouselMedia(Object media) { return media == post ? post : null; }
         @Implementation protected static int carouselIndex(Object itemState) { return (int) itemState; }
-        @Implementation protected static List<?> videoVersions(Object media) { return ((MediaSave.Item) media).video ? ((MediaSave.Item) media).renditions : null; }
-        @Implementation protected static String dashManifest(Object media) { return ((MediaSave.Item) media).manifest; }
+        @Implementation protected static List<?> videoVersions(Object media) {
+            return media instanceof MediaSave.Item && ((MediaSave.Item) media).video ? ((MediaSave.Item) media).renditions : null;
+        }
+        @Implementation protected static String dashManifest(Object media) { return media instanceof MediaSave.Item ? ((MediaSave.Item) media).manifest : null; }
         @Implementation protected static Object imageVersions(Object media) { return media; }
-        @Implementation protected static List<?> imageCandidates(Object media) { return ((MediaSave.Item) media).video ? null : ((MediaSave.Item) media).renditions; }
+        /** A carousel's own picture is its first page's, as Instagram's is. */
+        @Implementation protected static List<?> imageCandidates(Object media) {
+            MediaSave.Item item = (MediaSave.Item) (media instanceof List ? ((List<?>) media).get(0) : media);
+            return item.video ? null : item.renditions;
+        }
         @Implementation protected static String versionUrl(Object version) { return ((MediaSave.Rendition) version).url; }
         @Implementation protected static Integer versionWidth(Object version) { return ((MediaSave.Rendition) version).width; }
         @Implementation protected static Integer versionHeight(Object version) { return ((MediaSave.Rendition) version).height; }

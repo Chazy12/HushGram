@@ -37,7 +37,8 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  *   <li>The menu's handler asks {@link #save} first when Download is tapped. With the switch on,
  *       the reel is saved from the addresses its Media already holds, through {@link MediaSave},
  *       and Instagram's own download never starts. A photo the Reels viewer shows with its music
- *       has no video at all, so it saves its picture at the largest size instead (#71).
+ *       has no video at all, so it saves its picture at the largest size instead (#71). A carousel
+ *       there saves every page, in order (#78).
  *   <li>The menu's adder of one row asks {@link #rows} first for Download. A photo that comes with
  *       music gets two rows in its place, Download as video and Download as photo, as a photo
  *       story with music does. As video builds an MP4 of the photo with the post's part of the
@@ -73,6 +74,9 @@ public final class ReelDownload {
     static final String NO_MANIFEST = "no manifest";
     static final String HAS_IMAGE_CANDIDATES = "has image candidates";
     static final String SAVED_AS_PHOTO = "saved as photo";
+
+    /** Counted when a tap on Download finds a carousel, whose pages then save together (#78). */
+    static final String CAROUSEL = "carousel";
 
     /**
      * What the menu found for a photo with music, and what a tap on Download as video started:
@@ -363,7 +367,7 @@ public final class ReelDownload {
                 return true;
             }
             boolean started = VIDEO_OPTION.equals(row) ? saveAsVideo(context, media)
-                : PHOTO_OPTION.equals(row) ? savePicture(context, StoryDownload.pictures(media), media)
+                : PHOTO_OPTION.equals(row) ? savePhotos(context, media)
                 : COVER_OPTION.equals(row) ? saveCover(context, media)
                 : saveReel(context, media);
             if (!started) {
@@ -382,7 +386,8 @@ public final class ReelDownload {
     /**
      * Starts the save of the reel [media] and answers whether it started: its video, or, for an
      * item with neither a single video file nor a manifest, its picture at the largest size. The
-     * Reels viewer shows photos that come with music, and those have no video at all (#71).
+     * Reels viewer shows photos that come with music, and those have no video at all (#71). A
+     * carousel there has neither either, and saves every page ({@link #saveCarousel}).
      */
     static boolean saveReel(Context context, Object media) {
         List<MediaSave.Rendition> renditions = renditions(media);
@@ -396,6 +401,8 @@ public final class ReelDownload {
                     () -> "reel download tapped: " + files + " file(s)" + (dash ? " and a manifest" : ", no manifest"));
             return MediaSave.saveVideo(context, renditions, manifest, details(media));
         }
+        List<?> pages = carousel(media);
+        if (pages != null) return saveCarousel(context, media, pages);
         List<MediaSave.Rendition> pictures = StoryDownload.pictures(media);
         final int sizes = pictures.size();
         Logger.diagnosticInfo(DiagnosticCategory.DOWNLOADS, SOURCE,
@@ -403,6 +410,34 @@ public final class ReelDownload {
         if (sizes == 0) return false;
         HookStatus.counted(FamilyNames.REEL_DOWNLOAD, HAS_IMAGE_CANDIDATES);
         return savePicture(context, pictures, media);
+    }
+
+    /** Download as photo on [media]: every page of a carousel, else its picture at the largest size. */
+    private static boolean savePhotos(Context context, Object media) {
+        List<?> pages = carousel(media);
+        return pages != null ? saveCarousel(context, media, pages) : savePicture(context, StoryDownload.pictures(media), media);
+    }
+
+    /** A copy of [media]'s carousel pages when it has two or more, else null. */
+    private static List<?> carousel(Object media) {
+        List<?> pages = InstagramMedia.carouselMedia(media);
+        return pages == null || pages.size() < 2 ? null : new ArrayList<>(pages);
+    }
+
+    /**
+     * Starts the save of every one of [pages], the carousel [media]'s pages, in order, and answers
+     * whether it started or said why not. The Reels viewer shows a carousel as one item whose own
+     * picture is its first page's, and doesn't say which page is on screen, so every page goes (#78).
+     */
+    static boolean saveCarousel(Context context, Object media, List<?> pages) {
+        final int count = pages.size();
+        Logger.diagnosticInfo(DiagnosticCategory.DOWNLOADS, SOURCE, () -> "reel download tapped: a carousel of " + count + " pages");
+        HookStatus.counted(FamilyNames.REEL_DOWNLOAD, CAROUSEL);
+        if (count > MediaSave.MAX_BATCH_PAGES) {
+            Feedback.show(context, L10n.f(context, "Not saved: a carousel can have at most %1$d pages", MediaSave.MAX_BATCH_PAGES), true);
+            return true;
+        }
+        return MediaSave.saveBatch(context, VideoDownload.snapshot(pages, media, true, true, FamilyNames.REEL_DOWNLOAD), null);
     }
 
     /** Starts the save of [pictures], the sizes of [media]'s picture, at the largest, and answers whether it started. */

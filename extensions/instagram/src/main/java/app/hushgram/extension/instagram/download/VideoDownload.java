@@ -157,27 +157,37 @@ public final class VideoDownload {
                         MediaSave.MAX_BATCH_PAGES), true);
                 return;
             }
-            List<MediaSave.Item> snapshot = new ArrayList<>(ordered.size());
-            for (Object page : ordered) {
-                try {
-                    if (page == null) { snapshot.add(null); continue; }
-                    List<MediaSave.Rendition> renditions = ReelDownload.renditions(page);
-                    String manifest = InstagramMedia.dashManifest(page);
-                    boolean video = !renditions.isEmpty() || manifest != null;
-                    if (video) snapshot.add(videos ? new MediaSave.Item(true, renditions, manifest, details(page, post)) : null);
-                    else snapshot.add(photos ? new MediaSave.Item(false, StoryDownload.pictures(page), null,
-                            details(page, post)) : null);
-                } catch (Throwable failure) {
-                    HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "carousel page snapshot", failure);
-                    // An unreadable page fails once on the worker rather than silently disappearing.
-                    snapshot.add(new MediaSave.Item(true, null, null, null));
-                }
-            }
+            List<MediaSave.Item> snapshot = snapshot(ordered, post, videos, photos, FamilyNames.VIDEO_DOWNLOAD);
             if (!MediaSave.saveBatch(context, snapshot, null)) Feedback.show(context, L10n.t(context, "Download failed"), true);
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "carousel save", failure);
             Feedback.show(context, L10n.t(context, "Download failed"), true);
         }
+    }
+
+    /**
+     * Plain values from each of [pages], [post]'s carousel pages in order: a page with a video when
+     * [videos], a page with only a picture when [photos], and null for a page left out. A page that
+     * can't be read is counted under [family] and fails once on the worker.
+     */
+    static List<MediaSave.Item> snapshot(List<?> pages, Object post, boolean videos, boolean photos, String family) {
+        List<MediaSave.Item> snapshot = new ArrayList<>(pages.size());
+        for (Object page : pages) {
+            try {
+                if (page == null) { snapshot.add(null); continue; }
+                List<MediaSave.Rendition> renditions = ReelDownload.renditions(page);
+                String manifest = InstagramMedia.dashManifest(page);
+                boolean video = !renditions.isEmpty() || manifest != null;
+                if (video) snapshot.add(videos ? new MediaSave.Item(true, renditions, manifest, details(page, post)) : null);
+                else snapshot.add(photos ? new MediaSave.Item(false, StoryDownload.pictures(page), null,
+                        details(page, post)) : null);
+            } catch (Throwable failure) {
+                HookStatus.threw(family, "carousel page snapshot", failure);
+                // An unreadable page fails once on the worker rather than silently disappearing.
+                snapshot.add(new MediaSave.Item(true, null, null, null));
+            }
+        }
+        return snapshot;
     }
 
     /**

@@ -16,6 +16,7 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMuta
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.instagram.download.INSTAGRAM_MEDIA
 import app.morphe.patches.instagram.download.MEDIA
+import app.morphe.patches.instagram.download.carouselBridge
 import app.morphe.patches.instagram.download.imageBridges
 import app.morphe.patches.instagram.download.mediaBridges
 import app.morphe.patches.instagram.download.musicBridges
@@ -25,6 +26,7 @@ import app.morphe.patches.instagram.misc.extension.classesAccessing
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
 import app.morphe.patches.instagram.misc.extension.markers
+import app.morphe.patches.instagram.misc.extension.patchLog
 import app.morphe.patches.instagram.misc.extension.requireLocals
 import app.morphe.patches.instagram.misc.extension.requireStatusMethod
 import app.morphe.patches.instagram.misc.extension.typesMarked
@@ -194,6 +196,14 @@ internal fun BytecodePatchContext.offerDownloadOnEveryReel() {
     val writeBridges = mediaBridges(PATCH)
     val writeImageBridges = imageBridges(PATCH)
     val writeMusicBridges = musicBridges(PATCH)
+    // Only a carousel's Download reads its pages, so a build where they can't be told keeps
+    // Download on reels, which then saves a carousel's first page as before.
+    val writeCarouselBridge = try {
+        carouselBridge(PATCH)
+    } catch (unknown: PatchException) {
+        patchLog.warning("${unknown.message}. $PATCH goes in saving only a carousel's first page.")
+        null
+    }
     val writeRowBridges = rowBridges(icon, adder)
     val menu = mutable(handler)
     menu.requireLocals(PATCH, 3)
@@ -280,6 +290,7 @@ internal fun BytecodePatchContext.offerDownloadOnEveryReel() {
     writeBridges()
     writeImageBridges()
     writeMusicBridges()
+    writeCarouselBridge?.invoke()
     writeRowBridges()
 }
 

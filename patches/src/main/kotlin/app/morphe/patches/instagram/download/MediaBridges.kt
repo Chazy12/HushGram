@@ -231,6 +231,15 @@ internal fun BytecodePatchContext.usernameBridge(patch: String): () -> Unit {
     return bridgeWriter(patch, listOf(Bridge("username", USER, virtual(username))))
 }
 
+/**
+ * The same for a carousel's pages, `carousel_media`, which Save all reads in the feed and the Reels
+ * viewer's Download saves, since a carousel's own picture there is its first page's (#78).
+ */
+internal fun BytecodePatchContext.carouselBridge(patch: String): () -> Unit {
+    val pages = pandoGetter(patch, MEDIA, "carousel_media", "Ljava/util/List;")
+    return bridgeWriter(patch, listOf(Bridge("carouselMedia", MEDIA, virtual(pages))))
+}
+
 /** The same for whether a story is a photo with music, which Instagram serves as a video. */
 internal fun BytecodePatchContext.storyMusicBridges(patch: String): () -> Unit {
     val photoWithMusic = pandoGetter(patch, MEDIA, "is_story_image_with_music", "Ljava/lang/Boolean;")
