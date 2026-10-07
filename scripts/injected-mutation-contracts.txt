@@ -115,8 +115,8 @@ once-call Lapp/hushgram/extension/instagram/direct/KeepInChat;->viewMode(Ljava/l
 # the one method of that shape calling Window.setFlags with FLAG_SECURE, so it doesn't count a window
 # it never marked. Its partner clearing the flag (04Bs.A02) calls clearFlags and is left alone. A call
 # left behind turns disappearing photos and videos black in screenshots again.
-no-call Landroid/view/Window;->setFlags(II)V outside Lapp/hushgram/
-no-call Landroid/view/Window;->addFlags(I)V outside Lapp/hushgram/
+no-call Landroid/view/Window;->setFlags(II)V outside Lapp/hushgram/extension/
+no-call Landroid/view/Window;->addFlags(I)V outside Lapp/hushgram/extension/
 start-call Lapp/hushgram/extension/instagram/direct/ScreenshotBlock;->lift()Z in instance (Landroid/view/Window;Ljava/lang/String;)V calling static Lapp/hushgram/extension/instagram/direct/ScreenshotBlock;->setFlags(Landroid/view/Window;II)V holding Landroid/view/WindowManager$LayoutParams;->flags:I
 once-call Lapp/hushgram/extension/instagram/direct/ScreenshotBlock;->lift()Z in instance (Landroid/view/Window;Ljava/lang/String;)V calling static Lapp/hushgram/extension/instagram/direct/ScreenshotBlock;->setFlags(Landroid/view/Window;II)V holding Landroid/view/WindowManager$LayoutParams;->flags:I
 # Don't report screenshots asks ScreenshotReports.hold() first where each of Instagram's two

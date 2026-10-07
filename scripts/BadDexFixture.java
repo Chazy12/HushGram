@@ -219,6 +219,7 @@ public class BadDexFixture {
     private static final String SHORTCUTS = "Lfixture/Shortcuts;";
     private static final String NOTIFICATION_MANAGER = "Landroid/app/NotificationManager;";
     private static final String NOTIFICATION = "Landroid/app/Notification;";
+    private static final String WINDOW = "Landroid/view/Window;";
     private static final String SETTINGS_ENTRY = "Lapp/hushgram/extension/fixture/settings/SettingsEntry;";
     private static final String OVERRIDE_TABLE = "Lcom/facebook/mobileconfig/MobileConfigOverridesTableHolder;";
     private static final String OVERRIDE_WRITER = "Lcom/facebook/mobileconfig/troubleshooting/MobileConfigOverridesWriterHolder;";
@@ -411,6 +412,8 @@ public class BadDexFixture {
             "no-call Landroid/content/pm/ShortcutManager;->removeAllDynamicShortcuts()V outside Lapp/hushgram/extension/",
             "no-call Landroid/app/NotificationManager;->notify(ILandroid/app/Notification;)V outside Lapp/hushgram/extension/",
             "no-call Landroid/app/NotificationManager;->notify(Ljava/lang/String;ILandroid/app/Notification;)V outside Lapp/hushgram/extension/",
+            "no-call Landroid/view/Window;->setFlags(II)V outside Lapp/hushgram/extension/",
+            "no-call Landroid/view/Window;->addFlags(I)V outside Lapp/hushgram/extension/",
             "no-call Lcom/facebook/mobileconfig/troubleshooting/MobileConfigOverridesWriterHolder;->importOverridesFromUser(Ljava/lang/String;)Ljava/lang/String; outside Lcom/facebook/mobileconfig/",
             "no-call Lcom/facebook/mobileconfig/MobileConfigOverridesTableHolder;->reload()V outside Lcom/facebook/mobileconfig/",
             "no-call Lcom/facebook/mobileconfig/MobileConfigOverridesTableHolder;->removeAllOverrides()V outside Lcom/facebook/mobileconfig/",
@@ -444,7 +447,8 @@ public class BadDexFixture {
 
     /**
      * One of the framework calls a patch sends to an extension stand-in (the settings patch's
-     * ShortcutManager calls, Group notifications' NotificationManager.notify): the manager it's made
+     * ShortcutManager calls, Group notifications' NotificationManager.notify, Allow screenshots'
+     * Window.setFlags and Window.addFlags): the manager it's made
      * on, its name, what it answers, the publisher method that makes it, whether that method makes
      * it as a range call and what it takes after the manager. Its bad build is
      * "bad-shortcut-[caseName]-left". The case name tells the two notify calls apart.
@@ -487,7 +491,7 @@ public class BadDexFixture {
         }
     }
 
-    /** All seven, as the contract file names them. The update goes as a range call. */
+    /** All nine, as the contract file names them. The update goes as a range call. */
     private static final List<ShortcutCall> SHORTCUT_CALLS = Arrays.asList(
             new ShortcutCall(SHORTCUT_MANAGER, "pushDynamicShortcut", "V", "push", "push", false, SHORTCUT_INFO),
             new ShortcutCall(SHORTCUT_MANAGER, "addDynamicShortcuts", "Z", "add", "add", false, SHORTCUT_LIST),
@@ -496,7 +500,9 @@ public class BadDexFixture {
             new ShortcutCall(SHORTCUT_MANAGER, "removeAllDynamicShortcuts", "V", "removeAll", "remove-all", false),
             new ShortcutCall(NOTIFICATION_MANAGER, "notify", "V", "notify", "notify", false, "I", NOTIFICATION),
             new ShortcutCall(NOTIFICATION_MANAGER, "notify", "V", "notifyTagged", "notify-tagged", false,
-                    "Ljava/lang/String;", "I", NOTIFICATION));
+                    "Ljava/lang/String;", "I", NOTIFICATION),
+            new ShortcutCall(WINDOW, "setFlags", "V", "setFlags", "set-flags", false, "I", "I"),
+            new ShortcutCall(WINDOW, "addFlags", "V", "addFlags", "add-flags", false, "I"));
 
     /** A real native override boundary, with a receiver followed by its exact typed arguments. */
     private static final class OverrideCall {

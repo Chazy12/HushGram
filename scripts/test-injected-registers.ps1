@@ -702,11 +702,13 @@ try {
         'Lapp/hushgram/extension/: calls Lfixture/Attributions;->A02(Lfixture/ReelModel;Ljava/lang/String;)Lfixture/Model; ' +
         'before its first return')) `
         "The good build's GenAI reel stub was not reported calling Facebook's attribution finder.`n$($good.Output -join "`n")"
-    # The settings patch sends each of these ShortcutManager calls to SettingsEntry, and Group
-    # notifications sends both NotificationManager.notify calls to its stand-ins. The fixture's
+    # The settings patch sends each of these ShortcutManager calls to SettingsEntry, Group
+    # notifications sends both NotificationManager.notify calls to its stand-ins and Allow
+    # screenshots sends Window.setFlags and Window.addFlags to ScreenshotBlock. The fixture's
     # publisher makes each one from a method of its own (Caller).
     $shortcutManager = 'Landroid/content/pm/ShortcutManager;'
     $notificationManager = 'Landroid/app/NotificationManager;'
+    $window = 'Landroid/view/Window;'
     $shortcutCalls = @(
         [pscustomobject]@{ Case = 'push'; Manager = $shortcutManager; Call = 'pushDynamicShortcut'; Takes = 'Landroid/content/pm/ShortcutInfo;'; Answers = 'V'; Caller = 'push' }
         [pscustomobject]@{ Case = 'add'; Manager = $shortcutManager; Call = 'addDynamicShortcuts'; Takes = 'Ljava/util/List;'; Answers = 'Z'; Caller = 'add' }
@@ -715,6 +717,8 @@ try {
         [pscustomobject]@{ Case = 'remove-all'; Manager = $shortcutManager; Call = 'removeAllDynamicShortcuts'; Takes = ''; Answers = 'V'; Caller = 'removeAll' }
         [pscustomobject]@{ Case = 'notify'; Manager = $notificationManager; Call = 'notify'; Takes = 'ILandroid/app/Notification;'; Answers = 'V'; Caller = 'notify' }
         [pscustomobject]@{ Case = 'notify-tagged'; Manager = $notificationManager; Call = 'notify'; Takes = 'Ljava/lang/String;ILandroid/app/Notification;'; Answers = 'V'; Caller = 'notifyTagged' }
+        [pscustomobject]@{ Case = 'set-flags'; Manager = $window; Call = 'setFlags'; Takes = 'II'; Answers = 'V'; Caller = 'setFlags' }
+        [pscustomobject]@{ Case = 'add-flags'; Manager = $window; Call = 'addFlags'; Takes = 'I'; Answers = 'V'; Caller = 'addFlags' }
     )
     foreach ($shortcut in $shortcutCalls) {
         $shortcut | Add-Member -NotePropertyName Callee -NotePropertyValue (
