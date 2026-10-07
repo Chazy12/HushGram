@@ -153,6 +153,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean tabSwipe() {
+        return false;
+    }
+
     public static boolean swipeToCreate() {
         return false;
     }

@@ -341,6 +341,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_stop_swipe_to_create", FALSE);
 
     /**
+     * A sideways swipe between the main tabs
+     * ({@link app.hushgram.extension.instagram.feed.TabSwipe}). Read at each touch, so a change
+     * shows on the next swipe. Off to start.
+     */
+    public static final BooleanSetting STOP_TAB_SWIPING =
+            new BooleanSetting("hushgram_stop_tab_swiping", FALSE);
+
+    /**
      * The cards of accounts and creators to follow that Instagram puts between reels
      * ({@link app.hushgram.extension.instagram.reels.ReelsSuggestions}). Read as each page of
      * reels arrives, so a change shows from the next page.

@@ -319,6 +319,14 @@ shared-call Lapp/hushgram/extension/instagram/misc/TranslatedStart;->protectCode
 # the patch wrote.
 once-call Lapp/hushgram/extension/instagram/reels/FeedReels;->filter(Ljava/lang/Object;)Ljava/lang/Object; in static (L*;)LX/*; calling L*;->parseFromJsonParser(*)Ljava/lang/Object; class-holding feedContent feedItemType
 once-call Lapp/hushgram/extension/instagram/feed/FeedSuggestions;->filter(Ljava/lang/Object;)Ljava/lang/Object; in static (L*;)LX/*; calling L*;->parseFromJsonParser(*)Ljava/lang/Object; class-holding feedContent feedItemType
+# Stop swiping between tabs hands the main tabs' pager to TabSwipe.mainPager() right after the
+# method that sets it up (the one holding both log lines below) stores it, once. It also passes the
+# input flag each touch method of a pager's own list reads (the list class ViewPager2 makes, whose
+# onInterceptTouchEvent and onTouchEvent read the flag setUserInputEnabled writes, pinned to 450)
+# through TabSwipe.input(), once in each. Left out, the main tabs still take a sideways swipe.
+once-call Lapp/hushgram/extension/instagram/feed/TabSwipe;->mainPager(Landroid/view/View;)V in static (L*;L*;Ljava/lang/String;ZZ)V holding initViewPagerIfNeeded:\sViewPager\sview\snot\sfound\sin\slayout\sfor\sid= SwipeableTabsPagerBinder
+shared-call Lapp/hushgram/extension/instagram/feed/TabSwipe;->input(Landroid/view/View;I)Z in instance (Landroid/view/MotionEvent;)Z calling instance Landroidx/recyclerview/widget/RecyclerView;->onInterceptTouchEvent(Landroid/view/MotionEvent;)Z holding Landroidx/viewpager2/widget/ViewPager2;->A0A:Z
+shared-call Lapp/hushgram/extension/instagram/feed/TabSwipe;->input(Landroid/view/View;I)Z in instance (Landroid/view/MotionEvent;)Z calling instance Landroidx/recyclerview/widget/RecyclerView;->onTouchEvent(Landroid/view/MotionEvent;)Z holding Landroidx/viewpager2/widget/ViewPager2;->A0A:Z
 # Hide the home feed passes the same item through HomeFeed.filter at the same return, whatever its
 # kind. Left out, Home keeps its posts with the switch on; twice or elsewhere, it isn't the filter
 # the patch wrote.

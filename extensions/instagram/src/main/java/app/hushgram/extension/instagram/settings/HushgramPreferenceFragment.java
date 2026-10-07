@@ -338,7 +338,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         boolean swipe = build.contains(PatchFamily.SWIPE_TO_CREATE);
         boolean fullResolution = build.contains(PatchFamily.FULL_RESOLUTION);
         boolean homeFeed = build.contains(PatchFamily.HOME_FEED);
-        PreferenceCategory feed = suggestions || following || swipe || fullResolution || homeFeed
+        boolean tabSwipe = build.contains(PatchFamily.TAB_SWIPE);
+        PreferenceCategory feed = suggestions || following || swipe || fullResolution || homeFeed || tabSwipe
                 ? category(screen, L10n.t("Feed")) : null;
         if (following) {
             feed.addPreference(toggle(context, Settings.START_ON_FOLLOWING, L10n.t("Start Home on Following"),
@@ -366,6 +367,11 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             feed.addPreference(toggle(context, Settings.STOP_SWIPE_TO_CREATE, L10n.t("Stop swipe to create"),
                     L10n.t("A sideways swipe on Home no longer opens the camera. The + button and every other way "
                             + "into the camera still work.")));
+        }
+        if (tabSwipe) {
+            feed.addPreference(toggle(context, Settings.STOP_TAB_SWIPING, L10n.t("Stop swiping between tabs"),
+                    L10n.t("A sideways swipe no longer moves you between Home, Reels and the other main tabs. "
+                            + "Tap the tab bar instead. Stop swipe to create covers the camera.")));
         }
         if (fullResolution) {
             feed.addPreference(toggle(context, Settings.FULL_RESOLUTION_PHOTOS, L10n.t("Full resolution photos"),

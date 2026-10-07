@@ -6,6 +6,8 @@ Every HushGram release, newest first.
 
 * **Instagram:** Save comment photo now offers Save on photo comments in Instagram 450. Instagram 450 leaves the media type out of a comment's photo, and Save used to wait for it, so the row never showed. It now goes by the photo itself, and GIFs, videos and text replies still don't get the row. Asked for in #1.
 
+* **Instagram:** New Stop swiping between tabs patch. With its switch on, a sideways swipe no longer moves you between Home, Reels and the other main tabs, so you can't land on Reels by accident. Tapping the tab bar still works, and carousels keep their swipe. It's in simple mode with its switch off, under Feed in HushGram settings.
+
 * **Instagram:** New Hide the home feed patch. With its switch on, Home shows your stories row and nothing under it, so you can check stories and messages without the endless feed. Profiles, Explore and Reels still show posts. It's in simple mode with its switch off, under Feed in HushGram settings. Pull to refresh Home after turning it on.
 
 * **Instagram:** New Change version code patch, off by default. It gives the patched build the highest version code Android allows, so Google Play stops offering Meta's updates over it, and Instagram's own checks of its version still see the real code. Once it's installed, going back to an unpatched Instagram means uninstalling first, which deletes Instagram's data on your phone, and later HushGram builds need the patch too or they won't install over it. Settings lists it under Set when you patched, and the diagnostic report names the code Meta built. Asked in #68.
