@@ -49,6 +49,16 @@ Instagram ships a new version every week and renames most of its code each time.
 > - **A Root Mount install keeps the sign-in you have.** On a rooted phone, Morphe Manager's Root Mount layers HushGram over the Play Store Instagram instead of replacing it, so its data carries over and you don't sign in again. Whether that changes how Meta treats the account isn't known.
 > - **Without root, you'll sign in on the patched app.** Uninstalling the Play Store Instagram (install step 4) signs you out and removes its data. Instagram may ask you to confirm your phone number or identity when you sign in, and HushGram doesn't change that step.
 > - **Keep your signing key, and leave Instagram's data alone.** When a new Instagram version comes out, patch it and install over the top with the same key. Android keeps the app's data that way, so you stay signed in. A different key means uninstalling first, and clearing Instagram's storage signs you out as well.
+>
+> **Can Meta tell?** Assume yes. A patched Instagram is signed with your key, not Meta's, and `Restore trust on re-signed builds` exists so the parts of the app that read that signature keep working. The Play Integrity check above can't be passed either. With `Disable analytics` on, Instagram's usage events and crash reports stop reaching Meta as well, and Meta could notice that too.
+>
+> **What stays the same?** Your feed, stories and reels still come from Meta's servers, and HushGram decides on your phone which of them to show. It doesn't post, like, follow or message for you, and it doesn't change how you sign in.
+>
+> **Could my account be suspended?** Nobody can promise it won't be. Meta's [Terms of Use](https://help.instagram.com/581066165581870) don't allow modified versions of its apps, and Meta can disable accounts that break them.
+>
+> **Can I lower the odds?** Nobody can say what does, since Meta doesn't say what it acts on. A spare account keeps the one you care about out of it. Updating over the top with the same key, or a Root Mount install on a rooted phone, keeps the sign-in you have instead of starting a new one.
+>
+> **Why doesn't HushGram unlock Instagram Plus or save deleted messages?** Both are left out on purpose, and so are saving the Instants people send you and keeping copies of stories you've watched after they expire. Other Instagram mods offer all four. People using piko's Instagram patches have been reporting banned accounts, and we suspect features like these are part of why. Nobody's proven that, so leaving them out is a precaution.
 
 ## Keep your signing key
 
@@ -324,18 +334,6 @@ Morphe Manager says this when your Instagram file isn't the build these patches 
 First check that you're patching Instagram 450.0.0.50.77, build 385611438. If several patch sources are enabled, try HushGram alone. In [#11](https://github.com/SysAdminDoc/HushGram/issues/11), Disable analytics, Remove build expired popup and View stories anonymously all applied once the other source was removed.
 
 If a patch still fails with HushGram alone on that build, please open an issue naming the patch, your patcher's version and the error. On an unchecked Instagram build, leave the failing patch out until that build has been checked.
-
-## Your Instagram account
-
-**Can Meta tell?** Assume yes. A patched Instagram is signed with your key, not Meta's, and `Restore trust on re-signed builds` exists so the parts of the app that read that signature keep working. More to the point, Instagram asks Google's Play Integrity service and your phone's hardware to confirm the app is the unmodified one from the Play Store, and a re-signed build can't pass that. Instagram's code ties those checks to signing in. With `Disable analytics` on, Instagram's usage events and crash reports stop reaching Meta as well, and Meta could notice that too.
-
-**What stays the same?** Your feed, stories and reels still come from Meta's servers, and HushGram decides on your phone which of them to show. It doesn't post, like, follow or message for you, and it doesn't change how you sign in.
-
-**Could my account be suspended?** Nobody can promise it won't be. Meta's [Terms of Use](https://help.instagram.com/581066165581870) don't allow modified versions of its apps, and Meta can disable accounts that break them. If you'd rather not risk the account you care about, try HushGram with a spare account first.
-
-**Can I lower the odds?** Nobody can say what does, since Meta doesn't say what it acts on. [Before you sign in](#before-you-sign-in) up top lists what's known. A spare account keeps the one you care about out of it. Updating over the top with the same key, or a Root Mount install on a rooted phone, keeps the sign-in you have instead of starting a new one.
-
-**Why doesn't HushGram unlock Instagram Plus or save deleted messages?** Both are left out on purpose, and so are saving the Instants people send you and keeping copies of stories you've watched after they expire. Other Instagram mods offer all four. People using piko's Instagram patches have been reporting banned accounts, and we suspect features like these are part of why. Nobody's proven that, so leaving them out is a precaution.
 
 ## Getting help
 
