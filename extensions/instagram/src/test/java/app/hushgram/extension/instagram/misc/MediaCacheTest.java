@@ -25,6 +25,7 @@ import java.io.RandomAccessFile;
 
 import app.hushgram.extension.instagram.settings.FamilyNames;
 import app.hushgram.extension.shared.SettingsContextRule;
+import app.hushgram.extension.shared.Utils;
 import app.hushgram.extension.shared.diagnostics.HookStatus;
 
 /** What Clear the media cache deletes, what it keeps, and when it leaves the cache alone. */
@@ -42,6 +43,7 @@ public class MediaCacheTest {
     @Before
     public void setUp() {
         HookStatus.clear();
+        MediaCache.restartForTests();
         context = RuntimeEnvironment.getApplication();
         cache = context.getCacheDir();
     }
@@ -49,6 +51,7 @@ public class MediaCacheTest {
     @After
     public void tearDown() {
         HookStatus.clear();
+        MediaCache.restartForTests();
     }
 
     private File file(String path, long bytes, long modified) throws IOException {
@@ -62,42 +65,102 @@ public class MediaCacheTest {
     }
 
     @Test
-    public void overTheLimitItDeletesOldImagesAndSpansAndKeepsTheRest() throws IOException {
+    public void overTheLimitItDeletesOldImagesAndLeavesTheVideosForTheNextStart() throws IOException {
         File image = file("image_scoped/0/a.jpg", 400, OLD);
         File legacy = file("images/b.jpg", 100, OLD);
+        File writing = file("images/c.jpg", 300, NOW - 5_000);
         File span = file("ExoPlayerCacheDir/videocache/1.0.1.v3.exo", 500, OLD);
-        File writing = file("ExoPlayerCacheDir/videocache/2.0.1.v3.exo", 300, NOW - 5_000);
         File index = file("ExoPlayerCacheDir/videocache/cached_content_index.exi", 50, OLD);
         File save = file("hushgram-save/reel.mp4", 700, OLD);
 
-        assertEquals(1_000, MediaCache.clearIfOver(context, 1_000, NOW));
+        assertEquals(500, MediaCache.clearIfOver(context, 1_000, NOW));
 
         assertFalse(image.exists());
         assertFalse(legacy.exists());
-        assertFalse(span.exists());
-        assertTrue("a file still being written stays", writing.exists());
-        assertTrue("the video index stays while a span it lists stays", index.exists());
+        assertTrue("an image still being written stays", writing.exists());
+        assertTrue("no video goes while Instagram runs", span.exists());
+        assertTrue(index.exists());
+        assertTrue("the videos go at the next start", MediaCache.videosWaiting(context));
         assertTrue("HushGram's own folder stays", save.exists());
-        assertTrue("the folders stay", new File(cache, "ExoPlayerCacheDir/videocache").isDirectory());
-        assertTrue(new File(cache, "image_scoped/0").isDirectory());
+        assertTrue("the folders stay", new File(cache, "image_scoped/0").isDirectory());
         String report = HookStatus.report().toString();
         assertTrue(report, report.contains(MediaCache.CLEARED + " 1"));
     }
 
-    /** Once nothing in the video cache is being written, all of it goes, its index and metadata with it. */
+    /**
+     * The first time Instagram names the video cache's folders in a process, before its player has
+     * built the cache, the video cache a clear asked for goes: all of it, index and metadata with it.
+     */
     @Test
-    public void aSettledVideoCacheGoesWithItsIndex() throws IOException {
+    public void theNextStartClearsTheVideos() throws Exception {
         File span = file("ExoPlayerCacheDir/videocache/1.0.1.v3.exo", 900, OLD);
         File index = file("ExoPlayerCacheDir/videocache/cached_content_index.exi", 50, OLD);
         File prefetch = file("ExoPlayerCacheDir/videoprefetchcache/3.0.1.v3.exo", 40, OLD);
         File metadata = file("ExoPlayerCacheDir/videocachemetadata/meta", 20, OLD);
+        File image = file("image_scoped/a.jpg", 100, NOW - 5_000);
+        File responses = file("http_responses/feed", 70, OLD);
+        assertEquals(0, MediaCache.clearIfOver(context, 1_000, NOW));
 
-        assertEquals(1_010, MediaCache.clearIfOver(context, 1_000, NOW));
+        MediaCache.beforeVideoCache(cache.getPath());
+        Utils.awaitBackgroundTasksForTests();
 
-        assertFalse(span.exists());
-        assertFalse(index.exists());
-        assertFalse(prefetch.exists());
-        assertFalse(metadata.exists());
+        for (File gone : new File[] {span, index, prefetch, metadata}) assertFalse(gone.getPath(), gone.exists());
+        assertFalse(new File(cache, MediaCache.VIDEO_FOLDER).exists());
+        assertFalse("the request is used up", MediaCache.videosWaiting(context));
+        assertEquals("nothing moved aside is left", 0, leftovers().length);
+        assertTrue(image.exists());
+        assertTrue(responses.exists());
+        String report = HookStatus.report().toString();
+        assertTrue(report, report.contains(MediaCache.VIDEOS_CLEARED + " 1"));
+    }
+
+    /** Once Instagram has named the folders in this process, its player may hold them, so nothing more goes. */
+    @Test
+    public void onlyTheFirstCallInAProcessClears() throws Exception {
+        MediaCache.beforeVideoCache(cache.getPath());
+        File span = file("ExoPlayerCacheDir/videocache/1.0.1.v3.exo", 900, OLD);
+        assertEquals(0, MediaCache.clearNow(context));
+        assertTrue(MediaCache.videosWaiting(context));
+
+        MediaCache.beforeVideoCache(cache.getPath());
+        Utils.awaitBackgroundTasksForTests();
+
+        assertTrue(span.exists());
+        assertTrue("still waiting for the next start", MediaCache.videosWaiting(context));
+    }
+
+    /** Without a clear asking, a start leaves the videos, and only deletes what a start before it moved aside. */
+    @Test
+    public void aStartNobodyAskedForKeepsTheVideos() throws Exception {
+        File span = file("ExoPlayerCacheDir/videocache/1.0.1.v3.exo", 900, OLD);
+        File moved = file(MediaCache.OLD_VIDEOS + "1/videocache/2.0.1.v3.exo", 900, OLD);
+
+        MediaCache.beforeVideoCache(cache.getPath());
+        Utils.awaitBackgroundTasksForTests();
+
+        assertTrue(span.exists());
+        assertFalse(moved.exists());
+        assertEquals(0, leftovers().length);
+    }
+
+    /** A folder Instagram hands over that isn't there, or none at all, changes nothing and doesn't throw. */
+    @Test
+    public void anOddFolderChangesNothing() throws Exception {
+        File span = file("ExoPlayerCacheDir/videocache/1.0.1.v3.exo", 900, OLD);
+        assertEquals(0, MediaCache.clearNow(context));
+
+        MediaCache.beforeVideoCache(null);
+        MediaCache.restartForTests();
+        MediaCache.beforeVideoCache(new File(cache, "elsewhere").getPath());
+        Utils.awaitBackgroundTasksForTests();
+
+        assertTrue(span.exists());
+        assertTrue(MediaCache.videosWaiting(context));
+    }
+
+    private File[] leftovers() {
+        File[] found = cache.listFiles((parent, name) -> name.startsWith(MediaCache.OLD_VIDEOS));
+        return found == null ? new File[0] : found;
     }
 
     /** Everything outside the two caches stays, however big and old, and doesn't count toward the limit. */
@@ -131,7 +194,7 @@ public class MediaCacheTest {
         assertTrue(image.exists());
     }
 
-    /** Clear now ignores the limit and follows the same rules: images and videos only. */
+    /** Clear now ignores the limit and follows the same rules: images now, videos at the next start. */
     @Test
     public void clearNowIgnoresTheLimit() throws IOException {
         long old = System.currentTimeMillis() - 2 * MediaCache.SETTLE_MILLIS;
@@ -141,6 +204,12 @@ public class MediaCacheTest {
         assertEquals(40, freed);
         assertFalse(image.exists());
         assertTrue("a file outside the media caches stays", responses.exists());
+        assertFalse("no videos, so nothing waits for a start", MediaCache.videosWaiting(context));
+
+        File span = file("ExoPlayerCacheDir/videocache/1.0.1.v3.exo", 900, old);
+        assertEquals(0, MediaCache.clearNow(context));
+        assertTrue(span.exists());
+        assertTrue(MediaCache.videosWaiting(context));
     }
 
     @Test

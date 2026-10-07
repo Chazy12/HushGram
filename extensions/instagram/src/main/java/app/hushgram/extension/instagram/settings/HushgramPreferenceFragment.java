@@ -792,12 +792,14 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             PreferenceCategory storage = category(screen, L10n.t("Storage"));
             storage.addPreference(toggle(context, Settings.CLEAR_MEDIA_CACHE, L10n.t("Clear the media cache"),
                     L10n.t("When Instagram goes to the background with more than 500 MB of images and videos in its "
-                            + "cache, HushGram deletes them. Your sign-in, drafts and settings stay.")));
+                            + "cache, HushGram deletes the images, and the videos the next time Instagram starts. Your "
+                            + "sign-in, drafts and settings stay.")));
             Row clearNow = new Row(context);
             clearNow.setKey(CLEAR_MEDIA_CACHE_NOW);
             clearNow.setPersistent(false);
             clearNow.setTitle(L10n.t("Clear the cache now"));
-            clearNow.setSummary(L10n.t("Deletes the images and videos Instagram keeps to show again, whatever their size."));
+            clearNow.setSummary(L10n.t("Deletes the images Instagram keeps to show again now, whatever their size, and "
+                    + "the videos the next time it starts."));
             clearNow.setOnPreferenceClickListener(p -> {
                 clearMediaCache(p);
                 return true;
@@ -2356,7 +2358,10 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         Context context = row.getContext();
         if (!Utils.runOnBackgroundThread(() -> {
             long freed = MediaCache.clearNow(context);
-            String shown = L10n.f("Freed %1$s.", L10n.isolate(Formatter.formatShortFileSize(context, freed)));
+            String size = L10n.isolate(Formatter.formatShortFileSize(context, freed));
+            String shown = MediaCache.videosWaiting(context)
+                    ? L10n.f("Freed %1$s. The videos go the next time Instagram starts.", size)
+                    : L10n.f("Freed %1$s.", size);
             Utils.runOnMainThread(() -> {
                 row.setSummary(shown);
                 Utils.showToastShort(shown);

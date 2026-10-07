@@ -4,6 +4,7 @@
  */
 package app.hushgram.extension.instagram.misc;
 
+import android.app.Application;
 import android.content.ComponentCallbacks2;
 import android.content.Context;
 import android.content.res.Configuration;
@@ -29,11 +30,12 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  *
  * <p>Instagram keeps the images and videos it has shown in two caches in its cache folder, and they
  * grow to several gigabytes. While the switch is on, each time Instagram goes to the background and
- * those two hold more than {@link #LIMIT}, HushGram deletes their files on a background thread.
- * Nothing else in the cache folder is touched: uploads, drafts being made, saved network answers,
- * HushGram's own saves and the rest stay, and so do sign-in and settings, which live elsewhere. Any
- * file written in the last minute stays too, since Instagram may still be writing it. The folders
- * themselves stay, so code holding one keeps working.
+ * those two hold more than {@link #LIMIT}, HushGram deletes the image files on a background thread
+ * and asks for the video cache to go the next time Instagram starts. Nothing else in the cache
+ * folder is touched: uploads, drafts being made, saved network answers, HushGram's own saves and the
+ * rest stay, and so do sign-in and settings, which live elsewhere. An image written in the last
+ * minute stays too, since Instagram may still be writing it. The folders themselves stay, so code
+ * holding one keeps working.
  *
  * <p>The two caches, as Instagram 450 names them:
  * <ul>
@@ -42,10 +44,15 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  *       ({@code X.05Nm.A06}).
  *   <li>Video: {@code ExoPlayerCacheDir}. The video player's cache settings put it in the cache
  *       folder ({@code X.06jh.A0N}, {@code getCacheDir()}), and {@code X.08nf.A00} names its folders
- *       videocache, videoprefetchcache and videocachemetadata. A span of video is a file ending in
- *       {@link #SPAN_SUFFIX}. The player's index of them goes only when every file in the video cache
- *       does, all of them settled, so the index never loses the spans it lists while some stay.
+ *       videocache, videoprefetchcache and videocachemetadata.
  * </ul>
+ *
+ * <p>The video player keeps a table of its cached spans in memory for as long as Instagram runs, so
+ * a span deleted under it can be asked for later and fail to play until Instagram restarts. Videos
+ * therefore only go at a start, in {@link #beforeVideoCache}, before the player has built its cache:
+ * in Instagram 450 the one place that builds it ({@code X.07vu.A01}, CacheManager.initCache, the only
+ * maker of {@code X.08pp}, itself the only maker of the cache {@code X.02k0}) asks {@code X.08nf.A00}
+ * for its folder first.
  *
  * <p>The Clear now row in HushGram's settings does the same at once, whatever the size, and shows
  * what it freed.
@@ -63,8 +70,11 @@ public final class MediaCache {
     /** The video cache's folder in the cache folder (see the class comment). */
     static final String VIDEO_FOLDER = "ExoPlayerCacheDir";
 
-    /** The end of a video span's file name. */
-    static final String SPAN_SUFFIX = ".exo";
+    /** HushGram's note in the cache folder that the video cache goes at the next start. */
+    static final String VIDEOS_AT_START = "hushgram_clear_videos_at_start";
+
+    /** The start of the name a start moves the video cache to, before deleting it there. */
+    static final String OLD_VIDEOS = "hushgram_old_videos_";
 
     /** The step a failed clear is reported under. */
     static final String CLEAR = "clear";
@@ -72,8 +82,13 @@ public final class MediaCache {
     /** What's counted for each clear that found the cache over the limit. */
     static final String CLEARED = "cleared over the limit";
 
+    /** What's counted for each start that cleared the video cache. */
+    static final String VIDEOS_CLEARED = "videos cleared at a start";
+
     private static final AtomicBoolean clearing = new AtomicBoolean();
     private static volatile boolean watching;
+    /** Instagram has asked for its video cache's folder in this process, so the player may hold it now. */
+    private static volatile boolean videoCacheNamed;
 
     private MediaCache() {
     }
@@ -119,8 +134,9 @@ public final class MediaCache {
     }
 
     /**
-     * Clears the two caches when they hold more than [limit]. Answers the bytes freed: none under
-     * the limit, while another clear is running, or on a failure.
+     * Clears the two caches when they hold more than [limit]: the images now, the videos at the next
+     * start. Answers the bytes freed now: none under the limit, while another clear is running, or on
+     * a failure.
      */
     static long clearIfOver(Context context, long limit, long now) {
         if (!clearing.compareAndSet(false, true)) return 0;
@@ -134,7 +150,7 @@ public final class MediaCache {
             HookStatus.counted(FamilyNames.MEDIA_CACHE, CLEARED);
             final long total = size;
             final long gone = freed;
-            Logger.printDebug(() -> "Media cache: freed " + gone + " of " + total + " bytes");
+            Logger.printDebug(() -> "Media cache: freed " + gone + " of " + total + " bytes, videos at the next start");
             return freed;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.MEDIA_CACHE, CLEAR, failure);
@@ -144,7 +160,7 @@ public final class MediaCache {
         }
     }
 
-    /** Clear now: the two caches whatever their size, by the same rules. Answers the bytes freed. */
+    /** Clear now: the two caches whatever their size, by the same rules. Answers the bytes freed now. */
     public static long clearNow(Context context) {
         if (!clearing.compareAndSet(false, true)) return 0;
         try {
@@ -155,6 +171,61 @@ public final class MediaCache {
         }
     }
 
+    /** Whether the video cache is waiting to go at the next start. */
+    public static boolean videosWaiting(Context context) {
+        File cache = context.getCacheDir();
+        return cache != null && new File(cache, VIDEOS_AT_START).isFile();
+    }
+
+    /**
+     * Injected first in the method that names the video cache's folders, with the folder they go
+     * under. Instagram builds its video cache only after asking that method for its folder, so the
+     * first call in a process comes before the player holds any of it. When a clear asked for it,
+     * that call moves the video cache aside and deletes it on a background thread, and the player
+     * starts on an empty one. Another thread asking meanwhile waits for the move. Every later call
+     * returns at once. Never throws.
+     */
+    public static void beforeVideoCache(String folder) {
+        if (videoCacheNamed) return;
+        synchronized (MediaCache.class) {
+            if (videoCacheNamed) return;
+            try {
+                HookStatus.invoked(FamilyNames.MEDIA_CACHE);
+                if (folder != null && !folder.isEmpty() && mainProcess()) clearVideosAtStart(new File(folder));
+            } catch (Throwable failure) {
+                HookStatus.threw(FamilyNames.MEDIA_CACHE, CLEAR, failure);
+            } finally {
+                videoCacheNamed = true;
+            }
+        }
+    }
+
+    /** Lets a test start a new process's first call. */
+    static void restartForTests() {
+        videoCacheNamed = false;
+    }
+
+    /**
+     * Moves the video cache under [cache] aside when a clear asked for it, then deletes on a
+     * background thread whatever an earlier start moved aside and didn't get to delete.
+     */
+    private static void clearVideosAtStart(File cache) {
+        File asked = new File(cache, VIDEOS_AT_START);
+        if (asked.isFile()) {
+            File video = new File(cache, VIDEO_FOLDER);
+            if (Files.isSymbolicLink(video.toPath())) return;
+            if (!video.exists() || video.renameTo(new File(cache, OLD_VIDEOS + System.currentTimeMillis()))) {
+                if (!asked.delete()) Logger.printDebug(() -> "Media cache: the note to clear videos stayed");
+                HookStatus.counted(FamilyNames.MEDIA_CACHE, VIDEOS_CLEARED);
+            }
+        }
+        File[] old = cache.listFiles((parent, name) -> name.startsWith(OLD_VIDEOS));
+        if (old == null || old.length == 0) return;
+        Utils.runOnBackgroundThread(() -> {
+            for (File moved : old) delete(moved);
+        });
+    }
+
     /** The image folders and the video folder in [cache]. */
     static List<File> folders(File cache) {
         List<File> folders = new ArrayList<>(IMAGE_FOLDERS.size() + 1);
@@ -163,15 +234,18 @@ public final class MediaCache {
         return folders;
     }
 
-    /**
-     * Deletes the settled images, then the video cache: all of it, index included, when every file
-     * in it is settled, and otherwise only its settled spans.
-     */
+    /** Deletes the settled images, and asks for the video cache to go at the next start when it holds any. */
     private static long clearMedia(File cache, long now) {
         long freed = 0;
-        for (String name : IMAGE_FOLDERS) freed += clear(new File(cache, name), now, null);
-        File video = new File(cache, VIDEO_FOLDER);
-        freed += clear(video, now, settled(video, now) ? null : SPAN_SUFFIX);
+        for (String name : IMAGE_FOLDERS) freed += clear(new File(cache, name), now);
+        if (sizeOf(new File(cache, VIDEO_FOLDER)) > 0) {
+            try {
+                File asked = new File(cache, VIDEOS_AT_START);
+                if (!asked.createNewFile() && !asked.isFile()) throw new IllegalStateException("can't write " + asked);
+            } catch (Exception failure) {
+                HookStatus.threw(FamilyNames.MEDIA_CACHE, CLEAR, failure);
+            }
+        }
         return freed;
     }
 
@@ -185,30 +259,34 @@ public final class MediaCache {
         return size;
     }
 
-    /** Whether no file under [file] was written in the last {@link #SETTLE_MILLIS}. */
-    private static boolean settled(File file, long now) {
-        if (Files.isSymbolicLink(file.toPath())) return true;
-        if (!file.isDirectory()) return !file.isFile() || now - file.lastModified() >= SETTLE_MILLIS;
-        File[] children = file.listFiles();
-        if (children == null) return true;
-        for (File child : children) if (!settled(child, now)) return false;
-        return true;
-    }
-
-    /** Deletes the settled files under [file], only those whose names end with [suffix] when it's given. */
-    private static long clear(File file, long now, String suffix) {
+    /** Deletes the files under [file] that weren't written in the last {@link #SETTLE_MILLIS}. */
+    private static long clear(File file, long now) {
         if (Files.isSymbolicLink(file.toPath())) return 0;
         if (file.isDirectory()) {
             File[] children = file.listFiles();
             if (children == null) return 0;
             long freed = 0;
-            for (File child : children) freed += clear(child, now, suffix);
+            for (File child : children) freed += clear(child, now);
             return freed;
         }
-        if (!file.isFile() || (suffix != null && !file.getName().endsWith(suffix))) return 0;
-        if (now - file.lastModified() < SETTLE_MILLIS) return 0;
+        if (!file.isFile() || now - file.lastModified() < SETTLE_MILLIS) return 0;
         long length = file.length();
         return file.delete() ? length : 0;
+    }
+
+    /** Deletes [file] and everything under it, a link without what it points to. */
+    private static void delete(File file) {
+        if (!Files.isSymbolicLink(file.toPath()) && file.isDirectory()) {
+            File[] children = file.listFiles();
+            if (children != null) for (File child : children) delete(child);
+        }
+        if (!file.delete()) Logger.printDebug(() -> "Media cache: couldn't delete " + file);
+    }
+
+    /** Whether this is Instagram's own process, where its video player runs, and not one of its helpers. */
+    private static boolean mainProcess() {
+        String name = Application.getProcessName();
+        return name == null || name.indexOf(':') < 0;
     }
 
     private static boolean switchedOn() {

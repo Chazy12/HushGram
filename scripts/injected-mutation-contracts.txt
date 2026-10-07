@@ -981,3 +981,11 @@ shared-call Lapp/hushgram/extension/instagram/misc/VersionCode;->read(Landroid/c
 start-call Lapp/hushgram/extension/instagram/feed/LikeAnimation;->pick(Ljava/lang/Object;)Ljava/lang/Object; in instance (Lcom/instagram/common/session/UserSession;LX/02IM;)V holding LX/02IM;->A0W:LX/02IM;
 once-call Lapp/hushgram/extension/instagram/feed/LikeAnimation;->pick(Ljava/lang/Object;)Ljava/lang/Object; in instance (Lcom/instagram/common/session/UserSession;LX/02IM;)V holding LX/02IM;->A0W:LX/02IM;
 once-call Lapp/hushgram/extension/instagram/feed/LikeAnimation;->allow(Z)Z in instance (Lcom/instagram/common/session/UserSession;LX/02IM;)V holding LX/02IM;->A0W:LX/02IM;
+# Clear the media cache hands MediaCache.beforeVideoCache the folder first thing in the method that
+# names the video cache's three folders (08nf.A00 on 450), the one static (Integer, String) method
+# holding all three. Instagram's only builder of its video cache asks it for the folder before it
+# builds anything, so the first call in a process comes before the player holds a file. Left out, a
+# clear asked for never reaches the videos; anywhere later, it could delete files the player holds.
+# MediaCacheHookTest checks where it lands on each declared build.
+start-call Lapp/hushgram/extension/instagram/misc/MediaCache;->beforeVideoCache(Ljava/lang/String;)V in static (Ljava/lang/Integer;Ljava/lang/String;)Ljava/io/File; holding /ExoPlayerCacheDir/videocache /ExoPlayerCacheDir/videoprefetchcache /ExoPlayerCacheDir/videocachemetadata
+once-call Lapp/hushgram/extension/instagram/misc/MediaCache;->beforeVideoCache(Ljava/lang/String;)V in static (Ljava/lang/Integer;Ljava/lang/String;)Ljava/io/File; holding /ExoPlayerCacheDir/videocache /ExoPlayerCacheDir/videoprefetchcache /ExoPlayerCacheDir/videocachemetadata

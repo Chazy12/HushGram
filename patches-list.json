@@ -154,7 +154,7 @@
     },
     {
       "name": "Clear the media cache",
-      "description": "Deletes the images and videos Instagram keeps in its cache when it goes to the background with more than 500 MB of them, and adds a Clear now row that shows what it freed. Your sign-in, drafts and settings stay.",
+      "description": "Once Instagram's cache holds more than 500 MB of images and videos, deletes the images when it goes to the background and the videos the next time it starts. A Clear now row shows what it freed. Your sign-in, drafts and settings stay.",
       "category": "Interface",
       "use": true,
       "dependencies": [
