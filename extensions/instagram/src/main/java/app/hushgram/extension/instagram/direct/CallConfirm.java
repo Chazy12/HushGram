@@ -6,9 +6,11 @@ package app.hushgram.extension.instagram.direct;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.ContextWrapper;
 import android.os.SystemClock;
 
+import java.lang.ref.WeakReference;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
@@ -34,7 +36,9 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  * kind, goes through without asking. Any other start is asked about, and so is that one's repeat.
  *
  * <p>One question shows at a time: a start while it's on screen waits for it, so two quick taps on
- * a call button can't start two calls.
+ * a call button can't start two calls. A question counts as on screen only while its screen is: one
+ * left behind by a screen that went away without closing it, as a dark mode switch or a window
+ * resize can do, holds nothing. It's held weakly, so it never keeps that screen alive either.
  *
  * <p>The hook fails open: with the switch off, HushGram paused, no screen to ask on or anything
  * thrown, the call starts as it always did.
@@ -93,8 +97,8 @@ public final class CallConfirm {
     /** True while Call's own start runs, whose first step is this hook again. Main thread only. */
     private static boolean starting;
 
-    /** The question on screen, if one is. */
-    private static AlertDialog open;
+    /** The question on screen, if one is. Weak, so a screen that went away isn't kept alive by it. */
+    private static volatile WeakReference<AlertDialog> open;
 
     private CallConfirm() {
     }
@@ -131,8 +135,7 @@ public final class CallConfirm {
                 pass = null;
                 return false;
             }
-            AlertDialog showing = open;
-            if (showing != null && showing.isShowing()) return true;
+            if (up(question())) return true;
             Activity activity = activityOf(access.context(starter));
             if (activity == null || activity.isFinishing() || activity.isDestroyed()) return false;
             AlertDialog question = new AlertDialog.Builder(activity)
@@ -141,9 +144,9 @@ public final class CallConfirm {
                     .setNegativeButton(L10n.t("Cancel"), null)
                     .create();
             question.setOnDismissListener(dialog -> {
-                if (open == dialog) open = null;
+                if (question() == dialog) open = null;
             });
-            open = question;
+            open = new WeakReference<>(question);
             question.show();
             HookStatus.counted(FamilyNames.ASK_BEFORE_CALL, ASKED);
             return true;
@@ -166,6 +169,23 @@ public final class CallConfirm {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.ASK_BEFORE_CALL, ASK, failure);
         }
+    }
+
+    /** The question last put up, while something still holds it, or null. */
+    private static AlertDialog question() {
+        WeakReference<AlertDialog> held = open;
+        return held == null ? null : held.get();
+    }
+
+    /**
+     * Whether [question] is still up: showing, over an activity that isn't going away, the rule
+     * Ask before a like and Ask before a refresh use. A question whose activity went without
+     * dismissing it still says it's showing, and must not hold a call.
+     */
+    static boolean up(Dialog question) {
+        if (question == null || !question.isShowing()) return false;
+        Activity activity = activityOf(question.getContext());
+        return activity != null && !activity.isFinishing() && !activity.isDestroyed();
     }
 
     /** The activity behind [context], or null when there's none. */

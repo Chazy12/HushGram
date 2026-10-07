@@ -187,6 +187,34 @@ public class CallConfirmTest {
         assertNotSame(first, asked());
     }
 
+    /**
+     * A question left showing by a screen that went away (a dark mode switch or a window resize
+     * Instagram doesn't handle itself) holds nothing: the next call start is asked about again on
+     * the screen it came from.
+     */
+    @Test
+    public void aQuestionWhoseScreenWentAwayHoldsNothing() {
+        assertTrue(hold(false, true));
+        AlertDialog left = asked();
+        controller.pause().stop().destroy();
+        assertTrue("the dialog still says it's showing", left.isShowing());
+        assertFalse(CallConfirm.up(left));
+
+        ActivityController<Activity> recreated = Robolectric.buildActivity(Activity.class).setup();
+        try {
+            screen = new ContextWrapper(recreated.get());
+            assertTrue(hold(false, true));
+            AlertDialog again = asked();
+            assertNotSame(left, again);
+            assertTrue(CallConfirm.up(again));
+            again.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+            ShadowLooper.idleMainLooper();
+            assertEquals(1, started.size());
+        } finally {
+            recreated.close();
+        }
+    }
+
     private void dismiss() {
         asked().getButton(DialogInterface.BUTTON_NEGATIVE).performClick();
         ShadowLooper.idleMainLooper();
