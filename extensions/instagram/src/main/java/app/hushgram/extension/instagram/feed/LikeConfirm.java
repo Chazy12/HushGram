@@ -77,8 +77,12 @@ public final class LikeConfirm {
         try {
             HookStatus.invoked(FamilyNames.ASK_BEFORE_LIKE);
             if (replaying || !Utils.settingsReady() || !Settings.ASK_BEFORE_LIKE.get()) return false;
-            if (ConfirmDialog.up(open())) return true;
-            Dialog question = ConfirmDialog.ask(screen.get(), L10n.t("Like or unlike this post?"), L10n.t("Continue"),
+            Context context = screen.get();
+            Dialog up = open();
+            if (ConfirmDialog.up(up, context)) return true;
+            // A question left on another screen, or one that went with its screen, can't be answered here.
+            ConfirmDialog.drop(up);
+            Dialog question = ConfirmDialog.ask(context, L10n.t("Like or unlike this post?"), L10n.t("Continue"),
                     () -> again(again), null, LikeConfirm::forget);
             if (question == null) return false;
             open = new WeakReference<>(question);

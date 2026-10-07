@@ -67,7 +67,7 @@ public final class RefreshConfirm {
             if (listener == null || replaying || !Utils.settingsReady() || !Settings.ASK_BEFORE_REFRESH.get()) {
                 return listener;
             }
-            if (ConfirmDialog.up(open(layout))) return null;
+            if (ConfirmDialog.up(open(layout), layout.getContext())) return null;
             Dialog question = ConfirmDialog.ask(layout.getContext(), L10n.t("Refresh this list?"), L10n.t("Refresh"),
                     () -> endAgain(end), () -> stopSpinner(layout), gone -> forget(layout, gone));
             if (question == null) return listener;

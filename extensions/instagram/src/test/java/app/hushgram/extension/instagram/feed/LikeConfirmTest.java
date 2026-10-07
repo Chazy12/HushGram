@@ -131,6 +131,45 @@ public class LikeConfirmTest {
         assertEquals(1, likes);
     }
 
+    /**
+     * A question left up behind a screen opened over its own, as a notification opens one, doesn't
+     * hold a tap on the new screen, where nothing would be there to answer. It's taken down and the
+     * tap gets its own question there.
+     */
+    @Test public void aQuestionBehindAnotherScreenDoesntHoldATapThere() {
+        Settings.ASK_BEFORE_LIKE.save(true);
+        ActivityController<Activity> behind = Robolectric.buildActivity(Activity.class).setup();
+        assertTrue(like(behind.get()));
+        Dialog left = shown();
+        behind.pause().stop();
+        assertFalse("its activity is stopped, not finishing", behind.get().isFinishing());
+
+        ActivityController<Activity> over = Robolectric.buildActivity(Activity.class).setup();
+        assertTrue(like(over.get()));
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertFalse("the one behind is taken down", left.isShowing());
+        AlertDialog asked = shown();
+        assertNotSame("a question on the screen tapped", left, asked);
+        assertSame(over.get(), ConfirmDialog.activityOf(asked.getContext()));
+        assertSame(asked, LikeConfirm.open());
+
+        tap(asked, AlertDialog.BUTTON_POSITIVE);
+        assertEquals("Continue likes once", 1, likes);
+        assertNull(LikeConfirm.open());
+    }
+
+    /** A second tap on the same screen while its question is up is still held. */
+    @Test public void aTapOnTheSameScreenIsStillHeld() {
+        Settings.ASK_BEFORE_LIKE.save(true);
+        assertTrue(like(activity));
+        AlertDialog question = shown();
+        assertTrue(like(new android.view.ContextThemeWrapper(activity, android.R.style.Theme_DeviceDefault)));
+        assertSame("a context wrapping the same activity is the same screen", question, ShadowDialog.getLatestDialog());
+        assertTrue(question.isShowing());
+        tap(question, AlertDialog.BUTTON_NEGATIVE);
+        assertEquals(0, likes);
+    }
+
     @Test public void theQuestionNeedsAnActivityBehindTheScreensContext() {
         Settings.ASK_BEFORE_LIKE.save(true);
         assertFalse("nothing to show it over", like(new ContextWrapper(RuntimeEnvironment.getApplication())));

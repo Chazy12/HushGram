@@ -54,13 +54,28 @@ final class ConfirmDialog {
     }
 
     /**
-     * Whether [question] is still up: showing, over an activity that isn't going away. A question
-     * whose activity went without dismissing it still says it's showing, and must not hold a tap.
+     * Whether [question] is still up over the screen [from] belongs to: showing, over that same
+     * activity, which isn't going away. A question whose activity went without dismissing it still
+     * says it's showing, and so does one left behind a screen opened over its own, a notification's
+     * for one. Neither must hold a tap, since nothing is on screen to answer.
      */
-    static boolean up(@Nullable Dialog question) {
+    static boolean up(@Nullable Dialog question, @Nullable Context from) {
         if (question == null || !question.isShowing()) return false;
         Activity activity = activityOf(question.getContext());
-        return activity != null && !activity.isFinishing() && !activity.isDestroyed();
+        return activity != null && activity == activityOf(from) && !activity.isFinishing() && !activity.isDestroyed();
+    }
+
+    /**
+     * Takes [question] down when it still says it's showing, so a tap on another screen gets a
+     * question of its own. One whose activity went has no window left to take down.
+     */
+    static void drop(@Nullable Dialog question) {
+        if (question == null || !question.isShowing()) return;
+        try {
+            question.dismiss();
+        } catch (IllegalArgumentException detached) {
+            // Its window went with its activity.
+        }
     }
 
     /** The activity behind [context], or null when there's none. */
