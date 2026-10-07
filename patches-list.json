@@ -116,6 +116,43 @@
       "options": []
     },
     {
+      "name": "Clear the media cache",
+      "description": "Deletes the images and videos Instagram keeps in its cache when it goes to the background with more than 500 MB of them, and adds a Clear now row that shows what it freed. Your sign-in, drafts and settings stay.",
+      "category": "Interface",
+      "use": true,
+      "dependencies": [
+        "BytecodePatch",
+        "HushGram settings"
+      ],
+      "compatiblePackages": {
+        "com.instagram.android": [
+          "450.0.0.50.77"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Instagram",
+          "packageName": "com.instagram.android",
+          "description": null,
+          "appIconColor": 14757996,
+          "signatures": [
+            "3a10c50c18ba937506c2875e9047be74f8fd8b86fae2ff9feaa50a81fcb4c014",
+            "5f3e50f435583c9ae626302a71f7340044087a7e2c60adacfc254205a993e305"
+          ],
+          "targets": [
+            {
+              "version": "450.0.0.50.77",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 385611438
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Copy comment",
       "description": "Adds an optional Copy action to the common comment menu. Copies the original text with its line breaks.",
       "category": "Interface",
@@ -1894,7 +1931,7 @@
     },
     {
       "name": "Stop Reels scrolling",
-      "description": "Keeps a swipe in Reels from moving on to the next reel, and a pull down from loading new ones. The reel you opened still plays, and its buttons still work.",
+      "description": "Keeps a swipe in Reels from moving on to the next reel, and a pull down from loading new ones. The reel you opened still plays, and its buttons still work. A second switch lets you watch 20 reels, then stops swiping until you've had a 15 minute break.",
       "category": "Interface",
       "use": true,
       "dependencies": [

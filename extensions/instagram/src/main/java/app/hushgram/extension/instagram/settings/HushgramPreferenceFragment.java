@@ -32,6 +32,7 @@ import android.text.Layout;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.text.format.Formatter;
 import android.text.util.Linkify;
 import android.util.TypedValue;
 import android.view.ContextThemeWrapper;
@@ -73,6 +74,7 @@ import app.hushgram.extension.instagram.media.PlaybackQuality;
 import app.hushgram.extension.instagram.media.TapToPlayScope;
 import app.hushgram.extension.instagram.media.ResumePlayback;
 import app.hushgram.extension.instagram.misc.OverrideExchange;
+import app.hushgram.extension.instagram.misc.MediaCache;
 import app.hushgram.extension.instagram.misc.OverrideImport;
 import app.hushgram.extension.instagram.stories.StoryRingSize;
 import app.hushgram.extension.instagram.stories.StoryTimeMode;
@@ -111,6 +113,7 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
     static final String STAYS_WHILE_PAUSED = "Stays in while paused";
     /** The Before you sign in notice's key, which finds it on the screen. */
     static final String SIGN_IN_NOTICE_KEY = "hushgram_sign_in_notice";
+    static final String CLEAR_MEDIA_CACHE_NOW = "hushgram_clear_media_cache_now";
     private static final String SCREEN_KEY = "hushgram_settings_root";
 
     /** The first row, which says whether HushGram runs now and whether the next start changes that. */
@@ -692,6 +695,23 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                             + "don't fill your notification shade. Tapping one still opens it.")));
             notifications.addPreference(toggle(context, Settings.GROUP_NOTIFICATIONS_BY_TYPE, L10n.t("Group by type"),
                     L10n.t("A group for each kind of notification, such as comments or messages, in place of one group.")));
+        }
+
+        if (build.contains(PatchFamily.MEDIA_CACHE)) {
+            PreferenceCategory storage = category(screen, L10n.t("Storage"));
+            storage.addPreference(toggle(context, Settings.CLEAR_MEDIA_CACHE, L10n.t("Clear the media cache"),
+                    L10n.t("When Instagram goes to the background with more than 500 MB of images and videos in its "
+                            + "cache, HushGram deletes them. Your sign-in, drafts and settings stay.")));
+            Row clearNow = new Row(context);
+            clearNow.setKey(CLEAR_MEDIA_CACHE_NOW);
+            clearNow.setPersistent(false);
+            clearNow.setTitle(L10n.t("Clear the cache now"));
+            clearNow.setSummary(L10n.t("Deletes the images and videos Instagram keeps to show again, whatever their size."));
+            clearNow.setOnPreferenceClickListener(p -> {
+                clearMediaCache(p);
+                return true;
+            });
+            storage.addPreference(mark(clearNow, SettingsIcons.DELETE));
         }
 
         // Any download patch brings this section, so each one that saves joins this condition.
@@ -2138,6 +2158,21 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
      * Where Tap to play holds starts. Like the playback quality's row, its values are the setting's
      * own names and its summary says what the choice does.
      */
+    /** Clear now: empties the media cache off the main thread, then shows what it freed on the row. */
+    private static void clearMediaCache(Preference row) {
+        Context context = row.getContext();
+        if (!Utils.runOnBackgroundThread(() -> {
+            long freed = MediaCache.clearNow(context);
+            String shown = L10n.f("Freed %1$s.", L10n.isolate(Formatter.formatShortFileSize(context, freed)));
+            Utils.runOnMainThread(() -> {
+                row.setSummary(shown);
+                Utils.showToastShort(shown);
+            });
+        })) {
+            Utils.showToastLong(L10n.t("Couldn't clear the cache. Try again."));
+        }
+    }
+
     static TapToPlayScopeRow tapToPlayScopeRow(Context context) {
         TapToPlayScopeRow row = new TapToPlayScopeRow(context);
         row.setKey(Settings.TAP_TO_PLAY_SCOPE.key);

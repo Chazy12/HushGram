@@ -366,6 +366,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_group_notifications_by_type", FALSE, parent(GROUP_NOTIFICATIONS));
 
     /**
+     * Each time Instagram goes to the background with more than 500 MB in its cache folders, they're
+     * emptied ({@link app.hushgram.extension.instagram.misc.MediaCache}). Off to start.
+     */
+    public static final BooleanSetting CLEAR_MEDIA_CACHE =
+            new BooleanSetting("hushgram_clear_media_cache", FALSE);
+
+    /**
      * Follows you or Doesn't follow you beside the name on someone's profile
      * ({@link app.hushgram.extension.instagram.profile.FriendshipStatus}). Read each time Instagram
      * binds a profile's name.

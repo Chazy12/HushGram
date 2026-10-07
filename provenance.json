@@ -196,6 +196,7 @@
         "patches/src/main/kotlin/app/morphe/patches/instagram/ads/**",
         "patches/src/main/kotlin/app/morphe/patches/instagram/misc/analytics/**",
         "patches/src/main/kotlin/app/morphe/patches/instagram/misc/buildexpiry/**",
+        "patches/src/main/kotlin/app/morphe/patches/instagram/misc/cache/**",
         "patches/src/main/kotlin/app/morphe/patches/instagram/misc/adid/**",
         "patches/src/main/kotlin/app/morphe/patches/instagram/misc/sharelinks/**",
         "patches/src/main/kotlin/app/morphe/patches/instagram/misc/flags/**",

@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** New patch, Clear the media cache, in simple mode with its switch off. With it on, Instagram's cache of images and videos is emptied each time Instagram goes to the background with more than 500 MB in it. A Clear the cache now row does it at once and shows what it freed. Your sign-in, drafts and settings stay.
+
 * **Instagram:** New patch, Group Instagram's notifications, in simple mode with its switch off. With Group notifications on, every notification Instagram posts joins one group that shows how many it holds, so they stop filling the shade. Group by type gives each kind its own group. Tapping a notification still opens what it did.
 
 * **Instagram:** New View live anonymously patch. With its switch on under Stories, a live you watch doesn't put you on the host's viewer list, because the heartbeat that says you're watching never goes out. Commenting or reacting still shows you, and your own lives count their viewers as before. It's in simple mode with the switch off, and Ghost mode turns it with the other switches.
