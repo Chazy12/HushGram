@@ -204,6 +204,40 @@ public class ExternalPlayerTest {
         assertEquals("nothing saved", 0, MediaSave.savesInFlight());
     }
 
+    /**
+     * With Download on reels off, a reel Instagram gives its own Download row gets Open in another
+     * player above it, and Instagram's row stays, its tap left to Instagram. The player row still
+     * opens the chooser, and does nothing once its own switch went off with the menu open.
+     */
+    @Test
+    public void withDownloadOnReelsOffTheRowGoesAboveInstagramsDownload() {
+        Settings.DOWNLOAD_REELS.save(false);
+        twoFiles();
+        assertFalse(ReelDownload.rows(null, new Object(), null, null, null));
+        assertTrue("player off", Item.rows.isEmpty());
+
+        Settings.OPEN_IN_PLAYER.save(true);
+        assertFalse("Instagram's own Download row stays", ReelDownload.rows(null, new Object(), null, null, null));
+        assertEquals(Collections.singletonList("HUSHGRAM_OPEN_PLAYER=Open in another player"), Item.rows);
+
+        Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+        assertTrue(ReelDownload.save(Ours.HUSHGRAM_OPEN_PLAYER, new Object(), activity));
+        assertEquals(Intent.ACTION_CHOOSER, Shadows.shadowOf(activity).getNextStartedActivity().getAction());
+        assertFalse("Instagram's own Download is Instagram's", ReelDownload.save(Native.DOWNLOAD, new Object(), activity));
+        assertEquals("nothing saved", 0, MediaSave.savesInFlight());
+
+        Settings.OPEN_IN_PLAYER.save(false);
+        assertTrue("ours, so it never reaches Instagram", ReelDownload.save(Ours.HUSHGRAM_OPEN_PLAYER, new Object(), activity));
+        assertNull("switched off with the menu open", Shadows.shadowOf(activity).getNextStartedActivity());
+
+        Settings.OPEN_IN_PLAYER.save(true);
+        Item.rows.clear();
+        Item.videos = null;
+        Item.manifest = "<MPD/>";
+        assertFalse(ReelDownload.rows(null, new Object(), null, null, null));
+        assertTrue("a manifest alone", Item.rows.isEmpty());
+    }
+
     /** On, the feed menu gets the row for a post with a video file, and a tap opens the chooser. */
     @Test
     public void aFeedVideoGetsTheRowAndItsTap() {
@@ -252,6 +286,9 @@ public class ExternalPlayerTest {
 
     /** Names of the rows ours, as the bridges make them. */
     private enum Ours { HUSHGRAM_DOWNLOAD_REEL, HUSHGRAM_DOWNLOAD_COVER, HUSHGRAM_OPEN_PLAYER }
+
+    /** Instagram's own Download option, by the name Instagram keeps. */
+    private enum Native { DOWNLOAD }
 
     /** A post or reel as the bridges read it, and the rows the menus' adders were handed. */
     @Implements(value = InstagramMedia.class, isInAndroidSdk = false)

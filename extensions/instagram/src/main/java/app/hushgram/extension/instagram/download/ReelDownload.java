@@ -46,7 +46,9 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  *       versions at the largest size (#48). A frame of the video is never a stand in.
  *   <li>With Open in another player on, a reel with a video file gets Download and Open in another
  *       player in Download's place, after Download cover when that's on too. A tap on it hands the
- *       file's address to a player picked from Android's chooser ({@link ExternalPlayer}).
+ *       file's address to a player picked from Android's chooser ({@link ExternalPlayer}). With
+ *       Download on reels off, the row goes above Instagram's own Download row where Instagram
+ *       shows one, and that row stays Instagram's.
  * </ul>
  *
  * <p>Every hook fails open: until the settings are ready, while HushGram is paused, with the switch
@@ -158,11 +160,18 @@ public final class ReelDownload {
      * reel [media] is a photo that comes with music and the switch is on, and answers whether it
      * did, in which case Instagram's own Download row is left out. [menu] is the menu's helper, and
      * [context], [sheet] and [rowState] are what its adder of one row was handed for Download. Any
-     * other reel answers false and gets the one Download row. Never throws.
+     * other reel answers false and gets the one Download row. With Download on reels off and Open in
+     * another player on, a reel with a video file gets that row above Instagram's own Download row,
+     * which stays. Never throws.
      */
     public static boolean rows(Object menu, Object media, Object context, Object sheet, Object rowState) {
         try {
-            if (media == null || !on()) return false;
+            if (media == null) return false;
+            if (!on()) {
+                Object player = ExternalPlayer.offers(media) ? InstagramMedia.reelOption(PLAYER_OPTION) : null;
+                if (player != null) playerRow(menu, context, player, sheet, rowState);
+                return false;
+            }
             if (!renditions(media).isEmpty() || InstagramMedia.dashManifest(media) != null) {
                 return videoRows(menu, media, context, sheet, rowState);
             }
@@ -221,15 +230,19 @@ public final class ReelDownload {
                 HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "reel menu cover row", t);
             }
         }
-        if (playerRow != null) {
-            try {
-                InstagramMedia.addReelRow(menu, context, playerRow, sheet, rowState,
-                        L10n.t(Utils.getContext(), "Open in another player"));
-            } catch (Throwable t) {
-                HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "reel menu player row", t);
-            }
-        }
+        if (playerRow != null) playerRow(menu, context, playerRow, sheet, rowState);
         return true;
+    }
+
+    /** Adds Open in another player, [option], to the reel menu, and whether it went in. Never throws. */
+    private static boolean playerRow(Object menu, Object context, Object option, Object sheet, Object rowState) {
+        try {
+            return InstagramMedia.addReelRow(menu, context, option, sheet, rowState,
+                    L10n.t(Utils.getContext(), "Open in another player"));
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "reel menu player row", t);
+            return false;
+        }
     }
 
     /** Whether [option], one the reel menu's handler was handed, is a row {@link #rows} added. Never throws. */
@@ -263,12 +276,13 @@ public final class ReelDownload {
             HookStatus.invoked(FamilyNames.REEL_DOWNLOAD);
             String row = row(option);
             ours = row != null;
-            if (!on()) return ours;
             Context context = activity != null ? activity : Utils.getContext();
+            // Open in another player has its own switch, and comes without Download on reels.
             if (PLAYER_OPTION.equals(row)) {
-                ExternalPlayer.open(context, media, FamilyNames.REEL_DOWNLOAD);
+                if (ExternalPlayer.on()) ExternalPlayer.open(context, media, FamilyNames.REEL_DOWNLOAD);
                 return true;
             }
+            if (!on()) return ours;
             if ((row == null || REEL_OPTION.equals(row))
                     && ExternalDownload.handOff(context, ExternalDownload.postLink(media, true), FamilyNames.REEL_DOWNLOAD)) {
                 return true;
