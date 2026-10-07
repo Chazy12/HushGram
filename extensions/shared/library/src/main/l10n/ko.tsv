@@ -485,3 +485,34 @@ There are no overrides to reset. Nothing changed.	초기화할 재정의가 없�
 Turns the switches that keep what you do to yourself on or off in one go, like View stories anonymously and Hide that you're typing. Each one keeps its own switch.	스토리 몰래보기와 입력 중 표시 숨기기처럼 내 활동을 숨기는 스위치를 한 번에 켜거나 끕니다. 각 스위치는 그대로 남습니다.
 View live anonymously	라이브 몰래보기
 View once and replayable photos and videos you get stay in the chat, as if they'd been sent with Keep in chat, so you can open them again.	받은 한 번 보기 및 다시 보기 가능 사진과 동영상이 채팅에 보관으로 보낸 것처럼 채팅에 남아 다시 열 수 있습니다.
+Adds Download cover under Download. It saves the still picture a reel shows before it plays, at its largest size.	다운로드 아래에 커버 다운로드를 추가합니다. 릴스가 재생되기 전에 보여 주는 정지 이미지를 가장 큰 크기로 저장합니다.
+After 20 reels, swiping in Reels stops until Instagram has been in the background for 15 minutes. A reel you open from a message or a post still plays.	릴스 20개를 보면 Instagram이 15분 동안 백그라운드에 있을 때까지 릴스 스와이프가 멈춥니다. 메시지나 게시물에서 연 릴스는 계속 재생됩니다.
+Clear the cache now	지금 캐시 지우기
+Clear the media cache	미디어 캐시 지우기
+Couldn't clear the cache. Try again.	캐시를 지우지 못했습니다. 다시 시도하세요.
+Deletes the images and videos Instagram keeps to show again, whatever their size.	Instagram이 다시 보여 주려고 보관하는 이미지와 동영상을 크기와 상관없이 삭제합니다.
+Don't save recent searches	최근 검색 저장 안 함
+Download cover	커버 다운로드
+Download on a reel, a feed post or a story opens the share sheet with its link, for a downloader app such as Seal. Save all and the other save rows still save here.	릴스, 피드 게시물, 스토리에서 다운로드를 누르면 링크와 함께 공유 시트가 열려 Seal 같은 다운로더 앱으로 보낼 수 있습니다. 모두 저장과 다른 저장 항목은 계속 여기에 저장합니다.
+Each save goes into a folder named for the account that posted it, inside the save folder. A save that doesn't know who posted stays in the save folder.	저장한 항목은 저장 폴더 안에서 게시한 계정 이름의 폴더로 들어갑니다. 게시자를 알 수 없는 항목은 저장 폴더에 그대로 있습니다.
+Folder per account	계정별 폴더
+Freed %1$s.	%1$s 확보됨.
+HDR photos and reels stop brightening the screen above everything else. They show at the same brightness as the rest of Instagram.	HDR 사진과 릴스가 더 이상 다른 화면보다 밝게 표시되지 않습니다. Instagram의 나머지 부분과 같은 밝기로 표시됩니다.
+Instagram is told the phone is at %1$s.	Instagram에는 휴대폰이 %1$s에 있다고 알립니다.
+Instagram is told the phone is at the place below, for the location sticker, nearby places and maps. Photos keep their own places.	위치 스티커, 주변 장소, 지도를 위해 Instagram에는 휴대폰이 아래 장소에 있다고 알립니다. 사진은 원래 장소를 유지합니다.
+No place set. Until there is one, Instagram is told 0, 0 while Spoof location is on.	설정된 장소가 없습니다. 장소를 정할 때까지 위치 위장이 켜져 있으면 Instagram에는 0, 0으로 알립니다.
+Only on mobile data	모바일 데이터에서만
+Photos load at a smaller size, and videos, reels and stories start at the lowest quality. Grid thumbnails stay as they are. While it's saving, it wins over Full resolution photos and the quality above.	사진은 더 작은 크기로 불러오고 동영상, 릴스, 스토리는 가장 낮은 화질로 시작합니다. 그리드 썸네일은 그대로입니다. 절약하는 동안에는 원본 해상도 사진과 위의 화질보다 우선합니다.
+Place	장소
+Send downloads to another app	다운로드를 다른 앱으로 보내기
+Send to	보낼 앱
+Spoof location	위치 위장
+Stop after 20 reels	릴스 20개 후 멈추기
+Storage	저장공간
+That isn't a place. Type a latitude and a longitude with a comma between them.	올바른 장소가 아닙니다. 위도와 경도를 쉼표로 구분해 입력하세요.
+That's %1$d reels. Swiping in Reels is off until Instagram has been in the background for %2$d minutes.	릴스 %1$d개를 봤습니다. Instagram이 %2$d분 동안 백그라운드에 있을 때까지 릴스 스와이프가 꺼집니다.
+The latitude and the longitude in degrees, with a comma between them, like 40.758, -73.9855. North and east are positive, south and west negative. A map app shows both when you press and hold a spot.	위도와 경도를 도 단위로, 쉼표로 구분해 입력합니다. 예: 40.758, -73.9855. 북쪽과 동쪽은 양수, 남쪽과 서쪽은 음수입니다. 지도 앱에서 한 지점을 길게 누르면 둘 다 표시됩니다.
+Turn off HDR brightness boosts	HDR 밝기 강조 끄기
+What you open from search stays out of Recent, in the app and on Instagram's side. Searches already there stay until you clear them.	검색에서 연 항목은 앱에서도 Instagram 쪽에서도 최근 항목에 남지 않습니다. 이미 있는 검색은 지울 때까지 남아 있습니다.
+When Instagram goes to the background with more than 500 MB of images and videos in its cache, HushGram deletes them. Your sign-in, drafts and settings stay.	Instagram이 캐시에 500MB가 넘는 이미지와 동영상을 가진 채 백그라운드로 가면 HushGram이 삭제합니다. 로그인, 임시 저장본, 설정은 그대로 유지됩니다.
+Wi-Fi stays as it is. Turn this off to save data on every network.	Wi-Fi는 그대로입니다. 모든 네트워크에서 데이터를 아끼려면 이 스위치를 끄세요.

@@ -486,3 +486,34 @@ There are no overrides to reset. Nothing changed.	Não há valores personalizado
 Turns the switches that keep what you do to yourself on or off in one go, like View stories anonymously and Hide that you're typing. Each one keeps its own switch.	Liga ou desliga de uma vez as chaves que mantêm o que você faz só para você, como Ver Stories anonimamente e Ocultar que você está digitando. Cada uma mantém a própria chave.
 View live anonymously	Ver lives anonimamente
 View once and replayable photos and videos you get stay in the chat, as if they'd been sent with Keep in chat, so you can open them again.	Fotos e vídeos de visualização única e reproduzíveis que você recebe ficam na conversa, como se tivessem sido enviados com Manter na conversa, para você abrir de novo.
+Adds Download cover under Download. It saves the still picture a reel shows before it plays, at its largest size.	Adiciona Baixar capa embaixo de Baixar. Salva a imagem estática que um reel mostra antes de começar, no maior tamanho.
+After 20 reels, swiping in Reels stops until Instagram has been in the background for 15 minutes. A reel you open from a message or a post still plays.	Depois de 20 reels, deslizar no Reels para até o Instagram ficar 15 minutos em segundo plano. Um reel aberto de uma mensagem ou de um post continua tocando.
+Clear the cache now	Limpar o cache agora
+Clear the media cache	Limpar o cache de mídia
+Couldn't clear the cache. Try again.	Não foi possível limpar o cache. Tente de novo.
+Deletes the images and videos Instagram keeps to show again, whatever their size.	Apaga as imagens e os vídeos que o Instagram guarda para mostrar de novo, seja qual for o tamanho.
+Don't save recent searches	Não salvar pesquisas recentes
+Download cover	Baixar capa
+Download on a reel, a feed post or a story opens the share sheet with its link, for a downloader app such as Seal. Save all and the other save rows still save here.	Baixar em um reel, um post do feed ou um story abre a folha de compartilhamento com o link, para um app de download como o Seal. Salvar tudo e as outras linhas de salvar continuam salvando aqui.
+Each save goes into a folder named for the account that posted it, inside the save folder. A save that doesn't know who posted stays in the save folder.	Cada item salvo vai para uma pasta com o nome da conta que o postou, dentro da pasta de destino. Um item sem autor conhecido fica na pasta de destino.
+Folder per account	Pasta por conta
+Freed %1$s.	%1$s liberados.
+HDR photos and reels stop brightening the screen above everything else. They show at the same brightness as the rest of Instagram.	Fotos e reels em HDR param de deixar a tela mais clara que todo o resto. Eles aparecem com o mesmo brilho do resto do Instagram.
+Instagram is told the phone is at %1$s.	O Instagram é informado de que o celular está em %1$s.
+Instagram is told the phone is at the place below, for the location sticker, nearby places and maps. Photos keep their own places.	O Instagram é informado de que o celular está no lugar abaixo, para o sticker de localização, lugares próximos e mapas. As fotos mantêm os próprios lugares.
+No place set. Until there is one, Instagram is told 0, 0 while Spoof location is on.	Nenhum lugar definido. Até haver um, o Instagram recebe 0, 0 enquanto Falsificar localização estiver ativada.
+Only on mobile data	Só nos dados móveis
+Photos load at a smaller size, and videos, reels and stories start at the lowest quality. Grid thumbnails stay as they are. While it's saving, it wins over Full resolution photos and the quality above.	As fotos carregam em tamanho menor, e vídeos, reels e stories começam na qualidade mais baixa. As miniaturas da grade ficam como estão. Enquanto estiver economizando, tem prioridade sobre Fotos em resolução máxima e a qualidade acima.
+Place	Lugar
+Send downloads to another app	Enviar downloads para outro app
+Send to	Enviar para
+Spoof location	Falsificar localização
+Stop after 20 reels	Parar depois de 20 reels
+Storage	Armazenamento
+That isn't a place. Type a latitude and a longitude with a comma between them.	Isso não é um lugar. Digite uma latitude e uma longitude separadas por vírgula.
+That's %1$d reels. Swiping in Reels is off until Instagram has been in the background for %2$d minutes.	Já são %1$d reels. Deslizar no Reels está desativado até o Instagram ficar %2$d minutos em segundo plano.
+The latitude and the longitude in degrees, with a comma between them, like 40.758, -73.9855. North and east are positive, south and west negative. A map app shows both when you press and hold a spot.	A latitude e a longitude em graus, separadas por vírgula, como 40.758, -73.9855. Norte e leste são positivos, sul e oeste negativos. Um app de mapas mostra as duas quando você toca e segura um ponto.
+Turn off HDR brightness boosts	Desativar o reforço de brilho HDR
+What you open from search stays out of Recent, in the app and on Instagram's side. Searches already there stay until you clear them.	O que você abre pela pesquisa não entra em Recentes, nem no app nem do lado do Instagram. As pesquisas que já estão lá ficam até você limpá-las.
+When Instagram goes to the background with more than 500 MB of images and videos in its cache, HushGram deletes them. Your sign-in, drafts and settings stay.	Quando o Instagram vai para segundo plano com mais de 500 MB de imagens e vídeos no cache, o HushGram os apaga. Seu login, rascunhos e configurações continuam.
+Wi-Fi stays as it is. Turn this off to save data on every network.	O Wi-Fi fica como está. Desative esta chave para economizar dados em qualquer rede.

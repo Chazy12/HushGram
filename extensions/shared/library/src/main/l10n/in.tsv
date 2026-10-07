@@ -486,3 +486,34 @@ There are no overrides to reset. Nothing changed.	Tidak ada nilai pengganti untu
 Turns the switches that keep what you do to yourself on or off in one go, like View stories anonymously and Hide that you're typing. Each one keeps its own switch.	Menyalakan atau mematikan sekaligus sakelar yang merahasiakan aktivitas Anda, seperti Lihat cerita secara anonim dan Sembunyikan bahwa Anda sedang mengetik. Masing-masing tetap punya sakelarnya sendiri.
 View live anonymously	Tonton siaran langsung secara anonim
 View once and replayable photos and videos you get stay in the chat, as if they'd been sent with Keep in chat, so you can open them again.	Foto dan video sekali lihat dan yang bisa diputar ulang yang Anda terima tetap ada di chat, seolah dikirim dengan Simpan di chat, jadi Anda bisa membukanya lagi.
+Adds Download cover under Download. It saves the still picture a reel shows before it plays, at its largest size.	Menambahkan Unduh sampul di bawah Unduh. Ini menyimpan gambar diam yang ditampilkan reel sebelum diputar, dalam ukuran terbesarnya.
+After 20 reels, swiping in Reels stops until Instagram has been in the background for 15 minutes. A reel you open from a message or a post still plays.	Setelah 20 reel, menggeser di Reels berhenti sampai Instagram berada di latar belakang selama 15 menit. Reel yang Anda buka dari pesan atau postingan tetap diputar.
+Clear the cache now	Bersihkan cache sekarang
+Clear the media cache	Bersihkan cache media
+Couldn't clear the cache. Try again.	Tidak dapat membersihkan cache. Coba lagi.
+Deletes the images and videos Instagram keeps to show again, whatever their size.	Menghapus gambar dan video yang disimpan Instagram untuk ditampilkan lagi, berapa pun ukurannya.
+Don't save recent searches	Jangan simpan pencarian terbaru
+Download cover	Unduh sampul
+Download on a reel, a feed post or a story opens the share sheet with its link, for a downloader app such as Seal. Save all and the other save rows still save here.	Unduh pada reel, postingan feed, atau cerita membuka lembar berbagi dengan tautannya, untuk aplikasi pengunduh seperti Seal. Simpan semua dan baris simpan lainnya tetap menyimpan di sini.
+Each save goes into a folder named for the account that posted it, inside the save folder. A save that doesn't know who posted stays in the save folder.	Setiap simpanan masuk ke folder bernama akun yang mempostingnya, di dalam folder simpan. Simpanan yang tidak diketahui pempostingnya tetap di folder simpan.
+Folder per account	Folder per akun
+Freed %1$s.	%1$s dikosongkan.
+HDR photos and reels stop brightening the screen above everything else. They show at the same brightness as the rest of Instagram.	Foto dan reel HDR tidak lagi membuat layar lebih terang dari yang lain. Semuanya tampil dengan kecerahan yang sama seperti bagian Instagram lainnya.
+Instagram is told the phone is at %1$s.	Instagram diberi tahu bahwa ponsel berada di %1$s.
+Instagram is told the phone is at the place below, for the location sticker, nearby places and maps. Photos keep their own places.	Instagram diberi tahu bahwa ponsel berada di tempat di bawah, untuk stiker lokasi, tempat terdekat, dan peta. Foto tetap memakai tempatnya sendiri.
+No place set. Until there is one, Instagram is told 0, 0 while Spoof location is on.	Belum ada tempat. Sampai ada, Instagram diberi tahu 0, 0 selama Palsukan lokasi aktif.
+Only on mobile data	Hanya dengan data seluler
+Photos load at a smaller size, and videos, reels and stories start at the lowest quality. Grid thumbnails stay as they are. While it's saving, it wins over Full resolution photos and the quality above.	Foto dimuat dalam ukuran lebih kecil, dan video, reel, serta cerita dimulai dengan kualitas terendah. Gambar mini kisi tetap seperti semula. Selama menghemat, ini mengalahkan Foto resolusi penuh dan kualitas di atas.
+Place	Tempat
+Send downloads to another app	Kirim unduhan ke aplikasi lain
+Send to	Kirim ke
+Spoof location	Palsukan lokasi
+Stop after 20 reels	Berhenti setelah 20 reel
+Storage	Penyimpanan
+That isn't a place. Type a latitude and a longitude with a comma between them.	Itu bukan tempat. Ketik lintang dan bujur dengan koma di antaranya.
+That's %1$d reels. Swiping in Reels is off until Instagram has been in the background for %2$d minutes.	Sudah %1$d reel. Menggeser di Reels nonaktif sampai Instagram berada di latar belakang selama %2$d menit.
+The latitude and the longitude in degrees, with a comma between them, like 40.758, -73.9855. North and east are positive, south and west negative. A map app shows both when you press and hold a spot.	Lintang dan bujur dalam derajat, dengan koma di antaranya, seperti 40.758, -73.9855. Utara dan timur positif, selatan dan barat negatif. Aplikasi peta menampilkan keduanya saat Anda menekan lama sebuah titik.
+Turn off HDR brightness boosts	Matikan peningkatan kecerahan HDR
+What you open from search stays out of Recent, in the app and on Instagram's side. Searches already there stay until you clear them.	Apa yang Anda buka dari pencarian tidak masuk ke Terbaru, baik di aplikasi maupun di sisi Instagram. Pencarian yang sudah ada di sana tetap ada sampai Anda menghapusnya.
+When Instagram goes to the background with more than 500 MB of images and videos in its cache, HushGram deletes them. Your sign-in, drafts and settings stay.	Saat Instagram masuk ke latar belakang dengan lebih dari 500 MB gambar dan video di cache-nya, HushGram menghapusnya. Info masuk, draf, dan pengaturan Anda tetap ada.
+Wi-Fi stays as it is. Turn this off to save data on every network.	Wi-Fi tetap seperti semula. Matikan sakelar ini untuk menghemat data di setiap jaringan.
