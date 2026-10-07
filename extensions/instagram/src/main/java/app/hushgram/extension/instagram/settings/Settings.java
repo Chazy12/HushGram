@@ -538,6 +538,15 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting FULL_RESOLUTION_PHOTOS =
             new BooleanSetting("hushgram_full_resolution_photos", FALSE);
 
+    /**
+     * On a phone under 1440 pixels wide, Instagram reports a screen 1440 pixels on its shorter side
+     * and asks for photos shown across the screen at that width
+     * ({@link app.hushgram.extension.instagram.feed.LargerPhotos}). The reported screen changes
+     * after a restart, the asked width from the next photo. Off to start: it takes more data.
+     */
+    public static final BooleanSetting ASK_FOR_LARGER_PHOTOS =
+            new BooleanSetting("hushgram_ask_for_larger_photos", FALSE);
+
     // ---- Downloads -------------------------------------------------------------------------
     // What every save reads when it starts (app.hushgram.extension.instagram.download), ported
     // with the save pipeline from Hushfacebook 3a473639 with the same types and defaults, keyed

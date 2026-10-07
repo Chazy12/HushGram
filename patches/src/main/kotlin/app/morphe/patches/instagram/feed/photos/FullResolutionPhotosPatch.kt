@@ -55,13 +55,16 @@ internal const val NO_IMAGE_URL =
 /**
  * Loads feed photos at the largest size the server sends rather than the one Instagram picks for
  * the screen. Included in the default selection with its switch initially off, since a larger
- * photo means more data. Only the pixels loaded change: the view's size comes from the post.
+ * photo means more data. Only the pixels loaded change: the view's size comes from the post. A
+ * second switch, also off to start, asks for a larger size on a phone narrower than 1440 pixels
+ * (see LargerPhotos.kt).
  */
 @Suppress("unused")
 val fullResolutionPhotosPatch = bytecodePatch(
     name = "Full resolution photos",
     description = "Loads photos in your feed, in carousels and in posts you open at the largest size Instagram " +
-        "sends rather than the size it picks for your screen. It can use more data.",
+        "sends rather than the size it picks for your screen. A second switch asks for a larger size on a phone " +
+        "under 1440 pixels wide. It can use more data.",
     default = true,
 ) {
     category("Feed")
@@ -72,9 +75,11 @@ val fullResolutionPhotosPatch = bytecodePatch(
         requireStatusMethod("fullResolution")
         val site = findFullResolution()
         val pickerSizes = findPickerSizes(site)
+        val larger = findLargerSizes()
         val writeBridges = imageBridges(PATCH)
         val writePickerBridge = pickerSizesBridge(PATCH, pickerSizes)
         loadFullResolution(site)
+        askForLarger(larger)
         writeBridges()
         writePickerBridge()
         enableStatus("fullResolution")

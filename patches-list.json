@@ -339,7 +339,7 @@
     },
     {
       "name": "Full resolution photos",
-      "description": "Loads photos in your feed, in carousels and in posts you open at the largest size Instagram sends rather than the size it picks for your screen. It can use more data.",
+      "description": "Loads photos in your feed, in carousels and in posts you open at the largest size Instagram sends rather than the size it picks for your screen. A second switch asks for a larger size on a phone under 1440 pixels wide. It can use more data.",
       "category": "Feed",
       "use": true,
       "dependencies": [

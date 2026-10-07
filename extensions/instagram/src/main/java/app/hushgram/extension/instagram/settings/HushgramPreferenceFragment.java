@@ -377,6 +377,10 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             feed.addPreference(toggle(context, Settings.FULL_RESOLUTION_PHOTOS, L10n.t("Full resolution photos"),
                     L10n.t("Photos in your feed, in carousels and in posts you open load at the largest size Instagram "
                             + "sends rather than the size it picks for your screen. This can use more data.")));
+            feed.addPreference(toggle(context, Settings.ASK_FOR_LARGER_PHOTOS, L10n.t("Ask for larger photos"),
+                    L10n.t("On a phone under 1440 pixels wide, Instagram tells its server your screen is 1440 "
+                            + "pixels wide and asks for photos at that width, so there's a larger size to load. "
+                            + "This uses more data. Restart Instagram after changing it.")));
         }
 
         if (build.contains(PatchFamily.META_AI)) {

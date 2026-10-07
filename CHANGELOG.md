@@ -6,6 +6,8 @@ Every HushGram release, newest first.
 
 * **Instagram:** Save comment photo now offers Save on photo comments in Instagram 450. Instagram 450 leaves the media type out of a comment's photo, and Save used to wait for it, so the row never showed. It now goes by the photo itself, and GIFs, videos and text replies still don't get the row. Asked for in #1.
 
+* **Instagram:** Full resolution photos has a second switch, Ask for larger photos. On a phone under 1440 pixels wide, Instagram tells its server your screen is 1440 pixels wide and asks for photos at that width, so a 1080-wide phone has a larger size to load. It's off to start, it uses more data, and it takes effect after you restart Instagram. Asked for in #20.
+
 * **Instagram:** New Stop swiping between tabs patch. With its switch on, a sideways swipe no longer moves you between Home, Reels and the other main tabs, so you can't land on Reels by accident. Tapping the tab bar still works, and carousels keep their swipe. It's in simple mode with its switch off, under Feed in HushGram settings.
 
 * **Instagram:** New Hide the home feed patch. With its switch on, Home shows your stories row and nothing under it, so you can check stories and messages without the endless feed. Profiles, Explore and Reels still show posts. It's in simple mode with its switch off, under Feed in HushGram settings. Pull to refresh Home after turning it on.

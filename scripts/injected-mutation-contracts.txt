@@ -421,6 +421,14 @@ once-call Lapp/hushgram/extension/instagram/feed/SwipeToCreate;->enabled()I in i
 # with no address, trailing space and all. It's called once there and nowhere else. Left out,
 # photos load at Instagram's size; twice or elsewhere, it isn't the hook the patch wrote.
 # FullResolutionPhotosHookTest checks on the 450 fixture where it lands and what it's handed.
+# Its Ask for larger photos switch passes the width Instagram's size picker is asked for through
+# LargerPhotos.wanted() first thing, in the one static picker taking a mode, the sizes and a width
+# (it reads the mode field pinned to 450 below), and hands the screen parts of the user agent to
+# LargerPhotos.screen() once, in the method holding the screen's format. Left out, a 1080-wide
+# phone is never sent or shown a larger size.
+start-call Lapp/hushgram/extension/instagram/feed/LargerPhotos;->wanted(I)I in static (Ljava/lang/Integer;Ljava/util/List;I)Lcom/instagram/model/mediasize/ExtendedImageUrl; holding LX/0009;->A0C:Ljava/lang/Integer;
+once-call Lapp/hushgram/extension/instagram/feed/LargerPhotos;->wanted(I)I in static (Ljava/lang/Integer;Ljava/util/List;I)Lcom/instagram/model/mediasize/ExtendedImageUrl; holding LX/0009;->A0C:Ljava/lang/Integer;
+once-call Lapp/hushgram/extension/instagram/feed/LargerPhotos;->screen([Ljava/lang/Object;)V in static (Landroid/content/Context;)Ljava/lang/String; holding %sdpi;\s%sx%s
 once-call Lapp/hushgram/extension/instagram/feed/FullResolution;->photo(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object; in instance (Landroid/content/Context;Lcom/instagram/common/session/UserSession;Lcom/instagram/feed/media/Media;)L*; holding instagram.features.feed.ui.rows.image.FeedImageUseCase#getImageSource()\sCould\snot\sgenerate\simageUrl\sfor\smediaId=\s
 #
 # Hide suggested stories asks hideTray() first thing in Home's story tray row build, the one method

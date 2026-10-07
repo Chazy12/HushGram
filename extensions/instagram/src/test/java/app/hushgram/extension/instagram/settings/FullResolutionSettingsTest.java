@@ -73,11 +73,20 @@ public class FullResolutionSettingsTest {
         PreferenceCategory feed = categoryHolding(page.getPreferenceScreen(), row);
         assertNotNull(feed);
         assertEquals("Feed", feed.getTitle().toString());
-        assertEquals(1, feed.getPreferenceCount());
+        assertEquals(2, feed.getPreferenceCount());
         assertFalse(row.isChecked());
         assertFalse(Settings.FULL_RESOLUTION_PHOTOS.get());
-        assertEquals(java.util.Collections.singletonList(Settings.FULL_RESOLUTION_PHOTOS), PatchFamily.FULL_RESOLUTION.switches);
+        assertEquals(java.util.Arrays.asList(Settings.FULL_RESOLUTION_PHOTOS, Settings.ASK_FOR_LARGER_PHOTOS),
+                PatchFamily.FULL_RESOLUTION.switches);
         assertTrue(ConfigurationBackup.eligible().containsKey(Settings.FULL_RESOLUTION_PHOTOS.key));
+        SwitchPreference larger = (SwitchPreference) page.getPreferenceScreen().findPreference(Settings.ASK_FOR_LARGER_PHOTOS.key);
+        assertNotNull(larger);
+        assertEquals("Ask for larger photos", larger.getTitle().toString());
+        assertTrue(larger.getSummary().toString(), larger.getSummary().toString().contains("This uses more data"));
+        assertTrue(larger.getSummary().toString(), larger.getSummary().toString().contains("1440"));
+        assertFalse(larger.isChecked());
+        assertFalse(Settings.ASK_FOR_LARGER_PHOTOS.get());
+        assertTrue(ConfigurationBackup.eligible().containsKey(Settings.ASK_FOR_LARGER_PHOTOS.key));
     }
     @Test public void photoSwitchPersistsAndHonorsPause() throws Exception {
         open(true);
