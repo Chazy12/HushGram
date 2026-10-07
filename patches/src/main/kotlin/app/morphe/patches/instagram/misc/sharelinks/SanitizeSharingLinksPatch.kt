@@ -11,6 +11,7 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.instagram.misc.analytics.loadsString
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesCalling
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.handleTargets
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
@@ -270,8 +271,9 @@ internal fun Method.linkStore(typeName: String): Pair<Int, Int>? {
  */
 internal fun BytecodePatchContext.rerouteLinkExits(exits: List<LinkExit>): Int {
     val owners = mutableListOf<String>()
+    val calling = exits.flatMapTo(HashSet()) { exit -> classesCalling(exit.definingClass, exit.name).map { it.type } }
     classDefForEach { classDef ->
-        if (classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
+        if (classDef.type !in calling || classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
         if (classDef.methods.any { method -> method.exitSites(exits).isNotEmpty() }) owners += classDef.type
     }
     return owners.sumOf { type ->

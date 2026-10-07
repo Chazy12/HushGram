@@ -15,6 +15,7 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesAccessing
 import app.morphe.patches.instagram.misc.extension.classesHolding
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
@@ -333,7 +334,9 @@ internal fun BytecodePatchContext.findPlayButtonClick(): PlayButtonClick {
         ?: throw PatchException("$PATCH: ${button.type}, the Litho play button, holds more than one Function0")
 
     val clicks = mutableListOf<Method>()
+    val reading = classesAccessing(button.type, start.name, Opcode.IGET_OBJECT).mapTo(HashSet()) { it.type }
     classDefForEach { classDef ->
+        if (classDef.type !in reading) return@classDefForEach
         classDef.methods.filterTo(clicks) { method ->
             method.code().any { instruction ->
                 instruction.opcode == Opcode.IGET_OBJECT && instruction.fieldReference()?.let {

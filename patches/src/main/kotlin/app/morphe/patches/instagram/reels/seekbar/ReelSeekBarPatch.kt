@@ -9,6 +9,7 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesHolding
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
 import app.morphe.patches.instagram.misc.extension.jumpTargets
@@ -188,8 +189,9 @@ internal fun BytecodePatchContext.findReelSeekBarSites(): ReelSeekBarSites {
 internal fun BytecodePatchContext.findBindSite(row: Method, lazy: FlagLoad): BindSite {
     val field = adField(row, lazy)
     val binders = mutableListOf<Method>()
+    val tagging = classesHolding(SCRUBBER_TAG).mapTo(HashSet()) { it.type }
     classDefForEach { classDef ->
-        if (classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
+        if (classDef.type !in tagging || classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
         classDef.methods.forEach { method ->
             val code = method.implementation?.instructions ?: return@forEach
             if (code.any { it.string() == SCRUBBER_TAG } && code.any { it.methodSignature() == SET_TAG }) binders += method

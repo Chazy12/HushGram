@@ -20,6 +20,7 @@ import app.morphe.patches.instagram.feed.prepareFlagWrites
 import app.morphe.patches.instagram.feed.printedFlag
 import app.morphe.patches.instagram.feed.sameAs
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesLoading
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
 import app.morphe.patches.instagram.misc.extension.localRegisterCount
@@ -188,8 +189,9 @@ internal fun BytecodePatchContext.findRepostSites(): RepostSites {
     if (implementation.registerCount - 1 < 1) refuse("$MEDIA->${getter.name} has no register of its own for the guard")
 
     val reads = mutableListOf<RepostRead>()
+    val hashed = classesLoading(REPOSTS_HASH.toLong()).mapTo(HashSet()) { it.type }
     classDefForEach { classDef ->
-        if (classDef.type.startsWith(EXTENSION_ROOT) || classDef.type == MEDIA) return@classDefForEach
+        if (classDef.type !in hashed || classDef.type.startsWith(EXTENSION_ROOT) || classDef.type == MEDIA) return@classDefForEach
         classDef.methods.forEach { method -> reads += method.repostReads(classDef.type) }
     }
     if (reads.isEmpty()) refuse("nothing reads $REPOSTS_FIELD from a post's data tree")
@@ -203,8 +205,9 @@ internal fun BytecodePatchContext.findRepostSites(): RepostSites {
  */
 internal fun BytecodePatchContext.findFeedUfiSite(): FeedUfiSite {
     val sites = mutableListOf<FeedUfiSite>()
+    val loading = classesLoading(REPOSTS_UFI_ICON_ID.toLong()).mapTo(HashSet()) { it.type }
     classDefForEach { classDef ->
-        if (classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
+        if (classDef.type !in loading || classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
         classDef.methods.forEach { method ->
             val code = method.implementation?.instructions?.toList() ?: return@forEach
             val iconId = code.indexOfLiteral(REPOSTS_UFI_ICON_ID)
@@ -242,8 +245,9 @@ internal class FeedRepostComponent(val method: Method, val at: Int)
 
 internal fun BytecodePatchContext.findFeedRepostComponent(): FeedRepostComponent {
     val renders = mutableListOf<Method>()
+    val loading = classesLoading(REPOSTS_UFI_ICON_ID.toLong()).mapTo(HashSet()) { it.type }
     classDefForEach { classDef ->
-        if (classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
+        if (classDef.type !in loading || classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
         classDef.methods.forEach { method ->
             val code = method.implementation?.instructions?.toList() ?: return@forEach
             if (!AccessFlags.STATIC.isSet(method.accessFlags) && method.parameterTypes.size == 1 &&

@@ -14,6 +14,7 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesCalling
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
 import app.morphe.patches.instagram.misc.extension.jumpTargets
@@ -131,7 +132,11 @@ internal fun liftScreenshotBlock(secure: MutableMethod) {
  */
 internal fun BytecodePatchContext.routeWindowFlags(): Int {
     val callers = mutableListOf<Method>()
+    val calling = WINDOW_FLAG_STAND_INS.keys.flatMapTo(HashSet()) { call ->
+        classesCalling(call.substringBefore("->"), call.substringAfter("->").substringBefore("(")).map { it.type }
+    }
     classDefForEach { classDef ->
+        if (classDef.type !in calling) return@classDefForEach
         if (!classDef.type.startsWith(EXTENSION_ROOT)) classDef.methods.filterTo(callers) { it.windowFlagCalls().isNotEmpty() }
     }
     if (callers.isEmpty()) refuse("found no Window.setFlags or Window.addFlags call")

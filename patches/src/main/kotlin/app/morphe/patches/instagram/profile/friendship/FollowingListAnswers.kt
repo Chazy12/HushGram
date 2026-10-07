@@ -6,6 +6,7 @@ package app.morphe.patches.instagram.profile.friendship
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
+import app.morphe.patches.instagram.misc.extension.classesHolding
 import app.morphe.patches.instagram.misc.extension.jumpTargets
 import app.morphe.patches.instagram.misc.settings.EXTENSION_ROOT
 import app.morphe.util.ControlFlow
@@ -80,8 +81,9 @@ private fun Site(classDef: ClassDef, method: Method) =
 internal fun BytecodePatchContext.findFollowAnswers(): FollowAnswers {
     val fetches = mutableListOf<Pair<ClassDef, Method>>()
     val parsers = mutableListOf<Pair<ClassDef, Method>>()
+    val holders = (classesHolding(NON_RECIP_FOLLOWERS) + classesHolding(FRIENDSHIP_STATUSES)).mapTo(HashSet()) { it.type }
     classDefForEach { classDef ->
-        if (classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
+        if (classDef.type !in holders || classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
         classDef.methods.forEach { method ->
             if (method.holdsString(NON_RECIP_FOLLOWERS)) fetches += classDef to method
             if (method.holdsString(FRIENDSHIP_STATUSES)) parsers += classDef to method

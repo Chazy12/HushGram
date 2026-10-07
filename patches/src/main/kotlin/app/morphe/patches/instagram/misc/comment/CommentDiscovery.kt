@@ -8,6 +8,7 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.instagram.download.pandoGetter
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesHolding
 import app.morphe.util.ControlFlow
 import app.morphe.util.getFreeRegisterProvider
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -141,13 +142,14 @@ internal fun BytecodePatchContext.findCommentMenu(): CommentMenu = discovering(C
 }
 
 /** Everything both families need from the selection, the row builder and the renderer. */
-private fun findCommentSurface(classes: Map<String, ClassDef>): CommentSurface {
+private fun BytecodePatchContext.findCommentSurface(classes: Map<String, ClassDef>): CommentSurface {
     if (COMMENT_ACTIONS !in classes) refuse("missing extension boundary $COMMENT_ACTIONS")
     fun clazz(type: String) = classes[type] ?: refuse("missing native class $type")
     fun methods() = classes.values.asSequence().flatMap { it.methods.asSequence() }
-    val select = methods().filter { COMMENT_SELECT in it.strings() && it.publicInstance() &&
-        it.returnType == "V" && it.parameters() == listOf(STRING, STRING, "F", "Z") }
-        .toList().one("selected-comment anchor")
+    val select = classesHolding(COMMENT_SELECT).asSequence().flatMap { it.methods.asSequence() }.filter {
+        COMMENT_SELECT in it.strings() && it.publicInstance() &&
+            it.returnType == "V" && it.parameters() == listOf(STRING, STRING, "F", "Z")
+    }.toList().one("selected-comment anchor")
     val selectedType = selectionType(select)
     val model = clazz(selectedType)
     requirePublic(model)
@@ -408,8 +410,8 @@ internal data class JsonReads(val name: MethodReference, val advance: MethodRefe
 private val staticInvokes = setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE)
 
 /** Jackson's retained root-unwrapping errors distinguish a current name from a string value. */
-internal fun jsonReads(input: String, classes: Map<String, ClassDef>): JsonReads {
-    val root = classes.values.flatMap { it.methods.toList() }.filter {
+internal fun BytecodePatchContext.jsonReads(input: String, classes: Map<String, ClassDef>): JsonReads {
+    val root = classesHolding(JSON_ROOT_FIELD, JSON_ROOT_MISMATCH).flatMap { it.methods.toList() }.filter {
         JSON_ROOT_FIELD in it.strings() && JSON_ROOT_MISMATCH in it.strings()
     }.one("JSON root-name semantics anchor")
     val parameters = root.parameters()

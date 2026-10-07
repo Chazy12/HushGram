@@ -9,6 +9,7 @@ import app.morphe.patches.instagram.download.INSTAGRAM_MEDIA
 import app.morphe.patches.instagram.download.MEDIA
 import app.morphe.patches.instagram.download.imageBridges
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesAccessing
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -102,7 +103,9 @@ internal fun BytecodePatchContext.findCommentPhoto(): CommentPhotoPlan = discove
     if (constructorField(infoParser, mediaRead + 1, infoParsed.type, classes, allowAbsent = true, valueType = MEDIA,
             what = "comment media").toString() != parsedMedia.toString()) refuse("parsed comment media does not reach its getter")
     val treeMedia = parsedTextField(infoTree.methods.filter { it.matches(media) }.one("tree media getter"), infoTree.type, MEDIA)
-    val stores = methods().filter { method -> method.code().any { it.opcode in fieldWrites && it.field()?.toString() == treeMedia.toString() } }.toList()
+    val writers = fieldWrites.flatMap { classesAccessing(treeMedia.definingClass, treeMedia.name, it) }.distinctBy { it.type }
+    val stores = writers.asSequence().flatMap { it.methods.asSequence() }
+        .filter { method -> method.code().any { it.opcode in fieldWrites && it.field()?.toString() == treeMedia.toString() } }.toList()
     if (stores.isEmpty() || stores.any { it.definingClass != infoTree.type || !it.loads("media".hashCode()) }) {
         refuse("tree comment media is stored from something other than its media field")
     }

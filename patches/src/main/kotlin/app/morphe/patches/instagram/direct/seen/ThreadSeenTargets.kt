@@ -9,6 +9,7 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesHolding
 import app.morphe.patches.instagram.misc.extension.jumpTargets
 import app.morphe.patches.instagram.misc.extension.localRegisterCount
 import app.morphe.patches.instagram.misc.extension.parameterRegisterNumber
@@ -85,20 +86,16 @@ internal fun BytecodePatchContext.findThreadSeen(): ThreadSeenTargets {
     if (0 in handler.jumpTargets()) refuse("a jump or exception handler enters the receipt handler at its first instruction")
     val mutation = castMutation(handler)
 
-    val classes = mutableListOf<ClassDef>()
-    classDefForEach { classes += it }
-    val byType = classes.associateBy { it.type }
-    val methods = classes.flatMap { it.methods }
 
     // The account the receipt goes out for: the one the handler keeps, which its provider builds it with.
-    val account = (byType[handler.definingClass] ?: refuse("receipt handler class is missing")).fields
+    val account = (classDefByOrNull(handler.definingClass) ?: refuse("receipt handler class is missing")).fields
         .filter { !AccessFlags.STATIC.isSet(it.accessFlags) && it.type == USER_SESSION }.toList()
         .one("account the receipt handler keeps")
     if (handler.visualCode().none { it.opcode == Opcode.IGET_OBJECT && it.field()?.toString() == account.toString() }) {
         refuse("receipt handler never reads the account it keeps")
     }
 
-    val callback = byType[handler.parameterTypes[1].toString()] ?: refuse("receipt callback interface is missing")
+    val callback = classDefByOrNull(handler.parameterTypes[1].toString()) ?: refuse("receipt callback interface is missing")
     if (!AccessFlags.PUBLIC.isSet(callback.accessFlags) || !AccessFlags.INTERFACE.isSet(callback.accessFlags)) {
         refuse("receipt callback is not a public interface")
     }
@@ -112,24 +109,24 @@ internal fun BytecodePatchContext.findThreadSeen(): ThreadSeenTargets {
     }
 
     val base = handler.parameterTypes[2].toString()
-    val selector = methods.filter { method ->
+    val selector = (classDefByOrNull(base)?.methods ?: emptyList()).filter { method ->
         method.definingClass == base && method.returnType == JAVA_STRING &&
             method.visualCode().any { it.visualString() == THREAD_SEEN_MUTATION }
     }.one("receipt mutation name selector")
     requireSelected(selector, mutation)
 
-    val registry = methods.filter { method ->
+    val registry = classesHolding(THREAD_SEEN_MUTATION).flatMap { it.methods }.filter { method ->
         val body = method.visualCode()
         body.any { it.visualString() == THREAD_SEEN_MUTATION } &&
             body.any { it.opcode == Opcode.SGET_OBJECT && it.field()?.definingClass == handler.definingClass }
     }.one("receipt handler registration")
-    requireBinding(registry, handler.definingClass, byType)
+    requireBinding(registry, handler.definingClass) { classDefByOrNull(it) }
 
-    val dispatch = methods.filter { method ->
+    val dispatch = classesHolding(DISPATCH_ANCHOR).flatMap { it.methods }.filter { method ->
         method.visualCode().any { it.visualString() == DISPATCH_ANCHOR } &&
             method.parameterTypes.map(Any::toString) == listOf(base) && method.returnType == "Z"
     }.one("native mutation dispatcher")
-    val creator = methods.filter { method ->
+    val creator = classesHolding(THREAD_SEEN_KEY).flatMap { it.methods }.filter { method ->
         val body = method.visualCode()
         body.any { it.visualString() == THREAD_SEEN_KEY } &&
             body.any { it.opcode == Opcode.NEW_INSTANCE && it.type() == mutation }
@@ -144,7 +141,7 @@ internal fun BytecodePatchContext.findThreadSeen(): ThreadSeenTargets {
     }.one("live receipt dispatch call")
     requireOrigin(THREAD_SEEN_PATCH, creator, sendAt, allocated, createAt, "live receipt mutation", fromDefinition = true)
 
-    byType[THREAD_SEEN]?.methods?.filter {
+    classDefByOrNull(THREAD_SEEN)?.methods?.filter {
         it.name == "hold" && it.returnType == "Z" && it.parameterTypes.map(Any::toString) == listOf(JAVA_OBJECT, JAVA_OBJECT) &&
             it.public() && it.static()
     }?.singleOrNull() ?: refuse("extension has no public static hold(Object, Object)Z")
@@ -204,7 +201,7 @@ private fun requireSelected(selector: Method, mutation: String) {
  * class, and that provider must build this handler. Registers are followed, not counted, since the
  * entries around it differ in how many values they load.
  */
-private fun requireBinding(registry: Method, handler: String, classes: Map<String, ClassDef>) {
+private fun requireBinding(registry: Method, handler: String, classes: (String) -> ClassDef?) {
     val code = registry.visualCode()
     val marker = code.indices.filter { code[it].visualString() == THREAD_SEEN_MUTATION }.one("registry's receipt name")
     val describedAt = marker + 2
@@ -234,14 +231,14 @@ private fun requireBinding(registry: Method, handler: String, classes: Map<Strin
     requireOrigin(THREAD_SEEN_PATCH, registry, describedAt, name, marker, "receipt registration name")
 
     val field = code[providerAt].field()!!.toString()
-    val init = classes[handler]?.methods?.filter { it.name == "<clinit>" }?.one("handler provider initializer")
+    val init = classes(handler)?.methods?.filter { it.name == "<clinit>" }?.one("handler provider initializer")
         ?: refuse("handler provider initializer is missing")
     val initCode = init.visualCode()
     if (initCode.size != 3 || initCode[0].opcode != Opcode.SGET_OBJECT || initCode[1].opcode != Opcode.SPUT_OBJECT ||
         initCode[2].opcode != Opcode.RETURN_VOID || initCode[1].field()?.toString() != field ||
         (initCode[0] as OneRegisterInstruction).registerA != (initCode[1] as OneRegisterInstruction).registerA
     ) refuse("handler provider initializer changes its provider")
-    val provider = classes[initCode[0].field()!!.definingClass] ?: refuse("handler provider class is missing")
+    val provider = classes(initCode[0].field()!!.definingClass) ?: refuse("handler provider class is missing")
     val factory = provider.methods.filter {
         it.parameterTypes.map(Any::toString) == listOf(USER_SESSION) && it.returnType == JAVA_OBJECT
     }.one("handler provider method")

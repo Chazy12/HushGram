@@ -24,13 +24,16 @@ import app.morphe.patches.instagram.download.reel.OPTION
 import app.morphe.patches.instagram.download.reel.code
 import app.morphe.patches.instagram.download.reel.newOption
 import app.morphe.patches.instagram.download.reel.optionIcon
+import app.morphe.patches.instagram.download.reel.typesLoadingDownload
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesCallingInto
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
 import app.morphe.patches.instagram.misc.extension.markers
 import app.morphe.patches.instagram.misc.extension.originalName
 import app.morphe.patches.instagram.misc.extension.requireLocals
 import app.morphe.patches.instagram.misc.extension.requireStatusMethod
+import app.morphe.patches.instagram.misc.extension.typesMarked
 import app.morphe.patches.instagram.media.quality.target
 import app.morphe.patches.instagram.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -171,13 +174,17 @@ internal fun BytecodePatchContext.offerDownloadOnEveryVideo() {
     val loaders = mutableListOf<Method>()
     val shortLists = mutableListOf<Method>()
     val pageReads = mutableListOf<PageRead>()
+    val marked = typesMarked(ELIGIBLE_MARKER)
+    val loading = typesLoadingDownload()
+    val paging = classesCallingInto(MEDIA_EXT).mapTo(HashSet()) { it.type }
     classDefForEach { classDef ->
         if (classDef.originalName() == FEED_HELPER_NAME) helpers += classDef
+        val type = classDef.type
         classDef.methods.forEach { method ->
-            if (ELIGIBLE_MARKER in method.markers()) eligibles += method
-            if (method.code().any { it.opcode == Opcode.SGET_OBJECT && it.referenceText() == DOWNLOAD }) loaders += method
+            if (type in marked && ELIGIBLE_MARKER in method.markers()) eligibles += method
+            if (type in loading && method.code().any { it.opcode == Opcode.SGET_OBJECT && it.referenceText() == DOWNLOAD }) loaders += method
             if (method.isShortMenuList()) shortLists += method
-            pageReads += method.pageReads()
+            if (type in paging) pageReads += method.pageReads()
         }
     }
     val helper = helpers.singleOrNull() ?: throw PatchException(

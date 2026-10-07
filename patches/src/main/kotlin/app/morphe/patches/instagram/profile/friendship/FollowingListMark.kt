@@ -9,6 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesHolding
 import app.morphe.patches.instagram.misc.extension.jumpTargets
 import app.morphe.patches.instagram.misc.extension.parameterRegisterNumber
 import app.morphe.patches.instagram.misc.extension.requireParameterIntact
@@ -97,8 +98,9 @@ internal class FollowRow(
  */
 internal fun BytecodePatchContext.findFollowRow(): FollowRow {
     val binders = mutableListOf<Pair<ClassDef, Method>>()
+    val holders = classesHolding(FOLLOW_ROW_STATE).mapTo(HashSet()) { it.type }
     classDefForEach { classDef ->
-        if (classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
+        if (classDef.type !in holders || classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
         classDef.methods.filter { it.holdsString(FOLLOW_ROW_STATE) }.forEach { binders += classDef to it }
     }
     val (binderClass, binder) = binders.singleOrNull()

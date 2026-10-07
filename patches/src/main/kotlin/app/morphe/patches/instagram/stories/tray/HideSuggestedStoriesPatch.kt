@@ -10,6 +10,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patches.instagram.feed.requireOneKindField
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesHolding
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
 import app.morphe.patches.instagram.misc.extension.requireStatusMethod
@@ -84,8 +85,9 @@ internal class MethodSite(val type: String, val name: String, val parameters: Li
  */
 internal fun BytecodePatchContext.findTrayRowBuild(): MethodSite {
     val found = mutableListOf<Pair<String, Method>>()
+    val holders = classesHolding(TRAY_ROWS).mapTo(HashSet()) { it.type }
     classDefForEach { classDef ->
-        if (classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
+        if (classDef.type !in holders || classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
         classDef.methods.forEach { method -> if (TRAY_ROWS in method.strings()) found += classDef.type to method }
     }
     val (type, method) = found.singleOrNull() ?: refuse("expected one method holding $TRAY_ROWS, found ${found.size}")
@@ -130,8 +132,9 @@ internal class TrayItemParse(val site: MethodSite, val moveResult: Int, val regi
  */
 internal fun BytecodePatchContext.findTrayItemParse(): TrayItemParse {
     val found = mutableListOf<Pair<String, Method>>()
+    val holders = classesHolding(TRAY_ITEMS, TRAY_TOKEN, TRAY_REMAINING).mapTo(HashSet()) { it.type }
     classDefForEach { classDef ->
-        if (classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
+        if (classDef.type !in holders || classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
         classDef.methods.forEach { method ->
             if (method.name != "unsafeParseFromJson") return@forEach
             val strings = method.strings()

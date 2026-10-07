@@ -10,6 +10,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesCreating
 import app.morphe.patches.instagram.misc.extension.classesHolding
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -394,8 +395,9 @@ private class PutFlow(method: Method, private val code: List<Instruction>) {
 private fun BytecodePatchContext.storeFactory(store: String, model: String, base: String, tableGetter: String,
                                               putCode: List<Instruction>): MethodReference {
     val factories = mutableListOf<Method>()
+    val creating = classesCreating(store).mapTo(HashSet()) { it.type }
     classDefForEach { clazz ->
-        if (clazz.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEach
+        if (clazz.type !in creating || clazz.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEach
         clazz.methods.filterTo(factories) { method ->
             method.implementation?.instructions?.any { it.opcode == Opcode.NEW_INSTANCE &&
                 ((it as ReferenceInstruction).reference as? TypeReference)?.type == store } == true

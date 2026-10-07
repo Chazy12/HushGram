@@ -20,11 +20,13 @@ import app.morphe.patches.instagram.download.imageBridges
 import app.morphe.patches.instagram.download.mediaBridges
 import app.morphe.patches.instagram.download.musicBridges
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesAccessing
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
 import app.morphe.patches.instagram.misc.extension.markers
 import app.morphe.patches.instagram.misc.extension.requireLocals
 import app.morphe.patches.instagram.misc.extension.requireStatusMethod
+import app.morphe.patches.instagram.misc.extension.typesMarked
 import app.morphe.patches.instagram.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -44,6 +46,10 @@ private const val PATCH = "Download any reel"
 /** The options of a post's or a reel's more menu, which keep their names, Download among them. */
 internal const val OPTION = "Lcom/instagram/feed/media/mediaoption/MediaOption\$Option;"
 internal const val DOWNLOAD = "$OPTION->DOWNLOAD:$OPTION"
+
+/** The types of the classes outside the extension whose code reads [DOWNLOAD], by the class index. */
+internal fun BytecodePatchContext.typesLoadingDownload(): Set<String> =
+    classesAccessing(OPTION, DOWNLOAD.substringAfter("->").substringBefore(":"), Opcode.SGET_OBJECT).mapTo(HashSet()) { it.type }
 private const val FRAGMENT_ACTIVITY = "Landroidx/fragment/app/FragmentActivity;"
 
 private const val REEL_DOWNLOAD = "$EXTENSION_PACKAGE/download/ReelDownload;"
@@ -124,14 +130,19 @@ internal fun BytecodePatchContext.offerDownloadOnEveryReel() {
     val loaders = mutableListOf<Method>()
     val reducedLists = mutableListOf<Method>()
     val rowAdders = mutableListOf<Method>()
+    val marked = typesMarked(HANDLER_MARKER, ELIGIBLE_MARKER, REDUCED_MARKER, ROW_MARKER)
+    val loading = typesLoadingDownload()
     classDefForEach { classDef ->
+        val holdsMarker = classDef.type in marked
+        val readsDownload = classDef.type in loading
+        if (!holdsMarker && !readsDownload) return@classDefForEach
         classDef.methods.forEach { method ->
-            val markers = method.markers()
+            val markers = if (holdsMarker) method.markers() else emptyList()
             if (HANDLER_MARKER in markers) handlers += method
             if (ELIGIBLE_MARKER in markers) eligibles += method
             if (REDUCED_MARKER in markers) reducedLists += method
             if (ROW_MARKER in markers) rowAdders += method
-            if (method.code().any { it.opcode == Opcode.SGET_OBJECT && it.referenceText() == DOWNLOAD }) loaders += method
+            if (readsDownload && method.code().any { it.opcode == Opcode.SGET_OBJECT && it.referenceText() == DOWNLOAD }) loaders += method
         }
     }
     val handler = one(handlers, HANDLER_MARKER)

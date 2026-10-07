@@ -8,6 +8,7 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.instagram.misc.analytics.loadsString
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesHolding
 import app.morphe.patches.instagram.misc.extension.originalName
 import app.morphe.patches.instagram.misc.settings.EXTENSION_ROOT
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -41,10 +42,11 @@ internal fun BytecodePatchContext.findOverrideEditor(): OverrideEditor {
     val found = mutableListOf<Method>()
     val editors = mutableSetOf<String>()
     var hasBridge = false
+    val titled = classesHolding(OVERRIDE_TITLE, "TITLE_KEY").mapTo(HashSet()) { it.type }
     classDefForEach { clazz ->
         if (clazz.type == OVERRIDE_BRIDGE) hasBridge = true
         if (clazz.originalName() == "QuickExperimentEditFragment") editors += clazz.type
-        if (!clazz.type.startsWith(EXTENSION_ROOT)) clazz.methods.filterTo(found) { method ->
+        if (clazz.type in titled && !clazz.type.startsWith(EXTENSION_ROOT)) clazz.methods.filterTo(found) { method ->
             val strings = method.implementation?.instructions?.mapNotNull {
                 ((it as? ReferenceInstruction)?.reference as? StringReference)?.string
             }.orEmpty()

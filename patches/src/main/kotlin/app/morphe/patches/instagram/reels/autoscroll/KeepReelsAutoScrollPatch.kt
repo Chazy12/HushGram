@@ -11,7 +11,9 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.instagram.misc.analytics.loadsString
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesCalling
 import app.morphe.patches.instagram.misc.extension.classesHolding
+import app.morphe.patches.instagram.misc.extension.classesTouching
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.filterEveryBooleanReturn
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
@@ -225,9 +227,12 @@ internal fun BytecodePatchContext.findReelAutoScroll(): ReelAutoScrollSites {
     val callers = mutableListOf<Pair<ClassDef, Method>>()
     val memoryClasses = mutableListOf<ClassDef>()
     val reads = mutableListOf<Pair<Method, Int>>()
+    val reaching = classesCalling(setter.definingClass, setter.name).mapTo(HashSet()) { it.type } +
+        classesTouching(memory.definingClass, memory.name).map { it.type }
     classDefForEach { classDef ->
         if (classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
         if (classDef.type == memory.definingClass) memoryClasses += classDef
+        if (classDef.type !in reaching) return@classDefForEach
         classDef.methods.forEach { method ->
             val code = method.code()
             if (code.any { it.calls(setter) }) callers += classDef to method

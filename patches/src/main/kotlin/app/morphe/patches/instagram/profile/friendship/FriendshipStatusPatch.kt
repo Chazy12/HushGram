@@ -11,6 +11,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesHolding
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
 import app.morphe.patches.instagram.misc.extension.liveAcrossInjection
@@ -176,9 +177,10 @@ internal class ProfileName(
 internal fun BytecodePatchContext.findProfileName(): ProfileName {
     val binders = mutableListOf<Pair<String, Method>>()
     val relationshipGetters = sortedSetOf<String>()
+    val naming = classesHolding(BIND_FULL_NAME).mapTo(HashSet()) { it.type }
     classDefForEach { classDef ->
         if (classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
-        classDef.methods.filter { it.holdsString(BIND_FULL_NAME) }.forEach { binders += classDef.type to it }
+        if (classDef.type in naming) classDef.methods.filter { it.holdsString(BIND_FULL_NAME) }.forEach { binders += classDef.type to it }
         classDef.methods.filter { method -> method.parameterTypes.any { it.toString() == RELATIONSHIP } }
             .forEach { relationshipGetters += it.relationshipFollowedBy() }
     }

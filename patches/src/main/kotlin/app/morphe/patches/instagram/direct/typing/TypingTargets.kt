@@ -9,6 +9,8 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.classesCalling
+import app.morphe.patches.instagram.misc.extension.classesHolding
 import app.morphe.patches.instagram.misc.extension.jumpTargets
 import app.morphe.patches.instagram.misc.extension.localRegisterCount
 import app.morphe.patches.instagram.misc.extension.parameterRegisterNumber
@@ -18,7 +20,6 @@ import app.morphe.patches.instagram.misc.extension.uniqueMethod
 import app.morphe.util.ControlFlow
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
@@ -75,16 +76,13 @@ internal fun BytecodePatchContext.findTyping(): TypingTargets {
     }.one("typing flag check")
     service.requireParameterIntact(TYPING_PATCH, 0, listOf(branchAt))
 
-    val classes = mutableListOf<ClassDef>()
-    classDefForEach { classes += it }
-    val methods = classes.flatMap { it.methods }
-    val sender = methods.filter { method ->
+    val sender = classesHolding(TYPING_COMMAND).flatMap { it.methods }.filter { method ->
         val body = method.code()
         body.any { it.string() == TYPING_COMMAND } &&
             body.any { it.call()?.let { call -> call.definingClass == REALTIME_CLIENT && call.name == "sendCommand" } == true }
     }.one("typing indicator sender")
     val senderKey = sender.key()
-    val calls = methods.flatMap { method ->
+    val calls = classesCalling(sender.definingClass, sender.name).flatMap { it.methods }.flatMap { method ->
         val body = method.code()
         body.indices.filter { body[it].call()?.key() == senderKey }.map { method.key() to it }
     }
@@ -98,7 +96,7 @@ internal fun BytecodePatchContext.findTyping(): TypingTargets {
     if (callAt in reachable(flow, zero)) refuse("the typing indicator can be sent when you stop typing")
     if (callAt !in reachable(flow, typing)) refuse("typing never reaches the typing indicator's sender")
 
-    classes.firstOrNull { it.type == TYPING_STATUS }?.methods?.filter {
+    classDefByOrNull(TYPING_STATUS)?.methods?.filter {
         it.name == "hold" && it.returnType == "Z" && it.parameterTypes.map(Any::toString) == listOf("I") &&
             AccessFlags.PUBLIC.isSet(it.accessFlags) && AccessFlags.STATIC.isSet(it.accessFlags)
     }?.singleOrNull() ?: refuse("extension has no public static hold(I)Z")
