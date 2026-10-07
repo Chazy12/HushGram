@@ -90,7 +90,7 @@ public final class MediaSave {
             this.renditions = Collections.unmodifiableList(usable(renditions));
             this.manifest = video ? manifest : null;
             this.details = details == null ? PostDetails.NONE : PostDetails.of(details.videoId, details.owner,
-                    details.posted == null ? null : new Date(details.posted.getTime()));
+                    details.posted == null ? null : new Date(details.posted.getTime())).onPage(details.page);
         }
     }
 

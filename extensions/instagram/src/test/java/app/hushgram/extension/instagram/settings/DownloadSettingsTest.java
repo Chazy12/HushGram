@@ -65,6 +65,7 @@ public class DownloadSettingsTest {
         Settings.DOWNLOAD_QUALITY.resetToDefault();
         Settings.FILENAME_TEMPLATE.resetToDefault();
         Settings.SAVE_FOLDER_PER_ACCOUNT.resetToDefault();
+        Settings.SAVE_NAME_BY_POST.resetToDefault();
         Settings.SEND_DOWNLOADS_TO_APP.resetToDefault();
         Settings.OPEN_IN_PLAYER.resetToDefault();
         Settings.DOWNLOAD_REELS.resetToDefault();
@@ -257,6 +258,30 @@ public class DownloadSettingsTest {
             }
             assertEquals(name + 1, account);
             assertTrue(ConfigurationBackup.eligible().containsKey(Settings.SAVE_FOLDER_PER_ACCOUNT.key));
+        }
+    }
+
+    /** Name saves by account and post time sits right under Folder per account, starts off and goes in a settings file. */
+    @Test
+    public void nameSavesByPostSitsUnderFolderPerAccount() {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.VIDEO_DOWNLOAD);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            HushgramPreferenceFragment page = pageIn(controller);
+            PreferenceGroup downloads = section(page.getPreferenceScreen(), "Downloads");
+            Preference row = downloads.findPreference(Settings.SAVE_NAME_BY_POST.key);
+            assertTrue(row instanceof SwitchPreference);
+            assertEquals("Name saves by account and post time", String.valueOf(row.getTitle()));
+            assertTrue(String.valueOf(row.getSummary()), String.valueOf(row.getSummary()).contains("username_20261005_143012"));
+            assertFalse(((SwitchPreference) row).isChecked());
+            int account = -1;
+            int byPost = -1;
+            for (int i = 0; i < downloads.getPreferenceCount(); i++) {
+                String key = downloads.getPreference(i).getKey();
+                if (Settings.SAVE_FOLDER_PER_ACCOUNT.key.equals(key)) account = i;
+                if (Settings.SAVE_NAME_BY_POST.key.equals(key)) byPost = i;
+            }
+            assertEquals(account + 1, byPost);
+            assertTrue(ConfigurationBackup.eligible().containsKey(Settings.SAVE_NAME_BY_POST.key));
         }
     }
 

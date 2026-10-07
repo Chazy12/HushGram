@@ -800,6 +800,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_save_folder_per_account", FALSE);
 
     /**
+     * Every save, photo or video, is named for the account that posted it and when it was posted,
+     * with a carousel page's number on the end, when the save knows both (#20). It takes the place
+     * of the {@code IG_IMG_} name and of {@link #FILENAME_TEMPLATE}. Starts off, so saves keep the
+     * names they always had.
+     */
+    public static final BooleanSetting SAVE_NAME_BY_POST =
+            new BooleanSetting("hushgram_save_name_by_post", FALSE);
+
+    /**
      * The quality a video save asks for: the best the player streams, a ceiling, or the smallest
      * file. Every video save reads it when it starts, and one that finds nothing at or under a
      * ceiling takes the nearest above it. Photos always save whole. Like the folder, it isn't a

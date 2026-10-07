@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Name saves by account and post time, a new switch under Downloads that starts off. With it on, every photo and video you save is named for the account that posted it and the time the post went up, like `username_20261005_143012`, so an account's saves sort by date. Each carousel page gets its number on the end, and saving the same thing twice adds the time of the second save instead of overwriting or piling up numbered copies. A save that doesn't know who posted or when keeps its usual name. Asked for in #20.
+
 * **Instagram:** Clear the media cache now reads its switch even when Instagram opens its video cache before HushGram's settings are loaded, so a clear left for the next start isn't put off start after start.
 
 * **Instagram:** After you tap Call, Ask before a call lets Instagram's repeat of that call through only when Instagram has to ask for the microphone or camera first. When they're already allowed, a tap on the same call button right after you hang up is asked about like any other.

@@ -355,7 +355,8 @@ public final class VideoDownload {
 
     /**
      * The file name's details for [shown], a carousel page of [post] or the post itself. A page
-     * keeps its own id, and takes the poster and the day from the post when it doesn't list them.
+     * keeps its own id, takes the poster and the day from the post when it doesn't list them, and
+     * knows its number among the post's pages.
      */
     static PostDetails details(Object shown, Object post) {
         if (shown == post) return ReelDownload.details(post);
@@ -365,7 +366,17 @@ public final class VideoDownload {
         if (takenAt == null || takenAt <= 0) takenAt = InstagramMedia.takenAt(post);
         String id = InstagramMedia.mediaId(shown);
         return PostDetails.of(id != null ? id : InstagramMedia.mediaId(post), user == null ? null : InstagramMedia.username(user),
-                takenAt == null || takenAt <= 0 ? null : new Date(takenAt * 1000L));
+                takenAt == null || takenAt <= 0 ? null : new Date(takenAt * 1000L)).onPage(pageOf(shown, post));
+    }
+
+    /** Which page of [post]'s carousel [shown] is, counted from 1, or 0 when it isn't one of them. */
+    static int pageOf(Object shown, Object post) {
+        List<?> pages = InstagramMedia.carouselMedia(post);
+        if (pages == null) return 0;
+        for (int index = 0; index < pages.size(); index++) {
+            if (pages.get(index) == shown) return index + 1;
+        }
+        return 0;
     }
 
     /** Whether [media] lists a video: single files or a DASH manifest. */

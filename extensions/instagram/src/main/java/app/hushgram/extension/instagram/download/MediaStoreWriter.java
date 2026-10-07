@@ -318,6 +318,19 @@ final class MediaStoreWriter implements Downloader.Sink {
         if (suffix == null) suffix = video ? ".mp4" : ".jpg";
 
         Date now = new Date();
+        if (FileNameTemplate.byPost()) {
+            // Name saves by account and post time: a photo and a video alike, when the save knows both.
+            String byPost = FileNameTemplate.postName(now, details, false);
+            if (byPost != null) {
+                String name = byPost + suffix;
+                if (!inSaveFolder(collection, name)) return name;
+                // Saved before. MediaStore would number it, up to (31), and then refuse the save.
+                Logger.diagnosticInfo(DiagnosticCategory.DOWNLOADS, SOURCE,
+                        () -> "the file name was already in the save folder, so the time of the save went on the end");
+                return FileNameTemplate.postName(now, details, true) + suffix;
+            }
+            reportUnnamedByPost();
+        }
         if (video) {
             // The person's template, read here, per file, and cleaned where it's read. As it
             // ships it's IG_VID_ and the date and time.
@@ -367,6 +380,18 @@ final class MediaStoreWriter implements Downloader.Sink {
                     () -> "could not look for the file name in the save folder (" + kind + ")");
             return false;
         }
+    }
+
+    /**
+     * One line in the report when Name saves by account and post time is on and this save doesn't
+     * know who posted or when, so it keeps the name it would have had. Never the name itself.
+     */
+    private void reportUnnamedByPost() {
+        String missing = !details.hasOwner() && !details.hasPosted() ? "the account or the post time"
+            : !details.hasOwner() ? "the account" : "the post time";
+        Logger.diagnosticInfo(DiagnosticCategory.DOWNLOADS, SOURCE,
+                () -> "saves are named by account and post time, and this save doesn't know " + missing
+                    + ", so it keeps its usual name");
     }
 
     /**

@@ -19,6 +19,8 @@ import android.content.ContentUris;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.SharedPreferences;
+import android.content.ContentValues;
+import android.os.Environment;
 import android.os.Looper;
 import android.provider.MediaStore;
 
@@ -46,7 +48,9 @@ import java.net.InetAddress;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -109,6 +113,9 @@ public class CarouselSaveTest {
         Utils.awaitBackgroundTasksForTests();
         SaveLeftovers.forgetSweepForTests();
         MediaBridge.post = null;
+        MediaBridge.poster = null;
+        MediaBridge.postedAt = null;
+        Settings.SAVE_NAME_BY_POST.resetToDefault();
         LogBufferManager.clearLogBuffer();
     }
 
@@ -311,6 +318,54 @@ public class CarouselSaveTest {
         assertClean();
     }
 
+    /** The names the saves took, photos and videos together, sorted. Android 9 has them as files, later ones as rows. */
+    private List<String> savedNames() {
+        List<String> names = new ArrayList<>();
+        if (MediaStoreWriter.legacyStorage()) {
+            for (String directory : new String[]{Environment.DIRECTORY_PICTURES, Environment.DIRECTORY_MOVIES}) {
+                String[] saved = new File(Environment.getExternalStoragePublicDirectory(directory), "Instagram").list();
+                if (saved != null) names.addAll(Arrays.asList(saved));
+            }
+        } else {
+            for (ContentValues row : gallery.rows.values()) names.add(row.getAsString(MediaStore.MediaColumns.DISPLAY_NAME));
+        }
+        Collections.sort(names);
+        return names;
+    }
+
+    /**
+     * Name saves by account and post time (#20), on Android 9's own folders and on today's
+     * MediaStore: Save all names every page for the account and the post's time with its page
+     * number, so no two pages of one post share a name, and the page on screen saved on its own
+     * carries its number too.
+     */
+    @Test @Config(sdk = {28, 37})
+    public void namesByPostNumberEveryCarouselPage() throws Exception {
+        Shadows.shadowOf(RuntimeEnvironment.getApplication()).grantPermissions(android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        for (String directory : new String[]{Environment.DIRECTORY_PICTURES, Environment.DIRECTORY_MOVIES}) {
+            File[] old = new File(Environment.getExternalStoragePublicDirectory(directory), "Instagram").listFiles();
+            if (old != null) for (File file : old) assertTrue(file.delete());
+        }
+        Settings.SAVE_NAME_BY_POST.save(true);
+        Calendar noon = new GregorianCalendar();
+        noon.clear();
+        noon.set(2026, Calendar.SEPTEMBER, 1, 12, 0, 0);
+        MediaBridge.poster = "stevi.ous";
+        MediaBridge.postedAt = noon.getTimeInMillis() / 1000L;
+        MediaBridge.post = Arrays.asList(page(false, "/first.jpg", "1"), page(true, "/middle.mp4", "2"), page(false, "/last.jpg", "3"));
+
+        VideoDownload.saveAll(MediaBridge.post, null);
+        waitForSaves();
+        assertEquals("Saved 3. Failed 0. Skipped 0.", ShadowToast.getTextOfLatestToast());
+        String base = "stevi.ous_20260901_120000";
+        assertEquals(Arrays.asList(base + "_1.jpg", base + "_2.mp4", base + "_3.jpg"), savedNames());
+
+        assertEquals(3, VideoDownload.details(MediaBridge.post.get(2), MediaBridge.post).page);
+        assertEquals(0, VideoDownload.details(MediaBridge.post, MediaBridge.post).page);
+        assertEquals(0, VideoDownload.pageOf(page(false, "/elsewhere.jpg", "9"), MediaBridge.post));
+        assertClean();
+    }
+
     @Test public void theSeparateMenuActionUsesItsLabelAndKeepsNativeOptionsIntact() {
         MediaBridge.post = Arrays.asList(page(false, "/first.jpg", "1"), page(true, "/middle.mp4", "2"));
         ArrayList<Object> rows = new ArrayList<>();
@@ -508,6 +563,8 @@ public class CarouselSaveTest {
     @Implements(value = InstagramMedia.class, isInAndroidSdk = false)
     public static class MediaBridge {
         static List<MediaSave.Item> post;
+        static String poster;
+        static Long postedAt;
         static final Object ALL = new Object(), DOWNLOAD = new Object();
         static CharSequence label;
         @Implementation protected static Object saveAllOption() { return ALL; }
@@ -529,6 +586,9 @@ public class CarouselSaveTest {
         @Implementation protected static String candidateUrl(Object version) { return ((MediaSave.Rendition) version).url; }
         @Implementation protected static int candidateWidth(Object version) { return ((MediaSave.Rendition) version).width; }
         @Implementation protected static int candidateHeight(Object version) { return ((MediaSave.Rendition) version).height; }
+        @Implementation protected static Object owner(Object media) { return poster; }
+        @Implementation protected static String username(Object user) { return (String) user; }
+        @Implementation protected static Long takenAt(Object media) { return postedAt; }
         @Implementation protected static String mediaId(Object media) { return media instanceof MediaSave.Item ? ((MediaSave.Item) media).details.videoId : null; }
     }
 }
