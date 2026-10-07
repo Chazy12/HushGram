@@ -101,7 +101,7 @@ public class MediaCacheTest {
         File responses = file("http_responses/feed", 70, OLD);
         assertEquals(0, MediaCache.clearIfOver(context, 1_000, NOW));
 
-        MediaCache.beforeVideoCache(cache.getPath());
+        MediaCache.beforeVideoCache(cache.getPath(), () -> true);
         Utils.awaitBackgroundTasksForTests();
 
         for (File gone : new File[] {span, index, prefetch, metadata}) assertFalse(gone.getPath(), gone.exists());
@@ -141,6 +141,68 @@ public class MediaCacheTest {
         assertTrue(span.exists());
         assertFalse(moved.exists());
         assertEquals(0, leftovers().length);
+    }
+
+    /**
+     * A clear over the limit asked for the videos while the switch was on. A start that can't read
+     * the settings yet leaves the note for a later one, and a start after the switch was turned off
+     * drops it and keeps the videos, while what an earlier start moved aside still goes.
+     */
+    @Test
+    public void aClearOverTheLimitWaitsForTheSwitch() throws Exception {
+        File span = file("ExoPlayerCacheDir/videocache/1.0.1.v3.exo", 900, OLD);
+        assertEquals(0, MediaCache.clearIfOver(context, 100, NOW));
+        assertTrue(MediaCache.videosWaiting(context));
+
+        MediaCache.beforeVideoCache(cache.getPath(), () -> null);
+        Utils.awaitBackgroundTasksForTests();
+        assertTrue(span.exists());
+        assertTrue("it waits for a start that can read the switch", MediaCache.videosWaiting(context));
+
+        File moved = file(MediaCache.OLD_VIDEOS + "1/videocache/2.0.1.v3.exo", 900, OLD);
+        MediaCache.restartForTests();
+        MediaCache.beforeVideoCache(cache.getPath(), () -> false);
+        Utils.awaitBackgroundTasksForTests();
+        assertTrue(span.exists());
+        assertFalse("the switch is off, so the note goes", MediaCache.videosWaiting(context));
+        assertFalse(moved.exists());
+        assertFalse(HookStatus.report().toString().contains(MediaCache.VIDEOS_CLEARED));
+    }
+
+    /** Clear now asked for the videos itself, so they go at the next start whatever the switch says. */
+    @Test
+    public void clearNowsVideosGoWithTheSwitchOff() throws Exception {
+        File span = file("ExoPlayerCacheDir/videocache/1.0.1.v3.exo", 900, OLD);
+        assertEquals(0, MediaCache.clearNow(context));
+
+        MediaCache.beforeVideoCache(cache.getPath(), () -> false);
+        Utils.awaitBackgroundTasksForTests();
+
+        assertFalse(span.exists());
+        assertFalse(MediaCache.videosWaiting(context));
+        assertEquals(0, leftovers().length);
+    }
+
+    /**
+     * A video cache that's a link isn't moved. Both notes go, so later starts don't keep trying, and
+     * what an earlier start moved aside still goes.
+     */
+    @Test
+    public void aLinkedVideoCacheDropsTheNotes() throws Exception {
+        File span = file("ExoPlayerCacheDir/videocache/1.0.1.v3.exo", 900, OLD);
+        File moved = file(MediaCache.OLD_VIDEOS + "1/videocache/2.0.1.v3.exo", 900, OLD);
+        assertEquals(0, MediaCache.clearNow(context));
+        assertEquals(0, MediaCache.clearIfOver(context, 100, NOW));
+        assertTrue(new File(cache, MediaCache.VIDEOS_AT_START).isFile());
+        assertTrue(new File(cache, MediaCache.VIDEOS_OVER_LIMIT).isFile());
+        MediaCache.linked = folder -> folder.getName().equals(MediaCache.VIDEO_FOLDER);
+
+        MediaCache.beforeVideoCache(cache.getPath(), () -> true);
+        Utils.awaitBackgroundTasksForTests();
+
+        assertTrue(span.exists());
+        assertFalse(MediaCache.videosWaiting(context));
+        assertFalse(moved.exists());
     }
 
     /** A folder Instagram hands over that isn't there, or none at all, changes nothing and doesn't throw. */

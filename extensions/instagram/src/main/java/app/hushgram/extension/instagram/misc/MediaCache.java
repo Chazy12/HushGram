@@ -17,6 +17,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import app.hushgram.extension.instagram.settings.FamilyNames;
 import app.hushgram.extension.instagram.settings.Settings;
@@ -55,7 +57,8 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  * for its folder first.
  *
  * <p>The Clear now row in HushGram's settings does the same at once, whatever the size, and shows
- * what it freed.
+ * what it freed. Its videos go at the next start whatever the switch says, while a clear over the
+ * limit's go only if the switch is still on then.
  */
 public final class MediaCache {
     /** The size the two caches may reach before a trip to the background clears them. */
@@ -70,8 +73,14 @@ public final class MediaCache {
     /** The video cache's folder in the cache folder (see the class comment). */
     static final String VIDEO_FOLDER = "ExoPlayerCacheDir";
 
-    /** HushGram's note in the cache folder that the video cache goes at the next start. */
+    /** HushGram's note in the cache folder that Clear now asked for the video cache to go at the next start. */
     static final String VIDEOS_AT_START = "hushgram_clear_videos_at_start";
+
+    /**
+     * The note a clear over the limit leaves instead. The next start carries it out only while the
+     * switch is still on, and drops it when the switch has been turned off since.
+     */
+    static final String VIDEOS_OVER_LIMIT = "hushgram_clear_videos_over_limit";
 
     /** The start of the name a start moves the video cache to, before deleting it there. */
     static final String OLD_VIDEOS = "hushgram_old_videos_";
@@ -89,6 +98,10 @@ public final class MediaCache {
     private static volatile boolean watching;
     /** Instagram has asked for its video cache's folder in this process, so the player may hold it now. */
     private static volatile boolean videoCacheNamed;
+
+    /** Whether a folder is a link, which a start never moves. Tests stand in for it, since making one may need rights they don't have. */
+    static final Predicate<File> LINKED = file -> Files.isSymbolicLink(file.toPath());
+    static volatile Predicate<File> linked = LINKED;
 
     private MediaCache() {
     }
@@ -146,7 +159,7 @@ public final class MediaCache {
             long size = 0;
             for (File folder : folders(cache)) size += sizeOf(folder);
             if (size <= limit) return 0;
-            long freed = clearMedia(cache, now);
+            long freed = clearMedia(cache, now, VIDEOS_OVER_LIMIT);
             HookStatus.counted(FamilyNames.MEDIA_CACHE, CLEARED);
             final long total = size;
             final long gone = freed;
@@ -165,7 +178,7 @@ public final class MediaCache {
         if (!clearing.compareAndSet(false, true)) return 0;
         try {
             File cache = context.getCacheDir();
-            return cache == null ? 0 : clearMedia(cache, System.currentTimeMillis());
+            return cache == null ? 0 : clearMedia(cache, System.currentTimeMillis(), VIDEOS_AT_START);
         } finally {
             clearing.set(false);
         }
@@ -174,7 +187,7 @@ public final class MediaCache {
     /** Whether the video cache is waiting to go at the next start. */
     public static boolean videosWaiting(Context context) {
         File cache = context.getCacheDir();
-        return cache != null && new File(cache, VIDEOS_AT_START).isFile();
+        return cache != null && (new File(cache, VIDEOS_AT_START).isFile() || new File(cache, VIDEOS_OVER_LIMIT).isFile());
     }
 
     /**
@@ -186,12 +199,16 @@ public final class MediaCache {
      * returns at once. Never throws.
      */
     public static void beforeVideoCache(String folder) {
+        beforeVideoCache(folder, MediaCache::switchAnswer);
+    }
+
+    static void beforeVideoCache(String folder, Supplier<Boolean> on) {
         if (videoCacheNamed) return;
         synchronized (MediaCache.class) {
             if (videoCacheNamed) return;
             try {
                 HookStatus.invoked(FamilyNames.MEDIA_CACHE);
-                if (folder != null && !folder.isEmpty() && mainProcess()) clearVideosAtStart(new File(folder));
+                if (folder != null && !folder.isEmpty() && mainProcess()) clearVideosAtStart(new File(folder), on.get());
             } catch (Throwable failure) {
                 HookStatus.threw(FamilyNames.MEDIA_CACHE, CLEAR, failure);
             } finally {
@@ -203,19 +220,28 @@ public final class MediaCache {
     /** Lets a test start a new process's first call. */
     static void restartForTests() {
         videoCacheNamed = false;
+        linked = LINKED;
     }
 
     /**
-     * Moves the video cache under [cache] aside when a clear asked for it, then deletes on a
-     * background thread whatever an earlier start moved aside and didn't get to delete.
+     * Moves the video cache under [cache] aside when Clear now asked for it, or a clear over the
+     * limit did and the switch is still [on], then deletes on a background thread whatever an earlier
+     * start moved aside and didn't get to delete. With the switch off, a clear over the limit's note
+     * goes unheeded, and so do both notes when the video cache is a link. Before the settings can be
+     * read, [on] is null and a clear over the limit's note waits for a start that can read them.
      */
-    private static void clearVideosAtStart(File cache) {
+    private static void clearVideosAtStart(File cache, Boolean on) {
         File asked = new File(cache, VIDEOS_AT_START);
-        if (asked.isFile()) {
+        File over = new File(cache, VIDEOS_OVER_LIMIT);
+        if (Boolean.FALSE.equals(on)) drop(over);
+        if (asked.isFile() || (Boolean.TRUE.equals(on) && over.isFile())) {
             File video = new File(cache, VIDEO_FOLDER);
-            if (Files.isSymbolicLink(video.toPath())) return;
-            if (!video.exists() || video.renameTo(new File(cache, OLD_VIDEOS + System.currentTimeMillis()))) {
-                if (!asked.delete()) Logger.printDebug(() -> "Media cache: the note to clear videos stayed");
+            if (linked.test(video)) {
+                drop(asked);
+                drop(over);
+            } else if (!video.exists() || video.renameTo(new File(cache, OLD_VIDEOS + System.currentTimeMillis()))) {
+                drop(asked);
+                drop(over);
                 HookStatus.counted(FamilyNames.MEDIA_CACHE, VIDEOS_CLEARED);
             }
         }
@@ -226,6 +252,11 @@ public final class MediaCache {
         });
     }
 
+    /** Deletes a note, if it's there. */
+    private static void drop(File note) {
+        if (note.isFile() && !note.delete()) Logger.printDebug(() -> "Media cache: the note " + note.getName() + " stayed");
+    }
+
     /** The image folders and the video folder in [cache]. */
     static List<File> folders(File cache) {
         List<File> folders = new ArrayList<>(IMAGE_FOLDERS.size() + 1);
@@ -234,13 +265,13 @@ public final class MediaCache {
         return folders;
     }
 
-    /** Deletes the settled images, and asks for the video cache to go at the next start when it holds any. */
-    private static long clearMedia(File cache, long now) {
+    /** Deletes the settled images, and leaves [note] for the video cache to go at the next start when it holds any. */
+    private static long clearMedia(File cache, long now, String note) {
         long freed = 0;
         for (String name : IMAGE_FOLDERS) freed += clear(new File(cache, name), now);
         if (sizeOf(new File(cache, VIDEO_FOLDER)) > 0) {
             try {
-                File asked = new File(cache, VIDEOS_AT_START);
+                File asked = new File(cache, note);
                 if (!asked.createNewFile() && !asked.isFile()) throw new IllegalStateException("can't write " + asked);
             } catch (Exception failure) {
                 HookStatus.threw(FamilyNames.MEDIA_CACHE, CLEAR, failure);
@@ -291,5 +322,10 @@ public final class MediaCache {
 
     private static boolean switchedOn() {
         return Utils.settingsReady() && Settings.CLEAR_MEDIA_CACHE.get();
+    }
+
+    /** The switch, or null while the settings can't be read yet. */
+    private static Boolean switchAnswer() {
+        return Utils.settingsReady() ? Settings.CLEAR_MEDIA_CACHE.get() : null;
     }
 }

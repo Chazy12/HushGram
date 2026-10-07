@@ -14,6 +14,8 @@ Every HushGram release, newest first.
 
 * **Instagram:** New patch, Ask before a call, in simple mode with its switch off. Turn it on under Messages and a call started from a chat waits for a question first, so a stray tap on a call button doesn't ring anyone. Call starts it and Cancel doesn't.
 
+* **Instagram:** Clear the media cache no longer deletes the videos at the next start when you've turned its switch off since the clear that asked for it. Videos you asked to go with Clear now still go at the next start either way. A video cache that's a link no longer leaves its request behind for every later start.
+
 * **Instagram:** After you tap Call, Ask before a call lets only that call through without a second question, and only once: Instagram coming back to start it again goes ahead, while a call to someone else or the other kind of call is asked about even right after. A second tap while the question is up waits for it instead of opening another, so two quick taps can't start two calls.
 
 * **Instagram:** Ask before a call now hands the call's video flag to its check as a number, the way every other hook takes a yes or no, so Android's verifier has nothing to refuse when the chat's call code loads.
