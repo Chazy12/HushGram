@@ -53,11 +53,6 @@ public final class DoubleTapLike {
     }
 
     /**
-     * Handed the Reels gesture handler's "on like media" action as it's read. Null while the switch
-     * holds the double tap back, so the handler skips the like and its heart, otherwise the action as
-     * it was read. Never throws.
-     */
-    /**
      * Asked first thing in a comment row's double tap, which likes or unlikes the comment. True makes
      * it return before the like, as it does itself for a comment it can't like. Never throws.
      */
@@ -65,6 +60,11 @@ public final class DoubleTapLike {
         return holdingBack("comment", Settings.TURN_OFF_DOUBLE_TAP_LIKE_ON_COMMENTS);
     }
 
+    /**
+     * Handed the Reels gesture handler's "on like media" action as it's read. Null while the switch
+     * holds the double tap back, so the handler skips the like and its heart, otherwise the action as
+     * it was read. Never throws.
+     */
     @Nullable
     public static Object likeAction(@Nullable Object action) {
         return action != null && holdingBack("reel", Settings.TURN_OFF_DOUBLE_TAP_LIKE_ON_REELS) ? null : action;
