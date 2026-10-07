@@ -54,6 +54,14 @@ public class MusicVideoTest {
         for (int i = 1; i < times.length; i++) assertTrue(times[i] > times[i - 1]);
     }
 
+    /** A bit a pixel each second: a 1024 by 1360 picture asks for about 1.4 Mbps, not the 2.8 that made a 90 second save 37 MB. */
+    @Test
+    public void theBitRateIsABitAPixel() {
+        assertEquals(1024 * 1360, MusicVideo.bitrate(1024, 1360));
+        assertEquals(1080 * 1920, MusicVideo.bitrate(1080, 1920));
+        assertEquals(4, MusicVideo.bitrate(2, 2));
+    }
+
     /** The video keeps the picture's shape within 1920 by 1080, with even sides. */
     @Test
     public void theVideoSizeFitsAndIsEven() {

@@ -65,8 +65,12 @@ final class MusicVideo {
     /** The smallest short side it tries on an encoder that takes none of the larger ones. */
     private static final int MIN_SHORT_SIDE = 160;
 
-    /** A key frame every two seconds, so a player can start anywhere without much waiting. */
-    private static final int KEY_FRAME_EVERY_S = 2;
+    /**
+     * A key frame every 30 seconds. The picture never changes, so the frames between key frames
+     * come to almost nothing, and a player that starts part way decodes at most 30 of them. Key
+     * frames are most of the file, so they're kept few.
+     */
+    private static final int KEY_FRAME_EVERY_S = 30;
 
     /** One wait on the encoder, and how long it may give nothing back before the build stops. */
     private static final long WAIT_US = 10_000L;
@@ -273,7 +277,7 @@ final class MusicVideo {
 
             long[] times = frameTimes(part.durationUs);
             int perSecond = (int) Math.max(1L, Math.round(times.length * 1_000_000.0 / part.durationUs));
-            int bitrate = capabilities.getBitrateRange().clamp(size[0] * size[1] * 2);
+            int bitrate = capabilities.getBitrateRange().clamp(bitrate(size[0], size[1]));
             // Every frame at the full rate, twice over, with the sound and the boxes: more than the
             // file can come to, so a save never runs out of room half way.
             long room = 2L * (bitrate / 8L) * (part.durationUs / 1_000_000L + KEY_FRAME_EVERY_S)
@@ -540,6 +544,15 @@ final class MusicVideo {
     }
 
     // ---------------------------------------------------------------- the picture
+
+    /**
+     * The bit rate asked of the encoder for a [width] by [height] picture: a bit a pixel each
+     * second, at about a frame a second. Enough for a sharp key frame of a still picture, and the
+     * frames after it repeat that picture, so they need next to none.
+     */
+    static int bitrate(int width, int height) {
+        return (int) Math.min(Integer.MAX_VALUE, (long) width * height);
+    }
 
     /**
      * The size to encode a [width] by [height] picture at: as it is, or smaller to fit within
