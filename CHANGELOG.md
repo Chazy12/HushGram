@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Open links in external browser checks a link again after it's unwrapped from Instagram's and Facebook's click trackers, right before it goes to your browser. Only an http or https address that names a host leaves. One with no host, or with a scheme that only starts with http, stays in Instagram's own browser.
+
 * **Instagram:** Sanitize sharing links has a Sharing domain row, blank to start. Type a domain there and links to instagram.com that you copy or share go out on it, for sites that show Instagram posts and reels in chat apps.
 
 * **Instagram:** Open developer options keeps its long press and its MetaConfig and Whitehat rows when an Instagram update moves what Export, Validate or Import use. Only the rows that need the moved part are left out, and the diagnostic report says which.

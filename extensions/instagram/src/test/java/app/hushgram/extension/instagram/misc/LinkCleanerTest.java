@@ -244,4 +244,19 @@ public class LinkCleanerTest {
             Settings.SHARING_DOMAIN.resetToDefault();
         }
     }
+
+    /** A tracker that forwards to anything but a web page opens as it came, never as the address inside it. */
+    @Test
+    public void aTrackerWrappingAnotherSchemeOpensAsItCame() {
+        Application app = RuntimeEnvironment.getApplication();
+        for (String shim : new String[]{
+                "https://l.instagram.com/?u=intent%3A%2F%2Fexample.org%23Intent%3Bscheme%3Dhttps%3Bend&e=AT0x",
+                "https://l.instagram.com/?u=javascript%3Aalert(1)&e=AT0x",
+                "https://l.instagram.com/?u=httpxyz%3A%2F%2Fexample.org%2F&e=AT0x",
+        }) {
+            Intent open = new Intent(Intent.ACTION_VIEW, Uri.parse(shim)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            LinkCleaner.startActivity(app, open);
+            assertEquals(shim, shadowOf(app).getNextStartedActivity().getDataString());
+        }
+    }
 }
