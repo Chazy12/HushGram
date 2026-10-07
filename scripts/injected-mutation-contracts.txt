@@ -97,6 +97,15 @@ start-call Lapp/hushgram/extension/instagram/direct/MessagesLock;->notification(
 once-call Lapp/hushgram/extension/instagram/direct/MessagesLock;->notification(Landroid/app/Notification;)Landroid/app/Notification; in instance (Ljava/lang/String;ILandroid/app/Notification;)V holding android.support.useSideChannel
 start-call Lapp/hushgram/extension/instagram/direct/MessagesLock;->holdBanner()Z in static (Landroid/content/Context;L*;L*;)V holding no\sforeground\sactivity\sto\srender\sin-app\snotification
 once-call Lapp/hushgram/extension/instagram/direct/MessagesLock;->holdBanner()Z in static (Landroid/content/Context;L*;L*;)V holding no\sforeground\sactivity\sto\srender\sin-app\snotification
+# Don't report screenshots asks ScreenshotReports.hold() first where each of Instagram's two
+# screenshot detectors hands a new screenshot on: the media detector's (time, path, list) method
+# (0aC7.AaT on 450, in the class whose session starter logs ScreenshotDetectorByContent) and the folder
+# detector's static report (03mU.A01, the one logging each listener it tells). Left out, a disappearing
+# photo's sender is told; twice or elsewhere, it isn't the hook.
+start-call Lapp/hushgram/extension/instagram/direct/ScreenshotReports;->hold()Z in instance (JLjava/lang/String;Ljava/util/List;)V class-holding ScreenshotDetectorByContent Started\snew\sscreenshot\ssession
+shared-call Lapp/hushgram/extension/instagram/direct/ScreenshotReports;->hold()Z in instance (JLjava/lang/String;Ljava/util/List;)V class-holding ScreenshotDetectorByContent Started\snew\sscreenshot\ssession
+start-call Lapp/hushgram/extension/instagram/direct/ScreenshotReports;->hold()Z in static (L*;Ljava/lang/String;Ljava/util/List;)V holding Reporting\sscreenshot:\s%s\s->\s%s
+shared-call Lapp/hushgram/extension/instagram/direct/ScreenshotReports;->hold()Z in static (L*;Ljava/lang/String;Ljava/util/List;)V holding Reporting\sscreenshot:\s%s\s->\s%s
 #
 # The patch fingerprint picks the method that puts a sponsored item into a feed by
 # "cross_surface_duplicate_ad" and "Is ad pod", a static method answering a boolean. "Is ad pod" has

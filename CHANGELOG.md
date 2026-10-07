@@ -6,6 +6,8 @@ Every HushGram release, newest first.
 
 * **Instagram:** New patch, Group Instagram's notifications, in simple mode with its switch off. With Group notifications on, every notification Instagram posts joins one group that shows how many it holds, so they stop filling the shade. Group by type gives each kind its own group. Tapping a notification still opens what it did.
 
+* **Instagram:** New Don't report screenshots patch. With its switch on under Messages, Instagram doesn't notice your screenshots, so whoever sent you a disappearing photo or video isn't told you took one. It's in simple mode with the switch off.
+
 * **Instagram:** Developer has a Reset all overrides row beside Import overrides. It takes every override in the signed-in session away so Instagram goes back to its own flags, and the overrides it removes are saved for Restore previous overrides first.
 
 * **Instagram:** Lock your messages can lock all of Instagram now. Its new Lock all of Instagram switch covers every screen until your phone's lock says it's you, and Lock again lets it wait 1, 5 or 15 minutes or an hour after you leave. Turning a lock on waits until you next leave Instagram, and HushGram settings ask your phone's lock first while one is locked.

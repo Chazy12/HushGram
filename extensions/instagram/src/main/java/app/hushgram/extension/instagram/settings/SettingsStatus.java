@@ -260,4 +260,9 @@ public final class SettingsStatus {
     public static boolean versionCode() {
         return false;
     }
+
+    /** Rewritten by the Don't report screenshots patch. */
+    public static boolean screenshotReports() {
+        return false;
+    }
 }

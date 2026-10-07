@@ -75,4 +75,5 @@ public final class FamilyNames {
 
     private FamilyNames() {
     }
+    public static final String SCREENSHOT_REPORTS = "Don't report screenshots";
 }

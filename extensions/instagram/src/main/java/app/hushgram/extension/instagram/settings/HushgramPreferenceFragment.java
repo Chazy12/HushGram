@@ -416,7 +416,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
 
         if (build.contains(PatchFamily.NOTES_ROW) || build.contains(PatchFamily.INSTANTS)
                 || build.contains(PatchFamily.THREAD_SEEN) || build.contains(PatchFamily.TYPING)
-                || build.contains(PatchFamily.MESSAGES_LOCK)) {
+                || build.contains(PatchFamily.MESSAGES_LOCK)
+                || build.contains(PatchFamily.SCREENSHOT_REPORTS)) {
             PreferenceCategory messages = category(screen, L10n.t("Messages"));
             if (build.contains(PatchFamily.NOTES_ROW)) {
                 messages.addPreference(toggle(context, Settings.HIDE_NOTES_ROW, L10n.t("Hide the notes row"),
@@ -439,6 +440,10 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                 messages.addPreference(toggle(context, Settings.HIDE_TYPING, L10n.t("Hide that you're typing"),
                         L10n.t("People you're chatting with don't see the typing dots while you write, and you "
                                 + "still see theirs.")));
+            }
+            if (build.contains(PatchFamily.SCREENSHOT_REPORTS)) {
+                messages.addPreference(toggle(context, Settings.HIDE_SCREENSHOTS, L10n.t("Don't report screenshots"),
+                        L10n.t("Instagram doesn't notice when you take a screenshot, so whoever sent you a disappearing photo or video isn't told. Your screenshots save as usual.")));
             }
             if (build.contains(PatchFamily.MESSAGES_LOCK)) {
                 messages.addPreference(lockToggle(context, Settings.LOCK_MESSAGES, L10n.t("Lock your messages"),

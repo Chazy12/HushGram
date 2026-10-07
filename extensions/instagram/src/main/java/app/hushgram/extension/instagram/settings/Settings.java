@@ -169,6 +169,12 @@ public class Settings extends BaseSettings {
             new EnumSetting<>("hushgram_lock_again", app.hushgram.extension.instagram.direct.LockDelay.RIGHT_AWAY);
 
     /**
+     * Instagram doesn't notice your screenshots, so nobody's told you took one of a disappearing
+     * photo or video ({@link app.hushgram.extension.instagram.direct.ScreenshotReports}). Off to start.
+     */
+    public static final BooleanSetting HIDE_SCREENSHOTS = new BooleanSetting("hushgram_hide_screenshots", FALSE);
+
+    /**
      * The Mark as seen button in the story viewer's header
      * ({@link app.hushgram.extension.instagram.stories.StorySeenButton}). Off to start. A story you
      * tap it on is sent as seen while the rest stay held back. Read each time a story is shown and
