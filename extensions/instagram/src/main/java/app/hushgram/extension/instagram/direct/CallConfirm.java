@@ -38,7 +38,9 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  * <p>One question shows at a time: a start while it's on screen waits for it, so two quick taps on
  * a call button can't start two calls. A question counts as on screen only while its screen is: one
  * left behind by a screen that went away without closing it, as a dark mode switch or a window
- * resize can do, holds nothing. It's held weakly, so it never keeps that screen alive either.
+ * resize can do, holds nothing. It's held weakly, so it never keeps that screen alive either. And it
+ * holds only taps on its own screen: a tap on a screen opened over it, a chat opened from a
+ * notification say, closes it and asks there instead.
  *
  * <p>The hook fails open: with the switch off, HushGram paused, no screen to ask on or anything
  * thrown, the call starts as it always did.
@@ -135,9 +137,19 @@ public final class CallConfirm {
                 pass = null;
                 return false;
             }
-            if (up(question())) return true;
             Activity activity = activityOf(access.context(starter));
             if (activity == null || activity.isFinishing() || activity.isDestroyed()) return false;
+            AlertDialog showing = question();
+            if (up(showing)) {
+                if (activityOf(showing.getContext()) == activity) return true;
+                // Up over another screen, under this one: it goes, and this tap is asked about here.
+                open = null;
+                try {
+                    showing.dismiss();
+                } catch (Throwable ignored) {
+                    // Its window is already gone, which is as good as dismissed.
+                }
+            }
             AlertDialog question = new AlertDialog.Builder(activity)
                     .setTitle(L10n.t(video ? "Start a video call?" : "Start a voice call?"))
                     .setPositiveButton(L10n.t("Call"), (dialog, which) -> call(starter, thread, entry, coWatch, video))

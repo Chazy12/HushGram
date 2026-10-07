@@ -215,6 +215,38 @@ public class CallConfirmTest {
         }
     }
 
+    /**
+     * A question up on one screen holds only that screen's taps. A tap on a screen opened over it
+     * (a chat from a notification) closes the old one, starting nothing, and is asked about there,
+     * and that new question holds its own screen's next tap.
+     */
+    @Test
+    public void aQuestionHoldsOnlyItsOwnScreen() {
+        assertTrue(hold(false, true));
+        AlertDialog under = asked();
+
+        ActivityController<Activity> over = Robolectric.buildActivity(Activity.class).setup();
+        try {
+            screen = new ContextWrapper(over.get());
+            assertTrue(hold(true, true));
+            ShadowLooper.idleMainLooper();
+            assertFalse("the question under it went", under.isShowing());
+            AlertDialog here = asked();
+            assertNotSame(under, here);
+            assertEquals("Start a video call?", org.robolectric.Shadows.shadowOf(here).getTitle().toString());
+            assertTrue(hold(true, true));
+            assertSame(here, ShadowAlertDialog.getLatestAlertDialog());
+            assertTrue(started.isEmpty());
+
+            here.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+            ShadowLooper.idleMainLooper();
+            assertEquals(1, started.size());
+            assertEquals(Arrays.asList(starter, thread, entry, coWatch, true), started.get(0));
+        } finally {
+            over.close();
+        }
+    }
+
     private void dismiss() {
         asked().getButton(DialogInterface.BUTTON_NEGATIVE).performClick();
         ShadowLooper.idleMainLooper();
