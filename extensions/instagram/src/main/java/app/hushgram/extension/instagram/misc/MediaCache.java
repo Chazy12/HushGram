@@ -11,8 +11,9 @@ import android.content.res.Configuration;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 
@@ -26,26 +27,44 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
 /**
  * Helper for the "Clear the media cache" patch.
  *
- * <p>Instagram keeps the images and videos it has shown in its cache folders, and they grow to
- * several gigabytes. While the switch is on, each time Instagram goes to the background and those
- * folders hold more than {@link #LIMIT}, HushGram deletes the files in them on a background thread,
- * the same files Android's own Clear cache button deletes. Sign-in, drafts and settings live
- * outside the cache folders, so they stay. HushGram's own folders there (a save in progress) stay
- * too, and so does any file written in the last minute, since Instagram may still be writing it.
- * The folders themselves stay, so code holding one keeps working.
+ * <p>Instagram keeps the images and videos it has shown in two caches in its cache folder, and they
+ * grow to several gigabytes. While the switch is on, each time Instagram goes to the background and
+ * those two hold more than {@link #LIMIT}, HushGram deletes their files on a background thread.
+ * Nothing else in the cache folder is touched: uploads, drafts being made, saved network answers,
+ * HushGram's own saves and the rest stay, and so do sign-in and settings, which live elsewhere. Any
+ * file written in the last minute stays too, since Instagram may still be writing it. The folders
+ * themselves stay, so code holding one keeps working.
+ *
+ * <p>The two caches, as Instagram 450 names them:
+ * <ul>
+ *   <li>Images: {@code image_scoped}, the path Meta's storage registry gives the image cache
+ *       ({@code X.02ix.A00}, "cache/image_scoped"), and {@code images}, that cache's older name
+ *       ({@code X.05Nm.A06}).
+ *   <li>Video: {@code ExoPlayerCacheDir}. The video player's cache settings put it in the cache
+ *       folder ({@code X.06jh.A0N}, {@code getCacheDir()}), and {@code X.08nf.A00} names its folders
+ *       videocache, videoprefetchcache and videocachemetadata. A span of video is a file ending in
+ *       {@link #SPAN_SUFFIX}. The player's index of them goes only when every file in the video cache
+ *       does, all of them settled, so the index never loses the spans it lists while some stay.
+ * </ul>
  *
  * <p>The Clear now row in HushGram's settings does the same at once, whatever the size, and shows
  * what it freed.
  */
 public final class MediaCache {
-    /** The size the cache folders may reach before a trip to the background clears them. */
+    /** The size the two caches may reach before a trip to the background clears them. */
     static final long LIMIT = 500L * 1024 * 1024;
 
     /** A file younger than this may still be open for writing, so it stays. */
     static final long SETTLE_MILLIS = 60_000;
 
-    /** HushGram's own folders in the cache start with this, and are never cleared. */
-    static final String OWN_PREFIX = "hushgram";
+    /** The image cache's folders in the cache folder (see the class comment). */
+    static final List<String> IMAGE_FOLDERS = Collections.unmodifiableList(Arrays.asList("image_scoped", "images"));
+
+    /** The video cache's folder in the cache folder (see the class comment). */
+    static final String VIDEO_FOLDER = "ExoPlayerCacheDir";
+
+    /** The end of a video span's file name. */
+    static final String SPAN_SUFFIX = ".exo";
 
     /** The step a failed clear is reported under. */
     static final String CLEAR = "clear";
@@ -100,18 +119,18 @@ public final class MediaCache {
     }
 
     /**
-     * Clears the cache folders when they hold more than [limit]. Answers the bytes freed: none under
+     * Clears the two caches when they hold more than [limit]. Answers the bytes freed: none under
      * the limit, while another clear is running, or on a failure.
      */
     static long clearIfOver(Context context, long limit, long now) {
         if (!clearing.compareAndSet(false, true)) return 0;
         try {
-            List<File> roots = roots(context);
+            File cache = context.getCacheDir();
+            if (cache == null) return 0;
             long size = 0;
-            for (File root : roots) size += sizeOf(root, true);
+            for (File folder : folders(cache)) size += sizeOf(folder);
             if (size <= limit) return 0;
-            long freed = 0;
-            for (File root : roots) freed += clear(root, now, true);
+            long freed = clearMedia(cache, now);
             HookStatus.counted(FamilyNames.MEDIA_CACHE, CLEARED);
             final long total = size;
             final long gone = freed;
@@ -125,58 +144,68 @@ public final class MediaCache {
         }
     }
 
-    /** Clear now: the cache folders whatever their size. Answers the bytes freed. */
+    /** Clear now: the two caches whatever their size, by the same rules. Answers the bytes freed. */
     public static long clearNow(Context context) {
         if (!clearing.compareAndSet(false, true)) return 0;
         try {
-            long now = System.currentTimeMillis();
-            long freed = 0;
-            for (File root : roots(context)) freed += clear(root, now, true);
-            return freed;
+            File cache = context.getCacheDir();
+            return cache == null ? 0 : clearMedia(cache, System.currentTimeMillis());
         } finally {
             clearing.set(false);
         }
     }
 
-    /** Instagram's cache folders: the one on internal storage and the one on shared storage, when there is one. */
-    static List<File> roots(Context context) {
-        List<File> roots = new ArrayList<>(2);
-        File internal = context.getCacheDir();
-        if (internal != null) roots.add(internal);
-        File external = context.getExternalCacheDir();
-        if (external != null && !external.equals(internal)) roots.add(external);
-        return roots;
+    /** The image folders and the video folder in [cache]. */
+    static List<File> folders(File cache) {
+        List<File> folders = new ArrayList<>(IMAGE_FOLDERS.size() + 1);
+        for (String name : IMAGE_FOLDERS) folders.add(new File(cache, name));
+        folders.add(new File(cache, VIDEO_FOLDER));
+        return folders;
     }
 
-    private static boolean own(File file) {
-        return file.getName().toLowerCase(Locale.ROOT).startsWith(OWN_PREFIX);
+    /**
+     * Deletes the settled images, then the video cache: all of it, index included, when every file
+     * in it is settled, and otherwise only its settled spans.
+     */
+    private static long clearMedia(File cache, long now) {
+        long freed = 0;
+        for (String name : IMAGE_FOLDERS) freed += clear(new File(cache, name), now, null);
+        File video = new File(cache, VIDEO_FOLDER);
+        freed += clear(video, now, settled(video, now) ? null : SPAN_SUFFIX);
+        return freed;
     }
 
-    private static long sizeOf(File file, boolean top) {
+    private static long sizeOf(File file) {
         if (Files.isSymbolicLink(file.toPath())) return 0;
-        if (!file.isDirectory()) return file.length();
+        if (!file.isDirectory()) return file.isFile() ? file.length() : 0;
         File[] children = file.listFiles();
         if (children == null) return 0;
         long size = 0;
-        for (File child : children) {
-            if (top && own(child)) continue;
-            size += sizeOf(child, false);
-        }
+        for (File child : children) size += sizeOf(child);
         return size;
     }
 
-    private static long clear(File file, long now, boolean top) {
+    /** Whether no file under [file] was written in the last {@link #SETTLE_MILLIS}. */
+    private static boolean settled(File file, long now) {
+        if (Files.isSymbolicLink(file.toPath())) return true;
+        if (!file.isDirectory()) return !file.isFile() || now - file.lastModified() >= SETTLE_MILLIS;
+        File[] children = file.listFiles();
+        if (children == null) return true;
+        for (File child : children) if (!settled(child, now)) return false;
+        return true;
+    }
+
+    /** Deletes the settled files under [file], only those whose names end with [suffix] when it's given. */
+    private static long clear(File file, long now, String suffix) {
         if (Files.isSymbolicLink(file.toPath())) return 0;
         if (file.isDirectory()) {
             File[] children = file.listFiles();
             if (children == null) return 0;
             long freed = 0;
-            for (File child : children) {
-                if (top && own(child)) continue;
-                freed += clear(child, now, false);
-            }
+            for (File child : children) freed += clear(child, now, suffix);
             return freed;
         }
+        if (!file.isFile() || (suffix != null && !file.getName().endsWith(suffix))) return 0;
         if (now - file.lastModified() < SETTLE_MILLIS) return 0;
         long length = file.length();
         return file.delete() ? length : 0;

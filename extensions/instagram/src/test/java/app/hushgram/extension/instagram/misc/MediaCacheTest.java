@@ -62,27 +62,68 @@ public class MediaCacheTest {
     }
 
     @Test
-    public void overTheLimitItDeletesOldFilesAndKeepsTheRest() throws IOException {
-        File image = file("images/a.jpg", 400, OLD);
-        File video = file("ExoPlayerCacheDir/v/1.exo", 500, OLD);
-        File writing = file("ExoPlayerCacheDir/v/2.exo", 300, NOW - 5_000);
+    public void overTheLimitItDeletesOldImagesAndSpansAndKeepsTheRest() throws IOException {
+        File image = file("image_scoped/0/a.jpg", 400, OLD);
+        File legacy = file("images/b.jpg", 100, OLD);
+        File span = file("ExoPlayerCacheDir/videocache/1.0.1.v3.exo", 500, OLD);
+        File writing = file("ExoPlayerCacheDir/videocache/2.0.1.v3.exo", 300, NOW - 5_000);
+        File index = file("ExoPlayerCacheDir/videocache/cached_content_index.exi", 50, OLD);
         File save = file("hushgram-save/reel.mp4", 700, OLD);
 
-        assertEquals(900, MediaCache.clearIfOver(context, 1_000, NOW));
+        assertEquals(1_000, MediaCache.clearIfOver(context, 1_000, NOW));
 
         assertFalse(image.exists());
-        assertFalse(video.exists());
+        assertFalse(legacy.exists());
+        assertFalse(span.exists());
         assertTrue("a file still being written stays", writing.exists());
+        assertTrue("the video index stays while a span it lists stays", index.exists());
         assertTrue("HushGram's own folder stays", save.exists());
-        assertTrue("the folders stay", new File(cache, "ExoPlayerCacheDir/v").isDirectory());
-        assertTrue(new File(cache, "images").isDirectory());
+        assertTrue("the folders stay", new File(cache, "ExoPlayerCacheDir/videocache").isDirectory());
+        assertTrue(new File(cache, "image_scoped/0").isDirectory());
         String report = HookStatus.report().toString();
         assertTrue(report, report.contains(MediaCache.CLEARED + " 1"));
     }
 
+    /** Once nothing in the video cache is being written, all of it goes, its index and metadata with it. */
+    @Test
+    public void aSettledVideoCacheGoesWithItsIndex() throws IOException {
+        File span = file("ExoPlayerCacheDir/videocache/1.0.1.v3.exo", 900, OLD);
+        File index = file("ExoPlayerCacheDir/videocache/cached_content_index.exi", 50, OLD);
+        File prefetch = file("ExoPlayerCacheDir/videoprefetchcache/3.0.1.v3.exo", 40, OLD);
+        File metadata = file("ExoPlayerCacheDir/videocachemetadata/meta", 20, OLD);
+
+        assertEquals(1_010, MediaCache.clearIfOver(context, 1_000, NOW));
+
+        assertFalse(span.exists());
+        assertFalse(index.exists());
+        assertFalse(prefetch.exists());
+        assertFalse(metadata.exists());
+    }
+
+    /** Everything outside the two caches stays, however big and old, and doesn't count toward the limit. */
+    @Test
+    public void filesOutsideTheMediaCachesSurvive() throws IOException {
+        File image = file("image_scoped/a.jpg", 400, OLD);
+        File responses = file("http_responses/feed", 5_000, OLD);
+        File upload = file("pending_media/upload.tmp", 5_000, OLD);
+        File loose = file("cached_content_index.exi", 5_000, OLD);
+        File looseSpan = file("other/1.0.1.v3.exo", 5_000, OLD);
+        File external = new File(context.getExternalCacheDir(), "ExoPlayerCacheDir/videocache/1.exo");
+        external.getParentFile().mkdirs();
+        assertTrue(external.createNewFile() || external.exists());
+        assertTrue(external.setLastModified(OLD));
+
+        assertEquals("only the image counts, and it's under the limit", 0, MediaCache.clearIfOver(context, 1_000, NOW));
+        assertTrue(image.exists());
+
+        assertEquals(400, MediaCache.clearIfOver(context, 100, NOW));
+        assertFalse(image.exists());
+        for (File kept : new File[] {responses, upload, loose, looseSpan, external}) assertTrue(kept.getPath(), kept.exists());
+    }
+
     @Test
     public void underTheLimitNothingGoes() throws IOException {
-        File image = file("images/a.jpg", 400, OLD);
+        File image = file("image_scoped/a.jpg", 400, OLD);
         file("hushgram-save/reel.mp4", 5_000, OLD);
 
         assertEquals("HushGram's own files don't count toward the limit", 0, MediaCache.clearIfOver(context, 1_000, NOW));
@@ -90,12 +131,16 @@ public class MediaCacheTest {
         assertTrue(image.exists());
     }
 
+    /** Clear now ignores the limit and follows the same rules: images and videos only. */
     @Test
     public void clearNowIgnoresTheLimit() throws IOException {
-        File image = file("images/a.jpg", 40, System.currentTimeMillis() - 2 * MediaCache.SETTLE_MILLIS);
+        long old = System.currentTimeMillis() - 2 * MediaCache.SETTLE_MILLIS;
+        File image = file("image_scoped/a.jpg", 40, old);
+        File responses = file("http_responses/feed", 70, old);
         long freed = MediaCache.clearNow(context);
         assertEquals(40, freed);
         assertFalse(image.exists());
+        assertTrue("a file outside the media caches stays", responses.exists());
     }
 
     @Test
