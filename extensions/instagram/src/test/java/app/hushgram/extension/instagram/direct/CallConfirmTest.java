@@ -16,7 +16,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ContextWrapper;
 import android.content.DialogInterface;
-import android.os.SystemClock;
 
 import org.junit.After;
 import org.junit.Before;
@@ -41,7 +40,7 @@ import app.hushgram.extension.instagram.settings.FamilyNames;
 import app.hushgram.extension.shared.SettingsContextRule;
 import app.hushgram.extension.shared.diagnostics.HookStatus;
 
-/** Ask before a call: off, nothing changes; on, the call waits for the question, only Call starts it, and only that call's one repeat skips it. */
+/** Ask before a call: off, nothing changes; on, the call waits for the question, and only Call starts it, with nothing let through after. */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = {28, 37})
 public class CallConfirmTest {
@@ -73,7 +72,7 @@ public class CallConfirmTest {
     }
 
     private boolean hold(boolean video, boolean on) {
-        return CallConfirm.hold(starter, thread, entry, coWatch, video, () -> on, SystemClock.uptimeMillis());
+        return CallConfirm.hold(starter, thread, entry, coWatch, video, () -> on);
     }
 
     private AlertDialog asked() {
@@ -116,48 +115,34 @@ public class CallConfirmTest {
         assertEquals(Arrays.asList(starter, thread, entry, coWatch, true), started.get(0));
     }
 
-    /** After Call, Instagram coming back to that start goes through once, and the question returns once the pass is over. */
+    /**
+     * Instagram 450's starter asks for no permission before a call starts, so it never comes back
+     * to one: after Call, the same start, another chat's and the other kind of call are all asked
+     * about, a stray tap right after hanging up among them.
+     */
     @Test
-    public void theStartersOwnRepeatGoesThroughForAWhile() {
+    public void nothingIsLetThroughAfterCall() {
         assertTrue(hold(false, true));
         asked().getButton(DialogInterface.BUTTON_POSITIVE).performClick();
         ShadowLooper.idleMainLooper();
 
-        long now = SystemClock.uptimeMillis();
-        assertTrue(CallConfirm.hold(starter, thread, entry, coWatch, false, () -> true, now + CallConfirm.PASS_MILLIS));
-        CallConfirm.resetForTests();
-        CallConfirm.access = recorder();
-        assertTrue(hold(false, true));
-        asked().getButton(DialogInterface.BUTTON_POSITIVE).performClick();
-        ShadowLooper.idleMainLooper();
-        assertFalse(CallConfirm.hold(starter, thread, entry, coWatch, false, () -> true, SystemClock.uptimeMillis() + 1_000));
-    }
-
-    /** The pass is that one call's: its second repeat, another chat or the other kind of call is asked about. */
-    @Test
-    public void thePassIsUsedOnceForThatCallOnly() {
-        assertTrue(hold(false, true));
-        asked().getButton(DialogInterface.BUTTON_POSITIVE).performClick();
-        ShadowLooper.idleMainLooper();
-        long now = SystemClock.uptimeMillis();
-
-        assertTrue("another chat", CallConfirm.hold(starter, new Object(), entry, coWatch, false, () -> true, now));
+        assertTrue("another chat", CallConfirm.hold(starter, new Object(), entry, coWatch, false, () -> true));
         dismiss();
-        assertTrue("a video call", CallConfirm.hold(starter, thread, entry, coWatch, true, () -> true, now));
+        assertTrue("a video call", hold(true, true));
         dismiss();
-        assertFalse("its repeat", CallConfirm.hold(starter, thread, entry, coWatch, false, () -> true, now));
-        assertTrue("its second repeat", CallConfirm.hold(starter, thread, entry, coWatch, false, () -> true, now));
+        assertTrue("the same call again", hold(false, true));
+        dismiss();
         assertEquals(1, started.size());
     }
 
-    /** Call's own start goes through the hook again on its way in, and that doesn't use up the pass. */
+    /** Call's own start goes through the hook again on its way in, and goes ahead; the next start is asked about. */
     @Test
     public void callsOwnStartGoesThroughTheHook() {
         List<Boolean> inner = new ArrayList<>();
         CallConfirm.access = new CallConfirm.Starter() {
             @Override
             public void start(Object starter, Object thread, Object entry, Object coWatch, boolean video) {
-                inner.add(CallConfirm.hold(starter, thread, entry, coWatch, video, () -> true, SystemClock.uptimeMillis()));
+                inner.add(CallConfirm.hold(starter, thread, entry, coWatch, video, () -> true));
                 started.add(Arrays.asList(starter, thread, entry, coWatch, video));
             }
 
@@ -172,7 +157,9 @@ public class CallConfirmTest {
 
         assertEquals(Arrays.asList(false), inner);
         assertEquals(1, started.size());
-        assertFalse(hold(false, true));
+        assertTrue(hold(false, true));
+        dismiss();
+        assertEquals(1, started.size());
     }
 
     /** A second tap while the question is up waits for it: no second question, and nothing starts. */
@@ -252,38 +239,23 @@ public class CallConfirmTest {
     }
 
     /**
-     * With the microphone already allowed, Instagram doesn't come back to a voice call's start, so
-     * Call lets nothing else through: a stray tap on the same button right after is asked about. A
-     * video call still comes back while the camera isn't allowed, and that repeat goes through
-     * once. With both allowed, a video call's next tap is asked about too.
+     * Whether the microphone and camera are allowed or not, Call lets nothing else through: the
+     * call screen asks for them after the call starts, and the starter doesn't come back.
      */
     @Test
-    public void thePassIsOnlyForAStartInstagramComesBackTo() {
+    public void thePermissionsDontChangeWhatsAsked() {
         ShadowApplication app = Shadows.shadowOf(RuntimeEnvironment.getApplication());
-        assertTrue(CallConfirm.comesBack(controller.get(), false));
-        app.grantPermissions(Manifest.permission.RECORD_AUDIO);
-        assertFalse(CallConfirm.comesBack(controller.get(), false));
-        assertTrue(CallConfirm.comesBack(controller.get(), true));
-
-        assertTrue(hold(false, true));
-        asked().getButton(DialogInterface.BUTTON_POSITIVE).performClick();
-        ShadowLooper.idleMainLooper();
-        assertTrue("a stray tap right after the call", hold(false, true));
-        dismiss();
-
-        assertTrue(hold(true, true));
-        asked().getButton(DialogInterface.BUTTON_POSITIVE).performClick();
-        ShadowLooper.idleMainLooper();
-        assertFalse("the start Instagram repeats after the camera question", hold(true, true));
-
-        app.grantPermissions(Manifest.permission.CAMERA);
-        assertFalse(CallConfirm.comesBack(controller.get(), true));
-        assertTrue(hold(true, true));
-        asked().getButton(DialogInterface.BUTTON_POSITIVE).performClick();
-        ShadowLooper.idleMainLooper();
-        assertTrue("a stray tap right after the video call", hold(true, true));
-        dismiss();
-        assertEquals(3, started.size());
+        for (int round = 0; round < 2; round++) {
+            for (boolean video : new boolean[] {false, true}) {
+                assertTrue(hold(video, true));
+                asked().getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+                ShadowLooper.idleMainLooper();
+                assertTrue("a stray tap right after the call", hold(video, true));
+                dismiss();
+            }
+            app.grantPermissions(Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA);
+        }
+        assertEquals(4, started.size());
     }
 
     private void dismiss() {
@@ -334,6 +306,6 @@ public class CallConfirmTest {
 
     @Test
     public void aMissingStarterGoesAhead() {
-        assertFalse(CallConfirm.hold(null, thread, entry, coWatch, false, () -> true, SystemClock.uptimeMillis()));
+        assertFalse(CallConfirm.hold(null, thread, entry, coWatch, false, () -> true));
     }
 }

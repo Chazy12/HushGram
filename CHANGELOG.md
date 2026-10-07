@@ -14,7 +14,7 @@ Every HushGram release, newest first.
 
 * **Instagram:** Clear the media cache now reads its switch even when Instagram opens its video cache before HushGram's settings are loaded, so a clear left for the next start isn't put off start after start.
 
-* **Instagram:** After you tap Call, Ask before a call lets Instagram's repeat of that call through only when Instagram has to ask for the microphone or camera first. When they're already allowed, a tap on the same call button right after you hang up is asked about like any other.
+* **Instagram:** After you tap Call, Ask before a call lets nothing else through. Instagram asks for the microphone and camera on its call screen once the call has started, so there's no repeat to wave through, and a tap on a call button right after you hang up is asked about like any other.
 
 * **Instagram:** A call question left up on one screen no longer holds call taps on a screen opened over it, like a chat you open from a notification. That tap gets its own question and the old one closes.
 

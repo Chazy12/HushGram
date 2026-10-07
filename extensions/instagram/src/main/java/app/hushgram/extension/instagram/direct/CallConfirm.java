@@ -4,17 +4,12 @@
  */
 package app.hushgram.extension.instagram.direct;
 
-import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.content.Context;
 import android.content.ContextWrapper;
-import android.content.pm.PackageManager;
-import android.os.SystemClock;
 
 import java.lang.ref.WeakReference;
-import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
 import app.hushgram.extension.instagram.settings.FamilyNames;
@@ -33,12 +28,13 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  * through {@link #contextOf}: Call starts it through {@link #startCall}, which the patch fills with
  * Instagram's own call, and Cancel, Back or a tap outside start nothing.
  *
- * <p>Call's own start comes back through the hook first thing, and goes through. When Instagram
- * still has to ask for the microphone, or the camera too for a video call, the starter comes back
- * to that same call once more after the answer, so for {@link #PASS_MILLIS} one more start of that
- * call, in that chat and of that kind, goes through without asking. With them already allowed it
- * doesn't come back, and nothing goes through: a tap on the same button right after hanging up is
- * asked about. Any other start is asked about, and so is that one's repeat.
+ * <p>Call's own start comes back through the hook first thing, and goes through. Nothing else
+ * does. The starter asks for no permission before a call starts: its own microphone and camera
+ * request ({@code X.0lEa.A01}) sits behind a check ({@code X.06c9.A0L}) that 450 always answers
+ * false, and the call screen ({@code RtcCallIntentHandlerActivity}) asks for them once the call is
+ * under way. None of the starter's callers is a permission answer, so it never comes back to a
+ * call it started, and any other start, a tap on the same button right after hanging up among
+ * them, is asked about.
  *
  * <p>One question shows at a time: a start while it's on screen waits for it, so two quick taps on
  * a call button can't start two calls. A question counts as on screen only while its screen is: one
@@ -51,9 +47,6 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  * thrown, the call starts as it always did.
  */
 public final class CallConfirm {
-    /** How long after Call the starter's one repeat of that call goes through unasked. */
-    static final long PASS_MILLIS = 30_000;
-
     /** The step a failure is reported under. */
     static final String ASK = "ask before a call";
 
@@ -79,27 +72,6 @@ public final class CallConfirm {
         }
     };
     static volatile Starter access = PATCHED;
-
-    /** The call Call let through, whose one repeat goes through unasked until {@link Pass#until}. */
-    private static final class Pass {
-        final Object starter;
-        final Object thread;
-        final boolean video;
-        final long until;
-
-        Pass(Object starter, Object thread, boolean video, long until) {
-            this.starter = starter;
-            this.thread = thread;
-            this.video = video;
-            this.until = until;
-        }
-
-        boolean covers(Object starter, Object thread, boolean video, long now) {
-            return starter == this.starter && Objects.equals(thread, this.thread) && video == this.video && now < until;
-        }
-    }
-
-    private static volatile Pass pass;
 
     /** True while Call's own start runs, whose first step is this hook again. Main thread only. */
     private static boolean starting;
@@ -129,19 +101,13 @@ public final class CallConfirm {
      * wouldn't pass a boolean parameter.
      */
     public static boolean hold(Object starter, Object thread, Object entry, Object coWatch, int video) {
-        return hold(starter, thread, entry, coWatch, video != 0, CallConfirm::switchedOn, SystemClock.uptimeMillis());
+        return hold(starter, thread, entry, coWatch, video != 0, CallConfirm::switchedOn);
     }
 
-    static boolean hold(Object starter, Object thread, Object entry, Object coWatch, boolean video,
-                        BooleanSupplier on, long now) {
+    static boolean hold(Object starter, Object thread, Object entry, Object coWatch, boolean video, BooleanSupplier on) {
         try {
             HookStatus.invoked(FamilyNames.ASK_BEFORE_CALL);
             if (starter == null || !on.getAsBoolean() || starting) return false;
-            Pass passed = pass;
-            if (passed != null && passed.covers(starter, thread, video, now)) {
-                pass = null;
-                return false;
-            }
             Activity activity = activityOf(access.context(starter));
             if (activity == null || activity.isFinishing() || activity.isDestroyed()) return false;
             AlertDialog showing = question();
@@ -157,7 +123,7 @@ public final class CallConfirm {
             }
             AlertDialog question = new AlertDialog.Builder(activity)
                     .setTitle(L10n.t(video ? "Start a video call?" : "Start a voice call?"))
-                    .setPositiveButton(L10n.t("Call"), (dialog, which) -> call(activity, starter, thread, entry, coWatch, video))
+                    .setPositiveButton(L10n.t("Call"), (dialog, which) -> call(starter, thread, entry, coWatch, video))
                     .setNegativeButton(L10n.t("Cancel"), null)
                     .create();
             question.setOnDismissListener(dialog -> {
@@ -173,13 +139,9 @@ public final class CallConfirm {
         }
     }
 
-    /**
-     * Call: starts the call the question held over [activity]. When Instagram will come back to it
-     * after asking for a permission, the starter's one repeat of it goes through for a while.
-     */
-    private static void call(Activity activity, Object starter, Object thread, Object entry, Object coWatch, boolean video) {
+    /** Call: starts the call the question held. Its own way back into the hook goes through. */
+    private static void call(Object starter, Object thread, Object entry, Object coWatch, boolean video) {
         try {
-            pass = comesBack(activity, video) ? new Pass(starter, thread, video, SystemClock.uptimeMillis() + PASS_MILLIS) : null;
             starting = true;
             try {
                 access.start(starter, thread, entry, coWatch, video);
@@ -188,23 +150,6 @@ public final class CallConfirm {
             }
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.ASK_BEFORE_CALL, ASK, failure);
-        }
-    }
-
-    /**
-     * Whether Instagram will come back to a call's start after Call: it has to ask for the
-     * microphone first, or for a video call the camera. A check that fails counts as yes, so the
-     * repeat isn't asked about twice.
-     */
-    static boolean comesBack(Context context, boolean video) {
-        return !granted(context, Manifest.permission.RECORD_AUDIO) || video && !granted(context, Manifest.permission.CAMERA);
-    }
-
-    private static boolean granted(Context context, String permission) {
-        try {
-            return context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED;
-        } catch (Throwable failure) {
-            return false;
         }
     }
 
@@ -235,9 +180,8 @@ public final class CallConfirm {
         return null;
     }
 
-    /** Lets a test start without a pass or a question from an earlier one. */
+    /** Lets a test start without a question from an earlier one. */
     static void resetForTests() {
-        pass = null;
         starting = false;
         open = null;
         access = PATCHED;
