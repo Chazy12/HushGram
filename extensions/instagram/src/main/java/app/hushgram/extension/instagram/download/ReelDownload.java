@@ -40,6 +40,10 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  *       music gets two rows in its place, Download as video and Download as photo, as a photo
  *       story with music does. As video builds an MP4 of the photo with the post's part of the
  *       track ({@link MusicVideo}), and the handler hands a tap on either row to {@link #save} too.
+ *   <li>With Download cover on, a reel with a video gets two rows of ours in Download's place,
+ *       Download and Download cover. Download saves the reel as Instagram's own row would, and
+ *       Download cover saves the still picture Instagram shows before the reel plays, its image
+ *       versions at the largest size (#48). A frame of the video is never a stand in.
  * </ul>
  *
  * <p>Every hook fails open: until the settings are ready, while HushGram is paused, with the switch
@@ -78,6 +82,21 @@ public final class ReelDownload {
      */
     static final String VIDEO_OPTION = "HUSHGRAM_DOWNLOAD_AS_VIDEO";
     static final String PHOTO_OPTION = "HUSHGRAM_DOWNLOAD_AS_PHOTO";
+
+    /**
+     * The names of the two options a reel with a video gets in Download's place with Download cover
+     * on: Download, which saves the reel as Instagram's own row would, and Download cover. They're
+     * made the same way as the two above.
+     */
+    static final String REEL_OPTION = "HUSHGRAM_DOWNLOAD_REEL";
+    static final String COVER_OPTION = "HUSHGRAM_DOWNLOAD_COVER";
+
+    /** Every row of ours, by name. */
+    private static final List<String> OUR_ROWS = Arrays.asList(VIDEO_OPTION, PHOTO_OPTION, REEL_OPTION, COVER_OPTION);
+
+    /** What the menu found for a reel's cover, and what a tap on Download cover started. */
+    static final String HAS_COVER = "has cover";
+    static final String SAVED_COVER = "saved cover";
 
     /**
      * The entry the patch calls, handed Instagram's answer as an int, non-zero for yes, so the hook
@@ -134,7 +153,9 @@ public final class ReelDownload {
     public static boolean rows(Object menu, Object media, Object context, Object sheet, Object rowState) {
         try {
             if (media == null || !on()) return false;
-            if (!renditions(media).isEmpty() || InstagramMedia.dashManifest(media) != null) return false;
+            if (!renditions(media).isEmpty() || InstagramMedia.dashManifest(media) != null) {
+                return coverRows(menu, media, context, sheet, rowState);
+            }
             if (StoryDownload.pictures(media).isEmpty()) return false;
             MusicVideo.Music music = MusicVideo.music(media);
             if (music == null) return false;
@@ -163,23 +184,45 @@ public final class ReelDownload {
         }
     }
 
+    /**
+     * Download and Download cover in Download's place for [media], a reel with a video, when Download
+     * cover is on and the reel lists its picture, and whether they went in. Once Download is in, the
+     * answer is yes even if the cover's row isn't, so Instagram's own row doesn't come as a second
+     * Download.
+     */
+    private static boolean coverRows(Object menu, Object media, Object context, Object sheet, Object rowState) {
+        if (!coverOn() || StoryDownload.pictures(media).isEmpty()) return false;
+        Object reel = InstagramMedia.reelOption(REEL_OPTION);
+        Object cover = InstagramMedia.reelOption(COVER_OPTION);
+        if (reel == null || cover == null) return false;
+        if (!InstagramMedia.addReelRow(menu, context, reel, sheet, rowState,
+                StoryDownload.label(StoryDownload.Choice.STORY))) {
+            return false;
+        }
+        HookStatus.counted(FamilyNames.REEL_DOWNLOAD, HAS_COVER);
+        try {
+            InstagramMedia.addReelRow(menu, context, cover, sheet, rowState, L10n.t(Utils.getContext(), "Download cover"));
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "reel menu cover row", t);
+        }
+        return true;
+    }
+
     /** Whether [option], one the reel menu's handler was handed, is a row {@link #rows} added. Never throws. */
     public static boolean ours(Object option) {
         try {
-            return choice(option) != null;
+            return row(option) != null;
         } catch (Throwable t) {
             HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "reel menu option", t);
             return false;
         }
     }
 
-    /** What a tap on [option] saves: the video or the photo for one of the two rows, else null. */
-    private static StoryDownload.Choice choice(Object option) {
+    /** The name of [option] when it's one of our rows, else null. */
+    private static String row(Object option) {
         if (!(option instanceof Enum)) return null;
         String name = ((Enum<?>) option).name();
-        if (VIDEO_OPTION.equals(name)) return StoryDownload.Choice.VIDEO;
-        if (PHOTO_OPTION.equals(name)) return StoryDownload.Choice.PHOTO;
-        return null;
+        return OUR_ROWS.contains(name) ? name : null;
     }
 
     /**
@@ -194,12 +237,13 @@ public final class ReelDownload {
         boolean ours = false;
         try {
             HookStatus.invoked(FamilyNames.REEL_DOWNLOAD);
-            StoryDownload.Choice choice = choice(option);
-            ours = choice != null;
+            String row = row(option);
+            ours = row != null;
             if (!on()) return ours;
             Context context = activity != null ? activity : Utils.getContext();
-            boolean started = choice == StoryDownload.Choice.VIDEO ? saveAsVideo(context, media)
-                : choice == StoryDownload.Choice.PHOTO ? savePicture(context, StoryDownload.pictures(media), media)
+            boolean started = VIDEO_OPTION.equals(row) ? saveAsVideo(context, media)
+                : PHOTO_OPTION.equals(row) ? savePicture(context, StoryDownload.pictures(media), media)
+                : COVER_OPTION.equals(row) ? saveCover(context, media)
                 : saveReel(context, media);
             if (!started) {
                 Context application = context.getApplicationContext();
@@ -249,6 +293,20 @@ public final class ReelDownload {
     }
 
     /**
+     * Starts the save of [media]'s cover, the still picture Instagram shows before the reel plays,
+     * and answers whether it started. The sizes are all of that one picture, so the largest goes.
+     */
+    static boolean saveCover(Context context, Object media) {
+        List<MediaSave.Rendition> pictures = StoryDownload.pictures(media);
+        final int sizes = pictures.size();
+        Logger.diagnosticInfo(DiagnosticCategory.DOWNLOADS, SOURCE, () -> "reel cover tapped: " + sizes + " picture size(s)");
+        if (sizes == 0) return false;
+        boolean started = MediaSave.savePhoto(context, pictures, details(media));
+        if (started) HookStatus.counted(FamilyNames.REEL_DOWNLOAD, SAVED_COVER);
+        return started;
+    }
+
+    /**
      * Starts building and saving a video of [media], a photo with music: its largest picture held
      * for the part of the track the post plays, with that part as its sound. Answers whether it
      * started.
@@ -276,6 +334,16 @@ public final class ReelDownload {
             return Utils.settingsReady() && Settings.DOWNLOAD_REELS.get();
         } catch (Throwable t) {
             HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "reel menu switch", t);
+            return false;
+        }
+    }
+
+    /** Whether a reel with a video gets Download cover. Never throws. */
+    private static boolean coverOn() {
+        try {
+            return Utils.settingsReady() && Settings.DOWNLOAD_REEL_COVER.get();
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "reel cover switch", t);
             return false;
         }
     }

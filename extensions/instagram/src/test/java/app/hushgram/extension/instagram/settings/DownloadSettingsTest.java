@@ -64,6 +64,8 @@ public class DownloadSettingsTest {
         Settings.SAVE_FOLDER.resetToDefault();
         Settings.DOWNLOAD_QUALITY.resetToDefault();
         Settings.FILENAME_TEMPLATE.resetToDefault();
+        Settings.DOWNLOAD_REELS.resetToDefault();
+        Settings.DOWNLOAD_REEL_COVER.resetToDefault();
     }
 
     /** The reel switch sits in Reels, starts on, and says Instagram's menu comes back when it's off. */
@@ -82,6 +84,20 @@ public class DownloadSettingsTest {
             assertEquals("Adds Download to every reel's more menu, saved at your download quality. Off or paused, "
                     + "Instagram's own menu returns.", String.valueOf(row.getSummary()));
             assertNotNull("no Downloads section with the reel download in", section(screen, "Downloads"));
+
+            Preference cover = reels.findPreference(Settings.DOWNLOAD_REEL_COVER.key);
+            assertTrue("Download cover isn't in Reels", cover instanceof SwitchPreference);
+            assertEquals("Download cover", String.valueOf(cover.getTitle()));
+            assertFalse("Download cover starts off", ((SwitchPreference) cover).isChecked());
+            assertTrue(cover.isEnabled());
+            ((SwitchPreference) row).setChecked(false);
+            ShadowLooper.idleMainLooper();
+            assertFalse("Download cover waits for Download on reels", cover.isEnabled());
+            ((SwitchPreference) row).setChecked(true);
+            ShadowLooper.idleMainLooper();
+            assertTrue(cover.isEnabled());
+            assertEquals(java.util.Collections.singletonList(Settings.DOWNLOAD_REELS), PatchFamily.REEL_DOWNLOAD.switches);
+            assertTrue(ConfigurationBackup.eligible().containsKey(Settings.DOWNLOAD_REEL_COVER.key));
         }
 
         PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.HIDE_ADS);

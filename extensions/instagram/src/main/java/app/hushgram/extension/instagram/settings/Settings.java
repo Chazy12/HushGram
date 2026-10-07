@@ -486,6 +486,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_download_reels", TRUE);
 
     /**
+     * A reel with a video gets Download cover under Download in its menu, saving the still picture
+     * Instagram shows before the reel plays (#48). Starts off, so the menu stays as it was.
+     */
+    public static final BooleanSetting DOWNLOAD_REEL_COVER =
+            new BooleanSetting("hushgram_download_reel_cover", FALSE, parent(DOWNLOAD_REELS));
+
+    /**
      * A double tap on a post in the feed or on a reel doesn't like it, where the two switches under
      * it say so. The patch is off in the default selection, so a build that has it asked for it, and
      * the switches start on.

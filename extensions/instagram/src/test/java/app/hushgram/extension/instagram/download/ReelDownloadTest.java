@@ -56,6 +56,7 @@ public class ReelDownloadTest {
         Item.rows.clear();
         HookStatus.clear();
         Settings.DOWNLOAD_REELS.save(true);
+        Settings.DOWNLOAD_REEL_COVER.resetToDefault();
     }
 
     /** With the switch on, every reel gets the row, whatever Instagram and its flag say. */
@@ -182,7 +183,7 @@ public class ReelDownloadTest {
     }
 
     /** The two options a photo with music gets, by the names the extension gives them. */
-    private enum Ours { HUSHGRAM_DOWNLOAD_AS_VIDEO, HUSHGRAM_DOWNLOAD_AS_PHOTO }
+    private enum Ours { HUSHGRAM_DOWNLOAD_AS_VIDEO, HUSHGRAM_DOWNLOAD_AS_PHOTO, HUSHGRAM_DOWNLOAD_REEL, HUSHGRAM_DOWNLOAD_COVER }
 
     /** A photo the Reels viewer shows with music that has a track to fetch. */
     private static void photoWithMusic() {
@@ -241,6 +242,8 @@ public class ReelDownloadTest {
     public void theHandlerKnowsOurRows() {
         assertTrue(ReelDownload.ours(Ours.HUSHGRAM_DOWNLOAD_AS_VIDEO));
         assertTrue(ReelDownload.ours(Ours.HUSHGRAM_DOWNLOAD_AS_PHOTO));
+        assertTrue(ReelDownload.ours(Ours.HUSHGRAM_DOWNLOAD_REEL));
+        assertTrue(ReelDownload.ours(Ours.HUSHGRAM_DOWNLOAD_COVER));
         assertFalse(ReelDownload.ours(Option.DOWNLOAD));
         assertFalse(ReelDownload.ours("HUSHGRAM_DOWNLOAD_AS_VIDEO"));
         assertFalse(ReelDownload.ours(null));
@@ -255,7 +258,67 @@ public class ReelDownloadTest {
         Settings.DOWNLOAD_REELS.save(false);
         assertTrue(ReelDownload.save(Ours.HUSHGRAM_DOWNLOAD_AS_VIDEO, new Object(), null));
         assertTrue(ReelDownload.save(Ours.HUSHGRAM_DOWNLOAD_AS_PHOTO, new Object(), null));
+        assertTrue(ReelDownload.save(Ours.HUSHGRAM_DOWNLOAD_REEL, new Object(), null));
+        assertTrue(ReelDownload.save(Ours.HUSHGRAM_DOWNLOAD_COVER, new Object(), null));
         assertFalse(ReelDownload.save(Option.DOWNLOAD, new Object(), null));
+    }
+
+    /**
+     * With Download cover on, a reel with a video or a manifest and a picture gets Download and
+     * Download cover in Download's place, in that order. Off, or with no picture, it keeps the one row.
+     */
+    @Test
+    @Config(shadows = Item.class)
+    public void aVideoReelGetsDownloadCoverWithItsSwitch() {
+        Item.videos = List.of(new MediaSave.Rendition(META + "720.mp4", 720, 1280, 0));
+        Item.pictures = List.of(new MediaSave.Rendition(META + "1080.jpg", 1080, 1920, 0));
+        assertFalse("Download cover starts off", Settings.DOWNLOAD_REEL_COVER.get());
+        assertFalse(ReelDownload.rows(null, new Object(), null, null, null));
+        assertTrue(Item.rows.isEmpty());
+
+        Settings.DOWNLOAD_REEL_COVER.save(true);
+        assertTrue(ReelDownload.rows(null, new Object(), null, null, null));
+        assertEquals(List.of("HUSHGRAM_DOWNLOAD_REEL=Download", "HUSHGRAM_DOWNLOAD_COVER=Download cover"), Item.rows);
+        assertTrue(String.valueOf(HookStatus.report()), String.valueOf(HookStatus.report()).contains("has cover 1"));
+
+        Item.rows.clear();
+        Item.videos = null;
+        Item.manifest = "<MPD/>";
+        assertTrue("a manifest alone", ReelDownload.rows(null, new Object(), null, null, null));
+        assertEquals(2, Item.rows.size());
+
+        Item.rows.clear();
+        Item.pictures = null;
+        assertFalse("no picture to save", ReelDownload.rows(null, new Object(), null, null, null));
+        Settings.DOWNLOAD_REELS.save(false);
+        Item.pictures = List.of(new MediaSave.Rendition(META + "1080.jpg", 1080, 1920, 0));
+        assertFalse("the reel switch off", ReelDownload.rows(null, new Object(), null, null, null));
+        assertTrue(Item.rows.isEmpty());
+    }
+
+    /** Download cover saves the reel's picture, and our Download row saves its video. */
+    @Test
+    @Config(shadows = Item.class)
+    public void downloadCoverSavesThePictureAndDownloadTheVideo() throws InterruptedException {
+        Item.videos = List.of(new MediaSave.Rendition(META + "720.mp4", 720, 1280, 0));
+        Item.pictures = List.of(new MediaSave.Rendition(META + "1080.jpg", 1080, 1920, 0),
+                new MediaSave.Rendition(META + "640.jpg", 640, 1138, 0));
+        refuseEveryFetch();
+        Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+        HookStatus.clear();
+
+        assertTrue(ReelDownload.save(Ours.HUSHGRAM_DOWNLOAD_COVER, new Object(), activity));
+        String report = String.valueOf(HookStatus.report());
+        assertTrue(report, report.contains("saved cover 1"));
+        assertFalse(report, report.contains("saved as photo"));
+        long deadline = System.currentTimeMillis() + 10_000;
+        while (MediaSave.savesInFlight() > 0 && System.currentTimeMillis() < deadline) Thread.sleep(20);
+
+        assertTrue(ReelDownload.save(Ours.HUSHGRAM_DOWNLOAD_REEL, new Object(), activity));
+        report = String.valueOf(HookStatus.report());
+        assertFalse("the reel row saved the cover", report.contains("saved cover 2"));
+        assertFalse(report, report.contains("saved as photo"));
+        assertFalse(report, report.contains("no video versions"));
     }
 
     /** Download as photo saves the picture of a photo with music. */

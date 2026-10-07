@@ -523,6 +523,9 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             reels.add(toggle(context, Settings.DOWNLOAD_REELS, L10n.t("Download on reels"),
                     L10n.t("Adds Download to every reel's more menu, saved at your download quality. Off or paused, "
                             + "Instagram's own menu returns.")));
+            reels.add(toggle(context, Settings.DOWNLOAD_REEL_COVER, L10n.t("Download cover"),
+                    L10n.t("Adds Download cover under Download. It saves the still picture a reel shows before it "
+                            + "plays, at its largest size.")));
         }
         if (build.contains(PatchFamily.DOUBLE_TAP_LIKE)) {
             reels.add(toggle(context, Settings.TURN_OFF_DOUBLE_TAP_LIKE, L10n.t("Turn off double tap to like"),

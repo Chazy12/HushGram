@@ -96,7 +96,8 @@ internal const val REDUCED_MARKER = "ClipsOrganicMediaItemViewMoreOptionsControl
 val downloadReelPatch = bytecodePatch(
     name = "Download any reel",
     description = "Adds Download to every reel's more menu. Reels save at the Download quality you set, " +
-        "best by default, without Instagram's watermark.",
+        "best by default, without Instagram's watermark. Turn on Download cover for a row that saves the still " +
+        "picture shown before the reel plays.",
     default = true,
 ) {
     category("Downloads")

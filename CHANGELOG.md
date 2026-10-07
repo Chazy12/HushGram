@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Download any reel has a Download cover switch under Download on reels, off to start. With it on, a reel's menu gets Download cover under Download, which saves the still picture Instagram shows before the reel plays at its largest size (#48).
+
 * **Instagram:** New opt-in patch, Spoof location. Set a place under Ads and privacy and turn it on, and Instagram is told the phone is there, for the location sticker, nearby places and maps. Photos keep their own places.
 
 * **Instagram:** New patch, Don't save recent searches, in simple mode with its switch off. With it on, what you open from search stays out of Recent, both in the app and on Instagram's side.
