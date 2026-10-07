@@ -14,8 +14,8 @@ import org.junit.Test
 /**
  * What the README's Privacy section says about the extension, held to its source: which web
  * addresses the code names, and the one place that opens a connection by itself, the save
- * pipeline's Downloader, which fetches only what the person saves and only from Meta's media
- * servers (MediaUrlPolicy).
+ * pipeline's Downloader, which fetches only what the person saves or opens in View profile
+ * picture, and only from Meta's media servers (MediaUrlPolicy).
  *
  * <p>Comments don't count. Licence headers and design notes name hosts the code never contacts,
  * so string literals and code are read apart first, which also stops the `//` inside a URL from
@@ -111,7 +111,7 @@ class ExtensionHostsTest {
 
         /**
          * The files that may open a connection. The save pipeline's Downloader fetches what the
-         * person saves, from Meta's media servers only. The README's Privacy section has to say so
+         * person saves or views, from Meta's media servers only. The README's Privacy section has to say so
          * once a patch calls it.
          */
         val TRANSPORTS = listOf(

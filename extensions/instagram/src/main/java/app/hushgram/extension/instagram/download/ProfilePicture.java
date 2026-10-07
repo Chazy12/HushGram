@@ -17,11 +17,13 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
 
 /**
  * Save profile picture: a row at the end of the menu on someone's profile that saves their picture
- * at the largest size Instagram has, through the same save as a post's photo.
+ * at the largest size Instagram has, through the same save as a post's photo. View profile picture,
+ * with its own switch, is a row after it that opens that picture full screen
+ * ({@link ProfilePictureViewer}), with a Save button that goes through the same save.
  *
  * <p>Instagram builds that menu's sheet and shows it in one method. Right before it shows, the
  * patch hands {@link #offer} the sheet, the profile's account and the menu's context. The sizes are
- * read then, so the row saves the picture the menu was opened on, and the row goes in through
+ * read then, so each row works on the picture the menu was opened on, and each goes in through
  * {@link #addRow}, whose body the patch writes as a call to the sheet's own adder of a plain row.
  * Instagram draws it like its own rows and closes the sheet when it's tapped.
  */
@@ -64,7 +66,13 @@ public final class ProfilePicture {
         public String username(Object user) { return InstagramMedia.username(user); }
     };
 
+    /** Opens the full screen viewer. Answers whether it opened. */
+    interface Viewer {
+        boolean open(Context context, List<MediaSave.Rendition> sizes, String owner, Save save);
+    }
+
     private static final Save SAVE = MediaSave::savePictureBySize;
+    private static final Viewer VIEWER = ProfilePictureViewer::open;
 
     // What the diagnostic report counts when the menu opens. Fixed text: nothing read from the
     // account goes in.
@@ -72,25 +80,37 @@ public final class ProfilePicture {
     static final String SHOWN_ONLY = "shown size only";
     static final String NO_PICTURE = "no profile picture";
     static final String NOT_ADDED = "row not added";
+    static final String VIEW_NOT_ADDED = "view row not added";
 
     /**
-     * Adds Save profile picture to [sheet], the menu on [user]'s profile, when the switch is on and
-     * the account has a picture. [context] is the menu's. Never throws.
+     * Adds Save profile picture and View profile picture to [sheet], the menu on [user]'s profile,
+     * each when its switch is on and the account has a picture. [context] is the menu's. Never
+     * throws.
      */
     public static void offer(Object sheet, Object user, Context context) {
-        offer(sheet, user, context, NATIVE, SAVE);
+        offer(sheet, user, context, NATIVE, SAVE, VIEWER);
     }
 
     static void offer(Object sheet, Object user, Context context, Native reads, Save save) {
+        offer(sheet, user, context, reads, save, VIEWER);
+    }
+
+    static void offer(Object sheet, Object user, Context context, Native reads, Save save, Viewer viewer) {
         try {
             HookStatus.invoked(FamilyNames.PROFILE_PICTURE);
-            if (sheet == null || user == null || context == null || !on()) return;
+            if (sheet == null || user == null || context == null) return;
+            boolean saving = on(), viewing = viewing();
+            if (!saving && !viewing) return;
             List<MediaSave.Rendition> sizes = sizes(user, reads);
             if (sizes.isEmpty()) return;
             String owner = reads.username(user);
-            Row row = new Row(context, sizes, owner, save);
-            if (!reads.addRow(sheet, context, row, L10n.t(context, "Save profile picture"))) {
+            if (saving && !reads.addRow(sheet, context, new Row(context, sizes, owner, save),
+                    L10n.t(context, "Save profile picture"))) {
                 HookStatus.counted(FamilyNames.PROFILE_PICTURE, NOT_ADDED);
+            }
+            if (viewing && !reads.addRow(sheet, context, new ViewRow(context, sizes, owner, save, viewer),
+                    L10n.t(context, "View profile picture"))) {
+                HookStatus.counted(FamilyNames.PROFILE_PICTURE, VIEW_NOT_ADDED);
             }
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.PROFILE_PICTURE, "profile menu", failure);
@@ -126,6 +146,16 @@ public final class ProfilePicture {
             return Utils.settingsReady() && Settings.SAVE_PROFILE_PICTURES.get();
         } catch (Throwable t) {
             HookStatus.threw(FamilyNames.PROFILE_PICTURE, "profile picture switch", t);
+            return false;
+        }
+    }
+
+    /** Whether View profile picture's switch is on, which a pause answers off. */
+    static boolean viewing() {
+        try {
+            return Utils.settingsReady() && Settings.VIEW_PROFILE_PICTURES.get();
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.PROFILE_PICTURE, "view profile picture switch", t);
             return false;
         }
     }
@@ -166,8 +196,35 @@ public final class ProfilePicture {
         }
     }
 
+    /** The View row: the same sizes, opened full screen on a tap. */
+    static final class ViewRow implements View.OnClickListener {
+        final Context context;
+        final List<MediaSave.Rendition> sizes;
+        final String owner;
+        final Save save;
+        final Viewer viewer;
+
+        ViewRow(Context context, List<MediaSave.Rendition> sizes, String owner, Save save, Viewer viewer) {
+            this.context = context;
+            this.sizes = sizes;
+            this.owner = owner;
+            this.save = save;
+            this.viewer = viewer;
+        }
+
+        @Override public void onClick(View view) {
+            try {
+                if (!viewing()) return;
+                if (!viewer.open(context, sizes, owner, save)) ProfilePictureViewer.notOpened(context);
+            } catch (Throwable failure) {
+                HookStatus.threw(FamilyNames.PROFILE_PICTURE, "view profile picture", failure);
+                ProfilePictureViewer.notOpened(context);
+            }
+        }
+    }
+
     /** Download failed, in the phone's language. Never throws. */
-    private static void failed(Context context) {
+    static void failed(Context context) {
         try {
             Context application = context == null ? null : context.getApplicationContext();
             if (application != null) Feedback.show(application, L10n.t(application, "Download failed"), true);

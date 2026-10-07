@@ -8,8 +8,11 @@ import static org.junit.Assert.*;
 import android.content.Context;
 import android.view.View;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,7 +31,7 @@ import app.hushgram.extension.shared.settings.BaseSettings;
 import app.hushgram.extension.shared.settings.HushgramPause;
 import app.hushgram.extension.shared.settings.PauseForTests;
 
-/** Save profile picture's row: what it reads when the menu opens, and what a tap saves. */
+/** Save and View profile picture's rows: what they read when the menu opens, and what a tap does. */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = {28, 37})
 public class ProfilePictureTest {
@@ -46,6 +49,16 @@ public class ProfilePictureTest {
         named.add(details);
         return saveStarts;
     };
+    private final List<List<MediaSave.Rendition>> viewed = new ArrayList<>();
+    private final List<String> viewedOwners = new ArrayList<>();
+    private final List<ProfilePicture.Save> viewerSaves = new ArrayList<>();
+    private boolean viewerOpens = true;
+    private final ProfilePicture.Viewer viewer = (context, sizes, owner, save) -> {
+        viewed.add(sizes);
+        viewedOwners.add(owner);
+        viewerSaves.add(save);
+        return viewerOpens;
+    };
     private Context context;
 
     @Before public void enable() {
@@ -61,6 +74,7 @@ public class ProfilePictureTest {
 
     @After public void restore() {
         Settings.SAVE_PROFILE_PICTURES.resetToDefault();
+        Settings.VIEW_PROFILE_PICTURES.resetToDefault();
         BaseSettings.PAUSED.save(false);
         PauseForTests.resume();
         HookStatus.clear();
@@ -191,6 +205,79 @@ public class ProfilePictureTest {
         assertEquals(0, reads.calls);
     }
 
+    @Test public void theViewSwitchStartsOff() {
+        Settings.VIEW_PROFILE_PICTURES.resetToDefault();
+        assertFalse(Settings.VIEW_PROFILE_PICTURES.get());
+    }
+
+    @Test public void withBothOnViewComesAfterSave() {
+        Settings.VIEW_PROFILE_PICTURES.save(true);
+        ProfilePicture.offer(sheet, user, context, reads, save, viewer);
+        assertEquals(Arrays.asList("Save profile picture", "View profile picture"), new ArrayList<>(reads.rows.keySet()));
+        assertTrue("showing the menu opens nothing", viewed.isEmpty());
+        assertEquals("the sizes are read once for both rows", Collections.singletonList(FamilyNames.PROFILE_PICTURE
+                + ": invoked 1, 0 found, 0 missing. Counted: full size picture 1"), counted());
+    }
+
+    @Test public void theViewRowOpensTheSizesReadWhenTheMenuOpened() {
+        Settings.SAVE_PROFILE_PICTURES.save(false);
+        Settings.VIEW_PROFILE_PICTURES.save(true);
+        ProfilePicture.offer(sheet, user, context, reads, save, viewer);
+        assertEquals(Collections.singletonList("View profile picture"), new ArrayList<>(reads.rows.keySet()));
+
+        reads.fullUrl = "https://scontent.cdninstagram.com/later.jpg";
+        reads.rows.get("View profile picture").onClick(null);
+        assertEquals(1, viewed.size());
+        assertEquals(2, viewed.get(0).size());
+        assertEquals(FULL, viewed.get(0).get(0).url);
+        assertEquals(SHOWN, viewed.get(0).get(1).url);
+        assertEquals("someone", viewedOwners.get(0));
+        assertSame("the viewer's Save is the row's save", save, viewerSaves.get(0));
+        assertTrue("opening the viewer saves nothing", saved.isEmpty());
+    }
+
+    @Test public void offTheViewSwitchAddsNoViewRow() {
+        ProfilePicture.offer(sheet, user, context, reads, save, viewer);
+        assertEquals(Collections.singletonList("Save profile picture"), new ArrayList<>(reads.rows.keySet()));
+    }
+
+    @Test public void aViewTapAfterTheSwitchWentOffOpensNothing() {
+        Settings.VIEW_PROFILE_PICTURES.save(true);
+        ProfilePicture.offer(sheet, user, context, reads, save, viewer);
+        Settings.VIEW_PROFILE_PICTURES.save(false);
+        reads.rows.get("View profile picture").onClick(null);
+        assertTrue(viewed.isEmpty());
+    }
+
+    @Test public void aViewerThatCantOpenSaysSo() {
+        Settings.SAVE_PROFILE_PICTURES.save(false);
+        Settings.VIEW_PROFILE_PICTURES.save(true);
+        viewerOpens = false;
+        ProfilePicture.offer(sheet, user, context, reads, save, viewer);
+        reads.rows.get("View profile picture").onClick(null);
+        ShadowLooper.idleMainLooper();
+        assertEquals("Couldn't open the picture", ShadowToast.getTextOfLatestToast());
+        assertEquals(Collections.singletonList(FamilyNames.PROFILE_PICTURE
+                + ": invoked 1, 0 found, 0 missing. Counted: full size picture 1, picture not opened 1"), counted());
+    }
+
+    @Test public void aViewRowThatDidntGoInIsCounted() {
+        Settings.SAVE_PROFILE_PICTURES.save(false);
+        Settings.VIEW_PROFILE_PICTURES.save(true);
+        reads.adds = false;
+        ProfilePicture.offer(sheet, user, context, reads, save, viewer);
+        assertEquals(Collections.singletonList(FamilyNames.PROFILE_PICTURE
+                + ": invoked 1, 0 found, 0 missing. Counted: full size picture 1, view row not added 1"), counted());
+    }
+
+    @Test public void bothOffNothingOfTheAccountIsRead() {
+        Settings.SAVE_PROFILE_PICTURES.save(false);
+        Settings.VIEW_PROFILE_PICTURES.save(false);
+        ProfilePicture.offer(sheet, user, context, reads, save, viewer);
+        assertTrue(reads.rows.isEmpty());
+        assertEquals(0, reads.calls);
+    }
+
     /** As built, with no patch, the row's adder adds nothing and every read answers nothing. */
     @Test public void unpatchedTheMenuIsInstagrams() {
         ProfilePicture.offer(sheet, user, context);
@@ -209,12 +296,16 @@ public class ProfilePictureTest {
         Context context;
         View.OnClickListener row;
         String label;
+        final Map<String, View.OnClickListener> rows = new LinkedHashMap<>();
 
         @Override public boolean addRow(Object sheet, Context context, View.OnClickListener listener, String label) {
             this.sheet = sheet;
             this.context = context;
             this.label = label;
-            if (adds) row = listener;
+            if (adds) {
+                row = listener;
+                rows.put(label, listener);
+            }
             return adds;
         }
         @Override public Object fullSize(Object user) {
