@@ -64,9 +64,18 @@ final class ProfilePictureViewer {
     /** What the diagnostic report counts when the picture couldn't be shown. Fixed text. */
     static final String NOT_OPENED = "picture not opened";
 
-    /** The label counted for a picture shown [width] pixels wide. */
+    /** The width of Instagram's largest profile pictures. */
+    static final int FULL_WIDTH = 1080;
+
+    /** Counted for a picture shown at [FULL_WIDTH] or wider. Fixed text, so the family's labels stay few. */
+    static final String VIEWED_FULL = "viewed 1080 px or wider";
+
+    /** Counted for a picture shown narrower than [FULL_WIDTH]. Fixed text. */
+    static final String VIEWED_SMALLER = "viewed under 1080 px wide";
+
+    /** The label counted for a picture shown [width] pixels wide: one of two, whatever the width. */
     static String viewed(int width) {
-        return "viewed " + width + " px wide";
+        return width >= FULL_WIDTH ? VIEWED_FULL : VIEWED_SMALLER;
     }
 
     /** A decoded picture and the width it has on the server, before any reduction to draw it. */

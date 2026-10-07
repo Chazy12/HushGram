@@ -134,8 +134,16 @@ public class ProfilePictureViewerTest {
         assertEquals(1, server.hits("/full.jpg"));
         assertTrue(dialog.isShowing());
         assertEquals(Collections.singletonList(FamilyNames.PROFILE_PICTURE
-                + ": invoked 0, 0 found, 0 missing. Counted: viewed 120 px wide"), HookStatus.report());
+                + ": invoked 0, 0 found, 0 missing. Counted: viewed under 1080 px wide 1"), HookStatus.report());
         assertTrue("opening it saves nothing", saved.isEmpty());
+    }
+
+    /** Every width counts under one of two labels, so a family that keeps few labels never fills up. */
+    @Test public void widthsShareTwoLabels() {
+        assertEquals(ProfilePictureViewer.VIEWED_SMALLER, ProfilePictureViewer.viewed(150));
+        assertEquals(ProfilePictureViewer.VIEWED_SMALLER, ProfilePictureViewer.viewed(1079));
+        assertEquals(ProfilePictureViewer.VIEWED_FULL, ProfilePictureViewer.viewed(1080));
+        assertEquals(ProfilePictureViewer.VIEWED_FULL, ProfilePictureViewer.viewed(1440));
     }
 
     @Test public void saveGoesThroughTheRowsSaveAndCloseShutsIt() throws Exception {
