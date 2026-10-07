@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Save comment photo now follows Name saves by account and post time. A comment's photo is named for the person who wrote the comment and when they wrote it, like `username_20261005_143012`, and Folder per account files it under that person's name. A comment whose author or time can't be read keeps the usual `IG_IMG_` name. Asked for in #20.
+
 * **Instagram:** Ask before a refresh now also asks on Home, in your messages inbox and the other lists that pull down with Instagram's newer refresh layout. The question comes up once a pull goes far enough to refresh, and Cancel puts the spinner away there too.
 
 * **Instagram:** Resume long videos forgets a signed-out account's places in the background, so signing out never waits on its file.

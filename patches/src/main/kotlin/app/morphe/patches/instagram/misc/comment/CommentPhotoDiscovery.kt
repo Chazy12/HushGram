@@ -5,11 +5,15 @@
 package app.morphe.patches.instagram.misc.comment
 
 import app.morphe.patcher.patch.BytecodePatchContext
+import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.instagram.download.INSTAGRAM_MEDIA
 import app.morphe.patches.instagram.download.MEDIA
+import app.morphe.patches.instagram.download.USER
 import app.morphe.patches.instagram.download.imageBridges
+import app.morphe.patches.instagram.download.usernameBridge
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.instagram.misc.extension.classesAccessing
+import app.morphe.patches.instagram.misc.extension.patchLog
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -38,7 +42,15 @@ internal data class CommentPhotoPlan(
     val surface: CommentSurface, val gif: MethodReference, val info: MethodReference, val media: MethodReference,
     val kind: MethodReference, val mediaGif: MethodReference, val videoVersions: MethodReference,
     val videoDuration: MethodReference, val photo: Int, val icon: Int, val label: Int, val images: () -> Unit,
+    val author: CommentAuthor? = null,
 )
+
+/**
+ * The raw comment's getters for who wrote it ([user]) and when ([createdAt]), and the step that
+ * fills the User's username bridge. They only name the save, so a build where they can't be told
+ * still gets the Save row, with the save under its usual name.
+ */
+internal class CommentAuthor(val user: MethodReference, val createdAt: MethodReference, val username: () -> Unit)
 
 internal fun BytecodePatchContext.findCommentPhoto(): CommentPhotoPlan = discovering(PHOTO_PATCH) {
     val classes = classPool()
@@ -137,8 +149,41 @@ internal fun BytecodePatchContext.findCommentPhoto(): CommentPhotoPlan = discove
     PHOTO_READS.forEach { (name, shape) -> stub(PHOTO_NATIVE, name, shape.first, shape.second) }
     validateActionRow(PHOTO_ROW, PHOTO_NATIVE)
     val images = imageBridges(PHOTO_PATCH)
-    CommentPhotoPlan(surface, gif, info, media, kind, mediaGif, videoVersions, videoDuration, photo, icon, label, images)
+    CommentPhotoPlan(surface, gif, info, media, kind, mediaGif, videoVersions, videoDuration, photo, icon, label, images,
+        commentAuthor(raw, pando))
 }
+
+/**
+ * Who wrote the comment and when, read through the raw comment's interface like its media is. Its
+ * tree-backed class proves which getter is which: created_at is the Long getter holding that key's
+ * hash, and the author is the User getter answering the field the tree's "user" read is stored in.
+ * The parsed class implements the same interface, so the same getters answer for it. Null, after
+ * the patch log says why, when any of them or User's username can't be told.
+ */
+private fun BytecodePatchContext.commentAuthor(raw: ClassDef, pando: ClassDef): CommentAuthor? = try {
+    fun onRaw(getter: Method, what: String) = raw.methods
+        .filter { it.matches(getter) && AccessFlags.ABSTRACT.isSet(it.accessFlags) }.one("raw comment's $what getter")
+    val created = hashGetter(pando, "created_at", LONG)
+    val userKey = "user".hashCode()
+    val stored = pando.methods.flatMap { method ->
+        val code = method.code()
+        code.indices.filter { at -> code[at].opcode in literalLoads && (code[at] as NarrowLiteralInstruction).narrowLiteral == userKey }
+            .mapNotNull { at ->
+                code.drop(at + 1).firstOrNull { it.opcode == Opcode.IPUT_OBJECT &&
+                    it.field()?.let { field -> field.definingClass == pando.type && field.type == USER } == true }?.field()
+            }
+    }.distinctBy { it.toString() }.one("tree comment's user field")
+    val user = pando.methods.filter { method -> method.parameterTypes.isEmpty() && method.returnType == USER &&
+        !AccessFlags.STATIC.isSet(method.accessFlags) &&
+        method.code().map { it.opcode } == listOf(Opcode.IGET_OBJECT, Opcode.RETURN_OBJECT) &&
+        method.code()[0].field()?.toString() == stored.toString()
+    }.one("tree comment's user getter")
+    CommentAuthor(onRaw(user, "user"), onRaw(created, "created_at"), usernameBridge(PHOTO_PATCH))
+} catch (unknown: PatchException) {
+    patchLog.warning("${unknown.message}. Save comment photo goes in, and its saves keep their usual name.")
+    null
+}
+
 
 /** Only called after discovery and every accessibility/register/stub check succeeded. */
 internal fun BytecodePatchContext.applyCommentPhoto(plan: CommentPhotoPlan) = discovering(PHOTO_PATCH) {
@@ -170,6 +215,11 @@ internal fun BytecodePatchContext.applyCommentPhoto(plan: CommentPhotoPlan) = di
     read("mediaGif", "invoke-virtual", plan.mediaGif)
     read("videoVersions", "invoke-virtual", plan.videoVersions)
     read("videoDuration", "invoke-virtual", plan.videoDuration)
+    plan.author?.let { author ->
+        read("author", "invoke-interface", author.user)
+        read("createdAt", "invoke-interface", author.createdAt)
+        author.username()
+    }
     replace(reads.getValue("photoKind"), 1, """
         const v0, ${plan.photo}
         return v0
@@ -189,10 +239,15 @@ internal val PHOTO_READS: List<Pair<String, Pair<List<String>, String>>> = listO
     "mediaGif" to (listOf(OBJECT) to OBJECT),
     "videoVersions" to (listOf(OBJECT) to OBJECT),
     "videoDuration" to (listOf(OBJECT) to OBJECT),
+    "author" to (listOf(OBJECT) to OBJECT),
+    "createdAt" to (listOf(OBJECT) to OBJECT),
     "photoKind" to (emptyList<String>() to "I"),
 )
 
 private const val DOUBLE = "Ljava/lang/Double;"
+private const val LONG = "Ljava/lang/Long;"
+
+private val literalLoads = setOf(Opcode.CONST, Opcode.CONST_16, Opcode.CONST_HIGH16, Opcode.CONST_4)
 
 private val fieldWrites = setOf(Opcode.IPUT_OBJECT, Opcode.SPUT_OBJECT)
 

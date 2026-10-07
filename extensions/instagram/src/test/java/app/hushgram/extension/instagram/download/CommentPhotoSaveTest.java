@@ -6,6 +6,7 @@ package app.hushgram.extension.instagram.download;
 
 import static org.junit.Assert.*;
 import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Context;
 import android.os.Build;
 import android.os.Environment;
@@ -17,7 +18,9 @@ import java.net.InetAddress;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -103,6 +106,9 @@ public class CommentPhotoSaveTest {
         NativePhoto.photo = null;
         NativePhoto.typed = true;
         NativePhoto.videos = null;
+        NativePhoto.author = null;
+        NativePhoto.written = null;
+        Settings.SAVE_NAME_BY_POST.resetToDefault();
         HookStatus.clear();
         Utils.awaitBackgroundTasksForTests();
         SaveLeftovers.forgetSweepForTests();
@@ -207,6 +213,45 @@ public class CommentPhotoSaveTest {
         assertEquals(0, server.hits("/large.jpg"));
     }
 
+    /** With Name saves by account and post time on, the photo is named after the comment's author and time. */
+    @Test public void aCommentPhotoIsNamedAfterItsAuthorAndTime() throws Exception {
+        Settings.SAVE_NAME_BY_POST.save(true);
+        Calendar noon = new GregorianCalendar();
+        noon.clear();
+        noon.set(2026, Calendar.SEPTEMBER, 1, 12, 0, 0);
+        NativePhoto.author = "stevi.ous";
+        NativePhoto.written = noon.getTimeInMillis() / 1000L;
+        Row row = menu();
+        assertNull(row.callback.invoke());
+        waitForSave();
+        assertEquals(Collections.singletonList("stevi.ous_20260901_120000.jpg"), savedNames());
+        clean();
+    }
+
+    /** Off, the same comment's photo keeps the name it always had. */
+    @Test public void offTheCommentPhotoKeepsItsUsualName() throws Exception {
+        NativePhoto.author = "stevi.ous";
+        NativePhoto.written = 1_788_000_000L;
+        Row row = menu();
+        assertNull(row.callback.invoke());
+        waitForSave();
+        List<String> names = savedNames();
+        assertEquals(1, names.size());
+        assertTrue(names.get(0), names.get(0).startsWith("IG_IMG_"));
+        clean();
+    }
+
+    private List<String> savedNames() {
+        List<String> names = new ArrayList<>();
+        if (Build.VERSION.SDK_INT == 28) {
+            for (File file : Objects.requireNonNull(legacy.listFiles())) if (!oldFiles.contains(file)) names.add(file.getName());
+        } else {
+            for (ContentValues values : gallery.rows.values()) names.add(values.getAsString(MediaStore.MediaColumns.DISPLAY_NAME));
+        }
+        Collections.sort(names);
+        return names;
+    }
+
     @Test public void commentPhotoCancelUsesTheExistingControlAndRemovesAllTemporaryState() throws Exception {
         Row row = menu();
         CountDownLatch entered = new CountDownLatch(1);
@@ -253,10 +298,14 @@ public class CommentPhotoSaveTest {
         static MediaSave.Item photo;
         static boolean typed = true;
         static List<?> videos;
+        static String author;
+        static Long written;
         private static final Object RAW = new Object(), INFO = new Object();
         @Implementation protected static int selected(Object comment) { return comment != null && comment == selected ? 1 : 0; }
         @Implementation protected static Object raw(Object comment) { return RAW; }
         @Implementation protected static Object gif(Object raw) { return null; }
+        @Implementation protected static Object author(Object raw) { return raw == RAW ? author : null; }
+        @Implementation protected static Object createdAt(Object raw) { return raw == RAW ? written : null; }
         @Implementation protected static Object info(Object raw) { return raw == RAW ? INFO : null; }
         @Implementation protected static Object media(Object info) { return info == INFO ? photo : null; }
         @Implementation protected static Object kind(Object media) { return typed && media instanceof MediaSave.Item ? 1 : null; }

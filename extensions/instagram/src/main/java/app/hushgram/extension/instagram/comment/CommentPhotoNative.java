@@ -17,6 +17,12 @@ public final class CommentPhotoNative {
     /** The raw comment a selected comment keeps, or null. Only for a comment {@link #selected} took. */
     public static Object raw(Object selected) { return null; }
 
+    /** Who wrote the raw comment, a User, or null. Only for a comment {@link #raw} answered. */
+    public static Object author(Object raw) { return null; }
+
+    /** When the raw comment was written, its created_at in seconds as a Long, or null. */
+    public static Object createdAt(Object raw) { return null; }
+
     /** The raw comment's own GIF (giphy_media_info), or null. */
     public static Object gif(Object raw) { return null; }
 

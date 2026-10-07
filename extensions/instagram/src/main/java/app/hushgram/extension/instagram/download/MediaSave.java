@@ -278,8 +278,9 @@ public final class MediaSave {
 
     /**
      * Save a photo: the largest of [renditions], the candidates the app lists for one picture. A
-     * thumbnail's address loses outright ({@link RenditionPicker#imageTier}). [details] is kept for
-     * the report; a photo's name is always {@link FileNameTemplate#PHOTO_PREFIX} and the time.
+     * thumbnail's address loses outright ({@link RenditionPicker#imageTier}). [details] names and
+     * files it as a video's do, or null: without Name saves by account and post time, a photo's
+     * name is {@link FileNameTemplate#PHOTO_PREFIX} and the time.
      *
      * @return whether a save started. Never throws.
      */

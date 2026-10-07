@@ -155,6 +155,12 @@ internal fun BytecodePatchContext.profilePictureBridges(patch: String): () -> Un
 internal fun BytecodePatchContext.pickerSizesBridge(patch: String, helper: MethodReference): () -> Unit =
     bridgeWriter(patch, listOf(Bridge("pickerImageVersions", MEDIA, "invoke-static {p0}, $helper")))
 
+/** The same for an account's username alone, for a save named after an account found elsewhere. */
+internal fun BytecodePatchContext.usernameBridge(patch: String): () -> Unit {
+    val username = pandoGetter(patch, USER, "username", "Ljava/lang/String;")
+    return bridgeWriter(patch, listOf(Bridge("username", USER, virtual(username))))
+}
+
 /** The same for whether a story is a photo with music, which Instagram serves as a video. */
 internal fun BytecodePatchContext.storyMusicBridges(patch: String): () -> Unit {
     val photoWithMusic = pandoGetter(patch, MEDIA, "is_story_image_with_music", "Ljava/lang/Boolean;")

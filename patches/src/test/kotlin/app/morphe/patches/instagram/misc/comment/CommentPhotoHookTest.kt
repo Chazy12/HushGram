@@ -15,6 +15,7 @@ import app.morphe.patches.instagram.download.IMAGE_URL
 import app.morphe.patches.instagram.download.INSTAGRAM_MEDIA
 import app.morphe.patches.instagram.download.MEDIA
 import app.morphe.patches.instagram.download.PANDO_IMAGE_INFO
+import app.morphe.patches.instagram.download.USER
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -161,6 +162,21 @@ class CommentPhotoHookTest {
                 assertEquals(plan.surface.raw, plan.info.definingClass)
                 assertEquals(plan.surface.raw, plan.gif.definingClass)
                 assertNotEquals(plan.icon, plan.label)
+                // Who wrote the comment and when, for the save's name: read through the raw comment's
+                // interface, each proved on its tree-backed class by the key it reads.
+                val author = plan.author ?: error("${bundle.name}: the comment's author and time weren't found")
+                assertEquals(listOf(plan.surface.raw, plan.surface.raw), listOf(author.user, author.createdAt).map { it.definingClass })
+                assertEquals(listOf(USER, "Ljava/lang/Long;"), listOf(author.user, author.createdAt).map { it.returnType })
+                val tree = classes.single { it.type == plan.surface.pando }
+                assertTrue("${bundle.name}: created_at getter", tree.methods.single { it.matches(author.createdAt) }.code()
+                    .any { it is NarrowLiteralInstruction && it.narrowLiteral == "created_at".hashCode() })
+                val userField = tree.methods.single { it.matches(author.user) }.code()[0].field()!!
+                assertTrue("${bundle.name}: the user getter answers the tree's \"user\" read", tree.methods.any { method ->
+                    val code = method.code()
+                    val read = code.indexOfFirst { it is NarrowLiteralInstruction && it.narrowLiteral == "user".hashCode() }
+                    read >= 0 && code.drop(read).firstOrNull { it.opcode == Opcode.IPUT_OBJECT && it.field()?.type == USER }
+                        ?.field().toString() == userField.toString()
+                })
                 patch.applyCommentPhoto(plan)
                 if (families == "photo+copy") patch.applyCommentMenu(patch.findCommentMenu())
                 assertPhotoWiring(patch, plan)
@@ -203,6 +219,20 @@ class CommentPhotoHookTest {
         assertEquals(listOf(surface.raw, surface.raw, plan.media.definingClass, MEDIA, MEDIA, MEDIA, MEDIA),
             listOf(plan.gif, plan.info, plan.media, plan.kind, plan.mediaGif, plan.videoVersions, plan.videoDuration)
                 .map { it.definingClass })
+        // The author and time read only once they were found; otherwise the stubs answer null.
+        for ((name, getter) in listOf("author" to plan.author?.user, "createdAt" to plan.author?.createdAt)) {
+            val code = read(name)
+            if (getter == null) {
+                assertNotEquals(name, Opcode.CHECK_CAST, code.first().opcode)
+                continue
+            }
+            assertEquals(name, listOf(Opcode.CHECK_CAST, Opcode.INVOKE_INTERFACE, Opcode.MOVE_RESULT_OBJECT, Opcode.RETURN_OBJECT),
+                code.map { it.opcode })
+            assertEquals(name, surface.raw, (code[0].reference() as TypeReference).type)
+            assertEquals(name, getter.toString(), code[1].call().toString())
+        }
+        val username = patch.mutableClassDefBy(INSTAGRAM_MEDIA).methods.single { it.name == "username" }.code().first().opcode
+        assertEquals("the username bridge is filled exactly when the author is read", plan.author != null, username == Opcode.CHECK_CAST)
         val kind = read("photoKind")
         assertEquals(listOf(Opcode.CONST, Opcode.RETURN), kind.map { it.opcode })
         assertEquals(plan.photo, (kind[0] as NarrowLiteralInstruction).narrowLiteral)

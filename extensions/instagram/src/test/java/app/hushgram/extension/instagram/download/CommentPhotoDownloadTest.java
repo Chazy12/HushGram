@@ -174,11 +174,11 @@ public class CommentPhotoDownloadTest {
     }
 
     @Test public void aSaveThatCannotStartSaysSoAndNeverThrows() {
-        CommentPhotoDownload.save(context, Collections.emptyList());
+        CommentPhotoDownload.save(context, Collections.emptyList(), PostDetails.NONE);
         Shadows.shadowOf(Looper.getMainLooper()).idle();
         assertEquals("Download failed", String.valueOf(ShadowToast.getTextOfLatestToast()));
         ShadowToast.reset();
-        CommentPhotoDownload.save(null, Collections.emptyList());
+        CommentPhotoDownload.save(null, Collections.emptyList(), null);
         CommentPhotoDownload.failed(null);
         Shadows.shadowOf(Looper.getMainLooper()).idle();
         assertNull(ShadowToast.getTextOfLatestToast());

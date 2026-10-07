@@ -10,6 +10,7 @@ import android.os.Looper;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.function.Consumer;
 import kotlin.jvm.functions.Function0;
@@ -24,6 +25,7 @@ import org.robolectric.Shadows;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowToast;
 import app.hushgram.extension.instagram.download.MediaSave;
+import app.hushgram.extension.instagram.download.PostDetails;
 import app.hushgram.extension.instagram.settings.FamilyNames;
 import app.hushgram.extension.instagram.settings.Settings;
 import app.hushgram.extension.shared.SettingsContextRule;
@@ -39,7 +41,11 @@ public class CommentPhotoTest {
     private final List<?> stock = Collections.singletonList("Report");
     private final FakeNative nativeRows = new FakeNative();
     private final List<List<MediaSave.Rendition>> queued = new ArrayList<>();
-    private final CommentPhoto.Save save = (context, snapshot) -> queued.add(snapshot);
+    private final List<PostDetails> named = new ArrayList<>();
+    private final CommentPhoto.Save save = (context, snapshot, details) -> {
+        queued.add(snapshot);
+        named.add(details);
+    };
     private Context context;
 
     @Before public void enable() {
@@ -171,7 +177,7 @@ public class CommentPhotoTest {
         nativeRows.nullRow = false;
 
         List<?> rows = CommentPhoto.rows(stock, photo("selected"), context, nativeRows,
-                (ctx, snapshot) -> { throw new IllegalStateException("queue failed"); });
+                (ctx, snapshot, details) -> { throw new IllegalStateException("queue failed"); });
         assertNull(((Row) rows.get(1)).callback.invoke());
         Shadows.shadowOf(Looper.getMainLooper()).idle();
         assertEquals("Download failed", String.valueOf(ShadowToast.getTextOfLatestToast()));
@@ -304,6 +310,51 @@ public class CommentPhotoTest {
         assertTrue("the sizes read counts a found photo", HookStatus.report().isEmpty());
     }
 
+    /** The row saves under the comment's author and time, read when the menu opened. */
+    @Test public void theCommentsAuthorAndTimeGoWithItsSave() {
+        Date written = new Date(1_788_000_000_000L);
+        nativeRows.details = PostDetails.of(null, "stevi.ous", written);
+        List<?> rows = CommentPhoto.rows(stock, photo("selected"), context, nativeRows, save);
+        nativeRows.details = PostDetails.NONE;
+        assertNull(((Row) rows.get(1)).callback.invoke());
+        assertEquals("stevi.ous", named.get(0).owner);
+        assertEquals(written, named.get(0).posted);
+
+        // A failed read of the author still saves the photo, under its usual name.
+        nativeRows.failDetails = true;
+        rows = CommentPhoto.rows(stock, photo("other"), context, nativeRows, save);
+        assertNull(((Row) rows.get(1)).callback.invoke());
+        assertSame(PostDetails.NONE, named.get(1));
+        assertEquals(2, queued.size());
+        assertTrue(HookStatus.report().toString(), HookStatus.report().toString().contains("comment author"));
+    }
+
+    @Test public void theAuthorAndTimeComeFromTheSelectedCommentOnly() {
+        FakeReads reads = new FakeReads();
+        reads.authorAnswer = "user";
+        reads.createdAnswer = 1_788_000_000L;
+        PostDetails details = CommentPhoto.details(reads.comment, reads);
+        assertEquals("stevi.ous", details.owner);
+        assertEquals(new Date(1_788_000_000_000L), details.posted);
+        assertFalse("a comment's photo has no post id of its own here", details.hasVideoId());
+
+        reads.createdAnswer = null;
+        assertNull(CommentPhoto.details(reads.comment, reads).posted);
+        reads.createdAnswer = 0L;
+        assertNull(CommentPhoto.details(reads.comment, reads).posted);
+        reads.createdAnswer = 1_788_000_000L;
+        reads.authorAnswer = null;
+        details = CommentPhoto.details(reads.comment, reads);
+        assertNull(details.owner);
+        assertNotNull(details.posted);
+
+        reads.rawAnswer = null;
+        assertSame(PostDetails.NONE, CommentPhoto.details(reads.comment, reads));
+        reads.rawAnswer = reads.raw;
+        reads.isSelected = false;
+        assertSame(PostDetails.NONE, CommentPhoto.details(reads.comment, reads));
+    }
+
     @Test public void theUnpatchedBridgesCountAnUnselectedComment() {
         HookStatus.clear();
         assertSame(stock, CommentPhoto.rows(stock, new Object(), context));
@@ -317,7 +368,7 @@ public class CommentPhotoTest {
         final Object comment = new Object(), raw = new Object(), info = new Object(), media = new Object();
         boolean isSelected = true;
         Object rawAnswer = raw, gifAnswer, infoAnswer = info, mediaAnswer = media, kindAnswer = 1, mediaGifAnswer;
-        Object videoVersionsAnswer, videoDurationAnswer;
+        Object videoVersionsAnswer, videoDurationAnswer, authorAnswer, createdAnswer;
         public boolean selected(Object c) { made.add("selected"); assertSame(comment, c); return isSelected; }
         public Object raw(Object c) { made.add("raw"); assertSame(comment, c); return rawAnswer; }
         public Object gif(Object r) { made.add("gif"); assertSame(raw, r); return gifAnswer; }
@@ -328,6 +379,9 @@ public class CommentPhotoTest {
         public Object mediaGif(Object m) { made.add("mediaGif"); assertSame(media, m); return mediaGifAnswer; }
         public Object videoVersions(Object m) { made.add("videoVersions"); assertSame(media, m); return videoVersionsAnswer; }
         public Object videoDuration(Object m) { made.add("videoDuration"); assertSame(media, m); return videoDurationAnswer; }
+        public Object author(Object r) { made.add("author"); assertSame(raw, r); return authorAnswer; }
+        public Object createdAt(Object r) { made.add("createdAt"); assertSame(raw, r); return createdAnswer; }
+        public String username(Object user) { made.add("username"); assertEquals("user", user); return "stevi.ous"; }
     }
 
     static final class Row {
@@ -338,11 +392,16 @@ public class CommentPhotoTest {
     static final class FakeNative implements CommentPhoto.NativeRows {
         int created;
         int inspected;
-        boolean fail, failRow, nullRow;
+        boolean fail, failRow, nullRow, failDetails;
+        PostDetails details = PostDetails.NONE;
         @SuppressWarnings("unchecked") public List<MediaSave.Rendition> photo(Object comment) {
             inspected++;
             if (fail) throw new IllegalStateException("native photo getter failed");
             return comment instanceof List ? (List<MediaSave.Rendition>) comment : null;
+        }
+        public PostDetails details(Object comment) {
+            if (failDetails) throw new IllegalStateException("native author getter failed");
+            return details;
         }
         public Object row(Object callback) {
             if (failRow) throw new IllegalStateException("row failed");

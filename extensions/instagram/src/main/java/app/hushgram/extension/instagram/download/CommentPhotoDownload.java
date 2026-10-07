@@ -95,10 +95,14 @@ public final class CommentPhotoDownload {
         return Collections.unmodifiableList(new ArrayList<>(sizes));
     }
 
-    /** Starts the save of the largest of [snapshot]. A save that can't start says so. Never throws. */
-    public static void save(Context context, List<MediaSave.Rendition> snapshot) {
+    /**
+     * Starts the save of the largest of [snapshot], named and filed after [details], the comment's
+     * author and time, as a post's photo is after its poster. A save that can't start says so.
+     * Never throws.
+     */
+    public static void save(Context context, List<MediaSave.Rendition> snapshot, PostDetails details) {
         try {
-            if (!MediaSave.savePhoto(context, snapshot, null)) failed(context);
+            if (!MediaSave.savePhoto(context, snapshot, details)) failed(context);
         } catch (Throwable t) {
             HookStatus.threw(FamilyNames.COMMENT_PHOTO, "save comment photo", t);
             failed(context);
