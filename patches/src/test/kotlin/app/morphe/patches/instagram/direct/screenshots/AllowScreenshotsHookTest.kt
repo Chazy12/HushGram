@@ -13,17 +13,21 @@ import app.morphe.patches.instagram.FixtureDex
 import app.morphe.patches.instagram.feed.FeedItemStandIns.instructions
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
+import com.android.tools.smali.dexlib2.Format
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.ReferenceType
 import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.reference.Reference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction10t
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction10x
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction21s
@@ -89,6 +93,18 @@ class AllowScreenshotsHookTest {
         val context = PatchContexts.of(listOf(extensionCaller()))
         val refusal = assertThrows(PatchException::class.java) { context.routeWindowFlags() }
         assertTrue(refusal.message, refusal.message.orEmpty().contains("found no Window.setFlags"))
+    }
+
+    /** A call in a form the patch can't move fails it before any call has moved, wherever it is. */
+    @Test
+    fun aCallItCantMoveFailsThePatchBeforeAnyMoves() {
+        val context = PatchContexts.of(listOf(helper(), caller(), oddCaller()))
+        val screen = caller().methods.single().instructions().map(::text)
+        val refusal = assertThrows(PatchException::class.java) { context.routeWindowFlags() }
+        assertTrue(refusal.message, refusal.message.orEmpty().contains("$ODD_CALLER->show calls window flags in a form it can't move"))
+        assertEquals("a call moved", screen, context.mutableClassDefBy(CALLER).methods.single().instructions().map(::text))
+        val mark = context.mutableClassDefBy(HELPER).methods.single { it.name == "mark" }
+        assertEquals("the helper's mark moved", listOf(SET_WINDOW_FLAGS), mark.instructions().calls())
     }
 
     /**
@@ -168,6 +184,7 @@ class AllowScreenshotsHookTest {
         const val HELPER = "Lfixture/SecureWindows;"
         const val CALLER = "Lfixture/Screen;"
         const val EXTENSION_CALLER = "Lapp/hushgram/extension/instagram/direct/ScreenshotBlock;"
+        const val ODD_CALLER = "Lfixture/OddScreen;"
         val SHAPE = listOf("Landroid/view/Window;", "Ljava/lang/String;")
 
         fun windowCall(name: String, registers: List<Int>) = ImmutableInstruction35c(
@@ -213,6 +230,20 @@ class AllowScreenshotsHookTest {
             )
             val show = ImmutableMethod(CALLER, "show", emptyList(), "V", AccessFlags.PUBLIC.value, null, null, code)
             return ImmutableClassDef(CALLER, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", null, null, null, null, listOf(show))
+        }
+
+        /** A setFlags call that's neither a five-register nor a range call, which has no stand-in form. */
+        class OddCall : ImmutableInstruction(Opcode.INVOKE_VIRTUAL), ReferenceInstruction {
+            override fun getFormat(): Format = Format.Format35c
+            override fun getReference(): Reference = ImmutableMethodReference("Landroid/view/Window;", "setFlags", listOf("I", "I"), "V")
+            override fun getReferenceType(): Int = ReferenceType.METHOD
+        }
+
+        /** A screen whose one window flag call is an [OddCall]. */
+        fun oddCaller(): ClassDef {
+            val code = ImmutableMethodImplementation(3, listOf(OddCall(), ImmutableInstruction10x(Opcode.RETURN_VOID)), null, null)
+            val show = ImmutableMethod(ODD_CALLER, "show", emptyList(), "V", AccessFlags.PUBLIC.value, null, null, code)
+            return ImmutableClassDef(ODD_CALLER, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", null, null, null, null, listOf(show))
         }
 
         /** The extension's own stand-in, which calls the real setFlags and must keep doing so. */

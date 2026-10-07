@@ -27,6 +27,7 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
@@ -124,7 +125,9 @@ internal fun liftScreenshotBlock(secure: MutableMethod) {
 
 /**
  * Every Window.setFlags and Window.addFlags call outside the extension goes to the extension's
- * stand-in instead, with the same registers, so the window comes first. Returns how many moved.
+ * stand-in instead, with the same registers, so the window comes first. Each call's stand-in is
+ * written out before the first one moves, so a call in a form it can't move fails the patch with
+ * nothing changed. Returns how many moved.
  */
 internal fun BytecodePatchContext.routeWindowFlags(): Int {
     val callers = mutableListOf<Method>()
@@ -132,25 +135,32 @@ internal fun BytecodePatchContext.routeWindowFlags(): Int {
         if (!classDef.type.startsWith(EXTENSION_ROOT)) classDef.methods.filterTo(callers) { it.windowFlagCalls().isNotEmpty() }
     }
     if (callers.isEmpty()) refuse("found no Window.setFlags or Window.addFlags call")
+    val moves = callers.map { caller ->
+        val code = caller.implementation!!.instructions.toList()
+        caller to caller.windowFlagCalls().map { index -> index to caller.standInFor(code[index]) }
+    }
     var routed = 0
-    for (caller in callers) {
+    for ((caller, calls) in moves) {
         val method = mutableClassDefBy(caller.definingClass).methods.single {
             it.name == caller.name && it.returnType == caller.returnType &&
                 it.parameterTypes.map(Any::toString) == caller.parameterTypes.map(Any::toString)
         }
-        for (index in method.windowFlagCalls()) {
-            val call = method.getInstruction(index)
-            val standIn = WINDOW_FLAG_STAND_INS.getValue((call as ReferenceInstruction).reference.toString())
-            val smali = when (call) {
-                is FiveRegisterInstruction -> listOf(call.registerC, call.registerD, call.registerE).take(call.registerCount)
-                    .joinToString(prefix = "invoke-static { ", postfix = " }, $standIn") { "v$it" }
-                is RegisterRangeInstruction ->
-                    "invoke-static/range { v${call.startRegister} .. v${call.startRegister + call.registerCount - 1} }, $standIn"
-                else -> refuse("${method.definingClass}->${method.name} calls window flags in a form it can't move")
-            }
+        for ((index, smali) in calls) {
             method.replaceInstruction(index, smali)
             routed++
         }
     }
     return routed
+}
+
+/** The stand-in call for this method's window flag [call], on the same registers. */
+private fun Method.standInFor(call: Instruction): String {
+    val standIn = WINDOW_FLAG_STAND_INS.getValue((call as ReferenceInstruction).reference.toString())
+    return when (call) {
+        is FiveRegisterInstruction -> listOf(call.registerC, call.registerD, call.registerE).take(call.registerCount)
+            .joinToString(prefix = "invoke-static { ", postfix = " }, $standIn") { "v$it" }
+        is RegisterRangeInstruction ->
+            "invoke-static/range { v${call.startRegister} .. v${call.startRegister + call.registerCount - 1} }, $standIn"
+        else -> refuse("$definingClass->$name calls window flags in a form it can't move")
+    }
 }
