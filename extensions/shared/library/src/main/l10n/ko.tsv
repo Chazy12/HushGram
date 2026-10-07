@@ -555,3 +555,9 @@ Pulling down to refresh Home, Reels or another list asks first. Cancel keeps wha
 Refresh	새로고침
 Refresh this list?	이 목록을 새로고침할까요?
 Tapping the Like button under a post asks first, so a stray tap doesn't like or unlike it. A double tap isn't asked about.	게시물 아래의 좋아요 버튼을 누르면 먼저 물어보므로 실수로 눌러도 좋아요가 눌리거나 취소되지 않습니다. 두 번 탭할 때는 묻지 않습니다.
+Adds a row next to Download on a reel and a feed video that plays it in an app you pick, such as VLC. The player streams it from Instagram's servers.	릴스와 피드 동영상의 다운로드 옆에 VLC 같은 원하는 앱에서 재생하는 항목을 추가합니다. 플레이어는 Instagram 서버에서 스트리밍합니다.
+Couldn't open another player	다른 플레이어를 열 수 없습니다
+No app on this phone can play this video	이 휴대전화에는 이 동영상을 재생할 수 있는 앱이 없습니다
+Open in another player	다른 플레이어에서 열기
+Open with	다음으로 열기
+This video has no file another player can open	이 동영상에는 다른 플레이어가 열 수 있는 파일이 없습니다

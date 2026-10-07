@@ -556,3 +556,9 @@ Pulling down to refresh Home, Reels or another list asks first. Cancel keeps wha
 Refresh	Aktualisieren
 Refresh this list?	Diese Liste aktualisieren?
 Tapping the Like button under a post asks first, so a stray tap doesn't like or unlike it. A double tap isn't asked about.	Ein Tippen auf den Like-Button unter einem Beitrag fragt erst nach, damit ein versehentliches Tippen ihn nicht liket oder das Like entfernt. Bei einem Doppeltippen wird nicht gefragt.
+Adds a row next to Download on a reel and a feed video that plays it in an app you pick, such as VLC. The player streams it from Instagram's servers.	Fügt bei einem Reel und einem Video im Feed neben Herunterladen eine Zeile hinzu, die es in einer App deiner Wahl abspielt, etwa VLC. Der Player streamt es von den Servern von Instagram.
+Couldn't open another player	Anderer Player konnte nicht geöffnet werden
+No app on this phone can play this video	Keine App auf diesem Telefon kann dieses Video abspielen
+Open in another player	In anderem Player öffnen
+Open with	Öffnen mit
+This video has no file another player can open	Dieses Video hat keine Datei, die ein anderer Player öffnen kann

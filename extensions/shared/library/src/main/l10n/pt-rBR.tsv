@@ -556,3 +556,9 @@ Pulling down to refresh Home, Reels or another list asks first. Cancel keeps wha
 Refresh	Atualizar
 Refresh this list?	Atualizar esta lista?
 Tapping the Like button under a post asks first, so a stray tap doesn't like or unlike it. A double tap isn't asked about.	Tocar no botão Curtir embaixo de um post pergunta antes, para que um toque sem querer não curta nem descurta. O toque duplo não pergunta.
+Adds a row next to Download on a reel and a feed video that plays it in an app you pick, such as VLC. The player streams it from Instagram's servers.	Adiciona uma linha ao lado de Baixar em um reel e em um vídeo do feed que o reproduz no app que você escolher, como o VLC. O player transmite direto dos servidores do Instagram.
+Couldn't open another player	Não foi possível abrir outro player
+No app on this phone can play this video	Nenhum app deste celular consegue reproduzir este vídeo
+Open in another player	Abrir em outro player
+Open with	Abrir com
+This video has no file another player can open	Este vídeo não tem um arquivo que outro player consiga abrir

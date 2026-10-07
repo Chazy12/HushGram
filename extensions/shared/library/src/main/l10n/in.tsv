@@ -556,3 +556,9 @@ Pulling down to refresh Home, Reels or another list asks first. Cancel keeps wha
 Refresh	Muat ulang
 Refresh this list?	Muat ulang daftar ini?
 Tapping the Like button under a post asks first, so a stray tap doesn't like or unlike it. A double tap isn't asked about.	Mengetuk tombol Suka di bawah postingan akan bertanya dulu, jadi ketukan tak sengaja tidak menyukai atau membatalkan suka. Ketuk dua kali tidak ditanyakan.
+Adds a row next to Download on a reel and a feed video that plays it in an app you pick, such as VLC. The player streams it from Instagram's servers.	Menambahkan baris di sebelah Unduh pada reel dan video di feed yang memutarnya di aplikasi pilihan Anda, seperti VLC. Pemutar mengalirkannya dari server Instagram.
+Couldn't open another player	Tidak dapat membuka pemutar lain
+No app on this phone can play this video	Tidak ada aplikasi di ponsel ini yang dapat memutar video ini
+Open in another player	Buka di pemutar lain
+Open with	Buka dengan
+This video has no file another player can open	Video ini tidak memiliki file yang dapat dibuka pemutar lain

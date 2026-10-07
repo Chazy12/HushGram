@@ -556,3 +556,9 @@ Pulling down to refresh Home, Reels or another list asks first. Cancel keeps wha
 Refresh	Yenile
 Refresh this list?	Bu liste yenilensin mi?
 Tapping the Like button under a post asks first, so a stray tap doesn't like or unlike it. A double tap isn't asked about.	Bir gönderinin altındaki Beğen düğmesine dokunmak önce sorar, böylece yanlışlıkla bir dokunuş onu beğenmez veya beğeniyi kaldırmaz. İki kez dokunmada sorulmaz.
+Adds a row next to Download on a reel and a feed video that plays it in an app you pick, such as VLC. The player streams it from Instagram's servers.	Bir Reels videosunda ve akıştaki bir videoda İndir'in yanına, onu VLC gibi seçtiğin bir uygulamada oynatan bir satır ekler. Oynatıcı videoyu Instagram'ın sunucularından akışla oynatır.
+Couldn't open another player	Başka bir oynatıcı açılamadı
+No app on this phone can play this video	Bu telefonda bu videoyu oynatabilecek bir uygulama yok
+Open in another player	Başka bir oynatıcıda aç
+Open with	Birlikte aç
+This video has no file another player can open	Bu videonun başka bir oynatıcının açabileceği bir dosyası yok
