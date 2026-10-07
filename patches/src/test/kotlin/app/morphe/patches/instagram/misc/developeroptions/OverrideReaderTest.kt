@@ -67,6 +67,10 @@ class OverrideReaderTest {
             "two session field paths" to classes("", ambiguousPath = true),
             "wrong constructor role" to classes("", wrongRole = true),
             "wrong inlined name role" to classes("", wrongRole = true, inlined = true),
+            "type field swapped with another int" to classes("", swappedType = true),
+            "a file write one call below the resolver" to classes("", deepWrite = true),
+            "a reload in an override of the session factory" to classes("",
+                factoryOverride = "invoke-static { }, Lfixture/NativeTable;->reloadOverridesTable()V"),
             "missing schema bridge" to valid.map { clazz -> if (clazz.type != OVERRIDE_BRIDGE) clazz else
                 clazz(OVERRIDE_BRIDGE, methods = clazz.methods.filter { it.name != "getOverrideSchemaNative" }.map(ImmutableMethod::of)) },
         )
@@ -107,6 +111,14 @@ class OverrideReaderTest {
         assertReader(patch, patch.findOverrideReader(editor()))
     }
 
+    /** The check follows a virtual call into the override a subclass gives it, not only the declared body. */
+    @Test fun anOverrideOfTheSessionFactoryIsChecked() {
+        val patch = PatchContexts.of(classes("", factoryOverride = "nop"))
+        val reader = patch.findOverrideReader(editor())
+        assertTrue(reader.reach.methods.toString(), "${type("FactoryImpl", "")}->forSession($user)${type("Manager", "")}" in reader.reach.methods)
+        assertEquals(setOf(type("Factory", "")), reader.reach.open.filter { it == type("Factory", "") }.toSet())
+    }
+
     @Test fun eachDeclaredFixtureResolvesTheSessionFileAndTypedSchemaWithoutNativeWrites() {
         val versions = AppCompatibilities.instagram().single().targets.mapNotNull { it.version }.toSet()
         val checked = mutableSetOf<String>()
@@ -133,11 +145,32 @@ class OverrideReaderTest {
                     }
                 }
             }
-            val native = (FixtureDex.classes(bundle, types).values + roots).distinctBy { it.type }
+            var native = (FixtureDex.classes(bundle, types).values + roots).distinctBy { it.type }
+            // The slice grows until it holds everything the read-only check reaches, and the
+            // subclasses whose overrides it follows, so the check sees what it sees in the app.
+            var reader: OverrideReader
+            var rounds = 0
+            while (true) {
+                reader = PatchContexts.of(native + bridge() + projection()).let { it.findOverrideReader(it.findOverrideEditor()) }
+                val have = native.map { it.type }.toSet()
+                val below = reader.reach.open.toMutableSet()
+                val more = mutableListOf<ClassDef>()
+                FixtureDex.forEach(bundle) { dex ->
+                    for (clazz in dex.classes) {
+                        if (clazz.type in have || (clazz.type !in reader.reach.missing && clazz.superclass !in below)) continue
+                        more += ImmutableClassDef.of(clazz)
+                        below += clazz.type
+                    }
+                }
+                if (more.isEmpty()) break
+                native = (native + more).distinctBy { it.type }
+                assertTrue("${bundle.name}: the read-only check's slice keeps growing", ++rounds <= READ_DEPTH + 4)
+            }
             val patch = PatchContexts.of(native + bridge() + projection())
-            val reader = patch.findOverrideReader(patch.findOverrideEditor())
             patch.fillOverrideReader(reader, patch.findOverrideEditor())
             assertReader(patch, reader)
+            assertTrue("${bundle.name}: the check followed the session factory into an override: ${reader.reach.methods}",
+                reader.reach.methods.any { it.endsWith(reader.sessionFactory.substringAfter("->")) && it != reader.sessionFactory })
             checked += version
         }
         assertEquals("declared build has no fixture", versions, checked)
@@ -149,6 +182,7 @@ class OverrideReaderTest {
         val references = methods.flatMap { it.implementation!!.instructions }.mapNotNull { (it as? ReferenceInstruction)?.reference?.toString() }
         assertTrue(references.containsAll(listOf(reader.sessionFactory, reader.fileResolver, reader.schemaGetter, reader.nativeId)))
         assertFalse(references.any { it.contains("updateOverride") || it.contains("importOverrides") || it.contains("reload") || it.contains("removeOverride") })
+        assertTrue(reader.reach.methods.containsAll(listOf(reader.sessionFactory, reader.fileResolver, reader.schemaGetter)))
         val store = methods.single { it.name == "getOverrideStoreNative" }.implementation!!.instructions.toList()
         assertEquals(Opcode.INSTANCE_OF, store.first().opcode)
         assertTrue(store.indexOfFirst { (it as? ReferenceInstruction)?.reference?.toString() == user } <
@@ -158,7 +192,8 @@ class OverrideReaderTest {
     private fun classes(prefix: String, duplicateSchema: Boolean = false, privateField: Boolean = false,
                         wrongReceiver: Boolean = false, overwritten: Boolean = false, wrongRole: Boolean = false,
                         branch: String? = null, wrongCast: Boolean = false, ambiguousPath: Boolean = false,
-                        inlined: Boolean = false): List<ClassDef> {
+                        inlined: Boolean = false, swappedType: Boolean = false, deepWrite: Boolean = false,
+                        factoryOverride: String? = null): List<ClassDef> {
         val factory = type("Factory", prefix); val manager = type("Manager", prefix); val wrapper = type("Wrapper", prefix)
         val model = type("Model", prefix); val schema = type("Schema", prefix); val entry = type("Entry", prefix)
         val diagnostic = type("Diagnostics", prefix); val callback = type("Callback", prefix); val names = type("Names", prefix)
@@ -205,13 +240,14 @@ class OverrideReaderTest {
                 const-string v0, "mobileconfig"
                 invoke-virtual { p0 }, $model->getDataDirPath()Ljava/lang/String;
                 const/4 v0, 0x0
+                ${if (deepWrite) "invoke-static { v0 }, ${type("Files", prefix)}->ensure(Ljava/io/File;)V" else "nop"}
                 return-object v0
             """.trimIndent()), method(model, "schema", emptyList(), schema, 14, public, getSchema)) +
                 if (duplicateSchema) listOf(method(model, "otherSchema", emptyList(), schema, 14, public, getSchema)) else emptyList()),
             clazz(schema, fields = listOf(field(schema, "parameters", "Ljava/util/List;", public or AccessFlags.FINAL.value))),
             clazz(entry, fields = ctorFields.mapIndexed { i, name -> field(entry, name, ctorTypes[i], public) }, methods = listOf(
                 method(entry, "<init>", ctorTypes, "V", 13, public or AccessFlags.CONSTRUCTOR.value, ctor),
-                method(entry, "parameterId", emptyList(), "J", 4, public, "iget v0, p0, $entry->kind:I\nconst-wide v0, 0x0\nreturn-wide v0"),
+                method(entry, "parameterId", emptyList(), "J", 4, public, "iget v0, p0, $entry->${if (swappedType) "bits" else "kind"}:I\nconst-wide v0, 0x0\nreturn-wide v0"),
             ) + if (inlined) emptyList() else listOf(
                 method(entry, "configLabel", emptyList(), "Ljava/lang/String;", 3, public, label(entry, "configName", configIndex)),
                 method(entry, "parameterLabel", emptyList(), "Ljava/lang/String;", 3, public, label(entry, "name", "index")),
@@ -222,6 +258,13 @@ class OverrideReaderTest {
             )),
             clazz(callback, interfaces = listOf("Lcom/facebook/mobileconfig/MobileConfigUpdateOverridesTableCallback;"), methods = listOf(method(callback, "onOverridesFileUpdated", emptyList(), "V", 2, public, "const/4 v0, 0x0\ninvoke-static { v0 }, $model->file($model)Ljava/io/File;\nreturn-void"))),
             bridge(), projection()
+        ) + listOfNotNull(
+            if (!deepWrite) null else clazz(type("Files", prefix), methods = listOf(method(type("Files", prefix), "ensure",
+                listOf("Ljava/io/File;"), "V", 1, static, "invoke-virtual { p0 }, Ljava/io/File;->mkdirs()Z\nreturn-void"))),
+            factoryOverride?.let { body ->
+                ImmutableClassDef(type("FactoryImpl", prefix), public, factory, emptyList(), null, null, emptyList(), listOf(
+                    method(type("FactoryImpl", prefix), "forSession", listOf(user), manager, 3, public, "$body\nconst/4 v0, 0x0\nreturn-object v0")))
+            },
         )
     }
 
