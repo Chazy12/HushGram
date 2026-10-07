@@ -333,6 +333,13 @@ tasks.register("verifyAndroidBoundaries") {
                 "typingAloneStillGetsMessages[28]", "typingAloneStillGetsMessages[37]",
                 "typingSwitchStartsOffUnderMessagesPersistsAndHonorsPause[28]",
                 "typingSwitchStartsOffUnderMessagesPersistsAndHonorsPause[37]"),
+            "app.hushgram.extension.instagram.settings.GhostModeSettingsTest" to listOf(
+                "theSwitchListFollowsTheBuild[28]", "theSwitchListFollowsTheBuild[37]",
+                "oneGhostPatchGetsNoMasterSwitch[28]", "oneGhostPatchGetsNoMasterSwitch[37]",
+                "itSitsFirstUnderAdsAndPrivacyAndStartsAsTheSwitchesAre[28]", "itSitsFirstUnderAdsAndPrivacyAndStartsAsTheSwitchesAre[37]",
+                "aTapTurnsEverySwitchAndEachRowShowsIt[28]", "aTapTurnsEverySwitchAndEachRowShowsIt[37]",
+                "itFollowsTheOwnSwitchesAndPauseStillWins[28]", "itFollowsTheOwnSwitchesAndPauseStillWins[37]",
+                "searchFindsItByName[28]", "searchFindsItByName[37]"),
             "app.hushgram.extension.instagram.feed.SwipeToCreateTest" to listOf(
                 "withTheSwitchOnASwipeTowardTheCameraIsHeld[28]", "withTheSwitchOnASwipeTowardTheCameraIsHeld[37]",
                 "everyOtherMoveGoesOn[28]", "everyOtherMoveGoesOn[37]",

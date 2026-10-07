@@ -161,7 +161,7 @@ Settings switches and action rows expose their current name and explanation to s
 
 At the top, a card says whether HushGram is on or paused. Below it:
 
-- **Ads and privacy** holds the switches for Hide ads, Sanitize sharing links, Open links in external browser and Disable analytics. Source builds can also include View DM photos and videos anonymously. It starts off and has its own switch.
+- **Ads and privacy** holds the switches for Hide ads, Sanitize sharing links, Open links in external browser and Disable analytics. Source builds can also include View DM photos and videos anonymously. It starts off and has its own switch. When two or more of the switches that keep what you do to yourself are in your build, Ghost mode sits at the top and turns them on or off together: View stories anonymously, Read messages without the seen receipt, View DM photos and videos anonymously, Hide that you're typing and Don't report screenshots. It's on while all of them are, and each keeps its own switch.
 - **Feed** holds Start Home on Following's two switches, Start Home on Following and Only accounts you follow, Hide suggested posts' five: Hide suggested accounts, Hide suggested posts, Hide Threads posts, Hide surveys and Hide shopping, and the switches for Hide the home feed, Stop swipe to create, Stop swiping between tabs, Full resolution photos and Ask for larger photos.
 - **Meta AI** holds Hide Meta AI's four switches: Hide Meta AI in search and Home's bar, Hide Meta AI posts, Hide About this reel and Hide Ask Meta AI in About this reel. The last two start off.
 - **Explore** holds the switch for Hide the Explore grid.

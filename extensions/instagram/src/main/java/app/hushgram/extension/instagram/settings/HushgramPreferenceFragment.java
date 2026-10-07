@@ -152,6 +152,9 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
     /** Shown only while Allow importing overrides is on; absent rows can't be found or searched. */
     @Nullable private Row importOverrides, restoreOverrides, discardOverrides, resetOverrides;
     @Nullable private PreferenceCategory developerSection;
+    /** Ghost mode's switch, and the switches it turns, both set once the page is built. */
+    @Nullable private SwitchPreference ghostMode;
+    private List<BooleanSetting> ghostSwitches = new ArrayList<>();
     @Nullable static volatile String overrideImportFeedback, overrideRestoreFeedback, overrideDiscardFeedback, overrideResetFeedback;
 
     private String searchQuery = "";
@@ -303,6 +306,11 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         entry.addPreference(navigationRow(context));
 
         List<Preference> privacy = new ArrayList<>();
+        ghostSwitches = GhostMode.switches(build);
+        if (GhostMode.offered(ghostSwitches)) {
+            ghostMode = ghostModeRow(context);
+            privacy.add(ghostMode);
+        }
         if (build.contains(PatchFamily.HIDE_ADS)) {
             privacy.add(toggle(context, Settings.HIDE_ADS, L10n.t("Hide ads"),
                     L10n.t("Sponsored posts, reels and stories. Instagram is told no ad went in, so no gap is left.")));
@@ -904,7 +912,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                 Preference row = group.getPreference(j);
                 rows.add(row);
                 String key = row.getKey();
-                StringBuilder aliases = new StringBuilder(row == clearPositions
+                StringBuilder aliases = new StringBuilder(row == ghostMode ? "ghost mode " : "");
+                aliases.append(row == clearPositions
                         ? L10n.t("Clear remembered positions")
                         : row.getTitle() == null ? "" : row.getTitle().toString());
                 for (PatchFamily family : build) {
@@ -963,12 +972,47 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
 
     @Override protected void updateUIToSettingValues() {
         restoreSearchRows();
-        try { super.updateUIToSettingValues(); } finally { showOverrideImport(); filterSettings(); }
+        try { super.updateUIToSettingValues(); } finally { showOverrideImport(); showGhostMode(); filterSettings(); }
     }
 
     @Override protected void updateUIAvailability() {
         restoreSearchRows();
-        try { super.updateUIAvailability(); } finally { showOverrideImport(); filterSettings(); }
+        try { super.updateUIAvailability(); } finally { showOverrideImport(); showGhostMode(); filterSettings(); }
+    }
+
+    /** Ghost mode shows on only while every switch it turns is on, whichever way they got there. */
+    private void showGhostMode() {
+        SwitchPreference row = ghostMode;
+        if (row != null) row.setChecked(GhostMode.on(ghostSwitches));
+    }
+
+    /**
+     * Ghost mode's row. It keeps no value: a tap saves the new value to each switch it turns, through
+     * that switch's own row when the page has one, so each row shows its new state, and a toast
+     * says what happened.
+     */
+    private SwitchPreference ghostModeRow(Context context) {
+        SwitchPreference row = new Toggle(context);
+        row.setPersistent(false);
+        row.setTitle(L10n.t("Ghost mode"));
+        row.setSummary(L10n.t("Turns the switches that keep what you do to yourself on or off in one go, like View "
+                + "stories anonymously and Hide that you're typing. Each one keeps its own switch."));
+        row.setOnPreferenceChangeListener((preference, value) -> {
+            boolean on = Boolean.TRUE.equals(value);
+            for (BooleanSetting setting : ghostSwitches) {
+                Preference own = findPreference(setting.key);
+                if (own instanceof TwoStatePreference && own.isPersistent()) ((TwoStatePreference) own).setChecked(on);
+                else setting.save(on);
+            }
+            showGhostMode();
+            Utils.showToastShort(GhostMode.all(ghostSwitches, on)
+                    ? on ? L10n.t("Ghost mode is on, and so is each of its switches.")
+                            : L10n.t("Ghost mode is off, and so is each of its switches.")
+                    : L10n.t("Couldn't change every Ghost mode switch. Check them below."));
+            return false;
+        });
+        row.setChecked(GhostMode.on(ghostSwitches));
+        return row;
     }
 
     /** Import, Restore and Discard exist on the page, and in search, only while their switch is on. */
