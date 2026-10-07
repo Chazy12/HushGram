@@ -275,4 +275,9 @@ public final class SettingsStatus {
     public static boolean keepInChat() {
         return false;
     }
+
+    /** Rewritten by the View live anonymously patch. */
+    public static boolean liveSeen() {
+        return false;
+    }
 }

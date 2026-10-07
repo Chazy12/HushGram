@@ -2189,6 +2189,43 @@
       "options": []
     },
     {
+      "name": "View live anonymously",
+      "description": "Keeps you off the viewer list of the lives you watch, so the host isn't told you're there. Your own lives still count their viewers.",
+      "category": "Privacy",
+      "use": true,
+      "dependencies": [
+        "BytecodePatch",
+        "HushGram settings"
+      ],
+      "compatiblePackages": {
+        "com.instagram.android": [
+          "450.0.0.50.77"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Instagram",
+          "packageName": "com.instagram.android",
+          "description": null,
+          "appIconColor": 14757996,
+          "signatures": [
+            "3a10c50c18ba937506c2875e9047be74f8fd8b86fae2ff9feaa50a81fcb4c014",
+            "5f3e50f435583c9ae626302a71f7340044087a7e2c60adacfc254205a993e305"
+          ],
+          "targets": [
+            {
+              "version": "450.0.0.50.77",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 385611438
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "View stories anonymously",
       "description": "Holds story-view reports while its switch is on. Replying or reacting still shows you, and stories you've watched keep showing as new. An optional Mark as seen button selects stories to send.",
       "category": "Privacy",

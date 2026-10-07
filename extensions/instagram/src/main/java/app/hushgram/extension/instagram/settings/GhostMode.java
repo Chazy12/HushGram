@@ -24,6 +24,7 @@ final class GhostMode {
         if (build == null) return Collections.emptyList();
         List<BooleanSetting> switches = new ArrayList<>();
         if (build.contains(PatchFamily.STORY_SEEN)) switches.add(Settings.VIEW_STORIES_ANONYMOUSLY);
+        if (build.contains(PatchFamily.LIVE_SEEN)) switches.add(Settings.VIEW_LIVE_ANONYMOUSLY);
         if (build.contains(PatchFamily.THREAD_SEEN)) switches.add(Settings.READ_WITHOUT_SEEN_RECEIPT);
         if (build.contains(PatchFamily.DM_MEDIA_SEEN)) switches.add(Settings.VIEW_DM_MEDIA_ANONYMOUSLY);
         if (build.contains(PatchFamily.TYPING)) switches.add(Settings.HIDE_TYPING);

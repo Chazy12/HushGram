@@ -35,10 +35,10 @@ import app.hushgram.extension.shared.settings.PauseForTests;
 @SuppressWarnings("deprecation")
 public class GhostModeSettingsTest {
     private static final BooleanSetting[] GHOST = {Settings.VIEW_STORIES_ANONYMOUSLY,
-            Settings.READ_WITHOUT_SEEN_RECEIPT, Settings.VIEW_DM_MEDIA_ANONYMOUSLY, Settings.HIDE_TYPING,
+            Settings.VIEW_LIVE_ANONYMOUSLY, Settings.READ_WITHOUT_SEEN_RECEIPT, Settings.VIEW_DM_MEDIA_ANONYMOUSLY, Settings.HIDE_TYPING,
             Settings.HIDE_SCREENSHOTS};
     private static final EnumSet<PatchFamily> ALL_GHOST = EnumSet.of(PatchFamily.HIDE_ADS, PatchFamily.STORY_SEEN,
-            PatchFamily.THREAD_SEEN, PatchFamily.DM_MEDIA_SEEN, PatchFamily.TYPING, PatchFamily.SCREENSHOT_REPORTS);
+            PatchFamily.LIVE_SEEN, PatchFamily.THREAD_SEEN, PatchFamily.DM_MEDIA_SEEN, PatchFamily.TYPING, PatchFamily.SCREENSHOT_REPORTS);
 
     @Rule public final SettingsContextRule settings = new SettingsContextRule();
     private ActivityController<Activity> controller;

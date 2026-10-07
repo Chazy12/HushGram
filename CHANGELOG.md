@@ -6,7 +6,9 @@ Every HushGram release, newest first.
 
 * **Instagram:** New patch, Group Instagram's notifications, in simple mode with its switch off. With Group notifications on, every notification Instagram posts joins one group that shows how many it holds, so they stop filling the shade. Group by type gives each kind its own group. Tapping a notification still opens what it did.
 
-* **Instagram:** HushGram settings have a Ghost mode switch at the top of Ads and privacy. One tap turns View stories anonymously, Read messages without the seen receipt, View DM photos and videos anonymously, Hide that you're typing and Don't report screenshots on or off together, each of their rows shows the change, and a toast says so. Pause still turns them all off. It shows when at least two of those patches are in your build.
+* **Instagram:** New View live anonymously patch. With its switch on under Stories, a live you watch doesn't put you on the host's viewer list, because the heartbeat that says you're watching never goes out. Commenting or reacting still shows you, and your own lives count their viewers as before. It's in simple mode with the switch off, and Ghost mode turns it with the other switches.
+
+* **Instagram:** HushGram settings have a Ghost mode switch at the top of Ads and privacy. One tap turns View stories anonymously, View live anonymously, Read messages without the seen receipt, View DM photos and videos anonymously, Hide that you're typing and Don't report screenshots on or off together, each of their rows shows the change, and a toast says so. Pause still turns them all off. It shows when at least two of those patches are in your build.
 
 * **Instagram:** New Keep in chat patch. With its switch on under Messages, view once and replayable photos and videos stay in the chat as if they'd been sent with Keep in chat, so you can open them again. It's in simple mode with the switch off.
 

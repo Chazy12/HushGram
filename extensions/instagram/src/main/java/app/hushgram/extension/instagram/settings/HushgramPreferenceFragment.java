@@ -585,6 +585,10 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     L10n.t("Adds an eye button to the top of each story while you view anonymously. Tap it to show up "
                             + "on that story's viewer list. The other stories stay hidden.")));
         }
+        if (build.contains(PatchFamily.LIVE_SEEN)) {
+            stories.add(toggle(context, Settings.VIEW_LIVE_ANONYMOUSLY, L10n.t("View live anonymously"),
+                    L10n.t("Lives you watch don't put you on the host's viewer list, so they aren't told you're there. Commenting or reacting still shows you, and the viewer count you see stops updating.")));
+        }
         if (build.contains(PatchFamily.STORY_DOWNLOAD)) {
             stories.add(toggle(context, Settings.DOWNLOAD_STORIES, L10n.t("Download on stories"),
                     L10n.t("Adds Download to the menu of anyone's story, photo or video, saved at your download quality. "

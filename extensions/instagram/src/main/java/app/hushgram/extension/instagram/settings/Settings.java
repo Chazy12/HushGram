@@ -196,6 +196,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_mark_stories_seen", FALSE);
 
     /**
+     * Lives you watch don't list you as a viewer
+     * ({@link app.hushgram.extension.instagram.stories.LiveSeen}). Off to start. Read before each
+     * heartbeat a live you watch would send.
+     */
+    public static final BooleanSetting VIEW_LIVE_ANONYMOUSLY = new BooleanSetting("hushgram_view_live_anonymously", FALSE);
+
+    /**
      * The rows of suggested reels between posts in the home feed, and the other feed units that
      * open the Reels viewer. A reel someone you follow posts is a post and stays.
      */

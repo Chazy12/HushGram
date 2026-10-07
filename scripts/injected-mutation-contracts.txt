@@ -97,6 +97,12 @@ start-call Lapp/hushgram/extension/instagram/direct/MessagesLock;->notification(
 once-call Lapp/hushgram/extension/instagram/direct/MessagesLock;->notification(Landroid/app/Notification;)Landroid/app/Notification; in instance (Ljava/lang/String;ILandroid/app/Notification;)V holding android.support.useSideChannel
 start-call Lapp/hushgram/extension/instagram/direct/MessagesLock;->holdBanner()Z in static (Landroid/content/Context;L*;L*;)V holding no\sforeground\sactivity\sto\srender\sin-app\snotification
 once-call Lapp/hushgram/extension/instagram/direct/MessagesLock;->holdBanner()Z in static (Landroid/content/Context;L*;L*;)V holding no\sforeground\sactivity\sto\srender\sin-app\snotification
+# View live anonymously asks LiveSeen.hold() first where the live heartbeat manager's tick asks for
+# a viewer's or guest's heartbeat (IgLiveHeartbeatManager.A00 calling 036w.A00 on 450, the request
+# adding live_with_eligibility), and the tick returns its plain result while the switch is on. The
+# host's own heartbeat (0hJm.A00 straight from the tick) is left alone. Left out, the host's viewer
+# list shows you; twice or elsewhere, it isn't the hook.
+once-call Lapp/hushgram/extension/instagram/stories/LiveSeen;->hold()Z in static (L*;Lcom/instagram/video/live/mvvm/model/repository/core/IgLiveHeartbeatManager;L*;)Ljava/lang/Object; calling instance LX/036w;->A00(LX/0aFd;Ljava/lang/Integer;Ljava/lang/String;LX/0haL;)Ljava/lang/Object; holding call\sto\s'resume'\sbefore\s'invoke'\swith\scoroutine
 # Keep in chat hands the view mode the parser of a photo or video message's media reads ("once",
 # "replayable" or "permanent") to KeepInChat.viewMode() right before it stores it (06Oo's
 # unsafeParseFromJson on 450, storing 04h5.A0A). The voice message parser (04q2 on 450) reads the
