@@ -5,6 +5,7 @@
 package app.morphe.util
 
 import app.morphe.patches.instagram.ads.hideAdsPatch
+import app.morphe.patches.instagram.direct.calls.askBeforeCallPatch
 import app.morphe.patches.instagram.direct.instants.hideInstantsPatch
 import app.morphe.patches.instagram.direct.lock.lockMessagesPatch
 import app.morphe.patches.instagram.stories.live.viewLiveAnonymouslyPatch
@@ -82,6 +83,7 @@ import org.junit.Test
 /** Reviewed selection policy for every named patch, separate from each saved runtime choice. */
 class DefaultCatalogTest {
     private val neutral = listOf<Patch<*>>(
+        askBeforeCallPatch,
         changeLikeAnimationPatch,
         clearMediaCachePatch,
         copyCommentPatch,
@@ -165,7 +167,7 @@ class DefaultCatalogTest {
     }
 
     @Test fun initiallyNeutralControlsAreAvailableInSimpleMode() {
-        assertEquals(24, neutral.size)
+        assertEquals(25, neutral.size)
         neutral.forEach { assertEquals(it.name, true, it.use) }
     }
 
@@ -177,7 +179,7 @@ class DefaultCatalogTest {
     @Test fun generatedCatalogMatchesAllReviewedDeclarations() {
         val all = prior + neutral + optIn
         val declarations = all.associate { it.name!! to it.use }
-        assertEquals("every named patch needs one reviewed decision", 69, all.size)
+        assertEquals("every named patch needs one reviewed decision", 70, all.size)
         assertEquals("the review must not name a patch twice", all.size, declarations.size)
         val file = File("patches-list.json").takeIf(File::isFile) ?: File("../patches-list.json")
         val rows = JsonParser.parseString(file.readText()).asJsonObject.getAsJsonArray("patches")

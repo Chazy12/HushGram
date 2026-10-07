@@ -86,5 +86,6 @@ public final class FamilyNames {
     public static final String SCREENSHOT_REPORTS = "Don't report screenshots";
     public static final String SCREENSHOT_BLOCK = "Allow screenshots";
     public static final String KEEP_IN_CHAT = "Keep in chat";
+    public static final String ASK_BEFORE_CALL = "Ask before a call";
     public static final String LIVE_SEEN = "View live anonymously";
 }

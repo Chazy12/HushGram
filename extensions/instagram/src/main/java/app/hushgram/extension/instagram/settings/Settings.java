@@ -225,6 +225,12 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting KEEP_IN_CHAT = new BooleanSetting("hushgram_keep_in_chat", FALSE);
 
     /**
+     * A call started from a chat waits for a question first
+     * ({@link app.hushgram.extension.instagram.direct.CallConfirm}). Off to start.
+     */
+    public static final BooleanSetting ASK_BEFORE_CALL = new BooleanSetting("hushgram_ask_before_call", FALSE);
+
+    /**
      * The Mark as seen button in the story viewer's header
      * ({@link app.hushgram.extension.instagram.stories.StorySeenButton}). Off to start. A story you
      * tap it on is sent as seen while the rest stay held back. Read each time a story is shown and

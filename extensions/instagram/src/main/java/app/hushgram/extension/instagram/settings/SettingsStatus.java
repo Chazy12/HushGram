@@ -313,6 +313,11 @@ public final class SettingsStatus {
         return false;
     }
 
+    /** Rewritten by the Ask before a call patch. */
+    public static boolean askBeforeCall() {
+        return false;
+    }
+
     /** Rewritten by the Keep in chat patch. */
     public static boolean keepInChat() {
         return false;
