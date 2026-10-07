@@ -256,6 +256,11 @@ no-call Landroid/content/pm/ShortcutManager;->addDynamicShortcuts(Ljava/util/Lis
 no-call Landroid/content/pm/ShortcutManager;->setDynamicShortcuts(Ljava/util/List;)Z outside Lapp/hushgram/extension/
 no-call Landroid/content/pm/ShortcutManager;->updateShortcuts(Ljava/util/List;)Z outside Lapp/hushgram/extension/
 no-call Landroid/content/pm/ShortcutManager;->removeAllDynamicShortcuts()V outside Lapp/hushgram/extension/
+# Group Instagram's notifications sends every notification Instagram posts to NotificationGroups,
+# which posts it in HushGram's group while the switch is on and as Instagram built it while it's
+# off. One left in Instagram's code is a notification that never joins the group.
+no-call Landroid/app/NotificationManager;->notify(ILandroid/app/Notification;)V outside Lapp/hushgram/extension/
+no-call Landroid/app/NotificationManager;->notify(Ljava/lang/String;ILandroid/app/Notification;)V outside Lapp/hushgram/extension/
 #
 # Not pinned:
 # Disable analytics also sends every load of Facebook's Graph logging address through endpoint().

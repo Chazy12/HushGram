@@ -329,6 +329,18 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_remove_bottom_space", TRUE, true);
 
     /**
+     * Every notification Instagram posts joins one group with a count
+     * ({@link app.hushgram.extension.instagram.misc.NotificationGroups}). Read at each post. Off to
+     * start.
+     */
+    public static final BooleanSetting GROUP_NOTIFICATIONS =
+            new BooleanSetting("hushgram_group_notifications", FALSE);
+
+    /** With {@link #GROUP_NOTIFICATIONS} on, a group per notification channel in place of one. */
+    public static final BooleanSetting GROUP_NOTIFICATIONS_BY_TYPE =
+            new BooleanSetting("hushgram_group_notifications_by_type", FALSE, parent(GROUP_NOTIFICATIONS));
+
+    /**
      * Follows you or Doesn't follow you beside the name on someone's profile
      * ({@link app.hushgram.extension.instagram.profile.FriendshipStatus}). Read each time Instagram
      * binds a profile's name.

@@ -658,6 +658,15 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                             + "away. Restart Instagram after changing it.")));
         }
 
+        if (build.contains(PatchFamily.NOTIFICATION_GROUPS)) {
+            PreferenceCategory notifications = category(screen, L10n.t("Notifications"));
+            notifications.addPreference(toggle(context, Settings.GROUP_NOTIFICATIONS, L10n.t("Group notifications"),
+                    L10n.t("Puts every notification from Instagram in one group that shows how many it holds, so they "
+                            + "don't fill your notification shade. Tapping one still opens it.")));
+            notifications.addPreference(toggle(context, Settings.GROUP_NOTIFICATIONS_BY_TYPE, L10n.t("Group by type"),
+                    L10n.t("A group for each kind of notification, such as comments or messages, in place of one group.")));
+        }
+
         // Any download patch brings this section, so each one that saves joins this condition.
         if (build.contains(PatchFamily.REEL_DOWNLOAD) || build.contains(PatchFamily.STORY_DOWNLOAD)
                 || build.contains(PatchFamily.VIDEO_DOWNLOAD)) {

@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** New patch, Group Instagram's notifications, in simple mode with its switch off. With Group notifications on, every notification Instagram posts joins one group that shows how many it holds, so they stop filling the shade. Group by type gives each kind its own group. Tapping a notification still opens what it did.
+
 * **Instagram:** Lock your messages can lock all of Instagram now. Its new Lock all of Instagram switch covers every screen until your phone's lock says it's you, and Lock again lets it wait 1, 5 or 15 minutes or an hour after you leave. Turning a lock on waits until you next leave Instagram, and HushGram settings ask your phone's lock first while one is locked.
 
 * **Instagram:** New Lock your messages patch. Turn its switch on under Messages and your inbox and chats stay covered until your fingerprint, face or screen lock says it's you. They lock again when you leave Instagram. While they're locked, message notifications say only New message, and the banner for a new message inside Instagram waits. It's in simple mode with the switch off.

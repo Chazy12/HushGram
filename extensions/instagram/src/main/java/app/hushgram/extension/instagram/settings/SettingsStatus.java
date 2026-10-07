@@ -136,6 +136,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean notificationGroups() {
+        return false;
+    }
+
     public static boolean friendshipStatus() {
         return false;
     }
