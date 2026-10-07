@@ -568,7 +568,6 @@ Save profile picture	Salvar foto do perfil
 Adds Save profile picture to the menu on someone's profile. Saves their picture at the largest size Instagram has.	Adiciona Salvar foto do perfil ao menu no perfil de alguém. Salva a foto no maior tamanho que o Instagram tiver.
 Show a post's exact time	Mostrar o horário exato de um post
 Posts in your feed and their comments show the date and time they went up, like Oct 2, 3:45 PM, instead of how long ago. Posts and comments you load after a change show it.	Os posts do seu feed e os comentários deles mostram a data e a hora em que foram publicados, como 2 de out., 15:45, em vez de há quanto tempo. Posts e comentários que você carregar depois de uma mudança mostram isso.
-Adds Details to the menu of a post in your feed: when it went up, who posted it, its media ID and the size Download saves, with a button that copies the file's direct link.	Adiciona Detalhes ao menu de um post do seu feed: quando foi publicado, quem postou, o ID da mídia e o tamanho que Baixar salva, com um botão que copia o link direto do arquivo.
 By @%1$s	Por @%1$s
 Close	Fechar
 Copy media link	Copiar link da mídia
@@ -581,3 +580,13 @@ Media link copied	Link da mídia copiado
 No direct link for this one	Não há link direto para este
 Posted %1$s	Postado em %1$s
 Size %1$d × %2$d	Tamanho %1$d × %2$d
+Adds Details to the menu of a post in your feed: when it went up, who posted it, its media ID and the size Download saves, with buttons that copy the file's direct link, the username and the caption.	Adiciona Detalhes ao menu de um post do seu feed: quando foi publicado, quem postou, o ID da mídia e o tamanho que Baixar salva, com botões que copiam o link direto do arquivo, o nome de usuário e a legenda.
+Caption	Legenda
+Caption copied	Legenda copiada
+Copy caption	Copiar legenda
+Copy username	Copiar nome de usuário
+Couldn't copy the caption	Não foi possível copiar a legenda
+Couldn't copy the username	Não foi possível copiar o nome de usuário
+Media link is the %1$d × %2$d file	O link da mídia é o arquivo de %1$d × %2$d
+Username	Nome de usuário
+Username copied	Nome de usuário copiado

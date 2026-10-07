@@ -567,7 +567,6 @@ Save profile picture	프로필 사진 저장
 Adds Save profile picture to the menu on someone's profile. Saves their picture at the largest size Instagram has.	다른 사람 프로필의 메뉴에 프로필 사진 저장을 추가합니다. Instagram에 있는 가장 큰 크기로 사진을 저장합니다.
 Show a post's exact time	게시물의 정확한 시간 표시
 Posts in your feed and their comments show the date and time they went up, like Oct 2, 3:45 PM, instead of how long ago. Posts and comments you load after a change show it.	피드의 게시물과 댓글에 얼마 전인지 대신 10월 2일 오후 3:45처럼 올라온 날짜와 시간이 표시됩니다. 변경 후에 불러오는 게시물과 댓글부터 적용됩니다.
-Adds Details to the menu of a post in your feed: when it went up, who posted it, its media ID and the size Download saves, with a button that copies the file's direct link.	피드 게시물의 메뉴에 세부 정보를 추가합니다. 올라온 시간, 게시한 사람, 미디어 ID, 다운로드가 저장하는 크기를 보여 주고 파일의 직접 링크를 복사하는 버튼이 있습니다.
 By @%1$s	게시자 @%1$s
 Close	닫기
 Copy media link	미디어 링크 복사
@@ -580,3 +579,13 @@ Media link copied	미디어 링크를 복사했습니다
 No direct link for this one	이 항목에는 직접 링크가 없습니다
 Posted %1$s	게시 시간 %1$s
 Size %1$d × %2$d	크기 %1$d × %2$d
+Adds Details to the menu of a post in your feed: when it went up, who posted it, its media ID and the size Download saves, with buttons that copy the file's direct link, the username and the caption.	피드 게시물의 메뉴에 세부 정보를 추가합니다. 올라온 시간, 게시한 사람, 미디어 ID, 다운로드가 저장하는 크기를 보여 주고 파일의 직접 링크, 사용자 이름, 캡션을 복사하는 버튼이 있습니다.
+Caption	캡션
+Caption copied	캡션을 복사했습니다
+Copy caption	캡션 복사
+Copy username	사용자 이름 복사
+Couldn't copy the caption	캡션을 복사할 수 없습니다
+Couldn't copy the username	사용자 이름을 복사할 수 없습니다
+Media link is the %1$d × %2$d file	미디어 링크는 %1$d × %2$d 파일입니다
+Username	사용자 이름
+Username copied	사용자 이름을 복사했습니다
