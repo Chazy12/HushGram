@@ -15,6 +15,7 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMuta
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.instagram.download.INSTAGRAM_MEDIA
 import app.morphe.patches.instagram.download.MEDIA
+import app.morphe.patches.instagram.download.captionBridges
 import app.morphe.patches.instagram.download.imageBridges
 import app.morphe.patches.instagram.download.mediaBridges
 import app.morphe.patches.instagram.download.pandoGetter
@@ -143,7 +144,7 @@ val downloadVideoPatch = bytecodePatch(
     description = "Adds Download to the menu of a post in your feed with a video, and of a carousel showing a video. " +
         "Videos save at the Download quality you set, without Instagram's watermark. " +
         "A second switch does the same for photo posts. " +
-        "Another adds Details, with the post's time, who posted it, its media ID and a button that copies its direct link.",
+        "Another adds Details, with the post's time, who posted it, its media ID and buttons that copy its direct link, the username and the caption.",
     default = false,
 ) {
     category("Downloads")
@@ -274,6 +275,7 @@ internal fun BytecodePatchContext.offerDownloadOnEveryVideo() {
     }
     val writeBridges = mediaBridges(PATCH)
     val writeImageBridges = imageBridges(PATCH)
+    val writeCaptionBridges = captionBridges(PATCH)
 
     // Last return first, so the indices before it stay where they were.
     for (index in returns.reversed()) {
@@ -427,6 +429,7 @@ internal fun BytecodePatchContext.offerDownloadOnEveryVideo() {
     })
     writeBridges()
     writeImageBridges()
+    writeCaptionBridges?.invoke()
 }
 
 /**

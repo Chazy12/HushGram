@@ -849,7 +849,8 @@ public class Settings extends BaseSettings {
 
     /**
      * A feed post's menu gets Details: when it went up, who posted it, its media ID and the size a
-     * Download would save, with a button that copies the file's direct link. Starts off.
+     * Download would save, with buttons that copy the file's direct link, the username and the caption.
+     * Starts off.
      */
     public static final BooleanSetting POST_DETAILS =
             new BooleanSetting("hushgram_post_details", FALSE);

@@ -47,6 +47,16 @@ public final class InstagramMedia {
         return null;
     }
 
+    /** A Media's {@code caption}: a comment, the post's own words, or null when it has none. */
+    public static Object caption(Object media) {
+        return null;
+    }
+
+    /** A caption's {@code text}, as its poster wrote it. */
+    public static String captionText(Object caption) {
+        return null;
+    }
+
     /** A User's {@code username}. */
     public static String username(Object user) {
         return null;

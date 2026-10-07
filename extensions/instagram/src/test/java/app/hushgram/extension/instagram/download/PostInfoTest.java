@@ -16,6 +16,8 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.text.format.DateUtils;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -38,6 +40,7 @@ import org.robolectric.annotation.Implementation;
 import org.robolectric.annotation.Implements;
 import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowLooper;
+import org.robolectric.shadows.ShadowToast;
 
 import app.hushgram.extension.instagram.settings.Settings;
 import app.hushgram.extension.shared.SettingsContextRule;
@@ -77,6 +80,7 @@ public class PostInfoTest {
         BaseSettings.PAUSED.save(false);
         PauseForTests.resume();
         Bridges.label = null;
+        ShadowToast.reset();
         HookStatus.clear();
     }
 
@@ -290,6 +294,98 @@ public class PostInfoTest {
         assertNull("no screen", ShadowAlertDialog.getLatestAlertDialog());
     }
 
+    /**
+     * Copy username and Copy caption sit under the facts. Each copies exactly what the post holds,
+     * emoji and right-to-left words included, marked sensitive, says so and closes Details.
+     */
+    @Test
+    public void theDetailsCopyTheUsernameAndTheCaption() {
+        Settings.POST_DETAILS.save(true);
+        Post post = photo();
+        post.caption = "Sunset at the pier \uD83C\uDF05\n\u0645\u0631\u062D\u0628\u0627 #golden";
+        PostInfo.show(post, null, activity);
+        AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
+        TextView username = labelled(dialog, "Copy username");
+        assertTrue("the facts stay selectable", ((TextView) dialog.findViewById(android.R.id.message)).isTextSelectable());
+        username.performClick();
+        ShadowLooper.idleMainLooper();
+        assertEquals("someone", clip().getItemAt(0).getText().toString());
+        assertTrue(clip().getDescription().getExtras().getBoolean("android.content.extra.IS_SENSITIVE"));
+        assertEquals("Username copied", ShadowToast.getTextOfLatestToast());
+        assertFalse("Details closes", dialog.isShowing());
+
+        PostInfo.show(post, null, activity);
+        dialog = ShadowAlertDialog.getLatestAlertDialog();
+        labelled(dialog, "Copy caption").performClick();
+        ShadowLooper.idleMainLooper();
+        assertEquals(post.caption, clip().getItemAt(0).getText().toString());
+        assertEquals("Caption copied", ShadowToast.getTextOfLatestToast());
+        assertFalse(dialog.isShowing());
+    }
+
+    /**
+     * A carousel's caption is the post's, never the page's, and the username is the page's poster
+     * or the post's. A post with no caption, or only blanks, gets no Copy caption, and one with
+     * neither gets no rows at all.
+     */
+    @Test
+    public void theCopiesReadThePostWhoseMenuOpened() {
+        Post post = new Post("3712345678901234569_51234567", "someone", POSTED);
+        post.caption = "the post's words";
+        Post first = photo();
+        first.caption = "a page's words";
+        first.owner = null;
+        post.pages = Arrays.asList(first, video());
+        PostInfo.Facts page = PostInfo.Facts.of(VideoDownload.shown(post, 0), post);
+        assertEquals("the post's words", page.caption);
+        assertEquals("someone", page.owner);
+        assertEquals("the post's words", PostInfo.Facts.of(VideoDownload.shown(post, 5), post).caption);
+
+        Settings.POST_DETAILS.save(true);
+        Post bare = photo();
+        bare.caption = " \n ";
+        PostInfo.show(bare, null, activity);
+        AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
+        assertTrue(labels(dialog).contains("Copy username"));
+        assertFalse("a blank caption", labels(dialog).contains("Copy caption"));
+        dialog.dismiss();
+
+        bare.owner = null;
+        bare.caption = null;
+        PostInfo.Facts facts = PostInfo.Facts.of(bare, bare);
+        assertNull(PostInfo.copies(activity, activity, facts, new AlertDialog.Builder(activity).create()));
+    }
+
+    private ClipData clip() {
+        return ((ClipboardManager) activity.getSystemService(Context.CLIPBOARD_SERVICE)).getPrimaryClip();
+    }
+
+    /** The row reading [label] in [dialog]. */
+    private static TextView labelled(AlertDialog dialog, String label) {
+        List<TextView> found = new ArrayList<>();
+        collect(dialog.getWindow().getDecorView(), found);
+        for (TextView view : found) {
+            if (label.equals(view.getText().toString())) return view;
+        }
+        throw new AssertionError("no row " + label + " in " + labels(dialog));
+    }
+
+    private static List<String> labels(AlertDialog dialog) {
+        List<TextView> found = new ArrayList<>();
+        collect(dialog.getWindow().getDecorView(), found);
+        List<String> labels = new ArrayList<>();
+        for (TextView view : found) labels.add(view.getText().toString());
+        return labels;
+    }
+
+    private static void collect(View view, List<TextView> found) {
+        if (view instanceof TextView && view.getVisibility() == View.VISIBLE && view.isClickable()) found.add((TextView) view);
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) collect(group.getChildAt(i), found);
+        }
+    }
+
     /** The short feed menu keeps Details after HushGram's other rows, or first when there are none. */
     @Test
     public void theShortMenuKeepsDetailsLast() {
@@ -321,6 +417,7 @@ public class PostInfoTest {
         List<MediaSave.Rendition> pictures;
         List<Post> pages;
         String manifest;
+        String caption;
 
         Post(String id, String owner, Long takenAt) {
             this.id = id;
@@ -349,6 +446,8 @@ public class PostInfoTest {
         @Implementation protected static Long takenAt(Object media) { return ((Post) media).takenAt; }
         @Implementation protected static String username(Object user) { return (String) user; }
         @Implementation protected static List<?> carouselMedia(Object media) { return ((Post) media).pages; }
+        @Implementation protected static Object caption(Object media) { return ((Post) media).caption == null ? null : media; }
+        @Implementation protected static String captionText(Object caption) { return ((Post) caption).caption; }
         @Implementation protected static int carouselIndex(Object itemState) { return (Integer) itemState; }
         @Implementation protected static Object feedOption(String name) { return name; }
         @Implementation protected static Object saveAllOption() { return "SAVE_ALL"; }

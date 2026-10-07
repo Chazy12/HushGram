@@ -845,7 +845,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                                 + "size Instagram has.")));
                 downloads.addPreference(toggle(context, Settings.POST_DETAILS, L10n.t("Details in a post's menu"),
                         L10n.t("Adds Details to the menu of a post in your feed: when it went up, who posted it, its "
-                                + "media ID and the size Download saves, with a button that copies the file's direct link.")));
+                                + "media ID and the size Download saves, with buttons that copy the file's direct link, the username "
+                                + "and the caption.")));
             }
             if (build.contains(PatchFamily.PROFILE_PICTURE)) {
                 downloads.addPreference(toggle(context, Settings.SAVE_PROFILE_PICTURES, L10n.t("Save profile picture"),

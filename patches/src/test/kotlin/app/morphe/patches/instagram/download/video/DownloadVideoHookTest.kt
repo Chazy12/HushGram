@@ -226,6 +226,19 @@ class DownloadVideoHookTest {
         assertEquals("$IMAGE_URL->getWidth()I", context.method(INSTAGRAM_MEDIA, "candidateWidth").code()[1].referenceText())
     }
 
+    /** A build whose caption can't be told still gets Download and Details, without Copy caption's bridges. */
+    @Test
+    fun aCaptionItCantFindLeavesItsBridgesUnwritten() {
+        val context = PatchContexts.of(classes())
+
+        context.offerDownloadOnEveryVideo()
+
+        for (name in listOf("caption", "captionText")) {
+            assertEquals(name, Opcode.CONST_4, context.method(INSTAGRAM_MEDIA, name).code().first().opcode)
+        }
+        assertEquals(Opcode.CHECK_CAST, context.method(INSTAGRAM_MEDIA, "videoVersions").code().first().opcode)
+    }
+
     /**
      * A tap on Download asks save() first, with the post, the post's feed state and the menu's
      * activity; any other option goes on.
@@ -483,9 +496,37 @@ class DownloadVideoHookTest {
                         if (wanted) classes += ImmutableClassDef.of(classDef)
                     }
                 }
+                // The caption's comment type, from Media's getter that holds the key's hash, and its
+                // classes, which Copy caption's bridges read.
+                val caption = classes.single { it.type == MEDIA }.methods.single { method ->
+                    method.parameterTypes.isEmpty() && !AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType.startsWith("L") &&
+                        method.code().any { it is NarrowLiteralInstruction && it.narrowLiteral == "caption".hashCode() }
+                }
+                FixtureDex.forEach(bundle) { dex ->
+                    for (classDef in dex.classes) {
+                        if ((classDef.type == caption.returnType || caption.returnType in classDef.interfaces) && classes.none { it.type == classDef.type }) {
+                            classes += ImmutableClassDef.of(classDef)
+                        }
+                    }
+                }
                 val context = PatchContexts.of(classes)
 
                 context.offerDownloadOnEveryVideo()
+
+                // Copy caption reads Media's caption, then the comment's text through its interface,
+                // by the name the tree-backed class that holds the text's hash gives the getter.
+                val captionRead = context.method(INSTAGRAM_MEDIA, "caption").code()
+                assertEquals("${bundle.name}: caption", "$MEDIA->${caption.name}()${caption.returnType}", captionRead[1].referenceText())
+                val textRead = context.method(INSTAGRAM_MEDIA, "captionText").code()
+                assertEquals("${bundle.name}: the caption's type", caption.returnType, textRead[0].referenceText())
+                assertEquals("${bundle.name}: through the interface", Opcode.INVOKE_INTERFACE, textRead[1].opcode)
+                val textGetter = textRead[1].referenceText()!!
+                assertTrue("${bundle.name}: $textGetter", textGetter.startsWith("${caption.returnType}->") && textGetter.endsWith("()Ljava/lang/String;"))
+                val tree = classes.filter { caption.returnType in it.interfaces }.single { type ->
+                    type.methods.any { "${caption.returnType}->${it.name}()${it.returnType}" == textGetter &&
+                        it.code().any { instruction -> instruction is NarrowLiteralInstruction && instruction.narrowLiteral == "text".hashCode() } }
+                }
+                assertTrue("${bundle.name}: a tree-backed caption", tree.superclass != "Ljava/lang/Object;")
 
                 val menu = classes.single { it.originalName() == FEED_HELPER_NAME }
                 val handler = menu.methods.single { !AccessFlags.STATIC.isSet(it.accessFlags) && it.parameterTypes.map(Any::toString) == listOf(OPTION) && it.returnType == "V" }
@@ -552,7 +593,7 @@ class DownloadVideoHookTest {
 
     private val videoBridges = setOf(
         "videoVersions", "dashManifest", "mediaId", "owner", "takenAt", "username", "versionUrl", "versionWidth", "versionHeight",
-        "imageVersions", "imageCandidates", "candidateUrl", "candidateWidth", "candidateHeight",
+        "imageVersions", "imageCandidates", "candidateUrl", "candidateWidth", "candidateHeight", "caption", "captionText",
     )
 
     private fun assertUntouched(context: BytecodePatchContext) {

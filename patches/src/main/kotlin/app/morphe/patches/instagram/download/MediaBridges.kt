@@ -8,8 +8,10 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.instagram.misc.extension.patchLog
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -154,6 +156,47 @@ internal fun BytecodePatchContext.profilePictureBridges(patch: String): () -> Un
  */
 internal fun BytecodePatchContext.pickerSizesBridge(patch: String, helper: MethodReference): () -> Unit =
     bridgeWriter(patch, listOf(Bridge("pickerImageVersions", MEDIA, "invoke-static {p0}, $helper")))
+
+/**
+ * The same for a post's caption, for Details' Copy caption: Media's `caption`, which is a comment,
+ * and that comment's `text`, read through the comment's interface by the name its tree-backed class
+ * gives the getter, as a comment's own text is. Media's getter is the one taking nothing that holds
+ * the key's hash, since the comment's type has no kept name. Only Copy caption needs them, so a
+ * build where either can't be told answers null, after the patch log says why, and Details goes in
+ * without it.
+ */
+internal fun BytecodePatchContext.captionBridges(patch: String): (() -> Unit)? = try {
+    val key = "caption".hashCode()
+    val captions = classDefBy(MEDIA).methods.filter { method ->
+        method.parameterTypes.isEmpty() && method.returnType.startsWith("L") && !AccessFlags.STATIC.isSet(method.accessFlags) &&
+            method.implementation?.instructions?.any { it.loadsLiteral(key) } == true
+    }
+    val caption = captions.singleOrNull() ?: throw PatchException(
+        "$patch: expected one getter on $MEDIA for caption, found " +
+            if (captions.isEmpty()) "none" else captions.joinToString { it.name },
+    )
+    val comment = caption.returnType
+    anInterface(patch, comment)
+    val textKey = "text".hashCode()
+    val trees = mutableListOf<ClassDef>()
+    classDefForEach { type ->
+        if (comment in type.interfaces && type.methods.any { method ->
+                method.parameterTypes.isEmpty() && method.returnType == "Ljava/lang/String;" &&
+                    method.implementation?.instructions?.any { it.loadsLiteral(textKey) } == true
+            }) trees += type
+    }
+    val tree = trees.singleOrNull() ?: throw PatchException(
+        "$patch: expected one tree-backed $comment reading its text, found " +
+            if (trees.isEmpty()) "none" else trees.joinToString { it.type },
+    )
+    bridgeWriter(patch, listOf(
+        Bridge("caption", MEDIA, virtual(caption)),
+        Bridge("captionText", comment, throughInterface(patch, comment, tree.type, "text", "Ljava/lang/String;")),
+    ))
+} catch (unknown: PatchException) {
+    patchLog.warning("${unknown.message}. Details goes in without Copy caption.")
+    null
+}
 
 /** The same for an account's username alone, for a save named after an account found elsewhere. */
 internal fun BytecodePatchContext.usernameBridge(patch: String): () -> Unit {

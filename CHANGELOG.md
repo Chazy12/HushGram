@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Details in a post's menu now has Copy username and Copy caption under the post's details. They copy who posted it and the caption exactly as it was written, emoji and right-to-left text included, and each shows only when the post has one. On a carousel the caption comes from the post itself. Asked for in #29.
+
 * **Instagram:** Save comment photo now follows Name saves by account and post time. A comment's photo is named for the person who wrote the comment and when they wrote it, like `username_20261005_143012`, and Folder per account files it under that person's name. A comment whose author or time can't be read keeps the usual `IG_IMG_` name. Asked for in #20.
 
 * **Instagram:** Ask before a refresh now also asks on Home, in your messages inbox and the other lists that pull down with Instagram's newer refresh layout. The question comes up once a pull goes far enough to refresh, and Cancel puts the spinner away there too.

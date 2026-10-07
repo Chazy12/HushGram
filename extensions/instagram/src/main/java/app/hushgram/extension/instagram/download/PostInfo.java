@@ -7,7 +7,14 @@ package app.hushgram.extension.instagram.download;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.res.ColorStateList;
+import android.content.res.TypedArray;
+import android.graphics.drawable.Drawable;
 import android.text.format.DateUtils;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -20,6 +27,7 @@ import app.hushgram.extension.instagram.settings.Settings;
 import app.hushgram.extension.shared.L10n;
 import app.hushgram.extension.shared.Utils;
 import app.hushgram.extension.shared.diagnostics.HookStatus;
+import app.hushgram.extension.shared.ui.Dim;
 
 /**
  * Details in the menu of a feed post, with the Details switch on.
@@ -30,8 +38,10 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  * went up, who posted it, its media ID, the page's place in the carousel and the size a Download
  * would save, with a button that copies the direct address of the single file Instagram lists for
  * it. A video Download would join from its manifest's picture and sound tracks has no one address,
- * so the button copies that single file, and its own size is shown beside the saved one. Nothing is
- * fetched to show it.
+ * so the button copies that single file, and its own size is shown beside the saved one. Under the
+ * facts, Copy username copies who posted it and Copy caption the post's own words, exactly as
+ * written, each only when the post has one. Both read the post whose menu was opened, and a
+ * carousel's caption is the post's, never a page's. Nothing is fetched to show it.
  *
  * <p>The address is a signed link to the file on Meta's servers, so it goes on the clipboard marked
  * sensitive and never into a log.
@@ -155,6 +165,8 @@ public final class PostInfo {
             String link = facts.link();
             if (link != null) builder.setPositiveButton(L10n.t(activity, "Copy media link"), (dialog, which) -> copy(activity, link));
             AlertDialog dialog = builder.create();
+            View copies = copies(builder.getContext(), activity, facts, dialog);
+            if (copies != null) dialog.setView(copies);
             dialog.show();
             TextView message = dialog.findViewById(android.R.id.message);
             // So the ID or the name can be copied on its own.
@@ -164,17 +176,88 @@ public final class PostInfo {
         }
     }
 
-    /** Puts [link] on the clipboard, marked sensitive, and says so. */
+    /**
+     * Copy username and Copy caption, as rows under the facts, for what [facts] knows. Each closes
+     * [dialog] and copies. Null when the post has neither. [themed] is the dialog's own context, so
+     * the rows take its colors.
+     */
+    @Nullable
+    static View copies(Context themed, Activity activity, Facts facts, AlertDialog dialog) {
+        LinearLayout rows = new LinearLayout(themed);
+        rows.setOrientation(LinearLayout.VERTICAL);
+        rows.setPadding(0, Dim.dp(8), 0, 0);
+        String owner = facts.owner;
+        if (owner != null) {
+            rows.addView(row(themed, L10n.t(activity, "Copy username"), () -> {
+                dialog.dismiss();
+                copy(activity, "copy username", L10n.t(activity, "Username"), owner,
+                        L10n.t(activity, "Username copied"), L10n.t(activity, "Couldn't copy the username"));
+            }));
+        }
+        String caption = facts.caption;
+        if (caption != null) {
+            rows.addView(row(themed, L10n.t(activity, "Copy caption"), () -> {
+                dialog.dismiss();
+                copy(activity, "copy caption", L10n.t(activity, "Caption"), caption,
+                        L10n.t(activity, "Caption copied"), L10n.t(activity, "Couldn't copy the caption"));
+            }));
+        }
+        return rows.getChildCount() == 0 ? null : rows;
+    }
+
+    /** A row reading [label], in the dialog's accent like its buttons, that runs [action] on a tap. */
+    private static TextView row(Context themed, String label, Runnable action) {
+        TextView row = new TextView(themed);
+        row.setText(label);
+        row.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
+        row.setMinHeight(Dim.dp(48));
+        row.setPadding(Dim.dp(24), 0, Dim.dp(24), 0);
+        row.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        // In ascending order, as obtainStyledAttributes reads them.
+        TypedArray theme = themed.obtainStyledAttributes(
+                new int[]{android.R.attr.selectableItemBackground, android.R.attr.colorAccent});
+        try {
+            Drawable touch = theme.getDrawable(0);
+            if (touch != null) row.setBackground(touch);
+            ColorStateList accent = theme.getColorStateList(1);
+            if (accent != null) row.setTextColor(accent);
+        } finally {
+            theme.recycle();
+        }
+        row.setOnClickListener(view -> {
+            try {
+                action.run();
+            } catch (Throwable failure) {
+                HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "feed details copy", failure);
+            }
+        });
+        return row;
+    }
+
+    /** Puts [link] on the clipboard, marked sensitive, and says so. Never throws. */
     static void copy(Context context, String link) {
         try {
-            Utils.setClipboard(context, L10n.t(context, "Media link"), link);
-            Utils.showToastShort(L10n.t(context, "Media link copied"));
+            copy(context, "copy media link", L10n.t(context, "Media link"), link,
+                    L10n.t(context, "Media link copied"), L10n.t(context, "Couldn't copy the media link"));
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "copy media link", failure);
+        }
+    }
+
+    /**
+     * Puts [text] on the clipboard under [label], marked sensitive as every copy is, and says
+     * [copied], or [failed] when it can't. [what] names it in the hook report.
+     */
+    private static void copy(Context context, String what, String label, String text, String copied, String failed) {
+        try {
+            Utils.setClipboard(context, label, text);
+            Utils.showToastShort(copied);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, what, failure);
             try {
-                Utils.showToastShort(L10n.t(context, "Couldn't copy the media link"));
+                Utils.showToastShort(failed);
             } catch (Throwable feedbackFailure) {
-                HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "copy media link feedback", feedbackFailure);
+                HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, what + " feedback", feedbackFailure);
             }
         }
     }
@@ -194,10 +277,12 @@ public final class PostInfo {
         @Nullable final List<MediaSave.Rendition> videos;
         @Nullable final String manifest;
         @Nullable final List<MediaSave.Rendition> pictures;
+        /** The post's caption, as written, or null when it has none. */
+        @Nullable final String caption;
 
         Source(@Nullable Long posted, @Nullable String owner, @Nullable String id, int page, int pages, boolean video,
                @Nullable List<MediaSave.Rendition> videos, @Nullable String manifest,
-               @Nullable List<MediaSave.Rendition> pictures) {
+               @Nullable List<MediaSave.Rendition> pictures, @Nullable String caption) {
             this.posted = posted;
             this.owner = owner;
             this.id = id;
@@ -207,18 +292,19 @@ public final class PostInfo {
             this.videos = videos;
             this.manifest = manifest;
             this.pictures = pictures;
+            this.caption = caption;
         }
 
         /**
          * [shown], the post [post] itself or the page of its carousel on screen. A page keeps its
-         * own ID, and takes the poster and the time from the post when it doesn't list them. A
-         * carousel whose page on screen isn't known, [shown] null, has the post's facts and no file,
-         * since its first page might not be the one on screen.
+         * own ID, and takes the poster and the time from the post when it doesn't list them. The
+         * caption is always the post's. A carousel whose page on screen isn't known, [shown] null,
+         * has the post's facts and no file, since its first page might not be the one on screen.
          */
         static Source read(@Nullable Object shown, Object post) {
             if (shown == null) {
                 Source known = read(post, post);
-                return new Source(known.posted, known.owner, known.id, 0, 0, false, null, null, null);
+                return new Source(known.posted, known.owner, known.id, 0, 0, false, null, null, null, known.caption);
             }
             Long posted = InstagramMedia.takenAt(shown);
             if ((posted == null || posted <= 0) && shown != post) posted = InstagramMedia.takenAt(post);
@@ -234,7 +320,15 @@ public final class PostInfo {
             boolean video = !videos.isEmpty() || manifest != null;
             return new Source(posted == null || posted <= 0 ? null : posted, Facts.empty(owner) ? null : owner,
                     Facts.empty(id) ? null : id, page, page == 0 ? 0 : pages, video, videos, manifest,
-                    video ? null : StoryDownload.pictures(shown));
+                    video ? null : StoryDownload.pictures(shown), caption(post));
+        }
+
+        /** [post]'s caption text, untouched, or null when it has none or only blanks. */
+        @Nullable
+        private static String caption(Object post) {
+            Object caption = InstagramMedia.caption(post);
+            String text = caption == null ? null : InstagramMedia.captionText(caption);
+            return text == null || text.trim().isEmpty() ? null : text;
         }
 
         /**
@@ -245,10 +339,10 @@ public final class PostInfo {
             if (!video) {
                 MediaSave.Rendition picture = pictures == null ? null : MediaSave.picked(pictures, false);
                 return new Facts(posted, owner, id, page, pages, picture,
-                        picture == null ? 0 : picture.width, picture == null ? 0 : picture.height);
+                        picture == null ? 0 : picture.width, picture == null ? 0 : picture.height, caption);
             }
             MediaSave.Planned planned = MediaSave.plannedVideo(videos, manifest);
-            return new Facts(posted, owner, id, page, pages, planned.file, planned.width(), planned.height());
+            return new Facts(posted, owner, id, page, pages, planned.file, planned.width(), planned.height(), caption);
         }
     }
 
@@ -268,9 +362,11 @@ public final class PostInfo {
         /** The size a Download saves, which a video joined from its manifest's tracks has apart from [file], or 0. */
         final int width;
         final int height;
+        /** The post's caption, for Copy caption, or null. Not shown among the facts. */
+        @Nullable final String caption;
 
         Facts(@Nullable Long posted, @Nullable String owner, @Nullable String id, int page, int pages,
-              @Nullable MediaSave.Rendition file, int width, int height) {
+              @Nullable MediaSave.Rendition file, int width, int height, @Nullable String caption) {
             this.posted = posted;
             this.owner = owner;
             this.id = id;
@@ -279,6 +375,7 @@ public final class PostInfo {
             this.file = file;
             this.width = width;
             this.height = height;
+            this.caption = caption;
         }
 
         /** The facts of [shown] and [post], as {@link Source#read} reads them, picked at once. */
