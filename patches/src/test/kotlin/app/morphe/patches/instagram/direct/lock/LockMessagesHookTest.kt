@@ -24,12 +24,15 @@ import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
+import com.android.tools.smali.dexlib2.immutable.ImmutableExceptionHandler
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
+import com.android.tools.smali.dexlib2.immutable.ImmutableTryBlock
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction10t
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction10x
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction21c
@@ -69,6 +72,9 @@ class LockMessagesHookTest {
     /**
      * Each direct post, five-register, range or Group notifications' stand-in, hands its
      * notification over first and posts what comes back, and a jump to a post lands on the hook.
+     * The first two posts are followed by reads of the notification's register (the next post), so
+     * the original waits in the spare v4 over each of them and comes back right after. The last post
+     * is followed by nothing, so its copy simply stays in the register.
      */
     @Test
     fun aDirectPostHandsItsNotificationOverFirst() {
@@ -78,19 +84,33 @@ class LockMessagesHookTest {
         val method = context.mutableClassDefBy(DIRECT).methods.single()
         val code = method.instructions()
         assertEquals(
-            listOf("if-eqz", HIDE, "move-result-object", "POST", HIDE, "move-result-object", "POST", HIDE,
-                "move-result-object", "POST", "return-void"),
+            listOf("if-eqz", MOVE_FROM16, HIDE, "move-result-object", "POST", MOVE_FROM16, MOVE_FROM16, HIDE,
+                "move-result-object", "POST", MOVE_FROM16, HIDE, "move-result-object", "POST", "return-void"),
             code.map(::shape),
         )
-        for (index in listOf(1, 4, 7)) {
+        for (index in listOf(2, 7, 11)) {
             assertEquals("the hook at $index reads the notification", 3, (code[index] as RegisterRangeInstruction).startRegister)
             assertEquals("the copy at ${index + 1} goes back in its register", 3, (code[index + 1] as OneRegisterInstruction).registerA)
+        }
+        for (save in listOf(1, 6)) {
+            assertEquals("the original at $save goes into the spare", listOf(4, 3), code[save].moved())
+            assertEquals("and comes back right after the post", listOf(3, 4), code[save + 4].moved())
         }
         val posts = direct().methods.single().instructions().filter { it.postsNotification() }
         assertEquals("posts keep their calls and registers", posts.map { it.calls() }, code.filter { it.postsNotification() }.map { it.calls() })
         val jump = method.implementation!!.instructions.toList()[0]
-        assertEquals("the jump lands on the hook", 4, (jump as BuilderOffsetInstruction).target.location.index)
+        assertEquals("the jump lands on what goes first", 6, (jump as BuilderOffsetInstruction).target.location.index)
     }
+
+    /** A post whose notification is read again with no local to keep the original in fails before any change. */
+    @Test
+    fun aReadAfterThePostWithNoSpareFailsThePatch() =
+        refuses("nothing reads after instruction 1", listOf(poster(), banner(), direct(registers = 4)))
+
+    /** The original can come back only when the post returns, so a handler of the post that reads it fails the patch. */
+    @Test
+    fun aHandlerReadingTheNotificationFailsThePatch() =
+        refuses("when its post at instruction 0 throws", listOf(poster(), banner(), caught()))
 
     @Test
     fun aBuildWithNoDirectPostFailsThePatch() = refuses("found no notification", listOf(poster(), banner()))
@@ -165,6 +185,8 @@ class LockMessagesHookTest {
                     }
                 }
                 assertTrue("${bundle.name}: no direct post", posts > 0)
+                assertTrue("${bundle.name}: nothing reads a notification after its direct post",
+                    direct.all { it.spares.isEmpty() })
                 assertEquals("${bundle.name}: posts hooked", direct.sumOf { it.sites.size }, posts)
                 assertTrue("${bundle.name}: the inline reply's post", direct.any { post ->
                     post.method.instructions().any { ((it as? ReferenceInstruction)?.reference as? FieldReference)?.type == REPLY_SERVICE }
@@ -216,6 +238,9 @@ class LockMessagesHookTest {
         }
     }
 
+    /** A move's destination and source. */
+    private fun Instruction.moved(): List<Int> = (this as TwoRegisterInstruction).let { listOf(it.registerA, it.registerB) }
+
     private fun Instruction.registerList(): List<Int> = when (this) {
         is RegisterRangeInstruction -> (startRegister until startRegister + registerCount).toList()
         is FiveRegisterInstruction -> listOf(registerC, registerD, registerE, registerF, registerG).take(registerCount)
@@ -242,6 +267,7 @@ class LockMessagesHookTest {
         const val BANNER = "Lfixture/Banner;"
         const val DIRECT = "Lfixture/DirectPost;"
         const val HIDE = "HIDE"
+        const val MOVE_FROM16 = "move-object/from16"
 
         /** The service an inline reply runs in, which keeps its name: its update is posted straight to Android. */
         const val REPLY_SERVICE = "Linstagram/features/direct/notifications/impl/internal/DirectNotificationActionService;"
@@ -252,9 +278,10 @@ class LockMessagesHookTest {
         /**
          * Three posts the way Instagram's code makes them, v0 the manager, v1 a tag, v2 an id and
          * v3 the notification: tagged as a five-register call, tagged as a range call a jump lands
-         * on, and untagged through Group notifications' stand-in.
+         * on, and untagged through Group notifications' stand-in. v4, past what the posts use, is
+         * free unless [registers] leaves it out.
          */
-        fun direct(): ClassDef {
+        fun direct(registers: Int = 5): ClassDef {
             val tagged = post(NOTIFICATION_MANAGER, NOTIFY_PARAMETERS)
             val code = listOf<Instruction>(
                 ImmutableInstruction21t(Opcode.IF_EQZ, 2, 5),
@@ -266,7 +293,21 @@ class LockMessagesHookTest {
                 ),
                 ImmutableInstruction10x(Opcode.RETURN_VOID),
             )
-            return clazz(DIRECT, "post", emptyList(), AccessFlags.PUBLIC.value or AccessFlags.STATIC.value, 4, code)
+            return clazz(DIRECT, "post", emptyList(), AccessFlags.PUBLIC.value or AccessFlags.STATIC.value, registers, code)
+        }
+
+        /** A post in a try whose catch-all handler hands the notification on, as a log of the failure would. */
+        fun caught(): ClassDef {
+            val code = listOf<Instruction>(
+                ImmutableInstruction35c(Opcode.INVOKE_VIRTUAL, 4, 0, 1, 2, 3, 0, post(NOTIFICATION_MANAGER, NOTIFY_PARAMETERS)),
+                ImmutableInstruction10x(Opcode.RETURN_VOID),
+                ImmutableInstruction35c(Opcode.INVOKE_STATIC, 1, 3, 0, 0, 0, 0,
+                    ImmutableMethodReference("Lfixture/Log;", "keep", listOf("Landroid/app/Notification;"), "V")),
+                ImmutableInstruction10x(Opcode.RETURN_VOID),
+            )
+            // The post's three code units are tried, and anything thrown goes to the handler at code unit 4.
+            val tries = listOf(ImmutableTryBlock(0, 3, listOf(ImmutableExceptionHandler(null, 4))))
+            return clazz(DIRECT, "post", emptyList(), AccessFlags.PUBLIC.value or AccessFlags.STATIC.value, 5, code, tries)
         }
 
         /** Shaped like androidx's NotificationManagerCompat.notify(tag, id, notification). */
@@ -291,13 +332,16 @@ class LockMessagesHookTest {
             return clazz(BANNER, "A02", listOf(first, "Ljava/lang/Object;", "Ljava/lang/Object;"), access, registers, code)
         }
 
-        fun clazz(type: String, name: String, parameters: List<String>, access: Int, registers: Int, code: List<Instruction>): ClassDef =
+        fun clazz(
+            type: String, name: String, parameters: List<String>, access: Int, registers: Int, code: List<Instruction>,
+            tries: List<ImmutableTryBlock>? = null,
+        ): ClassDef =
             ImmutableClassDef(
                 type, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", null, null, null, null,
                 listOf(
                     ImmutableMethod(
                         type, name, parameters.map { ImmutableMethodParameter(it, null, null) }, "V", access, null, null,
-                        ImmutableMethodImplementation(registers, code, null, null),
+                        ImmutableMethodImplementation(registers, code, tries, null),
                     ),
                 ),
             )

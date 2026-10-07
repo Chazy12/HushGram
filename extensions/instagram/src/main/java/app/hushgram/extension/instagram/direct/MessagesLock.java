@@ -282,6 +282,9 @@ public final class MessagesLock {
 
     /** A copy written over one already in the shade alerts only once, so it doesn't ring again. */
     private static Notification hide(Context context, Notification original, boolean alertOnce) {
+        // Android refuses a notification with no small icon when it's posted, so a copy of one
+        // that has none fails here, before anything is posted.
+        if (original.getSmallIcon() == null) throw new IllegalArgumentException("the notification has no small icon");
         Notification.Builder builder = new Notification.Builder(context, original.getChannelId());
         Bundle marked = new Bundle();
         marked.putBoolean(HIDDEN_EXTRA, true);
@@ -322,22 +325,34 @@ public final class MessagesLock {
     /**
      * The lock just came back: each message notification Instagram has in the shade, posted while
      * the messages were open, is written over with a copy that says only that a message came. The
-     * copy keeps its place, its group and where a tap goes, and doesn't ring again.
+     * copy keeps its place, its group and where a tap goes, and doesn't ring again. One that can't
+     * be written over (no small icon, a channel deleted since) is reported and the rest still are.
      */
     static void hideShade() {
+        Context context;
+        NotificationManager manager;
+        StatusBarNotification[] active;
         try {
-            Context context = Utils.getContext();
+            context = Utils.getContext();
             if (context == null) return;
-            NotificationManager manager = context.getSystemService(NotificationManager.class);
+            manager = context.getSystemService(NotificationManager.class);
             if (manager == null) return;
-            for (StatusBarNotification posted : manager.getActiveNotifications()) {
+            active = manager.getActiveNotifications();
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.MESSAGES_LOCK, NOTIFICATION, t);
+            return;
+        }
+        if (active == null) return;
+        for (StatusBarNotification posted : active) {
+            try {
                 Notification shown = posted.getNotification();
                 if (shown == null || !isMessage(shown) || isHidden(shown)) continue;
                 manager.notify(posted.getTag(), posted.getId(), hide(context, shown, true));
                 HookStatus.counted(FamilyNames.MESSAGES_LOCK, HIDDEN);
+            } catch (Throwable t) {
+                HookStatus.threw(FamilyNames.MESSAGES_LOCK, NOTIFICATION, t);
+                Logger.printException(() -> "Lock your messages: could not hide a notification in the shade", t);
             }
-        } catch (Throwable t) {
-            HookStatus.threw(FamilyNames.MESSAGES_LOCK, NOTIFICATION, t);
         }
     }
 

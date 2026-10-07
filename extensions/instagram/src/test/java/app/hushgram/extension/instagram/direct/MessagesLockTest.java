@@ -6,6 +6,7 @@ package app.hushgram.extension.instagram.direct;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
@@ -22,6 +23,7 @@ import android.content.Intent;
 import android.hardware.biometrics.BiometricPrompt;
 import android.os.Build;
 import android.os.SystemClock;
+import android.service.notification.StatusBarNotification;
 import android.graphics.Rect;
 import android.view.View;
 import android.view.ViewGroup;
@@ -423,6 +425,42 @@ public class MessagesLockTest {
         assertTrue("it rang again", (shown.flags & Notification.FLAG_ONLY_ALERT_ONCE) != 0);
         assertFalse("not a message", MessagesLock.isHidden(Shadows.shadowOf(manager).getNotification("like", 8)));
         assertSame("hidden twice", shown, MessagesLock.notification(shown));
+    }
+
+    /**
+     * One message notification that can't be written over (here, one with no small icon) is
+     * reported, and the message notifications around it still lose their text.
+     */
+    @Test
+    public void oneNotificationThatFailsLeavesTheRestHidden() {
+        Context context = RuntimeEnvironment.getApplication();
+        NotificationManager manager = context.getSystemService(NotificationManager.class);
+        Activity activity = inbox().get();
+        MessagesLock.check(activity);
+        asks.get(0)[0].run();
+        for (int id = 1; id <= 7; id++) manager.notify("thread", id, message("ig_direct", Notification.CATEGORY_MESSAGE));
+        // The shade's first message is replaced by one that fails, so the others come after it.
+        int brokenId = manager.getActiveNotifications()[0].getId();
+        Notification broken = new Notification.Builder(context, "ig_direct").setContentTitle("Bob")
+                .setContentText("see you there").setCategory(Notification.CATEGORY_MESSAGE).build();
+        manager.notify("thread", brokenId, broken);
+        StatusBarNotification[] order = manager.getActiveNotifications();
+        assertEquals(7, order.length);
+        assertNotEquals("the one that fails comes before another message", brokenId, order[order.length - 1].getId());
+
+        MessagesLock.left();
+
+        for (int id = 1; id <= 7; id++) {
+            Notification shown = Shadows.shadowOf(manager).getNotification("thread", id);
+            if (id == brokenId) {
+                assertFalse("the one that failed is left as it was", MessagesLock.isHidden(shown));
+                continue;
+            }
+            assertTrue("message " + id, MessagesLock.isHidden(shown));
+            assertEquals("New message", shown.extras.getCharSequence(Notification.EXTRA_TEXT).toString());
+        }
+        String missing = HookStatus.missing(FamilyNames.MESSAGES_LOCK).toString();
+        assertTrue(missing, missing.contains(IllegalArgumentException.class.getName()));
     }
 
     /** Only your own cancel ends an ask; a prompt that couldn't ask goes on to the phone's own check. */

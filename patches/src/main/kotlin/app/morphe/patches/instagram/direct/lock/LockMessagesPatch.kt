@@ -17,6 +17,7 @@ import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.instagram.misc.extension.classesCalling
 import app.morphe.patches.instagram.misc.extension.enableStatus
+import app.morphe.patches.instagram.misc.extension.freeLocalsAt
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
 import app.morphe.patches.instagram.misc.extension.jumpTargets
 import app.morphe.patches.instagram.misc.extension.parameterRegister
@@ -27,6 +28,9 @@ import app.morphe.patches.instagram.misc.notifications.NOTIFICATION_GROUPS
 import app.morphe.patches.instagram.misc.notifications.NOTIFICATION_MANAGER
 import app.morphe.patches.instagram.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.ControlFlow
+import app.morphe.util.RegisterLiveness
+import app.morphe.util.readsAfter
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -175,8 +179,12 @@ private fun Instruction.smali(): String {
     else "$name { ${registers.joinToString { "v$it" }} }, $reference"
 }
 
-/** Each method of Instagram's that posts a notification outside the poster, and where it posts. */
-internal class DirectPosts(val method: MutableMethod, val sites: List<Int>)
+/**
+ * Each method of Instagram's that posts a notification outside the poster, where it posts, and for
+ * a post whose notification register is read again afterwards, the spare local that keeps the
+ * original for those reads.
+ */
+internal class DirectPosts(val method: MutableMethod, val sites: List<Int>, val spares: Map<Int, Int> = emptyMap())
 
 private fun Method.sameAs(other: Method) = definingClass == other.definingClass && name == other.name &&
     returnType == other.returnType && parameterTypes.map(CharSequence::toString) == other.parameterTypes.map(CharSequence::toString)
@@ -185,6 +193,12 @@ private fun Method.sameAs(other: Method) = definingClass == other.definingClass 
  * Every place in Instagram's code that posts a notification straight to Android rather than through
  * the poster, like the update an inline reply posts: found and checked before anything changes.
  * Each post's notification must sit in a register a result can go back to.
+ *
+ * Only the post may see the copy. Where the method reads the notification's register again after
+ * the post (to log it, keep it, or post it once more), the original is kept in a spare local over
+ * the post and put back right after, so those reads get Instagram's own notification. The put-back
+ * runs only when the post returns, so a handler of the post that reads the register fails the patch.
+ * On 450 nothing reads the register after any direct post, so none needs a spare.
  */
 internal fun BytecodePatchContext.findDirectPosts(poster: Method): List<DirectPosts> {
     val types = (classesCalling(NOTIFICATION_MANAGER, "notify") + classesCalling(NOTIFICATION_GROUPS, "notify"))
@@ -194,11 +208,19 @@ internal fun BytecodePatchContext.findDirectPosts(poster: Method): List<DirectPo
             if (method.sameAs(poster)) return@mapNotNull null
             val code = method.implementation?.instructions?.toList() ?: return@mapNotNull null
             val sites = code.indices.filter { code[it].postsNotification() }
+            val spares = mutableMapOf<Int, Int>()
             sites.forEach { index ->
                 val notification = code[index].registers().last()
-                if (notification > 255) refuse("${method.definingClass}->${method.name} posts a notification from v$notification, past v255")
+                val where = "${method.definingClass}->${method.name}"
+                if (notification > 255) refuse("$where posts a notification from v$notification, past v255")
+                if (method.readsAfter(index, notification).isEmpty()) return@forEach
+                val liveness = RegisterLiveness.of(method)
+                if (ControlFlow.of(method).exceptional[index].any { notification in liveness.liveInto(it) }) {
+                    refuse("$where reads the notification in v$notification when its post at instruction $index throws")
+                }
+                spares[index] = method.freeLocalsAt(LOCK_PATCH, index, 1, highest = 255).single()
             }
-            if (sites.isEmpty()) null else DirectPosts(method, sites)
+            if (sites.isEmpty()) null else DirectPosts(method, sites, spares)
         }
     }
     if (posts.isEmpty()) refuse("found no notification Instagram posts outside the poster")
@@ -209,7 +231,8 @@ internal fun BytecodePatchContext.findDirectPosts(poster: Method): List<DirectPo
  * Each direct post hands its notification to the extension first, which hands back a copy without
  * the message while the messages are locked. The post is replaced rather than preceded, because a
  * jump to it lands on what replaces it and would skip anything put in front; it's written back
- * right after, on the same registers.
+ * right after, on the same registers. Where the register is read after the post, the original goes
+ * into its spare first and comes back right after the post.
  */
 internal fun hideDirectPosts(posts: List<DirectPosts>) {
     posts.forEach { post ->
@@ -217,14 +240,29 @@ internal fun hideDirectPosts(posts: List<DirectPosts>) {
             val call = post.method.getInstruction(index)
             val notification = call.registers().last()
             val again = call.smali()
-            post.method.replaceInstruction(index, "invoke-static/range { v$notification .. v$notification }, $HIDE_NOTIFICATION")
-            post.method.addInstructions(
-                index + 1,
-                """
-                    move-result-object v$notification
-                    $again
-                """,
-            )
+            val hook = "invoke-static/range { v$notification .. v$notification }, $HIDE_NOTIFICATION"
+            val spare = post.spares[index]
+            if (spare == null) {
+                post.method.replaceInstruction(index, hook)
+                post.method.addInstructions(
+                    index + 1,
+                    """
+                        move-result-object v$notification
+                        $again
+                    """,
+                )
+            } else {
+                post.method.replaceInstruction(index, "move-object/from16 v$spare, v$notification")
+                post.method.addInstructions(
+                    index + 1,
+                    """
+                        $hook
+                        move-result-object v$notification
+                        $again
+                        move-object/from16 v$notification, v$spare
+                    """,
+                )
+            }
         }
     }
 }
