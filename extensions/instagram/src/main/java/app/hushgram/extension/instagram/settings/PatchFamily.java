@@ -74,7 +74,8 @@ public enum PatchFamily {
     FEED_REELS(FamilyNames.FEED_REELS, "feedReels", null, Settings.HIDE_FEED_REELS),
     FEED_SUGGESTIONS(FamilyNames.FEED_SUGGESTIONS, "feedSuggestions", null, Settings.HIDE_SUGGESTED_ACCOUNTS,
             Settings.HIDE_SUGGESTED_POSTS, Settings.HIDE_THREADS_POSTS, Settings.HIDE_FEED_SURVEYS,
-            Settings.HIDE_FEED_SHOPPING),
+            Settings.HIDE_FEED_SHOPPING, Settings.HIDE_FEED_VIDEOS, Settings.HIDE_FEED_PHOTOS,
+            Settings.HIDE_FEED_CAROUSELS),
     HOME_FEED(FamilyNames.HOME_FEED, "homeFeed", null, Settings.HIDE_HOME_FEED),
     FOLLOWING_FEED(FamilyNames.FOLLOWING_FEED, "followingFeed", null, Settings.START_ON_FOLLOWING,
             Settings.ONLY_FOLLOWING),
@@ -189,6 +190,22 @@ public enum PatchFamily {
         return FRIENDSHIP_STATUS.inBuild() && SettingsStatus.followingListMark();
     }
 
+    /** Whether a test says this build filters Home by a post's type, instead of asking {@link SettingsStatus}. */
+    @Nullable
+    static volatile Boolean feedTypesForTests;
+
+    /**
+     * Whether this build filters Home by a post's type. Hide suggested posts goes in without it when
+     * Home's reads or a post's type have moved, so its post type switches aren't offered then.
+     */
+    public static boolean feedTypesInBuild() {
+        Boolean forced = feedTypesForTests;
+        if (forced != null) return forced;
+        Set<PatchFamily> families = inBuildForTests;
+        if (families != null) return families.contains(FEED_SUGGESTIONS);
+        return FEED_SUGGESTIONS.inBuild() && SettingsStatus.feedTypes();
+    }
+
     /** Whether a test says this build reads, or writes, MetaConfig overrides, instead of asking {@link SettingsStatus}. */
     @Nullable
     static volatile Boolean overrideExchangeForTests, overrideImportForTests;
@@ -254,6 +271,9 @@ public enum PatchFamily {
         for (PatchFamily family : values()) {
             if (inBuild.contains(family)) {
                 lines.add(family.reportLine(paused));
+                if (family == FEED_SUGGESTIONS && !feedTypesInBuild()) {
+                    lines.add("  Hide videos, Hide photos and Hide carousels: not in this build (Home's feed or a post's type didn't match)");
+                }
                 if (family == FRIENDSHIP_STATUS && !followingListMarkInBuild()) {
                     lines.add("  Mark who doesn't follow you back: not in this build (Instagram's follow list didn't match)");
                 }

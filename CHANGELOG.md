@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Hide suggested posts gets Hide videos, Hide photos and Hide carousels under Feed, and they start off. Each takes every post of its type out of Home, from accounts you follow too, and leaves profiles, Explore and Reels as they were. Reels count as videos.
+
 * **Instagram:** Save profile picture has a third switch under Downloads, Copy username and bio, that starts off. With it on, the menu on someone's profile also gets Copy username and Copy bio, which copy the account's username or bio exactly as it's written, emoji and line breaks included. An account with no bio gets no Copy bio. Asked for in #29.
 
 * **Instagram:** With Name saves by account and post time on, a saved profile picture is named for the account and the time you saved it, like `username_profile_20261007_105151.jpg`, instead of IG_IMG_. Off, it keeps the IG_IMG_ name.

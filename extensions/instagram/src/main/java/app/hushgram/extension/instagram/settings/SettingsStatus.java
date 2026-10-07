@@ -108,6 +108,11 @@ public final class SettingsStatus {
         return false;
     }
 
+    /** Rewritten by Hide suggested posts when Home's reads and a post's type were found. */
+    public static boolean feedTypes() {
+        return false;
+    }
+
     public static boolean metaAi() {
         return false;
     }

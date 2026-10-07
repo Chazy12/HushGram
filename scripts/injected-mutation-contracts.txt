@@ -440,6 +440,13 @@ shared-call Lapp/hushgram/extension/instagram/feed/TabSwipe;->input(Landroid/vie
 shared-call Lapp/hushgram/extension/instagram/feed/HomeFeed;->filter(Ljava/lang/Object;)Ljava/lang/Object; in instance (L*;)Ljava/lang/Object; holding feed_items pull_to_refresh_window_ms
 shared-call Lapp/hushgram/extension/instagram/feed/HomeFeed;->filter(Ljava/lang/Object;)Ljava/lang/Object; in instance ([B)LX/*; sites 2 class-holding MIXED_UNCONNECTED EXPLORE_STORY
 once-call Lapp/hushgram/extension/instagram/metaai/MetaAi;->filter(Ljava/lang/Object;)Ljava/lang/Object; in static (L*;)LX/*; calling L*;->parseFromJsonParser(*)Ljava/lang/Object; class-holding feedContent feedItemType
+# Hide suggested posts' post type switches pass each item Home reads through
+# FeedSuggestions.homeItem at the same reads as Hide the home feed: once in Home's feed response
+# parser and twice in the read of Home's store. Never in the feed item helper, so Explore's chain of
+# posts and the shop and ad feeds keep their videos, photos and carousels. Left out, Home keeps every
+# post with a type switch on.
+shared-call Lapp/hushgram/extension/instagram/feed/FeedSuggestions;->homeItem(Ljava/lang/Object;)Ljava/lang/Object; in instance (L*;)Ljava/lang/Object; holding feed_items pull_to_refresh_window_ms
+shared-call Lapp/hushgram/extension/instagram/feed/FeedSuggestions;->homeItem(Ljava/lang/Object;)Ljava/lang/Object; in instance ([B)LX/*; sites 2 class-holding MIXED_UNCONNECTED EXPLORE_STORY
 #
 # Hide suggested posts answers the home feed adapter's "no next page" flag through feedEnded() at
 # each of its two reads: the model builder, the one method holding both strings below, and the

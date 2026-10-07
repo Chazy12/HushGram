@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.ToIntFunction;
 
 import app.hushgram.extension.instagram.settings.FamilyNames;
 import app.hushgram.extension.instagram.settings.Settings;
@@ -32,6 +33,10 @@ import app.hushgram.extension.shared.settings.BooleanSetting;
  * helper skips a null item, the home feed's page loads and its cache of recommended posts alike.
  *
  * <p>Explore's grid doesn't go through that helper (S22, Instagram 449), so it keeps its posts.
+ *
+ * <p>Hide videos, Hide photos and Hide carousels filter by the post an item carries, whoever posted
+ * it, so they sit on Home's own reads ({@link #homeItem}) rather than that helper, which Explore's
+ * chain of posts and the shop and ad feeds read through too.
  */
 public final class FeedSuggestions {
     /**
@@ -78,17 +83,30 @@ public final class FeedSuggestions {
     /** The diagnostic counter route: the suggestions seen, and the ones taken out. */
     static final String ROUTE = "Feed suggestions";
 
+    /** Instagram's media_type values for a post of one photo, one video (reels too) and a carousel. */
+    static final int PHOTO = 1, VIDEO = 2, CAROUSEL = 8;
+
+    /** The diagnostic counter route of {@link #homeItem}: the post types read, and the posts taken out. */
+    static final String TYPES_ROUTE = "Home post types";
+
+    /** The counted kind of a post whose type isn't one of the three, or an item with no post. */
+    static final String OTHER_TYPE = "other type";
+
     /** Set once {@link #filter} has taken an item out of the home feed in this run. Tests clear it. */
     static volatile boolean tookOut;
+
+    /** Set once {@link #homeItem} has taken a post out of Home in this run. Tests clear it. */
+    static volatile boolean typesTookOut;
 
     private FeedSuggestions() {
     }
 
     /**
      * Injected at each read of the home feed adapter's "no next page" flag. Answers 1 (no next
-     * page) once {@link #filter} has taken items out and a suggestion switch is still on, or once
-     * Hide the home feed has emptied Home ({@link HomeFeed#emptied}), and [noMorePages] otherwise.
-     * Turning every switch off restores Instagram's answer in this run.
+     * page) once {@link #filter} has taken items out and a suggestion switch is still on, once
+     * {@link #homeItem} has taken posts out and a post type switch is still on, or once Hide the
+     * home feed has emptied Home ({@link HomeFeed#emptied}), and [noMorePages] otherwise. Turning
+     * every switch off restores Instagram's answer in this run.
      *
      * <p>Instagram reads that flag only beside its own checks that the feed is empty and no page is
      * loading. With both true and a next page left it draws its loading placeholder, and nothing asks
@@ -99,11 +117,13 @@ public final class FeedSuggestions {
     public static int feedEnded(int noMorePages) {
         if (noMorePages != 0) return noMorePages;
         if (HomeFeed.emptied()) return 1;
-        if (!tookOut) return noMorePages;
+        if (!tookOut && !typesTookOut) return noMorePages;
         try {
             if (!Utils.settingsReady()) return noMorePages;
-            return Settings.HIDE_SUGGESTED_POSTS.get() || Settings.HIDE_SUGGESTED_ACCOUNTS.get()
-                    || Settings.HIDE_THREADS_POSTS.get() ? 1 : noMorePages;
+            if (tookOut && (Settings.HIDE_SUGGESTED_POSTS.get() || Settings.HIDE_SUGGESTED_ACCOUNTS.get()
+                    || Settings.HIDE_THREADS_POSTS.get())) return 1;
+            return typesTookOut && (Settings.HIDE_FEED_VIDEOS.get() || Settings.HIDE_FEED_PHOTOS.get()
+                    || Settings.HIDE_FEED_CAROUSELS.get()) ? 1 : noMorePages;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.FEED_SUGGESTIONS, "empty feed", failure);
             return noMorePages;
@@ -172,6 +192,49 @@ public final class FeedSuggestions {
             HookStatus.threw(FamilyNames.FEED_SUGGESTIONS, "feed item", failure);
             return item;
         }
+    }
+
+    /**
+     * Injected right after Home keeps each item it reads, from its feed response and from its store
+     * of the last run, beside Hide the home feed's filter when both are in. Answers null for a post
+     * of one video, one photo or a carousel while that type's switch is on, and [item] itself
+     * otherwise, or when anything goes wrong. An item with no post, a row of suggested accounts for
+     * one, stays. Never throws.
+     */
+    public static Object homeItem(Object item) {
+        return homeItem(item, FeedSuggestions::mediaType);
+    }
+
+    static Object homeItem(Object item, ToIntFunction<Object> typeOf) {
+        if (item == null) return null;
+        try {
+            if (!Utils.settingsReady()) return item;
+            boolean videos = Settings.HIDE_FEED_VIDEOS.get();
+            boolean photos = Settings.HIDE_FEED_PHOTOS.get();
+            boolean carousels = Settings.HIDE_FEED_CAROUSELS.get();
+            if (!videos && !photos && !carousels) return item;
+            int type = typeOf.applyAsInt(item);
+            String kind = type == VIDEO ? "video" : type == PHOTO ? "photo" : type == CAROUSEL ? "carousel" : OTHER_TYPE;
+            FeedFilterCounters.sawKind(TYPES_ROUTE, kind);
+            boolean hide = type == VIDEO ? videos : type == PHOTO ? photos : type == CAROUSEL && carousels;
+            if (!hide) return item;
+            FeedFilterCounters.removed(TYPES_ROUTE, 1, kind);
+            typesTookOut = true;
+            Logger.printDebug(() -> "Feed suggestions: took a " + kind + " out of Home");
+            return null;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.FEED_SUGGESTIONS, "post type", failure);
+            return item;
+        }
+    }
+
+    /**
+     * The media_type of the post a feed item carries: 1 for one photo, 2 for one video, 8 for a
+     * carousel, and 0 when it carries none or the post doesn't say. The patch writes the body, which
+     * reads the item's post field and the post's media_type.
+     */
+    public static int mediaType(Object item) {
+        return 0;
     }
 
     private static BooleanSetting switchFor(String kind) {

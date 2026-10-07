@@ -608,3 +608,9 @@ Couldn't copy the bio	소개를 복사할 수 없습니다
 Couldn't open the picture	사진을 열 수 없습니다
 Profile picture	프로필 사진
 View profile picture	프로필 사진 보기
+Hide carousels	캐러셀 숨기기
+Hide photos	사진 숨기기
+Hide videos	동영상 숨기기
+Takes every post that's one photo out of Home, even from accounts you follow. Pull to refresh Home after changing it.	사진 하나로 된 게시물을 모두 홈에서 뺍니다. 팔로우하는 계정의 게시물도 포함됩니다. 변경한 후 홈을 아래로 당겨 새로고침하세요.
+Takes every post that's one video out of Home, reels too, even from accounts you follow. Pull to refresh Home after changing it.	동영상 하나로 된 게시물을 릴스까지 모두 홈에서 뺍니다. 팔로우하는 계정의 게시물도 포함됩니다. 변경한 후 홈을 아래로 당겨 새로고침하세요.
+Takes every post with more than one photo or video out of Home, even from accounts you follow. Pull to refresh Home after changing it.	사진이나 동영상이 두 개 이상인 게시물을 모두 홈에서 뺍니다. 팔로우하는 계정의 게시물도 포함됩니다. 변경한 후 홈을 아래로 당겨 새로고침하세요.

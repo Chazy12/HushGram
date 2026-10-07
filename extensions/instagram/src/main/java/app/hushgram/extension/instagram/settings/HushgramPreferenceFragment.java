@@ -406,6 +406,17 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     L10n.t("The cards between posts that ask you to rate what you saw.")));
             feed.addPreference(toggle(context, Settings.HIDE_FEED_SHOPPING, L10n.t("Hide shopping"),
                     L10n.t("The rows of products to shop and live shopping that Instagram puts between posts.")));
+            if (PatchFamily.feedTypesInBuild()) {
+                feed.addPreference(toggle(context, Settings.HIDE_FEED_VIDEOS, L10n.t("Hide videos"),
+                        L10n.t("Takes every post that's one video out of Home, reels too, even from accounts you "
+                                + "follow. Pull to refresh Home after changing it.")));
+                feed.addPreference(toggle(context, Settings.HIDE_FEED_PHOTOS, L10n.t("Hide photos"),
+                        L10n.t("Takes every post that's one photo out of Home, even from accounts you follow. Pull "
+                                + "to refresh Home after changing it.")));
+                feed.addPreference(toggle(context, Settings.HIDE_FEED_CAROUSELS, L10n.t("Hide carousels"),
+                        L10n.t("Takes every post with more than one photo or video out of Home, even from accounts "
+                                + "you follow. Pull to refresh Home after changing it.")));
+            }
         }
         if (homeFeed) {
             feed.addPreference(toggle(context, Settings.HIDE_HOME_FEED, L10n.t("Hide the home feed"),

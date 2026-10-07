@@ -609,3 +609,9 @@ Couldn't copy the bio	Biyografi kopyalanamadı
 Couldn't open the picture	Fotoğraf açılamadı
 Profile picture	Profil fotoğrafı
 View profile picture	Profil fotoğrafını görüntüle
+Hide carousels	Çoklu gönderileri gizle
+Hide photos	Fotoğrafları gizle
+Hide videos	Videoları gizle
+Takes every post that's one photo out of Home, even from accounts you follow. Pull to refresh Home after changing it.	Tek bir fotoğraftan oluşan her gönderiyi, takip ettiğin hesaplardan bile Ana Sayfa'dan çıkarır. Değiştirdikten sonra Ana Sayfa'yı yenilemek için aşağı çek.
+Takes every post that's one video out of Home, reels too, even from accounts you follow. Pull to refresh Home after changing it.	Tek bir videodan oluşan her gönderiyi, Reels dahil, takip ettiğin hesaplardan bile Ana Sayfa'dan çıkarır. Değiştirdikten sonra Ana Sayfa'yı yenilemek için aşağı çek.
+Takes every post with more than one photo or video out of Home, even from accounts you follow. Pull to refresh Home after changing it.	Birden fazla fotoğraf veya video içeren her gönderiyi, takip ettiğin hesaplardan bile Ana Sayfa'dan çıkarır. Değiştirdikten sonra Ana Sayfa'yı yenilemek için aşağı çek.

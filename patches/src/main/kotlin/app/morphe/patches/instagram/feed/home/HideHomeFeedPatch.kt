@@ -62,7 +62,7 @@ val hideHomeFeedPatch = bytecodePatch(
     }
 }
 
-private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $detail")
+private fun refuse(patch: String, detail: String): Nothing = throw PatchException("$patch: $detail")
 
 /**
  * Passes each item Home reads through HomeFeed, which answers null for every one of them while the
@@ -73,26 +73,45 @@ private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $det
  * feed end hook has Instagram draw its own empty feed card in place of a loading row that would
  * never finish. Answers how many reads it filtered, and finds every one before changing any.
  */
-internal fun BytecodePatchContext.filterHomeFeedItems(): Int {
-    val (itemType, helper) = findFeedItemHelper(PATCH, emptyList())
-    val readers = listOf(
-        uniqueMethod(PATCH, "Home's feed response parser", HomeFeedResponseFingerprint),
-        homeFeedStoreRead(itemType, helper),
-    )
-    val sites = readers.map { reader -> reader to itemReads(reader, helper) }
-    sites.forEach { (reader, reads) ->
-        reads.asReversed().forEach { (after, register) ->
-            reader.addInstructions(
-                after,
-                """
-                    invoke-static/range { v$register .. v$register }, $HOME_FEED_FILTER
-                    move-result-object v$register
-                    check-cast v$register, $itemType
-                """,
-            )
+internal fun BytecodePatchContext.filterHomeFeedItems(): Int = findHomeFeedReads(PATCH).filterWith(HOME_FEED_FILTER)
+
+/**
+ * Home's reads of its items, found before anything changes: the feed item's type, and each reader
+ * with its reads as [itemReads] answers them. Hide the home feed and Hide suggested posts' post type
+ * switches each pass Home's items through a filter of their own here.
+ */
+internal class HomeFeedReads(val itemType: String, private val sites: List<Pair<MutableMethod, List<Pair<Int, Int>>>>) {
+    /**
+     * Passes each item read through [filter], a static method of the extension taking and answering
+     * an Object, right after the read keeps it. Answers how many reads it filtered. A second filter
+     * goes in ahead of whichever applied first, and each answers null for null, so the order
+     * doesn't change what Home gets.
+     */
+    fun filterWith(filter: String): Int {
+        sites.forEach { (reader, reads) ->
+            reads.asReversed().forEach { (after, register) ->
+                reader.addInstructions(
+                    after,
+                    """
+                        invoke-static/range { v$register .. v$register }, $filter
+                        move-result-object v$register
+                        check-cast v$register, $itemType
+                    """,
+                )
+            }
         }
+        return sites.sumOf { it.second.size }
     }
-    return sites.sumOf { it.second.size }
+}
+
+/** Finds Home's feed response parser and the read of Home's store, and each item they read, for [patch]. */
+internal fun BytecodePatchContext.findHomeFeedReads(patch: String): HomeFeedReads {
+    val (itemType, helper) = findFeedItemHelper(patch, emptyList())
+    val readers = listOf(
+        uniqueMethod(patch, "Home's feed response parser", HomeFeedResponseFingerprint),
+        homeFeedStoreRead(patch, itemType, helper),
+    )
+    return HomeFeedReads(itemType, readers.map { reader -> reader to itemReads(patch, reader, helper) })
 }
 
 /**
@@ -100,8 +119,8 @@ internal fun BytecodePatchContext.filterHomeFeedItems(): Int {
  * [FEED_MEDIA_CACHE] makes that has it, the one method taking bytes, answering an item and
  * reading it through [helper].
  */
-internal fun BytecodePatchContext.homeFeedStoreRead(itemType: String, helper: Method): MutableMethod {
-    val cache = classDefByOrNull(FEED_MEDIA_CACHE) ?: refuse("Instagram has no $FEED_MEDIA_CACHE")
+internal fun BytecodePatchContext.homeFeedStoreRead(patch: String, itemType: String, helper: Method): MutableMethod {
+    val cache = classDefByOrNull(FEED_MEDIA_CACHE) ?: refuse(patch, "Instagram has no $FEED_MEDIA_CACHE")
     val made = cache.methods.flatMap { it.implementation?.instructions?.toList().orEmpty() }
         .filter { it.opcode == Opcode.NEW_INSTANCE }
         .map { ((it as ReferenceInstruction).reference as TypeReference).type }
@@ -113,7 +132,7 @@ internal fun BytecodePatchContext.homeFeedStoreRead(itemType: String, helper: Me
         }.map { store.type to it.name }
     }
     val (type, name) = reads.singleOrNull()
-        ?: refuse("expected one method of $FEED_MEDIA_CACHE's store reading an item from bytes, found $reads")
+        ?: refuse(patch, "expected one method of $FEED_MEDIA_CACHE's store reading an item from bytes, found $reads")
     return mutableClassDefBy(type).methods.single {
         it.name == name && it.returnType == itemType && it.parameterTypes.map(CharSequence::toString) == listOf("[B")
     }
@@ -126,15 +145,15 @@ internal fun BytecodePatchContext.homeFeedStoreRead(itemType: String, helper: Me
  * there, as Home's store does after its other read, still lands after the filter and its item
  * passes once.
  */
-internal fun itemReads(reader: Method, helper: Method): List<Pair<Int, Int>> {
+internal fun itemReads(patch: String, reader: Method, helper: Method): List<Pair<Int, Int>> {
     val where = "${reader.definingClass}->${reader.name}"
     val code = reader.implementation?.instructions?.toList().orEmpty()
     val reads = code.indices.filter { code[it].calls(helper) }.map { at ->
         val kept = code.getOrNull(at + 1)
-        if (kept?.opcode != Opcode.MOVE_RESULT_OBJECT) refuse("$where doesn't keep the item ${helper.name} answers")
+        if (kept?.opcode != Opcode.MOVE_RESULT_OBJECT) refuse(patch, "$where doesn't keep the item ${helper.name} answers")
         at + 2 to (kept as OneRegisterInstruction).registerA
     }
-    if (reads.isEmpty()) refuse("$where reads no item through ${helper.definingClass}->${helper.name}")
+    if (reads.isEmpty()) refuse(patch, "$where reads no item through ${helper.definingClass}->${helper.name}")
     return reads
 }
 

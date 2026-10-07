@@ -304,6 +304,18 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting HIDE_FEED_SHOPPING =
             new BooleanSetting("hushgram_hide_feed_shopping", TRUE);
 
+    /** Posts in Home that are one video, reels among them. Off until enabled. */
+    public static final BooleanSetting HIDE_FEED_VIDEOS =
+            new BooleanSetting("hushgram_hide_feed_videos", FALSE);
+
+    /** Posts in Home that are one photo. Off until enabled. */
+    public static final BooleanSetting HIDE_FEED_PHOTOS =
+            new BooleanSetting("hushgram_hide_feed_photos", FALSE);
+
+    /** Posts in Home with more than one photo or video. Off until enabled. */
+    public static final BooleanSetting HIDE_FEED_CAROUSELS =
+            new BooleanSetting("hushgram_hide_feed_carousels", FALSE);
+
     /**
      * Every post in Home's feed, on purpose, leaving the stories row
      * ({@link app.hushgram.extension.instagram.feed.HomeFeed}). Read as each page arrives, so a
