@@ -568,3 +568,16 @@ Save profile picture	Simpan foto profil
 Adds Save profile picture to the menu on someone's profile. Saves their picture at the largest size Instagram has.	Menambahkan Simpan foto profil ke menu di profil seseorang. Menyimpan fotonya dalam ukuran terbesar yang dimiliki Instagram.
 Show a post's exact time	Tampilkan waktu persis postingan
 Posts in your feed and their comments show the date and time they went up, like Oct 2, 3:45 PM, instead of how long ago. Posts and comments you load after a change show it.	Postingan di feed Anda dan komentarnya menampilkan tanggal dan waktu diunggah, seperti 2 Okt, 15.45, bukan berapa lama yang lalu. Postingan dan komentar yang Anda muat setelah perubahan akan menampilkannya.
+Adds Details to the menu of a post in your feed: when it went up, who posted it, its media ID and the size Download saves, with a button that copies the file's direct link.	Menambahkan Detail ke menu postingan di feed Anda: kapan diunggah, siapa yang mempostingnya, ID medianya, dan ukuran yang disimpan Unduh, dengan tombol yang menyalin tautan langsung file.
+By @%1$s	Oleh @%1$s
+Close	Tutup
+Copy media link	Salin tautan media
+Couldn't copy the media link	Tidak dapat menyalin tautan media
+Details	Detail
+Details in a post's menu	Detail di menu postingan
+Media ID %1$s	ID media %1$s
+Media link	Tautan media
+Media link copied	Tautan media disalin
+No direct link for this one	Tidak ada tautan langsung untuk yang ini
+Posted %1$s	Diposting %1$s
+Size %1$d × %2$d	Ukuran %1$d × %2$d

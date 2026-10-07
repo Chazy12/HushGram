@@ -568,3 +568,16 @@ Save profile picture	Profil fotoğrafını kaydet
 Adds Save profile picture to the menu on someone's profile. Saves their picture at the largest size Instagram has.	Birinin profilindeki menüye Profil fotoğrafını kaydet seçeneğini ekler. Fotoğrafı Instagram'daki en büyük boyutta kaydeder.
 Show a post's exact time	Gönderinin tam zamanını göster
 Posts in your feed and their comments show the date and time they went up, like Oct 2, 3:45 PM, instead of how long ago. Posts and comments you load after a change show it.	Akışındaki gönderiler ve yorumları ne kadar önce olduğu yerine paylaşıldıkları tarihi ve saati gösterir, örneğin 2 Eki 15:45. Bir değişiklikten sonra yüklediğin gönderiler ve yorumlar bunu gösterir.
+Adds Details to the menu of a post in your feed: when it went up, who posted it, its media ID and the size Download saves, with a button that copies the file's direct link.	Akışındaki bir gönderinin menüsüne Ayrıntılar ekler: ne zaman paylaşıldığı, kimin paylaştığı, medya kimliği ve İndir'in kaydettiği boyut, ayrıca dosyanın doğrudan bağlantısını kopyalayan bir düğme.
+By @%1$s	Paylaşan: @%1$s
+Close	Kapat
+Copy media link	Medya bağlantısını kopyala
+Couldn't copy the media link	Medya bağlantısı kopyalanamadı
+Details	Ayrıntılar
+Details in a post's menu	Gönderi menüsünde Ayrıntılar
+Media ID %1$s	Medya kimliği %1$s
+Media link	Medya bağlantısı
+Media link copied	Medya bağlantısı kopyalandı
+No direct link for this one	Bunun için doğrudan bağlantı yok
+Posted %1$s	Paylaşıldı: %1$s
+Size %1$d × %2$d	Boyut %1$d × %2$d

@@ -568,3 +568,16 @@ Save profile picture	Salvar foto do perfil
 Adds Save profile picture to the menu on someone's profile. Saves their picture at the largest size Instagram has.	Adiciona Salvar foto do perfil ao menu no perfil de alguém. Salva a foto no maior tamanho que o Instagram tiver.
 Show a post's exact time	Mostrar o horário exato de um post
 Posts in your feed and their comments show the date and time they went up, like Oct 2, 3:45 PM, instead of how long ago. Posts and comments you load after a change show it.	Os posts do seu feed e os comentários deles mostram a data e a hora em que foram publicados, como 2 de out., 15:45, em vez de há quanto tempo. Posts e comentários que você carregar depois de uma mudança mostram isso.
+Adds Details to the menu of a post in your feed: when it went up, who posted it, its media ID and the size Download saves, with a button that copies the file's direct link.	Adiciona Detalhes ao menu de um post do seu feed: quando foi publicado, quem postou, o ID da mídia e o tamanho que Baixar salva, com um botão que copia o link direto do arquivo.
+By @%1$s	Por @%1$s
+Close	Fechar
+Copy media link	Copiar link da mídia
+Couldn't copy the media link	Não foi possível copiar o link da mídia
+Details	Detalhes
+Details in a post's menu	Detalhes no menu de um post
+Media ID %1$s	ID da mídia %1$s
+Media link	Link da mídia
+Media link copied	Link da mídia copiado
+No direct link for this one	Não há link direto para este
+Posted %1$s	Postado em %1$s
+Size %1$d × %2$d	Tamanho %1$d × %2$d
