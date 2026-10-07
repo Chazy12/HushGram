@@ -71,11 +71,12 @@ public class ReelCapTest {
         Pager pager = new Pager();
         assertEquals(1, ReelScrolling.pager(pager));
 
-        play(pager, 0, ReelScrolling.CAP - 1);
+        // The reel the viewer opens on, then 19 more.
+        play(pager, 0, ReelScrolling.CAP);
         assertTrue(pager.inputs.isEmpty());
         assertEquals(1, ReelScrolling.userInput(pager, 1));
 
-        ReelScrolling.page(pager, ReelScrolling.CAP - 1);
+        ReelScrolling.page(pager, ReelScrolling.CAP);
         assertEquals(java.util.Collections.singletonList(false), pager.inputs);
         assertEquals("Instagram turning it back on is refused", 0, ReelScrolling.userInput(pager, 1));
         assertEquals("a reel opened from a message still plays, without swipes", 0, ReelScrolling.pager(new Pager()));
@@ -97,12 +98,31 @@ public class ReelCapTest {
         assertEquals(1, ReelScrolling.userInput(reels, 1));
     }
 
+    /** Going back to a reel and forward again, or a refresh back to the top, counts nothing new. */
+    @Test
+    public void onlyReelsNotSeenBeforeCount() {
+        Pager pager = new Pager();
+        ReelScrolling.pager(pager);
+        play(pager, 0, 11);
+        for (int i = 0; i < ReelScrolling.CAP * 2; i++) {
+            ReelScrolling.page(pager, 5);
+            ReelScrolling.page(pager, 10);
+        }
+        play(pager, 0, 11);
+        play(pager, 11, ReelScrolling.CAP - 11);
+        assertTrue("19 new reels past the first", pager.inputs.isEmpty());
+        assertEquals(1, ReelScrolling.userInput(pager, 1));
+
+        ReelScrolling.page(pager, ReelScrolling.CAP);
+        assertEquals(java.util.Collections.singletonList(false), pager.inputs);
+    }
+
     /** Turned off while capped, the open viewer swipes again at the next touch, and on again it counts afresh. */
     @Test
     public void turningItOffGivesTheSwipesBackAtOnce() {
         Pager pager = new Pager();
         ReelScrolling.pager(pager);
-        play(pager, 0, ReelScrolling.CAP);
+        play(pager, 0, ReelScrolling.CAP + 1);
         assertEquals(0, ReelScrolling.userInput(pager, 1));
 
         Settings.REEL_CAP.save(false);
@@ -114,7 +134,7 @@ public class ReelCapTest {
         assertEquals(2, pager.inputs.size());
 
         Settings.REEL_CAP.save(true);
-        play(pager, 100, ReelScrolling.CAP - 1);
+        play(pager, 100, ReelScrolling.CAP);
         assertEquals(2, pager.inputs.size());
         assertEquals(1, ReelScrolling.userInput(pager, 1));
     }
@@ -124,7 +144,7 @@ public class ReelCapTest {
     public void pausingGivesTheSwipesBack() {
         Pager pager = new Pager();
         ReelScrolling.pager(pager);
-        play(pager, 0, ReelScrolling.CAP);
+        play(pager, 0, ReelScrolling.CAP + 1);
         BaseSettings.PAUSED.save(true);
         PauseForTests.pause(HushgramPause.Reason.SWITCH);
         ReelScrolling.page(pager, 3);
@@ -137,7 +157,7 @@ public class ReelCapTest {
     public void turningItOffLeavesStopReelsScrollingInCharge() {
         Pager pager = new Pager();
         ReelScrolling.pager(pager);
-        play(pager, 0, ReelScrolling.CAP);
+        play(pager, 0, ReelScrolling.CAP + 1);
         Settings.STOP_REELS_SCROLLING.save(true);
         Settings.REEL_CAP.save(false);
         assertEquals(0, ReelScrolling.pull());
@@ -159,7 +179,7 @@ public class ReelCapTest {
     public void aLongEnoughBreakStartsANewSession() {
         Pager pager = new Pager();
         ReelScrolling.pager(pager);
-        play(pager, 0, ReelScrolling.CAP);
+        play(pager, 0, ReelScrolling.CAP + 1);
         assertEquals(0, ReelScrolling.userInput(pager, 1));
 
         ReelScrolling.hidden(1_000);
@@ -178,7 +198,7 @@ public class ReelCapTest {
     public void stopReelsScrollingKeepsSwipesOffAfterABreak() {
         Pager pager = new Pager();
         ReelScrolling.pager(pager);
-        play(pager, 0, ReelScrolling.CAP);
+        play(pager, 0, ReelScrolling.CAP + 1);
         Settings.STOP_REELS_SCROLLING.save(true);
         ReelScrolling.hidden(1_000);
         ReelScrolling.shown(1_000 + ReelScrolling.BREAK_MILLIS);
@@ -190,7 +210,7 @@ public class ReelCapTest {
     public void aPagerWithoutTheSetterIsReportedNotThrown() {
         Object pager = new Object();
         ReelScrolling.pager(pager);
-        for (int position = 0; position < ReelScrolling.CAP; position++) ReelScrolling.page(pager, position);
+        for (int position = 0; position <= ReelScrolling.CAP; position++) ReelScrolling.page(pager, position);
         assertFalse(HookStatus.missing(FamilyNames.REEL_SCROLLING).isEmpty());
         assertEquals(0, ReelScrolling.userInput(pager, 1));
     }

@@ -40,9 +40,11 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  * gets you past the reel you opened. Taps on the reel and its buttons go where they did. Instagram's own
  * auto scroll is the app moving the pager, not a finger, so it still moves on when it's turned on.
  *
- * <p>Stop after 20 reels: each store of a Reels pager's current page reaches {@link #page}, and a
- * page it wasn't on before is one more reel this session. At {@link #CAP} the pager's input goes off
- * and stays off, in this viewer and any that opens, the same as with the first switch on, until
+ * <p>Stop after 20 reels: each store of a Reels pager's current page reaches {@link #page}. The first
+ * page a pager stores this session is where it starts, and each page past the furthest one it has
+ * reached since is one more reel, so going back to a reel and forward again, or a refresh that puts
+ * the pager back at the top, counts nothing new. At {@link #CAP} the pager's input goes off and
+ * stays off, in this viewer and any that opens, the same as with the first switch on, until
  * Instagram has been in the background for {@link #BREAK_MILLIS}. A reel you open still plays.
  * Turning the switch off, or pausing HushGram, gives the swipes back at the next touch in Reels
  * ({@link #settle}).
@@ -67,8 +69,8 @@ public final class ReelScrolling {
     /** How long Instagram stays in the background before the next session starts. */
     static final long BREAK_MILLIS = 15 * 60_000L;
 
-    /** The page each Reels pager was last on, so a store of the same page isn't another reel. */
-    private static final Map<Object, Integer> PAGES = Collections.synchronizedMap(new WeakHashMap<>());
+    /** The furthest page each Reels pager has reached this session. Only a page past it is a new reel. */
+    private static final Map<Object, Integer> FURTHEST = Collections.synchronizedMap(new WeakHashMap<>());
 
     private static int played;
     private static volatile boolean capped;
@@ -95,7 +97,6 @@ public final class ReelScrolling {
             HookStatus.invoked(FamilyNames.REEL_SCROLLING);
             if (pager == null) return 1;
             PAGERS.put(pager, Boolean.TRUE);
-            PAGES.putIfAbsent(pager, -1);
             settle(ReelScrolling::capOn);
             if (!on.getAsBoolean()) return 1;
             Logger.printDebug(() -> "Reels scrolling: a Reels pager's swipes are off");
@@ -149,8 +150,9 @@ public final class ReelScrolling {
 
     /**
      * Injected after each store of a pager's current page, with the pager and the page. For a Reels
-     * pager on a page it wasn't on, counts a reel while Stop after 20 reels is on, and at the cap turns
-     * the pager's input off and says why. Never throws.
+     * pager past the furthest page it has reached this session, counts a reel while Stop after 20
+     * reels is on, and at the cap turns the pager's input off and says why. The first page a pager
+     * stores in a session is where it starts, not a reel counted. Never throws.
      */
     public static void page(Object pager, int position) {
         page(pager, position, ReelScrolling::capOn);
@@ -159,12 +161,17 @@ public final class ReelScrolling {
     static void page(Object pager, int position, BooleanSupplier capOn) {
         try {
             if (pager == null || !PAGERS.containsKey(pager)) return;
-            Integer last = PAGES.put(pager, position);
-            if (last != null && last == position) return;
             HookStatus.invoked(FamilyNames.REEL_SCROLLING);
             settle(capOn);
             if (!capOn.getAsBoolean()) return;
+            Integer furthest;
+            synchronized (FURTHEST) {
+                furthest = FURTHEST.get(pager);
+                if (furthest != null && position <= furthest) return;
+                FURTHEST.put(pager, position);
+            }
             watch();
+            if (furthest == null) return;
             synchronized (ReelScrolling.class) {
                 if (capped || ++played < CAP) return;
                 capped = true;
@@ -208,8 +215,8 @@ public final class ReelScrolling {
     }
 
     /**
-     * Ends the session: the count starts over, and a pager the cap turned off takes a finger again,
-     * unless Stop Reels scrolling keeps it off.
+     * Ends the session: the count and each pager's furthest page start over, and a pager the cap
+     * turned off takes a finger again, unless Stop Reels scrolling keeps it off.
      */
     private static void release() {
         boolean wasCapped;
@@ -218,6 +225,7 @@ public final class ReelScrolling {
             wasCapped = capped;
             capped = false;
         }
+        FURTHEST.clear();
         if (!wasCapped || (Utils.settingsReady() && Settings.STOP_REELS_SCROLLING.get())) return;
         List<Object> pagers;
         synchronized (PAGERS) {
@@ -273,7 +281,7 @@ public final class ReelScrolling {
     /** Forgets every pager handed over and the session's count, for tests. */
     static void forget() {
         PAGERS.clear();
-        PAGES.clear();
+        FURTHEST.clear();
         synchronized (ReelScrolling.class) {
             played = 0;
             capped = false;
