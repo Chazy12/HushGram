@@ -303,9 +303,13 @@ start-call Lapp/hushgram/extension/instagram/explore/RecentSearches;->keep()Z in
 shared-call Lapp/hushgram/extension/instagram/explore/RecentSearches;->keep()Z in instance (Ljava/lang/Object;)V calling instance Ljava/util/List;->add(ILjava/lang/Object;)V class-holding RecentSearchCache Error\ssaving\srecent\ssearches.\sClearing\sresults.
 # Group Instagram's notifications sends every notification Instagram posts to NotificationGroups,
 # which posts it in HushGram's group while the switch is on and as Instagram built it while it's
-# off. One left in Instagram's code is a notification that never joins the group.
+# off. One left in Instagram's code is a notification that never joins the group. Every cancel goes
+# there too, so a group's summary is counted again when one of its notifications goes; one left is
+# a summary that keeps an old count.
 no-call Landroid/app/NotificationManager;->notify(ILandroid/app/Notification;)V outside Lapp/hushgram/extension/
 no-call Landroid/app/NotificationManager;->notify(Ljava/lang/String;ILandroid/app/Notification;)V outside Lapp/hushgram/extension/
+no-call Landroid/app/NotificationManager;->cancel(I)V outside Lapp/hushgram/extension/
+no-call Landroid/app/NotificationManager;->cancel(Ljava/lang/String;I)V outside Lapp/hushgram/extension/
 # Turn off HDR brightness boosts sends every HDR headroom request and window color mode call to
 # HdrBoost, which holds the boost back while the switch is on. One left in Instagram's code is a
 # boost the switch can't stop.

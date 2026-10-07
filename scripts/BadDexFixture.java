@@ -425,6 +425,8 @@ public class BadDexFixture {
             "no-call Landroid/view/SurfaceControl$Transaction;->setDesiredHdrHeadroom(Landroid/view/SurfaceControl;F)Landroid/view/SurfaceControl$Transaction; outside Lapp/hushgram/extension/",
             "no-call Landroid/view/Window;->setDesiredHdrHeadroom(F)V outside Lapp/hushgram/extension/",
             "no-call Landroid/view/Window;->setColorMode(I)V outside Lapp/hushgram/extension/",
+            "no-call Landroid/app/NotificationManager;->cancel(I)V outside Lapp/hushgram/extension/",
+            "no-call Landroid/app/NotificationManager;->cancel(Ljava/lang/String;I)V outside Lapp/hushgram/extension/",
             "no-call Lcom/facebook/mobileconfig/troubleshooting/MobileConfigOverridesWriterHolder;->importOverridesFromUser(Ljava/lang/String;)Ljava/lang/String; outside Lcom/facebook/mobileconfig/",
             "no-call Lcom/facebook/mobileconfig/MobileConfigOverridesTableHolder;->reload()V outside Lcom/facebook/mobileconfig/",
             "no-call Lcom/facebook/mobileconfig/MobileConfigOverridesTableHolder;->removeAllOverrides()V outside Lcom/facebook/mobileconfig/",
@@ -458,11 +460,12 @@ public class BadDexFixture {
 
     /**
      * One of the framework calls a patch sends to an extension stand-in (the settings patch's
-     * ShortcutManager calls, Group notifications' NotificationManager.notify, Allow screenshots'
-     * Window.setFlags and Window.addFlags): the manager it's made
-     * on, its name, what it answers, the publisher method that makes it, whether that method makes
-     * it as a range call and what it takes after the manager. Its bad build is
-     * "bad-shortcut-[caseName]-left". The case name tells the two notify calls apart.
+     * ShortcutManager calls, Group notifications' NotificationManager.notify and cancel, Allow
+     * screenshots' Window.setFlags and Window.addFlags, Spoof location's Location reads and Turn off
+     * HDR brightness boosts' headroom and color mode calls): the manager it's made on, its name,
+     * what it answers, the publisher method that makes it, whether that method makes it as a range
+     * call and what it takes after the manager. Its bad build is "bad-shortcut-[caseName]-left".
+     * The case name tells calls of one name apart.
      */
     private static final class ShortcutCall {
         final String manager;
@@ -502,7 +505,7 @@ public class BadDexFixture {
         }
     }
 
-    /** All sixteen, as the contract file names them. The update goes as a range call. */
+    /** All eighteen, as the contract file names them. The update and the transaction's headroom go as range calls. */
     private static final List<ShortcutCall> SHORTCUT_CALLS = Arrays.asList(
             new ShortcutCall(SHORTCUT_MANAGER, "pushDynamicShortcut", "V", "push", "push", false, SHORTCUT_INFO),
             new ShortcutCall(SHORTCUT_MANAGER, "addDynamicShortcuts", "Z", "add", "add", false, SHORTCUT_LIST),
@@ -521,7 +524,10 @@ public class BadDexFixture {
             new ShortcutCall(TRANSACTION, "setDesiredHdrHeadroom", TRANSACTION, "transactionHeadroom", "transaction-headroom",
                     true, SURFACE_CONTROL, "F"),
             new ShortcutCall(WINDOW, "setDesiredHdrHeadroom", "V", "windowHeadroom", "window-headroom", false, "F"),
-            new ShortcutCall(WINDOW, "setColorMode", "V", "colorMode", "color-mode", false, "I"));
+            new ShortcutCall(WINDOW, "setColorMode", "V", "colorMode", "color-mode", false, "I"),
+            new ShortcutCall(NOTIFICATION_MANAGER, "cancel", "V", "cancel", "cancel", false, "I"),
+            new ShortcutCall(NOTIFICATION_MANAGER, "cancel", "V", "cancelTagged", "cancel-tagged", false,
+                    "Ljava/lang/String;", "I"));
 
     /** A real native override boundary, with a receiver followed by its exact typed arguments. */
     private static final class OverrideCall {

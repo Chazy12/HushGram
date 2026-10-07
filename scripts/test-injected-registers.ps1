@@ -45,9 +45,9 @@
     given two methods to choose from; all eleven fail naming the method the rule picks. The Follow hook is also put first in that other method as
     well as in the check. A register out of range fails as its own finding:
     named by a helper added to a host class, as the upper half of a long read from the last
-    register, as a long an extension method writes there, and in the feed guard. Each of the five
-    ShortcutManager calls the settings patch sends to the
-    extension is left in Facebook's code by a build of its own, which has to fail that call's no-call
+    register, as a long an extension method writes there, and in the feed guard. Each framework
+    call a patch sends to an extension stand-in (the ShortcutManager, NotificationManager, Window,
+    Location, SurfaceView and SurfaceControl.Transaction calls) is left in Facebook's code by a build of its own, which has to fail that call's no-call
     rule and no other, and the contract file may hold no no-call rule without such a build. The
     call that gives the Facebook logo its touch listener is left as Facebook makes it, the stand-in
     is sent in place of the container's call instead, made on the container's register, sent
@@ -703,9 +703,11 @@ try {
         'before its first return')) `
         "The good build's GenAI reel stub was not reported calling Facebook's attribution finder.`n$($good.Output -join "`n")"
     # The settings patch sends each of these ShortcutManager calls to SettingsEntry, Group
-    # notifications sends both NotificationManager.notify calls to its stand-ins and Allow
-    # screenshots sends Window.setFlags and Window.addFlags to ScreenshotBlock. The fixture's
-    # publisher makes each one from a method of its own (Caller).
+    # notifications sends both NotificationManager.notify and both cancel calls to its stand-ins,
+    # Allow screenshots sends Window.setFlags and Window.addFlags to ScreenshotBlock, Spoof location
+    # sends Location's reads to SpoofLocation and Turn off HDR brightness boosts sends the headroom
+    # and color mode calls to HdrBoost. The fixture's publisher makes each one from a method of its
+    # own (Caller).
     $shortcutManager = 'Landroid/content/pm/ShortcutManager;'
     $notificationManager = 'Landroid/app/NotificationManager;'
     $location = 'Landroid/location/Location;'
@@ -727,6 +729,8 @@ try {
         [pscustomobject]@{ Case = 'transaction-headroom'; Manager = 'Landroid/view/SurfaceControl$Transaction;'; Call = 'setDesiredHdrHeadroom'; Takes = 'Landroid/view/SurfaceControl;F'; Answers = 'Landroid/view/SurfaceControl$Transaction;'; Caller = 'transactionHeadroom' }
         [pscustomobject]@{ Case = 'window-headroom'; Manager = 'Landroid/view/Window;'; Call = 'setDesiredHdrHeadroom'; Takes = 'F'; Answers = 'V'; Caller = 'windowHeadroom' }
         [pscustomobject]@{ Case = 'color-mode'; Manager = 'Landroid/view/Window;'; Call = 'setColorMode'; Takes = 'I'; Answers = 'V'; Caller = 'colorMode' }
+        [pscustomobject]@{ Case = 'cancel'; Manager = $notificationManager; Call = 'cancel'; Takes = 'I'; Answers = 'V'; Caller = 'cancel' }
+        [pscustomobject]@{ Case = 'cancel-tagged'; Manager = $notificationManager; Call = 'cancel'; Takes = 'Ljava/lang/String;I'; Answers = 'V'; Caller = 'cancelTagged' }
     )
     foreach ($shortcut in $shortcutCalls) {
         $shortcut | Add-Member -NotePropertyName Callee -NotePropertyValue (

@@ -75,6 +75,7 @@ import app.hushgram.extension.instagram.media.TapToPlayScope;
 import app.hushgram.extension.instagram.media.ResumePlayback;
 import app.hushgram.extension.instagram.misc.OverrideExchange;
 import app.hushgram.extension.instagram.misc.MediaCache;
+import app.hushgram.extension.instagram.misc.NotificationGroups;
 import app.hushgram.extension.instagram.misc.OverrideImport;
 import app.hushgram.extension.instagram.misc.SpoofLocation;
 import app.hushgram.extension.instagram.stories.StoryRingSize;
@@ -726,9 +727,15 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
 
         if (build.contains(PatchFamily.NOTIFICATION_GROUPS)) {
             PreferenceCategory notifications = category(screen, L10n.t("Notifications"));
-            notifications.addPreference(toggle(context, Settings.GROUP_NOTIFICATIONS, L10n.t("Group notifications"),
+            SwitchPreference grouping = toggle(context, Settings.GROUP_NOTIFICATIONS, L10n.t("Group notifications"),
                     L10n.t("Puts every notification from Instagram in one group that shows how many it holds, so they "
-                            + "don't fill your notification shade. Tapping one still opens it.")));
+                            + "don't fill your notification shade. Tapping one still opens it."));
+            // Turned off, HushGram's summaries come down at once. The notifications under them stay.
+            grouping.setOnPreferenceChangeListener((row, value) -> {
+                if (Boolean.FALSE.equals(value)) NotificationGroups.switchedOff(row.getContext());
+                return true;
+            });
+            notifications.addPreference(grouping);
             notifications.addPreference(toggle(context, Settings.GROUP_NOTIFICATIONS_BY_TYPE, L10n.t("Group by type"),
                     L10n.t("A group for each kind of notification, such as comments or messages, in place of one group.")));
         }

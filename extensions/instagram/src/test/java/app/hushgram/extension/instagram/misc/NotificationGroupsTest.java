@@ -32,6 +32,7 @@ import java.util.function.BooleanSupplier;
 import app.hushgram.extension.instagram.settings.FamilyNames;
 import app.hushgram.extension.instagram.settings.Settings;
 import app.hushgram.extension.shared.SettingsContextRule;
+import app.hushgram.extension.shared.Utils;
 import app.hushgram.extension.shared.diagnostics.HookStatus;
 import app.hushgram.extension.shared.settings.BaseSettings;
 import app.hushgram.extension.shared.settings.PauseForTests;
@@ -218,5 +219,135 @@ public class NotificationGroupsTest {
         assertEquals(NotificationGroups.TYPE_GROUP + "comments", shown(null, 7).getGroup());
         assertEquals(NotificationGroups.TYPE_GROUP + NotificationGroups.NO_CHANNEL,
                 NotificationGroups.groupFor(new Notification(), true));
+    }
+
+    private Notification summary(String group) {
+        return shown(NotificationGroups.SUMMARY_TAG, group.hashCode());
+    }
+
+    /** Each cancel counts the group again: the summary says one fewer, and comes down with one left. */
+    @Test
+    public void aCancelCountsTheSummaryAgain() {
+        NotificationGroups.post(manager, "like", 1, built("likes", "first like"), ON, OFF);
+        NotificationGroups.post(manager, "like", 2, built("likes", "second like"), ON, OFF);
+        NotificationGroups.post(manager, null, 3, built("direct", "a message"), ON, OFF);
+        assertEquals(3, summary(NotificationGroups.ONE_GROUP).number);
+
+        NotificationGroups.withdraw(manager, null, 3, ON);
+        assertNull(shown(null, 3));
+        Notification fewer = summary(NotificationGroups.ONE_GROUP);
+        assertEquals(2, fewer.number);
+        assertEquals("2 notifications", fewer.extras.getCharSequence(Notification.EXTRA_TEXT).toString());
+
+        NotificationGroups.withdraw(manager, "like", 1, ON);
+        assertNull("one left gets no summary", summary(NotificationGroups.ONE_GROUP));
+        assertNotNull(shown("like", 2));
+        assertEquals(1, shadowOf(manager).size());
+    }
+
+    /** By type, a cancel only changes its own group's summary. */
+    @Test
+    public void aCancelByTypeLeavesOtherGroupsAlone() {
+        NotificationGroups.post(manager, "like", 1, built("likes", "first like"), ON, ON);
+        NotificationGroups.post(manager, "like", 2, built("likes", "second like"), ON, ON);
+        NotificationGroups.post(manager, "dm", 3, built("direct", "a message"), ON, ON);
+        NotificationGroups.post(manager, "dm", 4, built("direct", "another message"), ON, ON);
+        String likes = NotificationGroups.TYPE_GROUP + "likes";
+        String direct = NotificationGroups.TYPE_GROUP + "direct";
+
+        NotificationGroups.withdraw(manager, "like", 1, ON);
+
+        assertNull(summary(likes));
+        assertEquals(2, summary(direct).number);
+        assertEquals(4, shadowOf(manager).size());
+    }
+
+    /** Posted again outside the group, as an ongoing notification is, it leaves its group's count. */
+    @Test
+    public void aNotificationPostedOngoingLeavesItsGroup() {
+        NotificationGroups.post(manager, null, 5, built("uploads", "Posted"), ON, OFF);
+        NotificationGroups.post(manager, "like", 1, built("likes", "a like"), ON, OFF);
+        assertEquals(2, summary(NotificationGroups.ONE_GROUP).number);
+
+        Notification upload = new Notification.Builder(context, "uploads")
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentText("Posting again")
+                .setOngoing(true)
+                .build();
+        NotificationGroups.post(manager, null, 5, upload, ON, OFF);
+
+        assertSame(upload, shown(null, 5));
+        assertNull(summary(NotificationGroups.ONE_GROUP));
+    }
+
+    /** With the switch off a cancel is only the cancel, and a summary left from while it was on comes down. */
+    @Test
+    public void offACancelTakesLeftoverSummariesDown() {
+        NotificationGroups.post(manager, "like", 1, built("likes", "first like"), ON, OFF);
+        NotificationGroups.post(manager, "like", 2, built("likes", "second like"), ON, OFF);
+        NotificationGroups.post(manager, "like", 3, built("likes", "third like"), ON, OFF);
+        assertNotNull(summary(NotificationGroups.ONE_GROUP));
+
+        NotificationGroups.withdraw(manager, "like", 1, OFF);
+
+        assertNull(shown("like", 1));
+        assertNull(summary(NotificationGroups.ONE_GROUP));
+        assertNotNull("the notifications under it stay", shown("like", 2));
+        assertEquals(2, shadowOf(manager).size());
+    }
+
+    /** With the switch off a post is as built, and a summary left from while it was on comes down. */
+    @Test
+    public void offAPostTakesLeftoverSummariesDown() {
+        NotificationGroups.post(manager, "like", 1, built("likes", "first like"), ON, OFF);
+        NotificationGroups.post(manager, "like", 2, built("likes", "second like"), ON, OFF);
+        Notification message = built("direct", "a message");
+
+        NotificationGroups.post(manager, null, 3, message, OFF, OFF);
+
+        assertSame(message, shown(null, 3));
+        assertNull(summary(NotificationGroups.ONE_GROUP));
+        assertEquals(3, shadowOf(manager).size());
+    }
+
+    /** The stand-ins for cancel(tag, id) and cancel(id) take the notification down as the manager would. */
+    @Test
+    public void theCancelStandInsCancel() {
+        Settings.GROUP_NOTIFICATIONS.save(true);
+        NotificationGroups.notify(manager, "like", 1, built("likes", "a like"));
+        NotificationGroups.notify(manager, 2, built("likes", "another like"));
+        assertNotNull(summary(NotificationGroups.ONE_GROUP));
+
+        NotificationGroups.cancel(manager, "like", 1);
+        assertNull(shown("like", 1));
+        assertNull(summary(NotificationGroups.ONE_GROUP));
+
+        NotificationGroups.cancel(manager, 2);
+        assertEquals(0, shadowOf(manager).size());
+    }
+
+    /** A switch that can't be read still lets the cancel through. */
+    @Test
+    public void aFailureStillCancels() {
+        NotificationGroups.post(manager, "like", 1, built("likes", "a like"), OFF, OFF);
+
+        NotificationGroups.withdraw(manager, "like", 1, THROWS);
+
+        assertNull(shown("like", 1));
+        assertFalse(HookStatus.missing(FamilyNames.NOTIFICATION_GROUPS).isEmpty());
+    }
+
+    /** Turning the switch off in settings takes HushGram's summaries down at once, and only those. */
+    @Test
+    public void switchingOffTakesTheSummariesDown() throws Exception {
+        NotificationGroups.post(manager, "like", 1, built("likes", "first like"), ON, OFF);
+        NotificationGroups.post(manager, "like", 2, built("likes", "second like"), ON, OFF);
+        assertEquals(3, shadowOf(manager).size());
+
+        NotificationGroups.switchedOff(context);
+        Utils.awaitBackgroundTasksForTests();
+
+        assertNull(summary(NotificationGroups.ONE_GROUP));
+        assertEquals(2, shadowOf(manager).size());
     }
 }

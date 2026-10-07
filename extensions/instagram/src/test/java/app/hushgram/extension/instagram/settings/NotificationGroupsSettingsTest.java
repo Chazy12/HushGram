@@ -6,6 +6,8 @@ package app.hushgram.extension.instagram.settings;
 
 import static org.junit.Assert.*;
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.preference.Preference;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceGroup;
@@ -89,6 +91,24 @@ public class NotificationGroupsSettingsTest {
         assertEquals(Arrays.asList(Settings.GROUP_NOTIFICATIONS), PatchFamily.NOTIFICATION_GROUPS.switches);
         assertTrue(ConfigurationBackup.eligible().containsKey(Settings.GROUP_NOTIFICATIONS.key));
         assertTrue(ConfigurationBackup.eligible().containsKey(Settings.GROUP_NOTIFICATIONS_BY_TYPE.key));
+    }
+    /** Turning Group notifications off takes HushGram's summary down at once. The notifications stay. */
+    @Test public void turningTheSwitchOffTakesTheSummaryDown() throws Exception {
+        open(true);
+        NotificationManager manager = RuntimeEnvironment.getApplication().getSystemService(NotificationManager.class);
+        Settings.GROUP_NOTIFICATIONS.save(true);
+        for (int id = 1; id <= 2; id++) {
+            app.hushgram.extension.instagram.misc.NotificationGroups.notify(manager, id,
+                    new Notification.Builder(RuntimeEnvironment.getApplication(), "likes")
+                            .setSmallIcon(android.R.drawable.ic_dialog_info).setContentText("a like").build());
+        }
+        assertEquals("two and their summary", 3, org.robolectric.Shadows.shadowOf(manager).size());
+        SwitchPreference group = (SwitchPreference) page.getPreferenceScreen().findPreference(Settings.GROUP_NOTIFICATIONS.key);
+
+        assertTrue(group.getOnPreferenceChangeListener().onPreferenceChange(group, false));
+        Utils.awaitBackgroundTasksForTests();
+
+        assertEquals(2, org.robolectric.Shadows.shadowOf(manager).size());
     }
     @Test public void byTypeWaitsForTheFirstSwitch() throws Exception {
         open(true);
