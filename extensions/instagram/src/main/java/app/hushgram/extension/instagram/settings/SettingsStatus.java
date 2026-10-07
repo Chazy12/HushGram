@@ -281,6 +281,16 @@ public final class SettingsStatus {
         return false;
     }
 
+    /** Export and Validate overrides: Open developer options' reader, which a build can lack. */
+    public static boolean overrideExchange() {
+        return false;
+    }
+
+    /** Import, Restore and Reset overrides: Open developer options' writer, which a build can lack. */
+    public static boolean overrideImport() {
+        return false;
+    }
+
     public static boolean pureBlack() {
         return false;
     }

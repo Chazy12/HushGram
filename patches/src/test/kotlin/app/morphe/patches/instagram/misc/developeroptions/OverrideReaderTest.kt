@@ -10,6 +10,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.instagram.FixtureDex
+import app.morphe.patches.instagram.misc.extension.PatchLogCapture
 import app.morphe.patches.instagram.misc.extension.originalName
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -76,6 +77,34 @@ class OverrideReaderTest {
             assertTrue("$case: $failure", failure?.message?.startsWith("Open developer options: ") == true)
             assertEquals(case, before, patch.classDefBy(OVERRIDE_BRIDGE).methods.map { it.toString() to it.implementation!!.instructions.map(Any::toString) })
         }
+    }
+
+    /** A reader that moved is left out, with a warning, before any stub changes. */
+    @Test fun aReaderThatMovedIsLeftOutWithAWarningBeforeAnyStubChanges() {
+        val patch = PatchContexts.of(classes("").filter { it.type != type("Diagnostics", "") })
+        val before = patch.classDefBy(OVERRIDE_BRIDGE).methods.map { it.toString() to it.implementation!!.instructions.map(Any::toString) }
+
+        val warnings = PatchLogCapture.warnings { assertNull(patch.overrideExchangeOrWarn(editor())) }
+
+        assertEquals(warnings.toString(), 1, warnings.size)
+        assertTrue(warnings.single(), warnings.single().startsWith("Open developer options: expected one signed-in override diagnostics, found 0. "))
+        assertEquals(before, patch.classDefBy(OVERRIDE_BRIDGE).methods.map { it.toString() to it.implementation!!.instructions.map(Any::toString) })
+    }
+
+    /** A reader that's found goes in, Export and Validate with it, when the writer it leads to has moved. */
+    @Test fun aFoundReaderGoesInWithoutAWriterThatMoved() {
+        val patch = PatchContexts.of(classes(""))
+
+        val warnings = PatchLogCapture.warnings {
+            val exchange = patch.overrideExchangeOrWarn(editor())!!
+            assertNull(exchange.writer)
+            patch.putStubs(exchange.reader)
+        }
+
+        assertEquals(warnings.toString(), 1, warnings.size)
+        assertTrue(warnings.single(), warnings.single().startsWith("Open developer options: "))
+        assertTrue(warnings.single(), warnings.single().endsWith(". Export and Validate go in without Import."))
+        assertReader(patch, patch.findOverrideReader(editor()))
     }
 
     @Test fun eachDeclaredFixtureResolvesTheSessionFileAndTypedSchemaWithoutNativeWrites() {

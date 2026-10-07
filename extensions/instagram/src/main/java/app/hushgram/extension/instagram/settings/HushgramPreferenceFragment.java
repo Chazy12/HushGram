@@ -851,57 +851,63 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                             + "Instagram after you turn it on."),
                     app.hushgram.extension.instagram.misc.DeveloperOptions::openWhitehat,
                     L10n.t("Whitehat settings are unavailable on this screen. Open HushGram settings from Home while signed in.")));
-            exportOverrides = new Row(context);
-            exportOverrides.setKey("hushgram_export_overrides");
-            exportOverrides.setPersistent(false);
-            exportOverrides.setTitle(L10n.t("Export overrides"));
-            exportOverrides.setSummary(L10n.t("Save this signed-in session's overrides for the exact Instagram build and schema."));
-            exportOverrides.setOnPreferenceClickListener(row -> { pickOverrides(EXPORT_OVERRIDES); return true; });
-            developer.addPreference(exportOverrides);
-            validateOverrides = new Row(context);
-            validateOverrides.setKey("hushgram_validate_overrides");
-            validateOverrides.setPersistent(false);
-            validateOverrides.setTitle(L10n.t("Validate an overrides file"));
-            validateOverrides.setSummary(L10n.t("Check a saved file against this session's typed schema. Validation applies nothing."));
-            validateOverrides.setOnPreferenceClickListener(row -> { pickOverrides(VALIDATE_OVERRIDES); return true; });
-            developer.addPreference(validateOverrides);
-            developer.addPreference(toggle(context, Settings.ALLOW_OVERRIDE_IMPORT,
-                    L10n.t("Allow importing overrides"),
-                    L10n.t("Shows Import and Restore for overrides. An import changes Instagram's native flags for "
-                            + "this signed-in session.")));
-            developerSection = developer;
-            importOverrides = new Row(context);
-            importOverrides.setKey("hushgram_import_overrides");
-            importOverrides.setPersistent(false);
-            importOverrides.setTitle(L10n.t("Import overrides"));
-            importOverrides.setSummary(L10n.t("Apply a HushGram export from this session and build, or Instagram's own "
-                    + "overrides file, through Instagram's own override editor. The current overrides are saved for Restore first."));
-            importOverrides.setOnPreferenceClickListener(row -> { pickOverrides(IMPORT_OVERRIDES); return true; });
-            restoreOverrides = new Row(context);
-            restoreOverrides.setKey("hushgram_restore_overrides");
-            restoreOverrides.setPersistent(false);
-            restoreOverrides.setTitle(L10n.t("Restore previous overrides"));
-            restoreOverrides.setSummary(L10n.t("Put back the overrides saved before the last import for this session and build."));
-            restoreOverrides.setOnPreferenceClickListener(row -> { exchangeOverrides(null, RESTORE_OVERRIDES); return true; });
-            discardOverrides = new Row(context);
-            discardOverrides.setKey("hushgram_discard_overrides");
-            discardOverrides.setPersistent(false);
-            discardOverrides.setTitle(L10n.t("Discard saved overrides"));
-            discardOverrides.setSummary(L10n.t("Forget the copy saved for Restore so imports can run again. "
-                    + "Instagram's overrides don't change."));
-            discardOverrides.setOnPreferenceClickListener(row -> { exchangeOverrides(null, DISCARD_OVERRIDES); return true; });
-            resetOverrides = new Row(context);
-            resetOverrides.setKey("hushgram_reset_overrides");
-            resetOverrides.setPersistent(false);
-            resetOverrides.setTitle(L10n.t("Reset all overrides"));
-            resetOverrides.setSummary(L10n.t("Take every override in this signed-in session away, so Instagram goes back to "
-                    + "its own flags. The current overrides are saved for Restore first."));
-            resetOverrides.setOnPreferenceClickListener(row -> { exchangeOverrides(null, RESET_OVERRIDES); return true; });
-            if (Settings.ALLOW_OVERRIDE_IMPORT.get()) {
-                developer.addPreference(importOverrides);
-                developer.addPreference(restoreOverrides);
-                developer.addPreference(discardOverrides);
-                developer.addPreference(resetOverrides);
+            // Export, Validate and Import go through the patch's override reader and writer, which a
+            // build goes without when Instagram moved them. The rest of Developer stays.
+            if (PatchFamily.overrideExchangeInBuild()) {
+                exportOverrides = new Row(context);
+                exportOverrides.setKey("hushgram_export_overrides");
+                exportOverrides.setPersistent(false);
+                exportOverrides.setTitle(L10n.t("Export overrides"));
+                exportOverrides.setSummary(L10n.t("Save this signed-in session's overrides for the exact Instagram build and schema."));
+                exportOverrides.setOnPreferenceClickListener(row -> { pickOverrides(EXPORT_OVERRIDES); return true; });
+                developer.addPreference(exportOverrides);
+                validateOverrides = new Row(context);
+                validateOverrides.setKey("hushgram_validate_overrides");
+                validateOverrides.setPersistent(false);
+                validateOverrides.setTitle(L10n.t("Validate an overrides file"));
+                validateOverrides.setSummary(L10n.t("Check a saved file against this session's typed schema. Validation applies nothing."));
+                validateOverrides.setOnPreferenceClickListener(row -> { pickOverrides(VALIDATE_OVERRIDES); return true; });
+                developer.addPreference(validateOverrides);
+            }
+            if (PatchFamily.overrideImportInBuild()) {
+                developer.addPreference(toggle(context, Settings.ALLOW_OVERRIDE_IMPORT,
+                        L10n.t("Allow importing overrides"),
+                        L10n.t("Shows Import and Restore for overrides. An import changes Instagram's native flags for "
+                                + "this signed-in session.")));
+                developerSection = developer;
+                importOverrides = new Row(context);
+                importOverrides.setKey("hushgram_import_overrides");
+                importOverrides.setPersistent(false);
+                importOverrides.setTitle(L10n.t("Import overrides"));
+                importOverrides.setSummary(L10n.t("Apply a HushGram export from this session and build, or Instagram's own "
+                        + "overrides file, through Instagram's own override editor. The current overrides are saved for Restore first."));
+                importOverrides.setOnPreferenceClickListener(row -> { pickOverrides(IMPORT_OVERRIDES); return true; });
+                restoreOverrides = new Row(context);
+                restoreOverrides.setKey("hushgram_restore_overrides");
+                restoreOverrides.setPersistent(false);
+                restoreOverrides.setTitle(L10n.t("Restore previous overrides"));
+                restoreOverrides.setSummary(L10n.t("Put back the overrides saved before the last import for this session and build."));
+                restoreOverrides.setOnPreferenceClickListener(row -> { exchangeOverrides(null, RESTORE_OVERRIDES); return true; });
+                discardOverrides = new Row(context);
+                discardOverrides.setKey("hushgram_discard_overrides");
+                discardOverrides.setPersistent(false);
+                discardOverrides.setTitle(L10n.t("Discard saved overrides"));
+                discardOverrides.setSummary(L10n.t("Forget the copy saved for Restore so imports can run again. "
+                        + "Instagram's overrides don't change."));
+                discardOverrides.setOnPreferenceClickListener(row -> { exchangeOverrides(null, DISCARD_OVERRIDES); return true; });
+                resetOverrides = new Row(context);
+                resetOverrides.setKey("hushgram_reset_overrides");
+                resetOverrides.setPersistent(false);
+                resetOverrides.setTitle(L10n.t("Reset all overrides"));
+                resetOverrides.setSummary(L10n.t("Take every override in this signed-in session away, so Instagram goes back to "
+                        + "its own flags. The current overrides are saved for Restore first."));
+                resetOverrides.setOnPreferenceClickListener(row -> { exchangeOverrides(null, RESET_OVERRIDES); return true; });
+                if (Settings.ALLOW_OVERRIDE_IMPORT.get()) {
+                    developer.addPreference(importOverrides);
+                    developer.addPreference(restoreOverrides);
+                    developer.addPreference(discardOverrides);
+                    developer.addPreference(resetOverrides);
+                }
             }
         }
 

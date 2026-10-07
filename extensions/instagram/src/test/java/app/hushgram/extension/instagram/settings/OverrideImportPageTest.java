@@ -57,6 +57,8 @@ public class OverrideImportPageTest {
         Utils.awaitBackgroundTasksForTests();
         if (host != null) host.close();
         PatchFamily.inBuildForTests = null;
+        PatchFamily.overrideExchangeForTests = null;
+        PatchFamily.overrideImportForTests = null;
         Settings.ALLOW_OVERRIDE_IMPORT.resetToDefault();
         OverrideImportTest.restoreTiming();
         clearFeedback();
@@ -122,6 +124,35 @@ public class OverrideImportPageTest {
         assertNull(page.findPreference("hushgram_import_overrides"));
         assertNull(page.findPreference("hushgram_restore_overrides"));
         assertNull(page.findPreference("hushgram_discard_overrides"));
+        assertEquals(0, NativeTable.captures);
+    }
+
+    @Test public void aBuildWithoutTheWriterLeavesOnlyImportOut() throws Exception {
+        Settings.ALLOW_OVERRIDE_IMPORT.save(true);
+        PatchFamily.overrideImportForTests = false;
+        openHost();
+        assertNotNull(page.findPreference("hushgram_open_overrides"));
+        assertNotNull(page.findPreference("hushgram_export_overrides"));
+        assertNotNull(page.findPreference("hushgram_validate_overrides"));
+        for (String key : new String[]{Settings.ALLOW_OVERRIDE_IMPORT.key, "hushgram_import_overrides",
+                "hushgram_restore_overrides", "hushgram_discard_overrides", "hushgram_reset_overrides"}) {
+            assertNull(key, page.findPreference(key));
+        }
+    }
+
+    @Test public void aBuildWithoutTheReaderKeepsTheLongPressAndTheEntriesOnly() throws Exception {
+        Settings.ALLOW_OVERRIDE_IMPORT.save(true);
+        PatchFamily.overrideExchangeForTests = false;
+        openHost();
+        assertNotNull(page.findPreference(Settings.OPEN_DEVELOPER_OPTIONS.key));
+        assertNotNull(page.findPreference("hushgram_open_overrides"));
+        assertNotNull(page.findPreference("hushgram_open_whitehat"));
+        for (String key : new String[]{"hushgram_export_overrides", "hushgram_validate_overrides",
+                Settings.ALLOW_OVERRIDE_IMPORT.key, "hushgram_import_overrides", "hushgram_restore_overrides",
+                "hushgram_discard_overrides", "hushgram_reset_overrides"}) {
+            assertNull(key, page.findPreference(key));
+        }
+        assertFalse(PatchFamily.overrideImportInBuild());
         assertEquals(0, NativeTable.captures);
     }
 

@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Open developer options keeps its long press and its MetaConfig and Whitehat rows when an Instagram update moves what Export, Validate or Import use. Only the rows that need the moved part are left out, and the diagnostic report says which.
+
 * **Instagram:** New patch, Hide the Share button, in simple mode with its switch off. Turn it on under Sharing and the Share button and its count come off the posts in your feed and off reels. Asked for in #1.
 
 * **Instagram:** Turn off double tap to like has an On comments switch under it, off to start. With it on, a double tap on a comment doesn't like it.
