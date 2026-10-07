@@ -137,7 +137,12 @@ internal fun BytecodePatchContext.homeFeedTypesOrWarn(): HomeFeedTypes? = try {
         it.name == "mediaType" && AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "I" &&
             it.parameterTypes.map(Any::toString) == listOf("Ljava/lang/Object;")
     } ?: throw PatchException("$PATCH: $FEED_SUGGESTIONS has no static mediaType(Object)I")
-    HomeFeedTypes(reads, itemPost(reads.itemType), pandoGetter(PATCH, MEDIA, "media_type", "Ljava/lang/Integer;"), stub)
+    val post = itemPost(reads.itemType)
+    val mediaType = pandoGetter(PATCH, MEDIA, "media_type", "Ljava/lang/Integer;")
+    if (!AccessFlags.PUBLIC.isSet(classDefBy(MEDIA).accessFlags) || !AccessFlags.PUBLIC.isSet(mediaType.accessFlags)) {
+        throw PatchException("$PATCH: $MEDIA->${mediaType.name} isn't public, so the extension can't reach it")
+    }
+    HomeFeedTypes(reads, post, mediaType, stub)
 } catch (moved: PatchException) {
     patchLog.warning("${moved.message}. Hide suggested posts goes in without Hide videos, Hide photos and Hide carousels.")
     null
@@ -148,10 +153,11 @@ internal fun BytecodePatchContext.homeFeedTypesOrWarn(): HomeFeedTypes? = try {
  * factory from a post (taking a Media and answering an item) writes. On 450 that's the field the
  * item's parser fills from "media_or_ad", where a post from an account you follow, a suggested
  * post and an ad all come. The item's other post fields hold other units' posts. It has to be a
- * public instance field, since the extension reads it.
+ * public instance field of a public class, since the extension reads it.
  */
 internal fun BytecodePatchContext.itemPost(itemType: String): FieldReference {
     val item = classDefBy(itemType)
+    if (!AccessFlags.PUBLIC.isSet(item.accessFlags)) throw PatchException("$PATCH: $itemType isn't public, so the extension can't reach it")
     val factories = item.methods.filter {
         AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == itemType &&
             it.parameterTypes.map(Any::toString) == listOf(MEDIA)

@@ -187,6 +187,35 @@ class HomeFeedTypesHookTest {
         }
     }
 
+    /** A feed item class or a media_type getter the extension can't reach leaves the switches out and every class as it was. */
+    @Test
+    fun whatTheExtensionCantReachLeavesEverythingUnchanged() {
+        val hiddenGetter = ImmutableMethod(
+            MEDIA, "A6M", emptyList(), "Ljava/lang/Integer;", AccessFlags.PRIVATE.value or AccessFlags.FINAL.value, null, null,
+            ImmutableMethodImplementation(
+                1,
+                listOf(ImmutableInstruction31i(Opcode.CONST, 0, "media_type".hashCode()), ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0)),
+                null, null,
+            ),
+        )
+        val privateGetter = classes().map { if (it.type == MEDIA) type(MEDIA, integerGetter("A6L", "like_count"), hiddenGetter) else it }
+        val privateItem = classes().map { classDef ->
+            if (classDef.type != FeedItemStandIns.ITEM) classDef else ImmutableClassDef(
+                classDef.type, AccessFlags.FINAL.value, classDef.superclass, classDef.interfaces, classDef.sourceFile,
+                classDef.annotations, classDef.fields, classDef.methods,
+            )
+        }
+        for ((case, built) in listOf("private getter" to privateGetter, "private item" to privateItem)) {
+            val context = PatchContexts.of(built)
+            val before = built.associate { it.type to it.methods.sumOf { m -> m.instructions().size } }
+
+            assertNull(case, context.homeFeedTypesOrWarn())
+
+            val after = built.associate { c -> c.type to context.classDefBy(c.type).methods.sumOf { it.instructions().size } }
+            assertEquals(case, before, after)
+        }
+    }
+
     /**
      * In each declared build, the post field the item's factory from a post writes is the one its
      * parser fills from "media_or_ad", and Media has one getter for media_type.
@@ -198,7 +227,9 @@ class HomeFeedTypesHookTest {
             val context = PatchContexts.of(fixture.classes)
 
             val post = context.itemPost(fixture.itemType)
-            context.pandoGetter("test", MEDIA, "media_type", "Ljava/lang/Integer;")
+            val getter = context.pandoGetter("test", MEDIA, "media_type", "Ljava/lang/Integer;")
+            assertTrue("$name: Media is public", AccessFlags.PUBLIC.isSet(context.classDefBy(MEDIA).accessFlags))
+            assertTrue("$name: ${getter.name} is public", AccessFlags.PUBLIC.isSet(getter.accessFlags))
 
             val parsers = fixture.classes.flatMap { it.methods }.filter { method ->
                 method.returnType == "Ljava/lang/Object;" && method.parameterTypes.size == 1 &&
