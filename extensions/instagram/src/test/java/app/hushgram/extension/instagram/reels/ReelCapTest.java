@@ -24,6 +24,7 @@ import app.hushgram.extension.instagram.settings.Settings;
 import app.hushgram.extension.shared.SettingsContextRule;
 import app.hushgram.extension.shared.diagnostics.HookStatus;
 import app.hushgram.extension.shared.settings.BaseSettings;
+import app.hushgram.extension.shared.settings.HushgramPause;
 import app.hushgram.extension.shared.settings.PauseForTests;
 
 /** Stop after 20 reels: when a session's reels run out, what it stops, and when a break starts a new one. */
@@ -53,6 +54,8 @@ public class ReelCapTest {
 
     @After
     public void tearDown() {
+        BaseSettings.PAUSED.save(false);
+        PauseForTests.resume();
         Settings.STOP_REELS_SCROLLING.resetToDefault();
         Settings.REEL_CAP.resetToDefault();
         ReelScrolling.forget();
@@ -92,6 +95,54 @@ public class ReelCapTest {
         }
         assertTrue(reels.inputs.isEmpty());
         assertEquals(1, ReelScrolling.userInput(reels, 1));
+    }
+
+    /** Turned off while capped, the open viewer swipes again at the next touch, and on again it counts afresh. */
+    @Test
+    public void turningItOffGivesTheSwipesBackAtOnce() {
+        Pager pager = new Pager();
+        ReelScrolling.pager(pager);
+        play(pager, 0, ReelScrolling.CAP);
+        assertEquals(0, ReelScrolling.userInput(pager, 1));
+
+        Settings.REEL_CAP.save(false);
+        assertEquals("a touch in Reels", 1, ReelScrolling.pull());
+        assertEquals(java.util.Arrays.asList(false, true), pager.inputs);
+        assertEquals(1, ReelScrolling.userInput(pager, 1));
+        assertEquals("a new viewer", 1, ReelScrolling.pager(new Pager()));
+        play(pager, 0, ReelScrolling.CAP * 2);
+        assertEquals(2, pager.inputs.size());
+
+        Settings.REEL_CAP.save(true);
+        play(pager, 100, ReelScrolling.CAP - 1);
+        assertEquals(2, pager.inputs.size());
+        assertEquals(1, ReelScrolling.userInput(pager, 1));
+    }
+
+    /** Pausing HushGram while capped gives the swipes back too, at the next page store. */
+    @Test
+    public void pausingGivesTheSwipesBack() {
+        Pager pager = new Pager();
+        ReelScrolling.pager(pager);
+        play(pager, 0, ReelScrolling.CAP);
+        BaseSettings.PAUSED.save(true);
+        PauseForTests.pause(HushgramPause.Reason.SWITCH);
+        ReelScrolling.page(pager, 3);
+        assertEquals(java.util.Arrays.asList(false, true), pager.inputs);
+        assertEquals(1, ReelScrolling.userInput(pager, 1));
+    }
+
+    /** Turned off with Stop Reels scrolling on, the pager stays still for that switch. */
+    @Test
+    public void turningItOffLeavesStopReelsScrollingInCharge() {
+        Pager pager = new Pager();
+        ReelScrolling.pager(pager);
+        play(pager, 0, ReelScrolling.CAP);
+        Settings.STOP_REELS_SCROLLING.save(true);
+        Settings.REEL_CAP.save(false);
+        assertEquals(0, ReelScrolling.pull());
+        assertEquals(java.util.Collections.singletonList(false), pager.inputs);
+        assertEquals(0, ReelScrolling.userInput(pager, 1));
     }
 
     @Test

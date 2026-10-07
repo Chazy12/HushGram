@@ -44,6 +44,8 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  * page it wasn't on before is one more reel this session. At {@link #CAP} the pager's input goes off
  * and stays off, in this viewer and any that opens, the same as with the first switch on, until
  * Instagram has been in the background for {@link #BREAK_MILLIS}. A reel you open still plays.
+ * Turning the switch off, or pausing HushGram, gives the swipes back at the next touch in Reels
+ * ({@link #settle}).
  *
  * <p>Every other pager in Instagram is left alone. The hooks fail open: with the switch off,
  * HushGram paused, the settings not read yet or anything thrown, the pager takes what Instagram
@@ -94,6 +96,7 @@ public final class ReelScrolling {
             if (pager == null) return 1;
             PAGERS.put(pager, Boolean.TRUE);
             PAGES.putIfAbsent(pager, -1);
+            settle(ReelScrolling::capOn);
             if (!on.getAsBoolean()) return 1;
             Logger.printDebug(() -> "Reels scrolling: a Reels pager's swipes are off");
             return 0;
@@ -116,6 +119,7 @@ public final class ReelScrolling {
         try {
             if (enabled == 0 || pager == null || !PAGERS.containsKey(pager)) return enabled;
             HookStatus.invoked(FamilyNames.REEL_SCROLLING);
+            settle(ReelScrolling::capOn);
             return on.getAsBoolean() ? 0 : enabled;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REEL_SCROLLING, INPUT, failure);
@@ -135,6 +139,7 @@ public final class ReelScrolling {
     static int pull(BooleanSupplier on) {
         try {
             HookStatus.invoked(FamilyNames.REEL_SCROLLING);
+            settle(ReelScrolling::capOn);
             return on.getAsBoolean() ? 0 : 1;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REEL_SCROLLING, PULL, failure);
@@ -157,6 +162,7 @@ public final class ReelScrolling {
             Integer last = PAGES.put(pager, position);
             if (last != null && last == position) return;
             HookStatus.invoked(FamilyNames.REEL_SCROLLING);
+            settle(capOn);
             if (!capOn.getAsBoolean()) return;
             watch();
             synchronized (ReelScrolling.class) {
@@ -180,14 +186,32 @@ public final class ReelScrolling {
 
     /**
      * An Instagram screen started at [now]. After a break of {@link #BREAK_MILLIS} or more a new
-     * session starts, and a pager the cap turned off takes a finger again, unless Stop Reels
-     * scrolling keeps it off.
+     * session starts ({@link #release}).
      */
     static void shown(long now) {
         long since = hiddenAt;
         if (since == 0) return;
         hiddenAt = 0;
         if (now - since < BREAK_MILLIS) return;
+        release();
+    }
+
+    /**
+     * Asked first by every hook. While a session is capped and Stop after 20 reels is no longer on,
+     * switched off or with HushGram paused, Instagram's own behavior comes back right away rather than
+     * after the break: the session ends ({@link #release}). No hook runs while a capped pager sits
+     * still, but the pull-down layout around the viewer sees every touch in Reels, so the first one
+     * after the switch goes off gives the swipes back.
+     */
+    private static void settle(BooleanSupplier capOn) {
+        if (capped && !capOn.getAsBoolean()) release();
+    }
+
+    /**
+     * Ends the session: the count starts over, and a pager the cap turned off takes a finger again,
+     * unless Stop Reels scrolling keeps it off.
+     */
+    private static void release() {
         boolean wasCapped;
         synchronized (ReelScrolling.class) {
             played = 0;
