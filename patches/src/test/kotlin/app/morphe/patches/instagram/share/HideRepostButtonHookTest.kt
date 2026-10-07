@@ -188,6 +188,14 @@ class HideRepostButtonHookTest {
         assertThrows(PatchException::class.java) { context.findRepostSites() }
     }
 
+    @Test
+    fun twoHooksOnOneMethodFailBeforeAnyChange() {
+        requireSeparateMethods(mapOf("one" to setOf("Lfixture/A;->a()"), "two" to setOf("Lfixture/A;->b()")))
+        assertThrows(PatchException::class.java) {
+            requireSeparateMethods(mapOf("one" to setOf("Lfixture/A;->a()"), "two" to setOf("Lfixture/A;->b()", "Lfixture/A;->a()")))
+        }
+    }
+
     /**
      * In each declared build the model's getter is guarded and every tree read of the field is
      * filtered. On 450 there are five reads, two of them in one lambda's invoke; 449 had six.

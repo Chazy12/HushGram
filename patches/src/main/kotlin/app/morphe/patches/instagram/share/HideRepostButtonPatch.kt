@@ -103,23 +103,54 @@ val hideRepostButtonPatch = bytecodePatch(
 
     execute {
         requireStatusMethod("repostButton")
-        // Proved before anything changes: it reads the state's own constructor as Instagram wrote it.
+        // Everything is found and checked before the first change.
         val feedState = findFeedRepostState()
         val sites = findRepostSites()
-        if (sites.reads.any { it.type == feedState.type && it.name == "<init>" }) {
-            refuse("${feedState.type}'s constructor reads $REPOSTS_FIELD itself, so its writes and that read would move each other")
-        }
-        // The state goes first, so its own check of each write runs before this patch changes anything.
-        hideFeedState(feedState)
+        val feedUfi = findFeedUfiSite()
+        val component = findFeedRepostComponent()
+        requireSeparateMethods(repostHookMethods(feedState, sites, feedUfi, component))
+        val hideState = prepareFeedState(feedState)
+        val hideUfi = prepareFeedUfi(feedUfi)
+        val hideComponent = prepareFeedComponent(component)
+        hideState()
         guardRepostGetter(sites.getter)
         sites.reads.groupBy { Triple(it.type, it.name, it.parameters) }.values.forEach(::filterRepostReads)
-        hideFeedUfi(findFeedUfiSite())
-        hideFeedComponent(findFeedRepostComponent())
+        hideUfi()
+        hideComponent()
         enableStatus("repostButton")
     }
 }
 
 private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $detail")
+
+private fun methodKey(type: String, name: String, parameters: List<String>) = "$type->$name(${parameters.joinToString("")})"
+
+/** The methods each of this patch's hooks changes, by hook. */
+internal fun repostHookMethods(
+    state: FeedRepostState,
+    sites: RepostSites,
+    feedUfi: FeedUfiSite,
+    component: FeedRepostComponent,
+): Map<String, Set<String>> = mapOf(
+    "the action-row state hook" to state.writes.map { methodKey(state.type, "<init>", it.parameters) }.toSet(),
+    "the getter guard" to setOf(methodKey(MEDIA, sites.getter, emptyList())),
+    "the tree read filter" to sites.reads.map { methodKey(it.type, it.name, it.parameters) }.toSet(),
+    "the Feed UFI hook" to setOf(methodKey(feedUfi.type, feedUfi.name, feedUfi.parameters)),
+    "the Feed component hook" to setOf(
+        methodKey(component.method.definingClass, component.method.name, component.method.parameterTypes.map(CharSequence::toString)),
+    ),
+)
+
+/**
+ * Fails before any change when two hooks would change the same method. Each one places its lines
+ * by instruction positions found in the untouched method, so another hook's lines would move them.
+ */
+internal fun requireSeparateMethods(hooks: Map<String, Set<String>>) {
+    val owners = mutableMapOf<String, String>()
+    for ((hook, methods) in hooks) for (method in methods) {
+        owners.put(method, hook)?.let { other -> refuse("$other and $hook would both change $method") }
+    }
+}
 
 /** A read of the field from a post's data tree: where its move-result-object is and the register it fills. */
 internal class RepostRead(val type: String, val name: String, val parameters: List<String>, val at: Int, val register: Int)
@@ -271,7 +302,10 @@ private fun mergedParts(method: Method): List<Int> {
 }
 
 /** Native component rendering accepts null for an empty component; neither icon nor count mounts. */
-internal fun BytecodePatchContext.hideFeedComponent(found: FeedRepostComponent) {
+internal fun BytecodePatchContext.hideFeedComponent(found: FeedRepostComponent) = prepareFeedComponent(found)()
+
+/** Checks the renderer for [hideFeedComponent] and answers the change, made only when called. */
+internal fun BytecodePatchContext.prepareFeedComponent(found: FeedRepostComponent): () -> Unit {
     val method = mutableClassDefBy(found.method.definingClass).methods.single {
         it.name == found.method.name && it.returnType == found.method.returnType &&
             it.parameterTypes.map(CharSequence::toString) == found.method.parameterTypes.map(CharSequence::toString)
@@ -287,17 +321,19 @@ internal fun BytecodePatchContext.hideFeedComponent(found: FeedRepostComponent) 
     }
     // Off goes on to the part's own first instruction. An internal label would stay where the block
     // was assembled, which is only the part's start when the part opens the method.
-    method.addInstructionsWithLabels(
-        found.at,
-        """
-            invoke-static { }, $REPOSTS_FEED_COMPONENT
-            move-result v$register
-            if-eqz v$register, :draw
-            const/4 v$register, 0x0
-            return-object v$register
-        """,
-        ExternalLabel("draw", method.getInstruction(found.at)),
-    )
+    return {
+        method.addInstructionsWithLabels(
+            found.at,
+            """
+                invoke-static { }, $REPOSTS_FEED_COMPONENT
+                move-result v$register
+                if-eqz v$register, :draw
+                const/4 v$register, 0x0
+                return-object v$register
+            """,
+            ExternalLabel("draw", method.getInstruction(found.at)),
+        )
+    }
 }
 
 /**
@@ -363,7 +399,10 @@ internal fun BytecodePatchContext.findFeedRepostState(): FeedRepostState {
  * however often Feed draws the row from it. A label on the write moves onto the call, so a branch
  * to the write runs the call too.
  */
-internal fun BytecodePatchContext.hideFeedState(found: FeedRepostState) {
+internal fun BytecodePatchContext.hideFeedState(found: FeedRepostState) = prepareFeedState(found)()
+
+/** Checks every write for [hideFeedState] and answers the change, made only when called. */
+internal fun BytecodePatchContext.prepareFeedState(found: FeedRepostState): () -> Unit {
     val state = mutableClassDefBy(found.type)
     val constructors = found.writes.groupBy { it.parameters }.map { (parameters, writes) ->
         state.methods.single { it.name == "<init>" && it.parameterTypes.map(CharSequence::toString) == parameters } to writes
@@ -376,16 +415,18 @@ internal fun BytecodePatchContext.hideFeedState(found: FeedRepostState) {
             (store as TwoRegisterInstruction).registerA != write.value
         ) refuse("${found.type}'s constructor changed at instruction ${write.at} before its Repost flags were hooked")
     }
-    for ((constructor, writes) in constructors) for (write in writes.sortedByDescending { it.at }) {
-        constructor.addInstructionsAtControlFlowLabel(
-            write.at,
-            """
-                invoke-static { v${write.value} }, $REPOSTS_FEED_STATE
-                move-result v${write.answer}
-            """,
-        )
-        if (write.answer != write.value) {
-            constructor.replaceInstruction(write.at + 2, "iput-boolean v${write.answer}, v${write.holder}, ${write.field}")
+    return {
+        for ((constructor, writes) in constructors) for (write in writes.sortedByDescending { it.at }) {
+            constructor.addInstructionsAtControlFlowLabel(
+                write.at,
+                """
+                    invoke-static { v${write.value} }, $REPOSTS_FEED_STATE
+                    move-result v${write.answer}
+                """,
+            )
+            if (write.answer != write.value) {
+                constructor.replaceInstruction(write.at + 2, "iput-boolean v${write.answer}, v${write.holder}, ${write.field}")
+            }
         }
     }
 }
@@ -634,34 +675,39 @@ internal fun BytecodePatchContext.filterRepostReads(reads: List<RepostRead>) {
 }
 
 /** Hide the Feed UFI repost views after Instagram has rebound them for this row. */
-internal fun BytecodePatchContext.hideFeedUfi(site: FeedUfiSite) {
+internal fun BytecodePatchContext.hideFeedUfi(site: FeedUfiSite) = prepareFeedUfi(site)()
+
+/** Checks the binder for [hideFeedUfi] and answers the change, made only when called. */
+internal fun BytecodePatchContext.prepareFeedUfi(site: FeedUfiSite): () -> Unit {
     val method = mutableClassDefBy(site.type).methods.single {
         it.name == site.name && it.parameterTypes.map(CharSequence::toString) == site.parameters
     }
     val registers = method.getFreeRegisterProvider(site.insert, 2, site.holder)
     val icon = registers.getFreeRegister()
     val count = registers.getFreeRegister()
-    method.addInstructionsAtControlFlowLabel(
-        site.insert,
-        """
-            iget-object v$icon, v${site.holder}, ${site.icon}
-            iget-object v$count, v${site.holder}, ${site.count}
-            invoke-static { v$icon, v$count }, $REPOSTS_FEED_UFI
-        """,
-    )
     // Native rebinding resets listeners/text, but not every icon's visibility. Remove only
     // our previous hide before it reads the holder, so native state always wins afterwards.
     val holderParameter = method.parameterTypes.indices.singleOrNull { method.parameterTypes[it] == site.icon.definingClass }
         ?: refuse("${site.type}->${site.name} has no unique Feed UFI holder parameter")
     method.requireLocals(PATCH, 3)
     val holder = method.parameterRegisterNumber(holderParameter)
-    method.addInstructions(
-        0,
-        """
-            move-object/from16 v0, v$holder
-            iget-object v1, v0, ${site.icon}
-            iget-object v2, v0, ${site.count}
-            invoke-static { v1, v2 }, $REPOSTS_FEED_RESTORE
-        """,
-    )
+    return {
+        method.addInstructionsAtControlFlowLabel(
+            site.insert,
+            """
+                iget-object v$icon, v${site.holder}, ${site.icon}
+                iget-object v$count, v${site.holder}, ${site.count}
+                invoke-static { v$icon, v$count }, $REPOSTS_FEED_UFI
+            """,
+        )
+        method.addInstructions(
+            0,
+            """
+                move-object/from16 v0, v$holder
+                iget-object v1, v0, ${site.icon}
+                iget-object v2, v0, ${site.count}
+                invoke-static { v1, v2 }, $REPOSTS_FEED_RESTORE
+            """,
+        )
+    }
 }
