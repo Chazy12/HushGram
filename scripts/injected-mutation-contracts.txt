@@ -306,6 +306,13 @@ shared-call Lapp/hushgram/extension/instagram/explore/RecentSearches;->keep()Z i
 # off. One left in Instagram's code is a notification that never joins the group.
 no-call Landroid/app/NotificationManager;->notify(ILandroid/app/Notification;)V outside Lapp/hushgram/extension/
 no-call Landroid/app/NotificationManager;->notify(Ljava/lang/String;ILandroid/app/Notification;)V outside Lapp/hushgram/extension/
+# Turn off HDR brightness boosts sends every HDR headroom request and window color mode call to
+# HdrBoost, which holds the boost back while the switch is on. One left in Instagram's code is a
+# boost the switch can't stop.
+no-call Landroid/view/SurfaceView;->setDesiredHdrHeadroom(F)V outside Lapp/hushgram/extension/
+no-call Landroid/view/SurfaceControl$Transaction;->setDesiredHdrHeadroom(Landroid/view/SurfaceControl;F)Landroid/view/SurfaceControl$Transaction; outside Lapp/hushgram/extension/
+no-call Landroid/view/Window;->setDesiredHdrHeadroom(F)V outside Lapp/hushgram/extension/
+no-call Landroid/view/Window;->setColorMode(I)V outside Lapp/hushgram/extension/
 #
 # Not pinned:
 # Disable analytics also sends every load of Facebook's Graph logging address through endpoint().

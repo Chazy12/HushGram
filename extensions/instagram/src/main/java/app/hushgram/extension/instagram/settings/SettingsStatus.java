@@ -148,6 +148,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean hdrBoost() {
+        return false;
+    }
+
     public static boolean mediaCache() {
         return false;
     }

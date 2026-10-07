@@ -2265,6 +2265,43 @@
       "options": []
     },
     {
+      "name": "Turn off HDR brightness boosts",
+      "description": "Keeps HDR photos and reels from brightening the screen above everything else, with a switch under Playback that starts off.",
+      "category": "Interface",
+      "use": true,
+      "dependencies": [
+        "BytecodePatch",
+        "HushGram settings"
+      ],
+      "compatiblePackages": {
+        "com.instagram.android": [
+          "450.0.0.50.77"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Instagram",
+          "packageName": "com.instagram.android",
+          "description": null,
+          "appIconColor": 14757996,
+          "signatures": [
+            "3a10c50c18ba937506c2875e9047be74f8fd8b86fae2ff9feaa50a81fcb4c014",
+            "5f3e50f435583c9ae626302a71f7340044087a7e2c60adacfc254205a993e305"
+          ],
+          "targets": [
+            {
+              "version": "450.0.0.50.77",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 385611438
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Turn off double tap to like",
       "description": "Stops a double tap on a post or a reel from liking it, and the heart doesn't show. A single tap still does what it did, and the Like button still likes.",
       "category": "Interface",

@@ -620,6 +620,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_resume_long_videos", FALSE);
 
     /**
+     * HDR photos and reels don't brighten the screen: every headroom Instagram asks Android for is
+     * none, and HDR color mode is the default one ({@link app.hushgram.extension.instagram.media.HdrBoost}).
+     * Read at each request. Off to start.
+     */
+    public static final BooleanSetting TURN_OFF_HDR_BOOSTS =
+            new BooleanSetting("hushgram_turn_off_hdr_boosts", FALSE);
+
+    /**
      * Videos, reels and video stories start at the quality in {@link #PLAYBACK_QUALITY}, through
      * the custom-quality setter of Instagram's DASH format evaluator
      * ({@link app.hushgram.extension.instagram.media.QualityChoice}). The patch is off in the

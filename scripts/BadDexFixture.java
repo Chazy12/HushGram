@@ -219,6 +219,9 @@ public class BadDexFixture {
     private static final String SHORTCUTS = "Lfixture/Shortcuts;";
     private static final String NOTIFICATION_MANAGER = "Landroid/app/NotificationManager;";
     private static final String NOTIFICATION = "Landroid/app/Notification;";
+    private static final String SURFACE_VIEW = "Landroid/view/SurfaceView;";
+    private static final String SURFACE_CONTROL = "Landroid/view/SurfaceControl;";
+    private static final String TRANSACTION = "Landroid/view/SurfaceControl$Transaction;";
     private static final String LOCATION = "Landroid/location/Location;";
     private static final String WINDOW = "Landroid/view/Window;";
     private static final String SETTINGS_ENTRY = "Lapp/hushgram/extension/fixture/settings/SettingsEntry;";
@@ -418,6 +421,10 @@ public class BadDexFixture {
             "no-call Landroid/location/Location;->getLatitude()D outside Lapp/hushgram/extension/",
             "no-call Landroid/location/Location;->getLongitude()D outside Lapp/hushgram/extension/",
             "no-call Landroid/location/Location;->distanceTo(Landroid/location/Location;)F outside Lapp/hushgram/extension/",
+            "no-call Landroid/view/SurfaceView;->setDesiredHdrHeadroom(F)V outside Lapp/hushgram/extension/",
+            "no-call Landroid/view/SurfaceControl$Transaction;->setDesiredHdrHeadroom(Landroid/view/SurfaceControl;F)Landroid/view/SurfaceControl$Transaction; outside Lapp/hushgram/extension/",
+            "no-call Landroid/view/Window;->setDesiredHdrHeadroom(F)V outside Lapp/hushgram/extension/",
+            "no-call Landroid/view/Window;->setColorMode(I)V outside Lapp/hushgram/extension/",
             "no-call Lcom/facebook/mobileconfig/troubleshooting/MobileConfigOverridesWriterHolder;->importOverridesFromUser(Ljava/lang/String;)Ljava/lang/String; outside Lcom/facebook/mobileconfig/",
             "no-call Lcom/facebook/mobileconfig/MobileConfigOverridesTableHolder;->reload()V outside Lcom/facebook/mobileconfig/",
             "no-call Lcom/facebook/mobileconfig/MobileConfigOverridesTableHolder;->removeAllOverrides()V outside Lcom/facebook/mobileconfig/",
@@ -495,7 +502,7 @@ public class BadDexFixture {
         }
     }
 
-    /** All twelve, as the contract file names them. The update goes as a range call. */
+    /** All sixteen, as the contract file names them. The update goes as a range call. */
     private static final List<ShortcutCall> SHORTCUT_CALLS = Arrays.asList(
             new ShortcutCall(SHORTCUT_MANAGER, "pushDynamicShortcut", "V", "push", "push", false, SHORTCUT_INFO),
             new ShortcutCall(SHORTCUT_MANAGER, "addDynamicShortcuts", "Z", "add", "add", false, SHORTCUT_LIST),
@@ -509,7 +516,12 @@ public class BadDexFixture {
             new ShortcutCall(WINDOW, "addFlags", "V", "addFlags", "add-flags", false, "I"),
             new ShortcutCall(LOCATION, "getLatitude", "D", "latitude", "latitude", false),
             new ShortcutCall(LOCATION, "getLongitude", "D", "longitude", "longitude", false),
-            new ShortcutCall(LOCATION, "distanceTo", "F", "distance", "distance-to", false, LOCATION));
+            new ShortcutCall(LOCATION, "distanceTo", "F", "distance", "distance-to", false, LOCATION),
+            new ShortcutCall(SURFACE_VIEW, "setDesiredHdrHeadroom", "V", "surfaceHeadroom", "surface-headroom", false, "F"),
+            new ShortcutCall(TRANSACTION, "setDesiredHdrHeadroom", TRANSACTION, "transactionHeadroom", "transaction-headroom",
+                    true, SURFACE_CONTROL, "F"),
+            new ShortcutCall(WINDOW, "setDesiredHdrHeadroom", "V", "windowHeadroom", "window-headroom", false, "F"),
+            new ShortcutCall(WINDOW, "setColorMode", "V", "colorMode", "color-mode", false, "I"));
 
     /** A real native override boundary, with a receiver followed by its exact typed arguments. */
     private static final class OverrideCall {

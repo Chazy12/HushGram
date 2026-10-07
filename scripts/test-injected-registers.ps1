@@ -723,6 +723,10 @@ try {
         [pscustomobject]@{ Case = 'latitude'; Manager = $location; Call = 'getLatitude'; Takes = ''; Answers = 'D'; Caller = 'latitude' }
         [pscustomobject]@{ Case = 'longitude'; Manager = $location; Call = 'getLongitude'; Takes = ''; Answers = 'D'; Caller = 'longitude' }
         [pscustomobject]@{ Case = 'distance-to'; Manager = $location; Call = 'distanceTo'; Takes = 'Landroid/location/Location;'; Answers = 'F'; Caller = 'distance' }
+        [pscustomobject]@{ Case = 'surface-headroom'; Manager = 'Landroid/view/SurfaceView;'; Call = 'setDesiredHdrHeadroom'; Takes = 'F'; Answers = 'V'; Caller = 'surfaceHeadroom' }
+        [pscustomobject]@{ Case = 'transaction-headroom'; Manager = 'Landroid/view/SurfaceControl$Transaction;'; Call = 'setDesiredHdrHeadroom'; Takes = 'Landroid/view/SurfaceControl;F'; Answers = 'Landroid/view/SurfaceControl$Transaction;'; Caller = 'transactionHeadroom' }
+        [pscustomobject]@{ Case = 'window-headroom'; Manager = 'Landroid/view/Window;'; Call = 'setDesiredHdrHeadroom'; Takes = 'F'; Answers = 'V'; Caller = 'windowHeadroom' }
+        [pscustomobject]@{ Case = 'color-mode'; Manager = 'Landroid/view/Window;'; Call = 'setColorMode'; Takes = 'I'; Answers = 'V'; Caller = 'colorMode' }
     )
     foreach ($shortcut in $shortcutCalls) {
         $shortcut | Add-Member -NotePropertyName Callee -NotePropertyValue (

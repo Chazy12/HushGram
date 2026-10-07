@@ -623,7 +623,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             for (Preference row : stories) section.addPreference(row);
         }
 
-        if (build.contains(PatchFamily.TAP_TO_PLAY) || build.contains(PatchFamily.RESUME_LONG_VIDEOS)
+        if (build.contains(PatchFamily.HDR_BOOST) || build.contains(PatchFamily.TAP_TO_PLAY)
+                || build.contains(PatchFamily.RESUME_LONG_VIDEOS)
                 || build.contains(PatchFamily.PLAYBACK_QUALITY) || build.contains(PatchFamily.DATA_SAVER)) {
             PreferenceCategory playback = category(screen, L10n.t("Playback"));
             if (build.contains(PatchFamily.TAP_TO_PLAY)) {
@@ -656,6 +657,11 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                 playback.addPreference(toggle(context, Settings.DATA_SAVER_MOBILE_DATA_ONLY,
                         L10n.t("Only on mobile data"),
                         L10n.t("Wi-Fi stays as it is. Turn this off to save data on every network.")));
+            }
+            if (build.contains(PatchFamily.HDR_BOOST)) {
+                playback.addPreference(toggle(context, Settings.TURN_OFF_HDR_BOOSTS, L10n.t("Turn off HDR brightness boosts"),
+                        L10n.t("HDR photos and reels stop brightening the screen above everything else. They show "
+                                + "at the same brightness as the rest of Instagram.")));
             }
         }
 

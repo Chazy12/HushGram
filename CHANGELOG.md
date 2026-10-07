@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** New patch, Turn off HDR brightness boosts, in simple mode with its switch off. Turn it on under Playback and HDR photos and reels stop brightening the screen above everything else (#26).
+
 * **Instagram:** Folder per account, a new switch under Downloads that starts off, puts each save in a folder named for the account that posted it, inside your save folder (#20).
 
 * **Instagram:** Send downloads to another app, a new switch under Downloads that starts off. With it on, Download on a reel, a feed post or a story opens the share sheet with the item's link, for a downloader app such as Seal or YTDLnis, instead of saving it here.
