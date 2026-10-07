@@ -101,7 +101,8 @@ internal class StoryBind(
 /**
  * What the patch found: the binders, the page's type and its field holding its [REEL_VIEW_GROUP],
  * the story item's field holding its Media, Media's getter of [REEL_MENTIONS], the type of each
- * mention and its getter of the account, and the account's getter of [FULL_NAME].
+ * mention and its getter of the account, and the account's getter of [FULL_NAME]. All of them
+ * public, since the stubs reach them from the extension's package.
  */
 internal class StoryMentionSites(
     val binds: List<StoryBind>,
@@ -172,6 +173,18 @@ internal fun BytecodePatchContext.findStoryMentions(): StoryMentionSites {
     val mentionUser = users.singleOrNull()
         ?: refuse("expected one getter of the account on $mention, found ${users.size}")
     val fullName = pandoGetter(PATCH, USER, FULL_NAME, STRING)
+
+    // The stubs cast to these and call these from the extension's package, so a private one would
+    // throw IllegalAccessError on every bind.
+    val closed = listOfNotNull(
+        STORY_ITEM.takeUnless { AccessFlags.PUBLIC.isSet(classDefBy(STORY_ITEM).accessFlags) },
+        MEDIA.takeUnless { AccessFlags.PUBLIC.isSet(classDefBy(MEDIA).accessFlags) },
+        "$MEDIA->${mentions.name}".takeUnless { AccessFlags.PUBLIC.isSet(mentions.accessFlags) },
+        mention.takeUnless { AccessFlags.PUBLIC.isSet(mentionClass.accessFlags) },
+        USER.takeUnless { AccessFlags.PUBLIC.isSet(classDefBy(USER).accessFlags) },
+        "$USER->${fullName.name}".takeUnless { AccessFlags.PUBLIC.isSet(fullName.accessFlags) },
+    )
+    if (closed.isNotEmpty()) refuse("${closed.joinToString()} isn't public, so the extension can't reach it")
 
     return StoryMentionSites(
         binds.map { it.first }, page, view.name, media, mentions.name, mention, mentionUser.name, fullName.name,

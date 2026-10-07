@@ -73,9 +73,9 @@ class StoryMentionsHookTest {
         ImmutableClassDef(owner, flags, "Ljava/lang/Object;", null, null, null, fields, methods)
 
     /** A getter of [owner] answering [returns] that holds the hash of [field], then loads [classes] by const-class. */
-    private fun getter(owner: String, name: String, returns: String, field: String, vararg classes: String) =
+    private fun getter(owner: String, name: String, returns: String, field: String, vararg classes: String, flags: Int = public) =
         method(
-            owner, name, emptyList(), returns, public, 2,
+            owner, name, emptyList(), returns, flags, 2,
             ImmutableInstruction31i(Opcode.CONST, 0, field.hashCode()),
             *classes.map { ImmutableInstruction21c(Opcode.CONST_CLASS, 1, ImmutableTypeReference(it)) }.toTypedArray(),
             ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0),
@@ -101,30 +101,35 @@ class StoryMentionsHookTest {
         )
     }
 
+    /** [closed] names the parts made package-private: item, media, mentions, mention, user or fullName. */
     private fun standIns(
         puts: Int = 1,
         mentionTypes: List<String> = listOf(mention),
         viewFlags: Int = AccessFlags.PUBLIC.value,
         binders: Boolean = true,
-    ): List<ClassDef> = listOfNotNull(
-        binder(mainBinder, static = true, puts = puts).takeIf { binders },
-        binder(catchUpBinder, static = false).takeIf { binders },
-        type(page, listOf(field(page, "A1Y", REEL_VIEW_GROUP, viewFlags), field(page, "A03", STORY_ITEM)), flags = public),
-        type(STORY_ITEM, listOf(field(STORY_ITEM, "A17", MEDIA, public), field(STORY_ITEM, "A08", MEDIA))),
-        type(MEDIA, methods = listOf(
-            getter(MEDIA, "A9U", "Ljava/util/List;", REEL_MENTIONS, *mentionTypes.toTypedArray()),
-            getter(MEDIA, "A9V", "Ljava/util/List;", "carousel_media"),
-        )),
-        type(mention, methods = listOf(
-            method(mention, "Dqh", emptyList(), USER, public, 1, ImmutableInstruction21c(Opcode.CONST_CLASS, 0, ImmutableTypeReference(USER)), ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0)),
-            method(mention, "A00", emptyList(), USER, public or AccessFlags.STATIC.value, 1, ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0)),
-        ), flags = public),
-        type(USER, methods = listOf(
-            getter(USER, "B0x", "Ljava/lang/String;", FULL_NAME),
-            getter(USER, "B0y", "Ljava/lang/String;", "username"),
-        )),
-        ExtensionDex.classDef(STORY_MENTIONS),
-    )
+        closed: Set<String> = emptySet(),
+    ): List<ClassDef> {
+        fun flags(part: String, open: Int) = if (part in closed) open and AccessFlags.PUBLIC.value.inv() else open
+        return listOfNotNull(
+            binder(mainBinder, static = true, puts = puts).takeIf { binders },
+            binder(catchUpBinder, static = false).takeIf { binders },
+            type(page, listOf(field(page, "A1Y", REEL_VIEW_GROUP, viewFlags), field(page, "A03", STORY_ITEM)), flags = public),
+            type(STORY_ITEM, listOf(field(STORY_ITEM, "A17", MEDIA, public), field(STORY_ITEM, "A08", MEDIA)), flags = flags("item", public)),
+            type(MEDIA, methods = listOf(
+                getter(MEDIA, "A9U", "Ljava/util/List;", REEL_MENTIONS, *mentionTypes.toTypedArray(), flags = flags("mentions", public)),
+                getter(MEDIA, "A9V", "Ljava/util/List;", "carousel_media"),
+            ), flags = flags("media", public)),
+            type(mention, methods = listOf(
+                method(mention, "Dqh", emptyList(), USER, public, 1, ImmutableInstruction21c(Opcode.CONST_CLASS, 0, ImmutableTypeReference(USER)), ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0)),
+                method(mention, "A00", emptyList(), USER, public or AccessFlags.STATIC.value, 1, ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0)),
+            ), flags = flags("mention", public)),
+            type(USER, methods = listOf(
+                getter(USER, "B0x", "Ljava/lang/String;", FULL_NAME, flags = flags("fullName", public)),
+                getter(USER, "B0y", "Ljava/lang/String;", "username"),
+            ), flags = flags("user", public)),
+            ExtensionDex.classDef(STORY_MENTIONS),
+        )
+    }
 
     @Test
     fun theHooksAreInTheExtension() {
@@ -181,6 +186,17 @@ class StoryMentionsHookTest {
     @Test
     fun aPrivateMediaViewFailsThePatch() =
         refuses("isn't public") { PatchContexts.of(standIns(viewFlags = AccessFlags.PRIVATE.value)).findStoryMentions() }
+
+    /** Every type a stub casts to and every getter it calls is reached from the extension's package. */
+    @Test
+    fun whatTheStubsCantReachFailsThePatch() {
+        for ((part, named) in mapOf(
+            "item" to STORY_ITEM, "media" to MEDIA, "mentions" to "$MEDIA->A9U", "mention" to mention,
+            "user" to USER, "fullName" to "$USER->B0x",
+        )) {
+            refuses("$named isn't public") { PatchContexts.of(standIns(closed = setOf(part))).findStoryMentions() }
+        }
+    }
 
     /** A refusal leaves every class as it was, since everything is found before anything changes. */
     @Test
