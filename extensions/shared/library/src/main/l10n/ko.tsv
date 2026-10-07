@@ -589,3 +589,12 @@ Couldn't copy the username	사용자 이름을 복사할 수 없습니다
 Media link is the %1$d × %2$d file	미디어 링크는 %1$d × %2$d 파일입니다
 Username	사용자 이름
 Username copied	사용자 이름을 복사했습니다
+Adds Save to the menu you get by holding a voice message in a chat. Saves the recording as an audio file. One sent to be played once never gets it.	채팅에서 음성 메시지를 길게 누르면 나오는 메뉴에 저장을 추가합니다. 녹음을 오디오 파일로 저장합니다. 한 번만 재생되도록 보낸 메시지에는 나오지 않습니다.
+Cancel saving this voice message	이 음성 메시지 저장 취소
+Download voice messages	음성 메시지 다운로드
+Following each other	서로 팔로우 중
+Hide the comment bar on reposted reels	다시 게시한 릴스의 댓글 창 숨기기
+Puts the answer in a chip under the profile's posts, followers and following counts instead, and says Following each other when you follow them too.	대신 프로필의 게시물, 팔로워, 팔로잉 수 아래에 칩으로 표시하고, 나도 그 계정을 팔로우하면 서로 팔로우 중이라고 표시합니다.
+Saving a voice message	음성 메시지 저장 중
+Show it as a chip	칩으로 표시
+The Add comment bar under a reel you open from a profile's reposts. The comment button still opens the comments.	프로필의 다시 게시한 항목에서 연 릴스 아래의 댓글 달기 창입니다. 댓글 버튼은 계속 댓글을 엽니다.

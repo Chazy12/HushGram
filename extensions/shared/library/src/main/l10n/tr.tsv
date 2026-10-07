@@ -590,3 +590,12 @@ Couldn't copy the username	Kullanıcı adı kopyalanamadı
 Media link is the %1$d × %2$d file	Medya bağlantısı %1$d × %2$d dosyasıdır
 Username	Kullanıcı adı
 Username copied	Kullanıcı adı kopyalandı
+Adds Save to the menu you get by holding a voice message in a chat. Saves the recording as an audio file. One sent to be played once never gets it.	Bir sohbette sesli mesaja basılı tuttuğunda açılan menüye Kaydet ekler. Kaydı ses dosyası olarak kaydeder. Bir kez dinlenmek üzere gönderilenlerde hiç görünmez.
+Cancel saving this voice message	Bu sesli mesajın kaydedilmesini iptal et
+Download voice messages	Sesli mesajları indir
+Following each other	Birbirinizi takip ediyorsunuz
+Hide the comment bar on reposted reels	Yeniden paylaşılan reels'te yorum çubuğunu gizle
+Puts the answer in a chip under the profile's posts, followers and following counts instead, and says Following each other when you follow them too.	Bunun yerine yanıtı profilin gönderi, takipçi ve takip sayılarının altında bir çip olarak gösterir ve sen de takip ediyorsan Birbirinizi takip ediyorsunuz yazar.
+Saving a voice message	Sesli mesaj kaydediliyor
+Show it as a chip	Çip olarak göster
+The Add comment bar under a reel you open from a profile's reposts. The comment button still opens the comments.	Bir profilin yeniden paylaşımlarından açtığın reels'in altındaki Yorum ekle çubuğu. Yorum düğmesi yorumları açmaya devam eder.
