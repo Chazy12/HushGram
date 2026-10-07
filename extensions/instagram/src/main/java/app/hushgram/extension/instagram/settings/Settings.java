@@ -149,6 +149,13 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting HIDE_TYPING = new BooleanSetting("hushgram_hide_typing", FALSE);
 
     /**
+     * Your inbox and chats stay covered until the phone's lock says it's you, and message
+     * notifications say only that a message came
+     * ({@link app.hushgram.extension.instagram.direct.MessagesLock}). Off to start.
+     */
+    public static final BooleanSetting LOCK_MESSAGES = new BooleanSetting("hushgram_lock_messages", FALSE);
+
+    /**
      * The Mark as seen button in the story viewer's header
      * ({@link app.hushgram.extension.instagram.stories.StorySeenButton}). Off to start. A story you
      * tap it on is sent as seen while the rest stay held back. Read each time a story is shown and

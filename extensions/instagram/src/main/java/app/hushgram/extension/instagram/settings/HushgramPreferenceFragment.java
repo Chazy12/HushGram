@@ -66,6 +66,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import app.hushgram.extension.instagram.direct.MessagesLock;
 import app.hushgram.extension.instagram.download.DownloadQuality;
 import app.hushgram.extension.instagram.media.PlaybackQuality;
 import app.hushgram.extension.instagram.media.TapToPlayScope;
@@ -411,7 +412,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         }
 
         if (build.contains(PatchFamily.NOTES_ROW) || build.contains(PatchFamily.INSTANTS)
-                || build.contains(PatchFamily.THREAD_SEEN) || build.contains(PatchFamily.TYPING)) {
+                || build.contains(PatchFamily.THREAD_SEEN) || build.contains(PatchFamily.TYPING)
+                || build.contains(PatchFamily.MESSAGES_LOCK)) {
             PreferenceCategory messages = category(screen, L10n.t("Messages"));
             if (build.contains(PatchFamily.NOTES_ROW)) {
                 messages.addPreference(toggle(context, Settings.HIDE_NOTES_ROW, L10n.t("Hide the notes row"),
@@ -434,6 +436,9 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                 messages.addPreference(toggle(context, Settings.HIDE_TYPING, L10n.t("Hide that you're typing"),
                         L10n.t("People you're chatting with don't see the typing dots while you write, and you "
                                 + "still see theirs.")));
+            }
+            if (build.contains(PatchFamily.MESSAGES_LOCK)) {
+                messages.addPreference(messagesLockToggle(context));
             }
         }
 
@@ -1800,6 +1805,33 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         category.setTitle(title);
         screen.addPreference(category);
         return category;
+    }
+
+    /**
+     * Lock your messages' switch. Turning it off while the messages are locked asks the phone's
+     * lock first, so the switch can't be used to get around it.
+     */
+    static SwitchPreference messagesLockToggle(Context context) {
+        SwitchPreference row = toggle(context, Settings.LOCK_MESSAGES, L10n.t("Lock your messages"),
+                L10n.t("Your inbox and chats stay covered until your fingerprint, face or screen lock says it's "
+                        + "you, and lock again when you leave Instagram. Message notifications say only that "
+                        + "a message came."));
+        row.setOnPreferenceChangeListener((preference, value) -> {
+            Activity activity = activityOf(preference.getContext());
+            if (Boolean.TRUE.equals(value) || !MessagesLock.locked() || activity == null) return true;
+            MessagesLock.confirmThen(activity, () -> ((SwitchPreference) preference).setChecked(false));
+            return false;
+        });
+        return row;
+    }
+
+    @Nullable
+    private static Activity activityOf(Context context) {
+        for (Context at = context; at != null; at = at instanceof android.content.ContextWrapper
+                ? ((android.content.ContextWrapper) at).getBaseContext() : null) {
+            if (at instanceof Activity) return (Activity) at;
+        }
+        return null;
     }
 
     static SwitchPreference toggle(Context context, BooleanSetting setting, String title, String summary) {

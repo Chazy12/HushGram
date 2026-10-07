@@ -92,6 +92,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean messagesLock() {
+        return false;
+    }
+
     public static boolean feedReels() {
         return false;
     }

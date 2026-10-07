@@ -22,6 +22,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 import app.hushgram.extension.instagram.direct.Instants;
+import app.hushgram.extension.instagram.direct.MessagesLock;
 import app.hushgram.extension.instagram.direct.NotesRow;
 import app.hushgram.extension.instagram.profile.ProfileHighlights;
 import app.hushgram.extension.instagram.feed.FullResolution;
@@ -54,14 +55,15 @@ public class NeutralDefaultsSettingsTest {
         initiallyOff = new BooleanSetting[]{Settings.COPY_COMMENTS, Settings.SAVE_COMMENT_PHOTOS,
                 Settings.HIDE_HIGHLIGHTS, Settings.HIDE_NOTES_ROW, Settings.HIDE_INSTANTS,
                 Settings.STOP_SWIPE_TO_CREATE, Settings.STOP_REELS_SCROLLING, Settings.FULL_RESOLUTION_PHOTOS, Settings.ASK_FOR_LARGER_PHOTOS,
-                Settings.HIDE_HOME_FEED, Settings.STOP_TAB_SWIPING};
+                Settings.HIDE_HOME_FEED, Settings.STOP_TAB_SWIPING,
+                Settings.LOCK_MESSAGES};
         restoreDefaults();
         BaseSettings.SAFE_MODE.save(false);
         Settings.SIGN_IN_NOTICE_HIDDEN.save(true);
         PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.COMMENT_COPY, PatchFamily.COMMENT_PHOTO,
                 PatchFamily.PROFILE_HIGHLIGHTS, PatchFamily.NOTES_ROW, PatchFamily.INSTANTS, PatchFamily.SWIPE_TO_CREATE,
                 PatchFamily.REEL_SCROLLING, PatchFamily.STORY_RING, PatchFamily.FULL_RESOLUTION, PatchFamily.HOME_FEED,
-                PatchFamily.TAB_SWIPE);
+                PatchFamily.TAB_SWIPE, PatchFamily.MESSAGES_LOCK);
     }
 
     @After public void restore() throws Exception {
@@ -172,6 +174,7 @@ public class NeutralDefaultsSettingsTest {
         Object[] sections = {StockSection.SEARCH_BAR, StockSection.TRAY};
         assertSame(sections, NotesRow.sections(sections));
         assertFalse(Instants.hide());
+        assertFalse(MessagesLock.holdBanner());
         assertEquals(0, SwipeToCreate.enabled());
         assertEquals(0, SwipeToCreate.hold(-1f, 0f, "swipe"));
         Object photo = new Object();

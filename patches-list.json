@@ -1114,6 +1114,43 @@
       "options": []
     },
     {
+      "name": "Lock your messages",
+      "description": "Adds a switch that keeps your inbox and chats covered until your fingerprint, face or screen lock says it's you. They lock again when you leave Instagram, and message notifications say only that a message came.",
+      "category": "Privacy",
+      "use": true,
+      "dependencies": [
+        "BytecodePatch",
+        "HushGram settings"
+      ],
+      "compatiblePackages": {
+        "com.instagram.android": [
+          "450.0.0.50.77"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Instagram",
+          "packageName": "com.instagram.android",
+          "description": null,
+          "appIconColor": 14757996,
+          "signatures": [
+            "3a10c50c18ba937506c2875e9047be74f8fd8b86fae2ff9feaa50a81fcb4c014",
+            "5f3e50f435583c9ae626302a71f7340044087a7e2c60adacfc254205a993e305"
+          ],
+          "targets": [
+            {
+              "version": "450.0.0.50.77",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 385611438
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Loop a story",
       "description": "A story plays again from the start when it ends, instead of moving on to the next one. Tap or swipe to move on.",
       "category": "Interface",

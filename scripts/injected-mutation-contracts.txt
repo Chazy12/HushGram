@@ -88,6 +88,15 @@ once-call Lapp/hushgram/extension/instagram/direct/ThreadSeen;->markReadTogether
 # guard the patch wrote. NativeTypingTest checks on the 450 fixture where it lands.
 start-call Lapp/hushgram/extension/instagram/direct/TypingStatus;->hold(I)Z in instance (Z)V holding IGDirectTypingStatusService is_typing_indicator_enabled
 once-call Lapp/hushgram/extension/instagram/direct/TypingStatus;->hold(I)Z in instance (Z)V holding IGDirectTypingStatusService is_typing_indicator_enabled
+# Lock your messages hands every notification to MessagesLock.notification first, in androidx's
+# NotificationManagerCompat.notify(tag, id, notification) (00Ji.A01 on 450), the one method holding
+# android.support.useSideChannel. It also asks MessagesLock.holdBanner() first in the static method
+# that shows Instagram's in-app banner (07dt.A02), the one holding its no-activity log line. Left out,
+# a locked inbox's messages show in notifications and banners; twice or elsewhere, it isn't the hook.
+start-call Lapp/hushgram/extension/instagram/direct/MessagesLock;->notification(Landroid/app/Notification;)Landroid/app/Notification; in instance (Ljava/lang/String;ILandroid/app/Notification;)V holding android.support.useSideChannel
+once-call Lapp/hushgram/extension/instagram/direct/MessagesLock;->notification(Landroid/app/Notification;)Landroid/app/Notification; in instance (Ljava/lang/String;ILandroid/app/Notification;)V holding android.support.useSideChannel
+start-call Lapp/hushgram/extension/instagram/direct/MessagesLock;->holdBanner()Z in static (Landroid/content/Context;L*;L*;)V holding no\sforeground\sactivity\sto\srender\sin-app\snotification
+once-call Lapp/hushgram/extension/instagram/direct/MessagesLock;->holdBanner()Z in static (Landroid/content/Context;L*;L*;)V holding no\sforeground\sactivity\sto\srender\sin-app\snotification
 #
 # The patch fingerprint picks the method that puts a sponsored item into a feed by
 # "cross_surface_duplicate_ad" and "Is ad pod", a static method answering a boolean. "Is ad pod" has
