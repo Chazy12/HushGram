@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Show if a profile follows you has a new switch under Profiles, Show it as a chip, that starts off. With it on, the answer sits in an outlined chip under the profile's posts, followers and following counts instead of the gray line by the name, and when you follow each other it says Following each other. The label by the name stays the default. Asked for in #24.
+
 * **Instagram:** Clean up Reels has a fourth switch, Hide the comment bar on reposted reels, that starts off. With it on, a reel you open from a profile's reposts has no Add comment bar under it, and the comment button still opens the comments. Asked for in #64.
 
 * **Instagram:** Details in a post's menu now has Copy username and Copy caption under the post's details. They copy who posted it and the caption exactly as it was written, emoji and right-to-left text included, and each shows only when the post has one. On a carousel the caption comes from the post itself. Asked for in #29.
