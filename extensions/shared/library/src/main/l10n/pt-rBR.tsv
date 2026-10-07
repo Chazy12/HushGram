@@ -428,3 +428,9 @@ Custom tab	Aba personalizada
 Off	Desativado
 Tab long presses keep Instagram's own action. Choose one to open HushGram instead.	Manter uma aba pressionada continua usando a ação do Instagram. Escolha uma para abrir o HushGram no lugar dela.
 Long-press %1$s to open HushGram instead of that tab's usual action. Normal taps and other tabs stay the same. Only tabs your account shows can be used. Restart Instagram after changing it.	Mantenha %1$s pressionado para abrir o HushGram no lugar da ação normal dessa aba. Os toques normais e as outras abas continuam iguais. Só é possível usar as abas que sua conta mostra. Reinicie o Instagram depois de mudar.
+A sideways swipe no longer moves you between Home, Reels and the other main tabs. Tap the tab bar instead. Stop swipe to create covers the camera.	Deslizar para o lado não troca mais entre Início, Reels e as outras abas principais. Toque na barra de abas. A câmera fica por conta de Parar de deslizar para criar.
+Ask for larger photos	Pedir fotos maiores
+Empties Home on purpose, so you get the stories row and nothing under it. Profiles, Explore and Reels still show posts. Pull to refresh Home after changing it.	Esvazia o Início de propósito, então você vê a fileira de stories e nada abaixo dela. Perfis, Explorar e Reels continuam mostrando publicações. Puxe o Início para baixo para atualizar depois de mudar isso.
+Hide the home feed	Ocultar o feed do Início
+On a phone under 1440 pixels wide, Instagram tells its server your screen is 1440 pixels wide and asks for photos at that width, so there's a larger size to load. This uses more data. Restart Instagram after changing it.	Em um celular com menos de 1440 pixels de largura, o Instagram diz ao servidor que sua tela tem 1440 pixels de largura e pede fotos nessa largura, então há um tamanho maior para carregar. Isso usa mais dados. Reinicie o Instagram depois de mudar isso.
+Stop swiping between tabs	Parar de deslizar entre abas
