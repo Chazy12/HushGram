@@ -115,7 +115,7 @@ final class MediaStoreWriter implements Downloader.Sink {
         // One folder name for both kinds, so a story's photos and its videos land side by side.
         // It's read here, per file, and cleaned where it's read: a slash or a dot segment in the
         // setting can't turn this into a path of the setting's choosing.
-        String leaf = SaveFolder.leaf();
+        String leaf = SaveFolder.leaf(details);
         location = directory + "/" + leaf;
         if (legacyStorage()) return openLegacy(mime, directory, leaf);
 

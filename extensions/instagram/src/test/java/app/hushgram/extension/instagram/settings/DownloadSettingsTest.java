@@ -64,6 +64,7 @@ public class DownloadSettingsTest {
         Settings.SAVE_FOLDER.resetToDefault();
         Settings.DOWNLOAD_QUALITY.resetToDefault();
         Settings.FILENAME_TEMPLATE.resetToDefault();
+        Settings.SAVE_FOLDER_PER_ACCOUNT.resetToDefault();
         Settings.SEND_DOWNLOADS_TO_APP.resetToDefault();
         Settings.DOWNLOAD_REELS.resetToDefault();
         Settings.DOWNLOAD_REEL_COVER.resetToDefault();
@@ -206,6 +207,29 @@ public class DownloadSettingsTest {
             assertEquals("Send downloads to another app", String.valueOf(row.getTitle()));
             assertFalse(((SwitchPreference) row).isChecked());
             assertTrue(ConfigurationBackup.eligible().containsKey(Settings.SEND_DOWNLOADS_TO_APP.key));
+        }
+    }
+
+    /** Folder per account sits under the folder and the file name, starts off and goes in a settings file. */
+    @Test
+    public void folderPerAccountSitsUnderTheFolder() {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.STORY_DOWNLOAD);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            HushgramPreferenceFragment page = pageIn(controller);
+            PreferenceGroup downloads = section(page.getPreferenceScreen(), "Downloads");
+            Preference row = downloads.findPreference(Settings.SAVE_FOLDER_PER_ACCOUNT.key);
+            assertTrue(row instanceof SwitchPreference);
+            assertEquals("Folder per account", String.valueOf(row.getTitle()));
+            assertFalse(((SwitchPreference) row).isChecked());
+            int name = -1;
+            int account = -1;
+            for (int i = 0; i < downloads.getPreferenceCount(); i++) {
+                String key = downloads.getPreference(i).getKey();
+                if (Settings.FILENAME_TEMPLATE.key.equals(key)) name = i;
+                if (Settings.SAVE_FOLDER_PER_ACCOUNT.key.equals(key)) account = i;
+            }
+            assertEquals(name + 1, account);
+            assertTrue(ConfigurationBackup.eligible().containsKey(Settings.SAVE_FOLDER_PER_ACCOUNT.key));
         }
     }
 

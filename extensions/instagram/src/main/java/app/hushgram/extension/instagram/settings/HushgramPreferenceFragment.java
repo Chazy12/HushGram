@@ -768,6 +768,9 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             downloads.addPreference(qualityRow(context));
             downloads.addPreference(folderRow(context));
             downloads.addPreference(fileNameRow(context));
+            downloads.addPreference(toggle(context, Settings.SAVE_FOLDER_PER_ACCOUNT, L10n.t("Folder per account"),
+                    L10n.t("Each save goes into a folder named for the account that posted it, inside the save folder. "
+                            + "A save that doesn't know who posted stays in the save folder.")));
         }
 
         if (build.contains(PatchFamily.BUILD_EXPIRED_POPUP)) {

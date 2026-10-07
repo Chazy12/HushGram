@@ -688,6 +688,13 @@ public class Settings extends BaseSettings {
             new StringSetting("hushgram_save_folder", SaveFolder.DEFAULT);
 
     /**
+     * A save goes into a folder named for the account that posted, inside {@link #SAVE_FOLDER},
+     * when the save knows who posted. Starts off, so saves land where they always have.
+     */
+    public static final BooleanSetting SAVE_FOLDER_PER_ACCOUNT =
+            new BooleanSetting("hushgram_save_folder_per_account", FALSE);
+
+    /**
      * The quality a video save asks for: the best the player streams, a ceiling, or the smallest
      * file. Every video save reads it when it starts, and one that finds nothing at or under a
      * ceiling takes the nearest above it. Photos always save whole. Like the folder, it isn't a

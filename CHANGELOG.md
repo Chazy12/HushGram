@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Folder per account, a new switch under Downloads that starts off, puts each save in a folder named for the account that posted it, inside your save folder (#20).
+
 * **Instagram:** Send downloads to another app, a new switch under Downloads that starts off. With it on, Download on a reel, a feed post or a story opens the share sheet with the item's link, for a downloader app such as Seal or YTDLnis, instead of saving it here.
 
 * **Instagram:** Download any reel has a Download cover switch under Download on reels, off to start. With it on, a reel's menu gets Download cover under Download, which saves the still picture Instagram shows before the reel plays at its largest size (#48).
