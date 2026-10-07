@@ -188,7 +188,7 @@ public class NeutralDefaultsSettingsTest {
         assertFalse(Instants.hide());
         assertTrue(app.hushgram.extension.instagram.feed.CommentsButton.feedState(1));
         assertTrue(app.hushgram.extension.instagram.share.ShareButton.feedState(1));
-        assertFalse(app.hushgram.extension.instagram.direct.CallConfirm.hold(new Object(), null, null, null, false));
+        assertFalse(app.hushgram.extension.instagram.direct.CallConfirm.hold(new Object(), null, null, null, 0));
         assertFalse(app.hushgram.extension.instagram.share.ShareButton.hideInReels());
         Object heart = new Object();
         assertSame(heart, app.hushgram.extension.instagram.feed.LikeAnimation.pick(heart));

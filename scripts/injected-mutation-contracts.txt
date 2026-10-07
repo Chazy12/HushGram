@@ -994,5 +994,5 @@ once-call Lapp/hushgram/extension/instagram/misc/MediaCache;->beforeVideoCache(L
 # here picked by the shape and the account schema text it loads. Left out, a call starts without the
 # question; twice or elsewhere, it isn't the guard the patch wrote. AskBeforeCallHookTest checks
 # where it lands on each declared build.
-start-call Lapp/hushgram/extension/instagram/direct/CallConfirm;->hold(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Z)Z in instance (L*;L*;Lcom/instagram/model/rtc/cowatch/RtcStartCoWatchPlaybackArguments;Z)V holding ig4a-instagram-schema
-once-call Lapp/hushgram/extension/instagram/direct/CallConfirm;->hold(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Z)Z in instance (L*;L*;Lcom/instagram/model/rtc/cowatch/RtcStartCoWatchPlaybackArguments;Z)V holding ig4a-instagram-schema
+start-call Lapp/hushgram/extension/instagram/direct/CallConfirm;->hold(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;I)Z in instance (L*;L*;Lcom/instagram/model/rtc/cowatch/RtcStartCoWatchPlaybackArguments;Z)V holding ig4a-instagram-schema
+once-call Lapp/hushgram/extension/instagram/direct/CallConfirm;->hold(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;I)Z in instance (L*;L*;Lcom/instagram/model/rtc/cowatch/RtcStartCoWatchPlaybackArguments;Z)V holding ig4a-instagram-schema

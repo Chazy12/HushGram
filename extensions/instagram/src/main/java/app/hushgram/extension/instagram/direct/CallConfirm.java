@@ -83,10 +83,12 @@ public final class CallConfirm {
 
     /**
      * Injected first in the chat's call start, with its own arguments. Answers true when the call
-     * waits for the question, and false when Instagram should go on as usual. Never throws.
+     * waits for the question, and false when Instagram should go on as usual. Never throws. The
+     * video flag comes as an int, non-zero for a video call: a register the verifier types as int
+     * wouldn't pass a boolean parameter.
      */
-    public static boolean hold(Object starter, Object thread, Object entry, Object coWatch, boolean video) {
-        return hold(starter, thread, entry, coWatch, video, CallConfirm::switchedOn, SystemClock.uptimeMillis());
+    public static boolean hold(Object starter, Object thread, Object entry, Object coWatch, int video) {
+        return hold(starter, thread, entry, coWatch, video != 0, CallConfirm::switchedOn, SystemClock.uptimeMillis());
     }
 
     static boolean hold(Object starter, Object thread, Object entry, Object coWatch, boolean video,

@@ -35,7 +35,7 @@ internal const val CALL_PATCH = "Ask before a call"
 
 internal const val CALL_CONFIRM = "$EXTENSION_PACKAGE/direct/CallConfirm;"
 internal const val HOLD_CALL =
-    "$CALL_CONFIRM->hold(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Z)Z"
+    "$CALL_CONFIRM->hold(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;I)Z"
 internal const val START_CALL_STUB = "startCall"
 internal const val CONTEXT_OF_STUB = "contextOf"
 
