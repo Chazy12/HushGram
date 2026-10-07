@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Tooling:** The patched APK check now holds Hide the comment bar on reposted reels' guards where they belong: first thing in the comment bar's show, and once in the step that sets the bar up.
+
 * **Instagram:** With Show it as a chip on, a profile you've left no longer stays in memory until Instagram closes. The chip kept hold of each profile's header, and through it the whole screen, so opening a lot of profiles in one go slowly used up memory. Turning the phone or switching dark mode while a profile was open left the old screen behind the same way.
 
 ## 0.0.6 (2026-10-07)
