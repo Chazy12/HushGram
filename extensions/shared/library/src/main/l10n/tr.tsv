@@ -477,7 +477,7 @@ Ghost mode is off, and so is each of its switches.	Hayalet modu kapalı, anahtar
 Ghost mode is on, and so is each of its switches.	Hayalet modu açık, anahtarlarının her biri de açık.
 Instagram doesn't notice when you take a screenshot, so whoever sent you a disappearing photo or video isn't told. Your screenshots save as usual.	Ekran görüntüsü aldığında Instagram bunu fark etmez, böylece sana kaybolan bir fotoğraf veya video gönderen kişiye haber verilmez. Ekran görüntülerin her zamanki gibi kaydedilir.
 Keep in chat	Sohbette tut
-Lives you watch don't put you on the host's viewer list, so they aren't told you're there. Commenting or reacting still shows you, and the viewer count you see stops updating.	İzlediğin canlı yayınlar seni yayıncının izleyici listesine eklemez, böylece orada olduğun ona söylenmez. Yorum yapmak veya tepki vermek seni yine gösterir ve gördüğün izleyici sayısı güncellenmeyi bırakır.
+Lives you watch don't put you on the host's viewer list, so they aren't told you're there. Commenting or reacting still shows you. The viewer count you see stops updating, and a live that ends can keep looking live until you leave it.	İzlediğin canlı yayınlar seni yayıncının izleyici listesine eklemez, böylece orada olduğun ona söylenmez. Yorum yapmak veya tepki vermek seni yine gösterir. Gördüğün izleyici sayısı güncellenmeyi bırakır ve biten bir canlı yayın, sen çıkana kadar canlı görünmeye devam edebilir.
 Removed %1$d overrides. Restart Instagram to go back to its own flags.	%1$d geçersiz kılma kaldırıldı. Kendi bayraklarına dönmesi için Instagram'ı yeniden başlat.
 Reset all overrides	Tüm geçersiz kılmaları sıfırla
 Screenshots and screen recordings work wherever Instagram blocks them, like disappearing photos and videos. Turn on Don't report screenshots too if the sender shouldn't hear about it.	Ekran görüntüleri ve ekran kayıtları, kaybolan fotoğraf ve videolar gibi Instagram'ın engellediği her yerde çalışır. Gönderen bunu duymamalıysa Ekran görüntülerini bildirme'yi de aç.
@@ -485,7 +485,7 @@ Take every override in this signed-in session away, so Instagram goes back to it
 There are no overrides to reset. Nothing changed.	Sıfırlanacak geçersiz kılma yok. Hiçbir şey değişmedi.
 Turns the switches that keep what you do to yourself on or off in one go, like View stories anonymously and Hide that you're typing. Each one keeps its own switch.	Yaptıklarını kendine saklayan anahtarları, Hikayeleri anonim olarak izle ve Yazdığını gizle gibi, tek seferde açar veya kapatır. Her biri kendi anahtarını korur.
 View live anonymously	Canlı yayınları anonim izle
-View once and replayable photos and videos you get stay in the chat, as if they'd been sent with Keep in chat, so you can open them again.	Aldığın tek seferlik ve tekrar oynatılabilir fotoğraf ve videolar, Sohbette tut ile gönderilmiş gibi sohbette kalır, böylece onları yeniden açabilirsin.
+View once and replayable photos and videos you get stay in the chat, as if they'd been sent with Keep in chat, so you can open them again. Turning it on or off reaches the ones already loaded once the chat loads again.	Aldığın tek seferlik ve tekrar oynatılabilir fotoğraf ve videolar, Sohbette tut ile gönderilmiş gibi sohbette kalır, böylece onları yeniden açabilirsin. Açıp kapatmak, sohbet yeniden yüklendiğinde zaten yüklenmiş olanlara da uygulanır.
 Adds Download cover under Download. It saves the still picture a reel shows before it plays, at its largest size.	İndir'in altına Kapağı indir ekler. Bir reel'in oynatılmadan önce gösterdiği hareketsiz görüntüyü en büyük boyutunda kaydeder.
 After 20 reels, swiping in Reels stops until Instagram has been in the background for 15 minutes. A reel you open from a message or a post still plays.	20 reel'den sonra Instagram 15 dakika arka planda kalana kadar Reels'te kaydırma durur. Bir mesajdan veya gönderiden açtığın reel yine oynar.
 Clear the cache now	Önbelleği şimdi temizle
@@ -517,3 +517,13 @@ Turn off HDR brightness boosts	HDR parlaklık artışını kapat
 What you open from search stays out of Recent, in the app and on Instagram's side. Searches already there stay until you clear them.	Aramadan açtıkların ne uygulamada ne de Instagram tarafında Son aramalar'a girer. Orada zaten olan aramalar sen temizleyene kadar kalır.
 When Instagram goes to the background with more than 500 MB of images and videos in its cache, HushGram deletes them. Your sign-in, drafts and settings stay.	Instagram önbelleğinde 500 MB'tan fazla görsel ve video ile arka plana geçtiğinde HushGram bunları siler. Oturum açma bilgilerin, taslakların ve ayarların kalır.
 Wi-Fi stays as it is. Turn this off to save data on every network.	Wi-Fi olduğu gibi kalır. Her ağda veri tasarrufu için bu anahtarı kapat.
+Hide comments	Yorumları gizle
+Hide memories and recaps	Anıları ve özetleri gizle
+Hide story rewinds	Hikaye geri sarmalarını gizle
+Nothing in the row of stories at the top of Home loads, your own story included, which saves data. A story ring on a profile or in a chat still opens its stories.	Ana Sayfa'nın üstündeki hikaye satırında, kendi hikayen dahil hiçbir şey yüklenmez, bu da veri tasarrufu sağlar. Bir profildeki veya sohbetteki hikaye halkası yine hikayelerini açar.
+Open categories as pages	Kategorileri sayfa olarak aç
+Settings shows a list of its categories, and a tap opens one on its own page. Search still looks through all of them.	Ayarlar kategorilerinin bir listesini gösterir ve bir dokunuş birini kendi sayfasında açar. Arama yine hepsinde arar.
+Stop loading stories	Hikayeleri yükleme
+Takes the Comment button and the comment count off the posts in your feed.	Akışındaki gönderilerden Yorum yap düğmesini ve yorum sayısını kaldırır.
+Takes the memories, recaps, follow anniversaries and birthday cards Instagram makes out of the row of stories at the top of Home. Stories people post stay.	Instagram'ın oluşturduğu anıları, özetleri, takip yıl dönümlerini ve doğum günü kartlarını Ana Sayfa'nın üstündeki hikaye satırından kaldırır. İnsanların paylaştığı hikayeler kalır.
+Takes the rewind cards, which bring back old highlights, out of the row of stories at the top of Home.	Eski öne çıkanları geri getiren geri sarma kartlarını Ana Sayfa'nın üstündeki hikaye satırından kaldırır.

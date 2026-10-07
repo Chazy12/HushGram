@@ -476,7 +476,7 @@ Ghost mode is off, and so is each of its switches.	고스트 모드가 꺼졌고
 Ghost mode is on, and so is each of its switches.	고스트 모드가 켜졌고 각 스위치도 모두 켜졌습니다.
 Instagram doesn't notice when you take a screenshot, so whoever sent you a disappearing photo or video isn't told. Your screenshots save as usual.	스크린샷을 찍어도 Instagram이 알아채지 못하므로 사라지는 사진이나 동영상을 보낸 사람에게 알림이 가지 않습니다. 스크린샷은 평소처럼 저장됩니다.
 Keep in chat	채팅에 보관
-Lives you watch don't put you on the host's viewer list, so they aren't told you're there. Commenting or reacting still shows you, and the viewer count you see stops updating.	시청하는 라이브에서 호스트의 시청자 목록에 표시되지 않으므로 호스트는 내가 있다는 것을 모릅니다. 댓글을 달거나 반응하면 여전히 표시되며, 보이는 시청자 수는 더 이상 업데이트되지 않습니다.
+Lives you watch don't put you on the host's viewer list, so they aren't told you're there. Commenting or reacting still shows you. The viewer count you see stops updating, and a live that ends can keep looking live until you leave it.	시청하는 라이브에서 호스트의 시청자 목록에 표시되지 않으므로 호스트는 내가 있다는 것을 모릅니다. 댓글을 달거나 반응하면 여전히 표시됩니다. 보이는 시청자 수는 더 이상 업데이트되지 않으며, 끝난 라이브가 나갈 때까지 계속 라이브처럼 보일 수 있습니다.
 Removed %1$d overrides. Restart Instagram to go back to its own flags.	재정의 %1$d개를 삭제했습니다. Instagram의 기본 플래그로 돌아가려면 Instagram을 다시 시작하세요.
 Reset all overrides	모든 재정의 초기화
 Screenshots and screen recordings work wherever Instagram blocks them, like disappearing photos and videos. Turn on Don't report screenshots too if the sender shouldn't hear about it.	사라지는 사진과 동영상처럼 Instagram이 막는 곳에서도 스크린샷과 화면 녹화가 됩니다. 보낸 사람이 알면 안 된다면 스크린샷 알리지 않기도 켜세요.
@@ -484,7 +484,7 @@ Take every override in this signed-in session away, so Instagram goes back to it
 There are no overrides to reset. Nothing changed.	초기화할 재정의가 없습니다. 아무것도 바뀌지 않았습니다.
 Turns the switches that keep what you do to yourself on or off in one go, like View stories anonymously and Hide that you're typing. Each one keeps its own switch.	스토리 몰래보기와 입력 중 표시 숨기기처럼 내 활동을 숨기는 스위치를 한 번에 켜거나 끕니다. 각 스위치는 그대로 남습니다.
 View live anonymously	라이브 몰래보기
-View once and replayable photos and videos you get stay in the chat, as if they'd been sent with Keep in chat, so you can open them again.	받은 한 번 보기 및 다시 보기 가능 사진과 동영상이 채팅에 보관으로 보낸 것처럼 채팅에 남아 다시 열 수 있습니다.
+View once and replayable photos and videos you get stay in the chat, as if they'd been sent with Keep in chat, so you can open them again. Turning it on or off reaches the ones already loaded once the chat loads again.	받은 한 번 보기 및 다시 보기 가능 사진과 동영상이 채팅에 보관으로 보낸 것처럼 채팅에 남아 다시 열 수 있습니다. 켜거나 끄면 채팅을 다시 불러올 때 이미 불러온 항목에도 적용됩니다.
 Adds Download cover under Download. It saves the still picture a reel shows before it plays, at its largest size.	다운로드 아래에 커버 다운로드를 추가합니다. 릴스가 재생되기 전에 보여 주는 정지 이미지를 가장 큰 크기로 저장합니다.
 After 20 reels, swiping in Reels stops until Instagram has been in the background for 15 minutes. A reel you open from a message or a post still plays.	릴스 20개를 보면 Instagram이 15분 동안 백그라운드에 있을 때까지 릴스 스와이프가 멈춥니다. 메시지나 게시물에서 연 릴스는 계속 재생됩니다.
 Clear the cache now	지금 캐시 지우기
@@ -516,3 +516,13 @@ Turn off HDR brightness boosts	HDR 밝기 강조 끄기
 What you open from search stays out of Recent, in the app and on Instagram's side. Searches already there stay until you clear them.	검색에서 연 항목은 앱에서도 Instagram 쪽에서도 최근 항목에 남지 않습니다. 이미 있는 검색은 지울 때까지 남아 있습니다.
 When Instagram goes to the background with more than 500 MB of images and videos in its cache, HushGram deletes them. Your sign-in, drafts and settings stay.	Instagram이 캐시에 500MB가 넘는 이미지와 동영상을 가진 채 백그라운드로 가면 HushGram이 삭제합니다. 로그인, 임시 저장본, 설정은 그대로 유지됩니다.
 Wi-Fi stays as it is. Turn this off to save data on every network.	Wi-Fi는 그대로입니다. 모든 네트워크에서 데이터를 아끼려면 이 스위치를 끄세요.
+Hide comments	댓글 숨기기
+Hide memories and recaps	추억 및 요약 숨기기
+Hide story rewinds	스토리 리와인드 숨기기
+Nothing in the row of stories at the top of Home loads, your own story included, which saves data. A story ring on a profile or in a chat still opens its stories.	홈 상단의 스토리 줄에서는 내 스토리를 포함해 아무것도 불러오지 않아 데이터를 아낍니다. 프로필이나 채팅의 스토리 링은 여전히 스토리를 엽니다.
+Open categories as pages	카테고리를 페이지로 열기
+Settings shows a list of its categories, and a tap opens one on its own page. Search still looks through all of them.	설정에 카테고리 목록이 표시되고, 탭하면 해당 카테고리가 별도 페이지로 열립니다. 검색은 여전히 모든 카테고리를 찾습니다.
+Stop loading stories	스토리 불러오기 중지
+Takes the Comment button and the comment count off the posts in your feed.	피드 게시물에서 댓글 버튼과 댓글 수를 없앱니다.
+Takes the memories, recaps, follow anniversaries and birthday cards Instagram makes out of the row of stories at the top of Home. Stories people post stay.	Instagram이 만드는 추억, 요약, 팔로우 기념일, 생일 카드를 홈 상단의 스토리 줄에서 없앱니다. 사람들이 올린 스토리는 그대로 남습니다.
+Takes the rewind cards, which bring back old highlights, out of the row of stories at the top of Home.	오래된 하이라이트를 다시 보여 주는 리와인드 카드를 홈 상단의 스토리 줄에서 없앱니다.
