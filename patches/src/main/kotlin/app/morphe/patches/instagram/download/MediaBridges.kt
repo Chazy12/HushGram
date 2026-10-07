@@ -124,12 +124,14 @@ internal fun BytecodePatchContext.imageBridges(patch: String): () -> Unit {
 /**
  * The same for an account's picture: the one its profile shows, read as a picture's candidate, and
  * its full size, read through the interface both of Instagram's classes for it implement, whose
- * getters keep their names. The account's username names the save.
+ * getters keep their names. The account's username names the save, and it and the account's bio
+ * are what Copy username and Copy bio copy.
  */
 internal fun BytecodePatchContext.profilePictureBridges(patch: String): () -> Unit {
     val shown = pandoGetter(patch, USER, "profile_pic_url", IMAGE_URL)
     val full = pandoGetter(patch, USER, "hd_profile_pic_url_info", PROFILE_PICTURE_INFO)
     val username = pandoGetter(patch, USER, "username", "Ljava/lang/String;")
+    val biography = pandoGetter(patch, USER, "biography", "Ljava/lang/String;")
     fun kept(type: String, name: String, returns: String): String {
         if (anInterface(patch, type).methods.none { it.name == name && it.parameterTypes.isEmpty() && it.returnType == returns }) {
             throw PatchException("$patch: $type has no $name()$returns")
@@ -140,6 +142,7 @@ internal fun BytecodePatchContext.profilePictureBridges(patch: String): () -> Un
         Bridge("profilePicture", USER, virtual(shown)),
         Bridge("fullSizeProfilePicture", USER, virtual(full)),
         Bridge("username", USER, virtual(username)),
+        Bridge("biography", USER, virtual(biography)),
         Bridge("profilePictureUrl", PROFILE_PICTURE_INFO, kept(PROFILE_PICTURE_INFO, "getUrl", "Ljava/lang/String;")),
         Bridge("profilePictureWidth", PROFILE_PICTURE_INFO, kept(PROFILE_PICTURE_INFO, "getWidth", "I"), primitive = true),
         Bridge("profilePictureHeight", PROFILE_PICTURE_INFO, kept(PROFILE_PICTURE_INFO, "getHeight", "I"), primitive = true),

@@ -559,6 +559,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_view_profile_pictures", FALSE);
 
     /**
+     * The menu on someone's profile gets Copy username and Copy bio
+     * ({@link app.hushgram.extension.instagram.download.ProfilePicture}). Off until enabled.
+     */
+    public static final BooleanSetting COPY_PROFILE_TEXT =
+            new BooleanSetting("hushgram_copy_profile_text", FALSE);
+
+    /**
      * A voice message's menu in a chat gets Save
      * ({@link app.hushgram.extension.instagram.download.VoiceMessage}). Off until enabled.
      */

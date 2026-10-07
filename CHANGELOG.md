@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Save profile picture has a third switch under Downloads, Copy username and bio, that starts off. With it on, the menu on someone's profile also gets Copy username and Copy bio, which copy the account's username or bio exactly as it's written, emoji and line breaks included. An account with no bio gets no Copy bio. Asked for in #29.
+
 * **Instagram:** With Name saves by account and post time on, a saved profile picture is named for the account and the time you saved it, like `username_profile_20261007_105151.jpg`, instead of IG_IMG_. Off, it keeps the IG_IMG_ name.
 
 * **Instagram:** Hide the comment bar on reposted reels now keeps the bar hidden after Instagram tucks it away for a moment and brings it back, which some reposted reels do and which used to put the bar back under them. Asked for in #64.

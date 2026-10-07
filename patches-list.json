@@ -2120,7 +2120,7 @@
     },
     {
       "name": "Save profile picture",
-      "description": "Adds optional Save profile picture and View profile picture rows to the menu on someone's profile. Save keeps their picture at the largest size Instagram has, and View opens it full screen with pinch zoom. Their switches start off.",
+      "description": "Adds optional Save profile picture, View profile picture, Copy username and Copy bio rows to the menu on someone's profile. Save keeps their picture at the largest size Instagram has, View opens it full screen with pinch zoom, and the copy rows copy the text exactly. Their switches start off.",
       "category": "Downloads",
       "use": true,
       "dependencies": [

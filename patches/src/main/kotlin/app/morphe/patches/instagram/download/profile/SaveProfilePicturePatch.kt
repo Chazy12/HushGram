@@ -61,15 +61,16 @@ internal val ROW_ADDER_PARAMETERS = listOf(CONTEXT, CLICK, STRING, "I", "Z")
 internal val PROFILE_MENUS = listOf("UserOptionsBottomSheetOverflowHelper", "UserOptionsOverflowHelper")
 
 /**
- * Save profile picture and View profile picture in the menu on someone's profile, through the one
- * hook before the menu shows. Included in the default selection with both switches off.
+ * Save profile picture, View profile picture, Copy username and Copy bio in the menu on someone's
+ * profile, through the one hook before the menu shows. Included in the default selection with every
+ * switch off.
  */
 @Suppress("unused")
 val saveProfilePicturePatch = bytecodePatch(
     name = "Save profile picture",
-    description = "Adds optional Save profile picture and View profile picture rows to the menu on someone's " +
-        "profile. Save keeps their picture at the largest size Instagram has, and View opens it full screen with " +
-        "pinch zoom. Their switches start off.",
+    description = "Adds optional Save profile picture, View profile picture, Copy username and Copy bio rows to the " +
+        "menu on someone's profile. Save keeps their picture at the largest size Instagram has, View opens it full " +
+        "screen with pinch zoom, and the copy rows copy the text exactly. Their switches start off.",
     default = true,
 ) {
     category("Downloads")

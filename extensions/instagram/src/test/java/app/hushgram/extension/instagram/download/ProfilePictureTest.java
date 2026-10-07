@@ -5,6 +5,7 @@
 package app.hushgram.extension.instagram.download;
 
 import static org.junit.Assert.*;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.view.View;
 import java.util.ArrayList;
@@ -31,7 +32,10 @@ import app.hushgram.extension.shared.settings.BaseSettings;
 import app.hushgram.extension.shared.settings.HushgramPause;
 import app.hushgram.extension.shared.settings.PauseForTests;
 
-/** Save and View profile picture's rows: what they read when the menu opens, and what a tap does. */
+/**
+ * Save and View profile picture's rows, and Copy username and Copy bio's: what they read when the
+ * menu opens, and what a tap does.
+ */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = {28, 37})
 public class ProfilePictureTest {
@@ -75,6 +79,7 @@ public class ProfilePictureTest {
     @After public void restore() {
         Settings.SAVE_PROFILE_PICTURES.resetToDefault();
         Settings.VIEW_PROFILE_PICTURES.resetToDefault();
+        Settings.COPY_PROFILE_TEXT.resetToDefault();
         BaseSettings.PAUSED.save(false);
         PauseForTests.resume();
         HookStatus.clear();
@@ -279,6 +284,120 @@ public class ProfilePictureTest {
         assertEquals(0, reads.calls);
     }
 
+    @Test public void theCopySwitchStartsOff() {
+        Settings.COPY_PROFILE_TEXT.resetToDefault();
+        assertFalse(Settings.COPY_PROFILE_TEXT.get());
+    }
+
+    @Test public void withEverySwitchOnTheCopyRowsComeLast() {
+        Settings.VIEW_PROFILE_PICTURES.save(true);
+        Settings.COPY_PROFILE_TEXT.save(true);
+        ProfilePicture.offer(sheet, user, context, reads, save, viewer);
+        assertEquals(Arrays.asList("Save profile picture", "View profile picture", "Copy username", "Copy bio"),
+                new ArrayList<>(reads.rows.keySet()));
+    }
+
+    /** With only the copy switch on, the picture's sizes aren't read at all. */
+    @Test public void copyAloneReadsOnlyTheUsernameAndTheBio() {
+        Settings.SAVE_PROFILE_PICTURES.save(false);
+        Settings.COPY_PROFILE_TEXT.save(true);
+        ProfilePicture.offer(sheet, user, context, reads, save, viewer);
+        assertEquals(Arrays.asList("Copy username", "Copy bio"), new ArrayList<>(reads.rows.keySet()));
+        assertEquals("the username and the bio, nothing else", 2, reads.calls);
+        assertEquals(Collections.singletonList(FamilyNames.PROFILE_PICTURE + ": invoked 1, 0 found, 0 missing"), counted());
+    }
+
+    @Test public void copyUsernamePutsTheUsernameOnTheClipboard() {
+        Settings.COPY_PROFILE_TEXT.save(true);
+        ProfilePicture.offer(sheet, user, context, reads, save, viewer);
+        reads.rows.get("Copy username").onClick(null);
+        ShadowLooper.idleMainLooper();
+        assertEquals("someone", clipboard());
+        assertEquals("Username copied", ShadowToast.getTextOfLatestToast());
+        assertTrue("copying saves nothing", saved.isEmpty());
+    }
+
+    /** The bio goes on the clipboard exactly as it is: emoji, right-to-left text, line breaks and trailing spaces. */
+    @Test public void copyBioPutsTheExactBioOnTheClipboard() {
+        reads.bio = "Caf\u00e9 \u2615\n\u05e9\u05dc\u05d5\u05dd \ud83d\ude00  ";
+        Settings.COPY_PROFILE_TEXT.save(true);
+        ProfilePicture.offer(sheet, user, context, reads, save, viewer);
+
+        // What the account holds later doesn't change what the row copies.
+        String opened = reads.bio;
+        reads.bio = "changed";
+        reads.rows.get("Copy bio").onClick(null);
+        ShadowLooper.idleMainLooper();
+        assertEquals(opened, clipboard());
+        assertEquals("Bio copied", ShadowToast.getTextOfLatestToast());
+    }
+
+    @Test public void anAccountWithNoBioGetsNoCopyBioRow() {
+        reads.bio = "";
+        Settings.SAVE_PROFILE_PICTURES.save(false);
+        Settings.COPY_PROFILE_TEXT.save(true);
+        ProfilePicture.offer(sheet, user, context, reads, save, viewer);
+        assertEquals(Collections.singletonList("Copy username"), new ArrayList<>(reads.rows.keySet()));
+        assertEquals(Collections.singletonList(FamilyNames.PROFILE_PICTURE
+                + ": invoked 1, 0 found, 0 missing. Counted: no bio 1"), counted());
+        reads.bio = null;
+        HookStatus.clear();
+        ProfilePicture.offer(sheet, user, context, reads, save, viewer);
+        assertEquals(Collections.singletonList(FamilyNames.PROFILE_PICTURE
+                + ": invoked 1, 0 found, 0 missing. Counted: no bio 1"), counted());
+    }
+
+    @Test public void anAccountWithNoUsernameGetsNoCopyUsernameRow() {
+        reads.username = null;
+        Settings.SAVE_PROFILE_PICTURES.save(false);
+        Settings.COPY_PROFILE_TEXT.save(true);
+        ProfilePicture.offer(sheet, user, context, reads, save, viewer);
+        assertEquals(Collections.singletonList("Copy bio"), new ArrayList<>(reads.rows.keySet()));
+    }
+
+    /** No picture leaves out Save and View, not the copy rows. */
+    @Test public void anAccountWithNoPictureStillGetsTheCopyRows() {
+        reads.full = null;
+        reads.shown = null;
+        Settings.VIEW_PROFILE_PICTURES.save(true);
+        Settings.COPY_PROFILE_TEXT.save(true);
+        ProfilePicture.offer(sheet, user, context, reads, save, viewer);
+        assertEquals(Arrays.asList("Copy username", "Copy bio"), new ArrayList<>(reads.rows.keySet()));
+    }
+
+    @Test public void aCopyTapAfterTheSwitchWentOffCopiesNothing() {
+        Settings.COPY_PROFILE_TEXT.save(true);
+        ProfilePicture.offer(sheet, user, context, reads, save, viewer);
+        Settings.COPY_PROFILE_TEXT.save(false);
+        reads.rows.get("Copy username").onClick(null);
+        reads.rows.get("Copy bio").onClick(null);
+        assertNull(clipboard());
+    }
+
+    @Test public void aCopyRowThatDidntGoInIsCounted() {
+        Settings.SAVE_PROFILE_PICTURES.save(false);
+        Settings.COPY_PROFILE_TEXT.save(true);
+        reads.adds = false;
+        ProfilePicture.offer(sheet, user, context, reads, save, viewer);
+        assertEquals(Collections.singletonList(FamilyNames.PROFILE_PICTURE
+                + ": invoked 1, 0 found, 0 missing. Counted: copy row not added 2"), counted());
+    }
+
+    @Test public void pausedTheCopyRowsStayOut() {
+        Settings.SAVE_PROFILE_PICTURES.save(false);
+        Settings.COPY_PROFILE_TEXT.save(true);
+        BaseSettings.PAUSED.save(true);
+        PauseForTests.pause(HushgramPause.Reason.SWITCH);
+        ProfilePicture.offer(sheet, user, context, reads, save, viewer);
+        assertTrue(reads.rows.isEmpty());
+        assertEquals(0, reads.calls);
+    }
+
+    private String clipboard() {
+        ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+        return clipboard.hasPrimaryClip() ? String.valueOf(clipboard.getPrimaryClip().getItemAt(0).getText()) : null;
+    }
+
     /** As built, with no patch, the row's adder adds nothing and every read answers nothing. */
     @Test public void unpatchedTheMenuIsInstagrams() {
         ProfilePicture.offer(sheet, user, context);
@@ -291,6 +410,7 @@ public class ProfilePictureTest {
         final Object fullInfo = new Object(), shownImage = new Object();
         Object full = fullInfo, shown = shownImage;
         String fullUrl = FULL, shownUrl = SHOWN;
+        String username = "someone", bio = "Bakes on weekends";
         boolean adds = true, broken;
         int calls;
         Object sheet;
@@ -321,6 +441,7 @@ public class ProfilePictureTest {
         @Override public String shownUrl(Object image) { calls++; return image == shownImage ? shownUrl : null; }
         @Override public int shownWidth(Object image) { calls++; return 150; }
         @Override public int shownHeight(Object image) { calls++; return 150; }
-        @Override public String username(Object user) { calls++; return "someone"; }
+        @Override public String username(Object user) { calls++; return username; }
+        @Override public String biography(Object user) { calls++; return bio; }
     }
 }

@@ -206,7 +206,7 @@ class SaveProfilePictureHookTest {
         const val NEWER = "Lfixture/Options;"
         const val CONTEXT = "Landroid/content/Context;"
         val PICTURE_BRIDGES = listOf(
-            "profilePicture", "fullSizeProfilePicture", "username", "profilePictureUrl", "profilePictureWidth",
+            "profilePicture", "fullSizeProfilePicture", "username", "biography", "profilePictureUrl", "profilePictureWidth",
             "profilePictureHeight", "candidateUrl", "candidateWidth", "candidateHeight",
         )
         const val PUBLIC_FINAL = 0x0011

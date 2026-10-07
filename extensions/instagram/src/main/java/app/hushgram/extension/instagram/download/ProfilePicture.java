@@ -19,7 +19,9 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  * Save profile picture: a row at the end of the menu on someone's profile that saves their picture
  * at the largest size Instagram has, through the same save as a post's photo. View profile picture,
  * with its own switch, is a row after it that opens that picture full screen
- * ({@link ProfilePictureViewer}), with a Save button that goes through the same save.
+ * ({@link ProfilePictureViewer}), with a Save button that goes through the same save. Copy username
+ * and Copy bio, with a switch of their own, put the account's username or bio on the clipboard
+ * exactly as Instagram has it (#29).
  *
  * <p>Instagram builds that menu's sheet and shows it in one method. Right before it shows, the
  * patch hands {@link #offer} the sheet, the profile's account and the menu's context. The sizes are
@@ -45,6 +47,8 @@ public final class ProfilePicture {
         int shownWidth(Object image);
         int shownHeight(Object image);
         String username(Object user);
+        /** The account's {@code biography}, as its owner wrote it, or null. */
+        String biography(Object user);
     }
 
     interface Save {
@@ -64,6 +68,7 @@ public final class ProfilePicture {
         public int shownWidth(Object image) { return InstagramMedia.candidateWidth(image); }
         public int shownHeight(Object image) { return InstagramMedia.candidateHeight(image); }
         public String username(Object user) { return InstagramMedia.username(user); }
+        public String biography(Object user) { return InstagramMedia.biography(user); }
     };
 
     /** Opens the full screen viewer. Answers whether it opened. */
@@ -81,10 +86,13 @@ public final class ProfilePicture {
     static final String NO_PICTURE = "no profile picture";
     static final String NOT_ADDED = "row not added";
     static final String VIEW_NOT_ADDED = "view row not added";
+    static final String NO_BIO = "no bio";
+    static final String COPY_NOT_ADDED = "copy row not added";
 
     /**
      * Adds Save profile picture and View profile picture to [sheet], the menu on [user]'s profile,
-     * each when its switch is on and the account has a picture. [context] is the menu's. Never
+     * each when its switch is on and the account has a picture, then Copy username and Copy bio
+     * when their switch is on, each when the account has one. [context] is the menu's. Never
      * throws.
      */
     public static void offer(Object sheet, Object user, Context context) {
@@ -99,18 +107,28 @@ public final class ProfilePicture {
         try {
             HookStatus.invoked(FamilyNames.PROFILE_PICTURE);
             if (sheet == null || user == null || context == null) return;
-            boolean saving = on(), viewing = viewing();
-            if (!saving && !viewing) return;
-            List<MediaSave.Rendition> sizes = sizes(user, reads);
-            if (sizes.isEmpty()) return;
+            boolean saving = on(), viewing = viewing(), copying = copying();
+            if (!saving && !viewing && !copying) return;
             String owner = reads.username(user);
-            if (saving && !reads.addRow(sheet, context, new Row(context, sizes, owner, save),
+            List<MediaSave.Rendition> sizes = saving || viewing ? sizes(user, reads) : Collections.emptyList();
+            if (saving && !sizes.isEmpty() && !reads.addRow(sheet, context, new Row(context, sizes, owner, save),
                     L10n.t(context, "Save profile picture"))) {
                 HookStatus.counted(FamilyNames.PROFILE_PICTURE, NOT_ADDED);
             }
-            if (viewing && !reads.addRow(sheet, context, new ViewRow(context, sizes, owner, save, viewer),
+            if (viewing && !sizes.isEmpty() && !reads.addRow(sheet, context, new ViewRow(context, sizes, owner, save, viewer),
                     L10n.t(context, "View profile picture"))) {
                 HookStatus.counted(FamilyNames.PROFILE_PICTURE, VIEW_NOT_ADDED);
+            }
+            if (!copying) return;
+            if (owner != null && !owner.isEmpty() && !reads.addRow(sheet, context, new CopyRow(context, owner, false),
+                    L10n.t(context, "Copy username"))) {
+                HookStatus.counted(FamilyNames.PROFILE_PICTURE, COPY_NOT_ADDED);
+            }
+            String bio = reads.biography(user);
+            if (bio == null || bio.isEmpty()) {
+                HookStatus.counted(FamilyNames.PROFILE_PICTURE, NO_BIO);
+            } else if (!reads.addRow(sheet, context, new CopyRow(context, bio, true), L10n.t(context, "Copy bio"))) {
+                HookStatus.counted(FamilyNames.PROFILE_PICTURE, COPY_NOT_ADDED);
             }
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.PROFILE_PICTURE, "profile menu", failure);
@@ -156,6 +174,16 @@ public final class ProfilePicture {
             return Utils.settingsReady() && Settings.VIEW_PROFILE_PICTURES.get();
         } catch (Throwable t) {
             HookStatus.threw(FamilyNames.PROFILE_PICTURE, "view profile picture switch", t);
+            return false;
+        }
+    }
+
+    /** Whether Copy username and bio's switch is on, which a pause answers off. */
+    static boolean copying() {
+        try {
+            return Utils.settingsReady() && Settings.COPY_PROFILE_TEXT.get();
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.PROFILE_PICTURE, "copy username and bio switch", t);
             return false;
         }
     }
@@ -219,6 +247,38 @@ public final class ProfilePicture {
             } catch (Throwable failure) {
                 HookStatus.threw(FamilyNames.PROFILE_PICTURE, "view profile picture", failure);
                 ProfilePictureViewer.notOpened(context);
+            }
+        }
+    }
+
+    /**
+     * A Copy row: the username, or with [bio] the bio, read when the menu opened, put on the
+     * clipboard exactly as it is, never trimmed, and marked sensitive as every copy is.
+     */
+    static final class CopyRow implements View.OnClickListener {
+        final Context context;
+        final String text;
+        final boolean bio;
+
+        CopyRow(Context context, String text, boolean bio) {
+            this.context = context;
+            this.text = text;
+            this.bio = bio;
+        }
+
+        @Override public void onClick(View view) {
+            try {
+                if (!copying()) return;
+                Utils.setClipboard(context, bio ? L10n.t(context, "Bio") : L10n.t(context, "Username"), text);
+                Utils.showToastShort(bio ? L10n.t(context, "Bio copied") : L10n.t(context, "Username copied"));
+            } catch (Throwable failure) {
+                HookStatus.threw(FamilyNames.PROFILE_PICTURE, bio ? "copy bio" : "copy username", failure);
+                try {
+                    Utils.showToastShort(bio ? L10n.t(context, "Couldn't copy the bio")
+                            : L10n.t(context, "Couldn't copy the username"));
+                } catch (Throwable feedback) {
+                    HookStatus.threw(FamilyNames.PROFILE_PICTURE, "copy feedback", feedback);
+                }
             }
         }
     }

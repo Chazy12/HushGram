@@ -62,6 +62,11 @@ public final class InstagramMedia {
         return null;
     }
 
+    /** A User's {@code biography}, as its owner wrote it. */
+    public static String biography(Object user) {
+        return null;
+    }
+
     /** A video version's {@code url}. */
     public static String versionUrl(Object version) {
         return null;

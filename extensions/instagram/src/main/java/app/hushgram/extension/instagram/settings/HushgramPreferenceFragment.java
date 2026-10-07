@@ -862,6 +862,9 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                 downloads.addPreference(toggle(context, Settings.VIEW_PROFILE_PICTURES, L10n.t("View profile picture"),
                         L10n.t("Adds View profile picture to the menu on someone's profile. Opens their picture full "
                                 + "screen at the largest size Instagram has, with pinch zoom and a Save button.")));
+                downloads.addPreference(toggle(context, Settings.COPY_PROFILE_TEXT, L10n.t("Copy username and bio"),
+                        L10n.t("Adds Copy username and Copy bio to the menu on someone's profile. Each copies the "
+                                + "text exactly as the account has it.")));
             }
             if (build.contains(PatchFamily.VOICE_MESSAGE)) {
                 downloads.addPreference(toggle(context, Settings.DOWNLOAD_VOICE_MESSAGES, L10n.t("Download voice messages"),

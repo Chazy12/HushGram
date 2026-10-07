@@ -182,5 +182,6 @@ public class ProfilePictureSaveTest {
         @Override public int shownWidth(Object image) { return ((MediaSave.Rendition) image).width; }
         @Override public int shownHeight(Object image) { return ((MediaSave.Rendition) image).height; }
         @Override public String username(Object user) { return "someone"; }
+        @Override public String biography(Object user) { return null; }
     }
 }
