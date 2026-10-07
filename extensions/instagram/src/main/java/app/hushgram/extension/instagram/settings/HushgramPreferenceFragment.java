@@ -612,7 +612,7 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         }
         if (build.contains(PatchFamily.LIVE_SEEN)) {
             stories.add(toggle(context, Settings.VIEW_LIVE_ANONYMOUSLY, L10n.t("View live anonymously"),
-                    L10n.t("Lives you watch don't put you on the host's viewer list, so they aren't told you're there. Commenting or reacting still shows you, and the viewer count you see stops updating.")));
+                    L10n.t("Lives you watch don't put you on the host's viewer list, so they aren't told you're there. Commenting or reacting still shows you. The viewer count you see stops updating, and a live that ends can keep looking live until you leave it.")));
         }
         if (build.contains(PatchFamily.STORY_DOWNLOAD)) {
             stories.add(toggle(context, Settings.DOWNLOAD_STORIES, L10n.t("Download on stories"),

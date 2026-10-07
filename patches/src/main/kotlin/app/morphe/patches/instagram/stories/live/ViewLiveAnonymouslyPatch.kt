@@ -61,7 +61,7 @@ internal object ViewerHeartbeatFingerprint : Fingerprint(
 val viewLiveAnonymouslyPatch = bytecodePatch(
     name = "View live anonymously",
     description = "Keeps you off the viewer list of the lives you watch, so the host isn't told you're there. " +
-        "Your own lives still count their viewers.",
+        "A live that ends can keep looking live until you leave it. Your own lives still count their viewers.",
     default = true,
 ) {
     category("Privacy")
