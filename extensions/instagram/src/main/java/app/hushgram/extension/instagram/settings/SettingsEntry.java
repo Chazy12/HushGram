@@ -412,6 +412,11 @@ public final class SettingsEntry {
                 Logger.printInfo(() -> "Settings wait: " + name + " has saved its state");
                 return false;
             }
+            // While Instagram is locked, the screen that could turn the lock off waits for the phone's lock.
+            if (MessagesLock.locked()) {
+                MessagesLock.confirmThen(activity, () -> open(activity));
+                return true;
+            }
             closedByUser = false;
             new SettingsDialog().show(fragments, DIALOG_TAG);
             host = new WeakReference<>(activity);

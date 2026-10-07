@@ -66,6 +66,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import app.hushgram.extension.instagram.direct.LockDelay;
 import app.hushgram.extension.instagram.direct.MessagesLock;
 import app.hushgram.extension.instagram.download.DownloadQuality;
 import app.hushgram.extension.instagram.media.PlaybackQuality;
@@ -438,7 +439,13 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                                 + "still see theirs.")));
             }
             if (build.contains(PatchFamily.MESSAGES_LOCK)) {
-                messages.addPreference(messagesLockToggle(context));
+                messages.addPreference(lockToggle(context, Settings.LOCK_MESSAGES, L10n.t("Lock your messages"),
+                        L10n.t("Your inbox and chats stay covered until your fingerprint, face or screen lock says it's "
+                                + "you. Message notifications say only that a message came.")));
+                messages.addPreference(lockToggle(context, Settings.LOCK_APP, L10n.t("Lock all of Instagram"),
+                        L10n.t("All of Instagram stays covered until your fingerprint, face or screen lock says it's "
+                                + "you, your messages too.")));
+                messages.addPreference(lockDelayRow(context));
             }
         }
 
@@ -872,6 +879,7 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     belongs |= family == PatchFamily.PLAYBACK_QUALITY && Settings.PLAYBACK_QUALITY.key.equals(key);
                     belongs |= family == PatchFamily.TAP_TO_PLAY && Settings.TAP_TO_PLAY_SCOPE.key.equals(key);
                     belongs |= family == PatchFamily.STORY_TIME && Settings.STORY_TIME_MODE.key.equals(key);
+                    belongs |= family == PatchFamily.MESSAGES_LOCK && Settings.LOCK_AGAIN.key.equals(key);
                     belongs |= family == PatchFamily.RESUME_LONG_VIDEOS && row == clearPositions;
                     belongs |= (family == PatchFamily.REEL_DOWNLOAD || family == PatchFamily.STORY_DOWNLOAD
                             || family == PatchFamily.VIDEO_DOWNLOAD) && (Settings.DOWNLOAD_QUALITY.key.equals(key)
@@ -1808,21 +1816,53 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
     }
 
     /**
-     * Lock your messages' switch. Turning it off while the messages are locked asks the phone's
-     * lock first, so the switch can't be used to get around it.
+     * A lock's switch. Turning it off while Instagram is locked asks the phone's lock first, so the
+     * switch can't be used to get around it.
      */
-    static SwitchPreference messagesLockToggle(Context context) {
-        SwitchPreference row = toggle(context, Settings.LOCK_MESSAGES, L10n.t("Lock your messages"),
-                L10n.t("Your inbox and chats stay covered until your fingerprint, face or screen lock says it's "
-                        + "you, and lock again when you leave Instagram. Message notifications say only that "
-                        + "a message came."));
+    static SwitchPreference lockToggle(Context context, BooleanSetting setting, String title, String summary) {
+        SwitchPreference row = toggle(context, setting, title, summary);
         row.setOnPreferenceChangeListener((preference, value) -> {
             Activity activity = activityOf(preference.getContext());
-            if (Boolean.TRUE.equals(value) || !MessagesLock.locked() || activity == null) return true;
+            if (Boolean.TRUE.equals(value)) {
+                MessagesLock.openUntilLeft();
+                return true;
+            }
+            if (!MessagesLock.locked() || activity == null) return true;
             MessagesLock.confirmThen(activity, () -> ((SwitchPreference) preference).setChecked(false));
             return false;
         });
         return row;
+    }
+
+    /** How long after you leave Instagram the locks lock again; its summary says what the choice does. */
+    static LockDelayRow lockDelayRow(Context context) {
+        LockDelayRow row = new LockDelayRow(context);
+        row.setKey(Settings.LOCK_AGAIN.key);
+        row.setTitle(L10n.t("Lock again"));
+        row.setDialogTitle(L10n.t("Lock again"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        LockDelay[] delays = LockDelay.values();
+        CharSequence[] entries = new CharSequence[delays.length];
+        CharSequence[] values = new CharSequence[delays.length];
+        for (int i = 0; i < delays.length; i++) {
+            entries[i] = lockDelayLabel(delays[i]);
+            values[i] = delays[i].name();
+        }
+        row.setEntries(entries);
+        row.setEntryValues(values);
+        row.setValue(Settings.LOCK_AGAIN.savedValue().name());
+        return row;
+    }
+
+    /** What the list calls [delay]. */
+    static String lockDelayLabel(LockDelay delay) {
+        switch (delay) {
+            case ONE_MINUTE: return L10n.t("After 1 minute");
+            case FIVE_MINUTES: return L10n.t("After 5 minutes");
+            case FIFTEEN_MINUTES: return L10n.t("After 15 minutes");
+            case ONE_HOUR: return L10n.t("After 1 hour");
+            default: return L10n.t("Right away");
+        }
     }
 
     @Nullable
@@ -2147,6 +2187,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             ((TapToPlayScopeRow) preference).showSummary();
         } else if (preference instanceof StoryTimeModeRow) {
             ((StoryTimeModeRow) preference).showSummary();
+        } else if (preference instanceof LockDelayRow) {
+            ((LockDelayRow) preference).showSummary();
         } else if (preference instanceof StoryRingRow) {
             ((StoryRingRow) preference).showSummary();
         }
@@ -2165,6 +2207,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             ((TapToPlayScopeRow) listPreference).showSummary();
         } else if (listPreference instanceof StoryTimeModeRow) {
             ((StoryTimeModeRow) listPreference).showSummary();
+        } else if (listPreference instanceof LockDelayRow) {
+            ((LockDelayRow) listPreference).showSummary();
         } else if (listPreference instanceof StoryRingRow) {
             ((StoryRingRow) listPreference).showSummary();
         } else {
@@ -2748,6 +2792,52 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
     }
 
     /** Show a story's exact time's choice of how. Its summary follows its value, as Tap to play's choice does. */
+    static final class LockDelayRow extends ListPreference {
+        LockDelayRow(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void setValue(String value) {
+            super.setValue(value);
+            showSummary();
+        }
+
+        void showSummary() {
+            LockDelay delay = LockDelay.RIGHT_AWAY;
+            for (LockDelay candidate : LockDelay.values()) {
+                if (candidate.name().equals(getValue())) delay = candidate;
+            }
+            setSummary(delay == LockDelay.RIGHT_AWAY
+                    ? L10n.t("Instagram locks as soon as you leave it or the screen turns off.")
+                    : L10n.f("Instagram locks once you've been away from it for %1$s.", lockDelayAway(delay)));
+        }
+
+        @Override
+        protected void onBindView(View view) {
+            super.onBindView(view);
+            showAllText(view);
+            ScreenColors.row(view, this);
+            view.setAccessibilityDelegate(new RowSemantics(this, Button.class));
+        }
+
+        @Override
+        protected void showDialog(Bundle state) {
+            super.showDialog(state);
+            if (getDialog() instanceof AlertDialog) ScreenColors.dialog((AlertDialog) getDialog());
+        }
+    }
+
+    /** How long away [delay] waits, for the row's summary. */
+    static String lockDelayAway(LockDelay delay) {
+        switch (delay) {
+            case ONE_MINUTE: return L10n.t("1 minute");
+            case FIVE_MINUTES: return L10n.t("5 minutes");
+            case FIFTEEN_MINUTES: return L10n.t("15 minutes");
+            default: return L10n.t("1 hour");
+        }
+    }
+
     static final class StoryTimeModeRow extends ListPreference {
         StoryTimeModeRow(Context context) {
             super(context);

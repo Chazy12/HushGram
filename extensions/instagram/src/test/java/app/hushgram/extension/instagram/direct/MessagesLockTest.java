@@ -18,6 +18,7 @@ import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.os.SystemClock;
 import android.graphics.Rect;
 import android.view.View;
 import android.view.ViewGroup;
@@ -81,6 +82,8 @@ public class MessagesLockTest {
     public void restore() {
         MessagesLock.resetForTests();
         Settings.LOCK_MESSAGES.resetToDefault();
+        Settings.LOCK_APP.resetToDefault();
+        Settings.LOCK_AGAIN.resetToDefault();
         BaseSettings.PAUSED.save(false);
         PauseForTests.resume();
         HookStatus.clear();
@@ -210,6 +213,70 @@ public class MessagesLockTest {
     }
 
     @Test
+    public void lockAllOfInstagramCoversTheWholeScreen() {
+        Settings.LOCK_MESSAGES.save(false);
+        Settings.LOCK_APP.save(true);
+        Activity activity = inbox().get();
+        View content = activity.findViewById(android.R.id.content);
+
+        MessagesLock.check(activity);
+
+        View cover = cover(activity);
+        assertNotNull("no cover over Instagram", cover);
+        assertEquals(View.VISIBLE, cover.getVisibility());
+        assertEquals(visible(content).width(), cover.getWidth());
+        assertEquals(visible(content).height(), cover.getHeight());
+        assertEquals("the inbox got its own cover too", 1, covers(activity));
+        assertEquals(1, asks.size());
+        Notification message = message("ig_direct", Notification.CATEGORY_MESSAGE);
+        assertNotSame(message, MessagesLock.notification(message));
+
+        asks.get(0)[0].run();
+        MessagesLock.check(activity);
+        assertEquals(View.GONE, cover.getVisibility());
+        assertEquals(1, covers(activity));
+    }
+
+    @Test
+    public void lockAgainWaitsAsLongAsYouPicked() {
+        Settings.LOCK_AGAIN.save(LockDelay.FIVE_MINUTES);
+        MessagesLock.watch(RuntimeEnvironment.getApplication());
+        ActivityController<Activity> controller = inbox();
+        MessagesLock.check(controller.get());
+        asks.get(0)[0].run();
+
+        controller.pause().stop();
+        SystemClock.sleep(4 * 60_000);
+        assertFalse("locked before five minutes away", MessagesLock.locked());
+        // Restarted, as Android brings a stopped activity back, so the next stop is a real one.
+        controller.restart().resume();
+        assertFalse(MessagesLock.locked());
+        assertEquals(1, asks.size());
+
+        // Away again: the time starts over, and once it's up the notifications are hidden at once.
+        controller.pause().stop();
+        SystemClock.sleep(4 * 60_000);
+        assertFalse(MessagesLock.locked());
+        SystemClock.sleep(60_000);
+        assertTrue("five minutes away didn't lock", MessagesLock.locked());
+        Notification message = message("ig_direct", Notification.CATEGORY_MESSAGE);
+        assertNotSame(message, MessagesLock.notification(message));
+    }
+
+    @Test
+    public void turningALockOnWaitsUntilYouLeave() {
+        Settings.LOCK_MESSAGES.save(false);
+        MessagesLock.openUntilLeft();
+        Settings.LOCK_APP.save(true);
+        assertFalse(MessagesLock.locked());
+
+        // Turned on while the other lock is locked, it opens nothing.
+        MessagesLock.relock(true);
+        MessagesLock.openUntilLeft();
+        assertTrue(MessagesLock.locked());
+    }
+
+    @Test
     public void aPhoneWithoutAScreenLockLeavesTheMessagesOpenAndSaysWhy() {
         MessagesLock.asker = MessagesLock.realAskerForTests();
         Activity activity = inbox().get();
@@ -261,6 +328,15 @@ public class MessagesLockTest {
             if (MessagesLock.COVER_TAG.equals(child.getTag())) return child;
         }
         return null;
+    }
+
+    private static int covers(Activity activity) {
+        ViewGroup decor = (ViewGroup) activity.getWindow().getDecorView();
+        int count = 0;
+        for (int i = 0; i < decor.getChildCount(); i++) {
+            if (MessagesLock.COVER_TAG.equals(decor.getChildAt(i).getTag())) count++;
+        }
+        return count;
     }
 
     private static Notification message(String channel, String category) {

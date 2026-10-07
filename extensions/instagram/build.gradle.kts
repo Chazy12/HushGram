@@ -307,6 +307,16 @@ tasks.register("verifyAndroidBoundaries") {
                 "pausedAndUnreadySendTheIndicator[28]", "pausedAndUnreadySendTheIndicator[37]",
                 "aThrowingSwitchSendsTheIndicatorAndIsReported[28]", "aThrowingSwitchSendsTheIndicatorAndIsReported[37]",
                 "theSeenReceiptSwitchIsAnIndependentChoice[28]", "theSeenReceiptSwitchIsAnIndependentChoice[37]"),
+            "app.hushgram.extension.instagram.direct.MessagesLockTest" to listOf(
+                "lockedMessageNotificationsSayOnlyThatAMessageCame[28]", "lockedMessageNotificationsSayOnlyThatAMessageCame[37]",
+                "offPausedUnreadyAndUnlockedLeaveEverythingToInstagram[28]", "offPausedUnreadyAndUnlockedLeaveEverythingToInstagram[37]",
+                "theInboxIsCoveredAndThePhoneAskedOnce[28]", "theInboxIsCoveredAndThePhoneAskedOnce[37]",
+                "confirmedOpensUntilInstagramLeavesTheScreen[28]", "confirmedOpensUntilInstagramLeavesTheScreen[37]",
+                "aChatIsCoveredTooAndNothingElseIs[28]", "aChatIsCoveredTooAndNothingElseIs[37]",
+                "lockAllOfInstagramCoversTheWholeScreen[28]", "lockAllOfInstagramCoversTheWholeScreen[37]",
+                "lockAgainWaitsAsLongAsYouPicked[28]", "lockAgainWaitsAsLongAsYouPicked[37]",
+                "turningALockOnWaitsUntilYouLeave[28]", "turningALockOnWaitsUntilYouLeave[37]",
+                "aPhoneWithoutAScreenLockLeavesTheMessagesOpenAndSaysWhy[28]", "aPhoneWithoutAScreenLockLeavesTheMessagesOpenAndSaysWhy[37]"),
             "app.hushgram.extension.instagram.settings.TypingSettingsTest" to listOf(
                 "missingPatchHasNoTypingSwitch[28]", "missingPatchHasNoTypingSwitch[37]",
                 "typingAloneStillGetsMessages[28]", "typingAloneStillGetsMessages[37]",

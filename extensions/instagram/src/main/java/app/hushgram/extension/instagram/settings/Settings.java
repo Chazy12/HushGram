@@ -156,6 +156,19 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting LOCK_MESSAGES = new BooleanSetting("hushgram_lock_messages", FALSE);
 
     /**
+     * All of Instagram stays covered until the phone's lock says it's you, the messages too
+     * ({@link app.hushgram.extension.instagram.direct.MessagesLock}). Off to start.
+     */
+    public static final BooleanSetting LOCK_APP = new BooleanSetting("hushgram_lock_app", FALSE);
+
+    /**
+     * How long after you leave Instagram the two locks above lock again. It starts at right away,
+     * which is what they did before the choice. It isn't a switch: the two above are.
+     */
+    public static final EnumSetting<app.hushgram.extension.instagram.direct.LockDelay> LOCK_AGAIN =
+            new EnumSetting<>("hushgram_lock_again", app.hushgram.extension.instagram.direct.LockDelay.RIGHT_AWAY);
+
+    /**
      * The Mark as seen button in the story viewer's header
      * ({@link app.hushgram.extension.instagram.stories.StorySeenButton}). Off to start. A story you
      * tap it on is sent as seen while the rest stay held back. Read each time a story is shown and

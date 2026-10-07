@@ -47,8 +47,10 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  *
  * <p>While the switch is on, your inbox and every chat stay under a cover until the phone's own
  * lock (fingerprint, face, PIN, pattern or password) says it's you. Once it does, they stay open
- * until Instagram leaves the screen, then lock again. While they're locked, a message notification
- * says only that a message came, and Instagram's banner for a new message inside the app waits.
+ * until Instagram leaves the screen, then lock again, at once or after the time Lock again sets.
+ * While they're locked, a message notification says only that a message came, and Instagram's
+ * banner for a new message inside the app waits. Lock all of Instagram, the second switch, covers
+ * every screen the same way instead of just the messages.
  *
  * <p>The inbox and a chat are found by the view ids Instagram gives them when it builds them, on
  * each frame of the activity in front, and the cover is drawn over just that part of the screen,
@@ -65,6 +67,8 @@ public final class MessagesLock {
     static final String INBOX_FRAME = "list_container";
     /** A chat's whole screen: its header, the messages and the composer. */
     static final String CHAT_ROOT = "thread_view_root";
+    /** Every screen's content, for Lock all of Instagram. */
+    static final String APP = "app";
     /** Marks the cover this class puts in a window. */
     static final String COVER_TAG = "hushgram_messages_lock";
 
@@ -94,6 +98,8 @@ public final class MessagesLock {
     static volatile Map<String, Integer> idsForTests;
 
     private static volatile boolean open;
+    /** When Instagram last left the screen while open and Lock again said to wait; 0 when it isn't away. */
+    private static volatile long leftAt;
     private static volatile boolean watching;
     private static int started;
     private static long askedAt;
@@ -157,9 +163,19 @@ public final class MessagesLock {
         }
     }
 
-    /** True while the switch is on and the phone's lock hasn't been confirmed since Instagram came back. */
+    /** True while a lock is on and the phone's lock hasn't been confirmed since Instagram came back. */
     public static boolean locked() {
-        return switchedOn() && !open;
+        if (!switchedOn()) return false;
+        expire();
+        return !open;
+    }
+
+    /**
+     * A lock was just turned on while nothing was locked. It waits until you leave Instagram rather
+     * than covering the screen you're on, since you're the one who turned it on.
+     */
+    public static void openUntilLeft() {
+        if (!locked()) open = true;
     }
 
     /**
@@ -177,10 +193,30 @@ public final class MessagesLock {
 
     private static boolean switchedOn() {
         try {
-            return Utils.settingsReady() && Settings.LOCK_MESSAGES.get();
+            return Utils.settingsReady() && (Settings.LOCK_MESSAGES.get() || Settings.LOCK_APP.get());
         } catch (Throwable t) {
             HookStatus.threw(FamilyNames.MESSAGES_LOCK, SWITCH, t);
             return false;
+        }
+    }
+
+    /** Lock all of Instagram is on: every screen gets the cover, not just the messages. */
+    private static boolean wholeApp() {
+        try {
+            return Utils.settingsReady() && Settings.LOCK_APP.get();
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.MESSAGES_LOCK, SWITCH, t);
+            return false;
+        }
+    }
+
+    /** How long Instagram may be away before it locks, in milliseconds. */
+    private static long lockDelay() {
+        try {
+            return Settings.LOCK_AGAIN.get().millis;
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.MESSAGES_LOCK, SWITCH, t);
+            return 0;
         }
     }
 
@@ -252,7 +288,11 @@ public final class MessagesLock {
 
     private static final class Lifecycle implements Application.ActivityLifecycleCallbacks {
         @Override public void onActivityStarted(Activity activity) {
-            started++;
+            if (started++ <= 0) {
+                // Back before Lock again's time ran out: still open, and the next leave starts over.
+                expire();
+                leftAt = 0;
+            }
         }
 
         @Override public void onActivityStopped(Activity activity) {
@@ -260,7 +300,7 @@ public final class MessagesLock {
             // A rotation stops and starts the activity again; only leaving Instagram locks. The
             // phone's own lock screen check on Android 9 stops Instagram too, and coming back from
             // it mustn't ask again.
-            if (started <= 0 && !activity.isChangingConfigurations()) relock(askedAt == 0);
+            if (started <= 0 && !activity.isChangingConfigurations()) left();
         }
 
         @Override public void onActivityResumed(Activity activity) {
@@ -276,7 +316,25 @@ public final class MessagesLock {
         @Override public void onActivityDestroyed(Activity activity) { }
     }
 
-    /** Instagram left the screen: the next look at the messages asks again. */
+    /** Instagram left the screen: locked now, or once it's been away as long as Lock again says. */
+    static void left() {
+        if (open && lockDelay() > 0) {
+            leftAt = SystemClock.elapsedRealtime();
+            return;
+        }
+        leftAt = 0;
+        relock(askedAt == 0);
+    }
+
+    /** Away longer than Lock again allows: locked, even before Instagram comes back. */
+    private static void expire() {
+        long since = leftAt;
+        if (!open || since == 0 || SystemClock.elapsedRealtime() - since < lockDelay()) return;
+        leftAt = 0;
+        relock(askedAt == 0);
+    }
+
+    /** The next look at the messages asks again. */
     static void relock(boolean askAgain) {
         open = false;
         if (askAgain) askedThisTime = false;
@@ -316,17 +374,22 @@ public final class MessagesLock {
 
     /**
      * Puts a cover over the inbox and over a chat wherever either is on screen while the messages
-     * are locked, and takes them away otherwise. The first time one shows after Instagram comes
-     * back, the phone's lock is asked once; a cancel leaves the cover with its Unlock button.
+     * are locked, or over the whole screen with Lock all of Instagram, and takes them away otherwise.
+     * The first time one shows after Instagram comes back, the phone's lock is asked once; a cancel
+     * leaves the cover with its Unlock button.
      */
     static void check(Activity activity) {
         try {
             View decor = activity.getWindow().getDecorView();
             boolean lock = locked();
-            boolean inbox = place(activity, decor, INBOX_LIST, lock);
-            boolean chat = place(activity, decor, CHAT_ROOT, lock);
-            keepOutOfRecents(activity, !lock && switchedOn() && (inbox || chat));
-            if (!lock || !(inbox || chat)) {
+            boolean whole = wholeApp();
+            // One cover at a time: two would each keep pulling itself in front of the other.
+            boolean app = (whole || cover(APP) != null) && place(activity, decor, APP, lock && whole);
+            boolean inbox = place(activity, decor, INBOX_LIST, lock && !whole);
+            boolean chat = place(activity, decor, CHAT_ROOT, lock && !whole);
+            boolean guarded = whole ? app : inbox || chat;
+            keepOutOfRecents(activity, !lock && switchedOn() && guarded);
+            if (!lock || !guarded) {
                 // Asked again the next time the messages show, unless a prompt is still up.
                 if (askedAt == 0) askedThisTime = false;
                 return;
@@ -358,7 +421,7 @@ public final class MessagesLock {
         boolean moved = false;
         if (cover == null || cover.getParent() != decor) {
             if (cover != null && cover.getParent() instanceof ViewGroup) ((ViewGroup) cover.getParent()).removeView(cover);
-            cover = buildCover(activity);
+            cover = buildCover(activity, APP.equals(name));
             covers.put(name, new WeakReference<>(cover));
             window.addView(cover, new FrameLayout.LayoutParams(area.width(), area.height(), Gravity.TOP | Gravity.START));
             moved = true;
@@ -421,6 +484,7 @@ public final class MessagesLock {
     }
 
     static int id(Context context, String name) {
+        if (APP.equals(name)) return android.R.id.content;
         Map<String, Integer> forTests = idsForTests;
         if (forTests != null) {
             Integer id = forTests.get(name);
@@ -429,7 +493,7 @@ public final class MessagesLock {
         return context.getResources().getIdentifier(name, "id", context.getPackageName());
     }
 
-    private static View buildCover(Activity activity) {
+    private static View buildCover(Activity activity, boolean wholeApp) {
         boolean dark = Utils.isDarkModeEnabled();
         int text = dark ? Color.WHITE : Color.BLACK;
         FrameLayout cover = new FrameLayout(activity);
@@ -452,7 +516,7 @@ public final class MessagesLock {
         column.addView(icon, new LinearLayout.LayoutParams(size, size));
 
         TextView title = new TextView(activity);
-        title.setText(L10n.t("Your messages are locked"));
+        title.setText(wholeApp ? L10n.t("Instagram is locked") : L10n.t("Your messages are locked"));
         title.setTextColor(text);
         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
         title.setGravity(Gravity.CENTER);
@@ -508,15 +572,16 @@ public final class MessagesLock {
         KeyguardManager keyguard = activity.getSystemService(KeyguardManager.class);
         if (keyguard == null || !keyguard.isDeviceSecure()) {
             HookStatus.counted(FamilyNames.MESSAGES_LOCK, NO_PHONE_LOCK);
-            Utils.showToastLong(L10n.t("Set a screen lock on your phone so HushGram can lock your messages."));
+            Utils.showToastLong(wholeApp()
+                    ? L10n.t("Set a screen lock on your phone so HushGram can lock Instagram.")
+                    : L10n.t("Set a screen lock on your phone so HushGram can lock your messages."));
             confirmed.run();
             return;
         }
         if (Build.VERSION.SDK_INT >= 29) {
             prompt(activity, confirmed, notConfirmed);
         } else {
-            Intent intent = keyguard.createConfirmDeviceCredentialIntent(
-                    L10n.t("Unlock your messages"), null);
+            Intent intent = keyguard.createConfirmDeviceCredentialIntent(askTitle(), null);
             if (intent == null) {
                 confirmed.run();
                 return;
@@ -528,7 +593,7 @@ public final class MessagesLock {
     @SuppressWarnings("deprecation")
     private static void prompt(Activity activity, Runnable confirmed, Runnable notConfirmed) {
         BiometricPrompt.Builder builder = new BiometricPrompt.Builder(activity)
-                .setTitle(L10n.t("Unlock your messages"));
+                .setTitle(askTitle());
         if (Build.VERSION.SDK_INT >= 30) {
             builder.setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK
                     | BiometricManager.Authenticators.DEVICE_CREDENTIAL);
@@ -548,6 +613,10 @@ public final class MessagesLock {
                         notConfirmed.run();
                     }
                 });
+    }
+
+    private static String askTitle() {
+        return wholeApp() ? L10n.t("Unlock Instagram") : L10n.t("Unlock your messages");
     }
 
     /** Draws the activity again, so the covers come off at once. */
@@ -613,6 +682,7 @@ public final class MessagesLock {
     /** Back to how a fresh start finds it. */
     static void resetForTests() {
         open = false;
+        leftAt = 0;
         watching = false;
         started = 0;
         askedAt = 0;
