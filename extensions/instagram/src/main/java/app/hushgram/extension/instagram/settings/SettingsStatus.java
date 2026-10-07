@@ -112,6 +112,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean recentSearches() {
+        return false;
+    }
+
     public static boolean notesRow() {
         return false;
     }

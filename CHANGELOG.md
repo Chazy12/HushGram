@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** New patch, Don't save recent searches, in simple mode with its switch off. With it on, what you open from search stays out of Recent, both in the app and on Instagram's side.
+
 * **Instagram:** New patch, Data saver, in simple mode with its switch off. With it on, photos load at a smaller size and videos, reels and stories start at the lowest quality, on mobile data only unless you turn that second switch off.
 
 * **Instagram:** Stop Reels scrolling has a second switch, Stop after 20 reels, off to start. After 20 reels in a session, swiping in Reels stops until Instagram has been in the background for 15 minutes. A reel you open from a message still plays.

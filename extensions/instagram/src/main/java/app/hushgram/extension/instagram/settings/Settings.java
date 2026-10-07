@@ -314,6 +314,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_hide_explore_grid", TRUE);
 
     /**
+     * What you open from search stays out of Recent, in the app's cache and on Instagram's side
+     * ({@link app.hushgram.extension.instagram.explore.RecentSearches}). Read at each save. Off to start.
+     */
+    public static final BooleanSetting DONT_SAVE_RECENT_SEARCHES =
+            new BooleanSetting("hushgram_dont_save_recent_searches", FALSE);
+
+    /**
      * The row of notes at the top of your messages, its Map bubble included
      * ({@link app.hushgram.extension.instagram.direct.NotesRow}). Read each time Instagram works out
      * your messages again, so a change shows the next time they update. Off to start.

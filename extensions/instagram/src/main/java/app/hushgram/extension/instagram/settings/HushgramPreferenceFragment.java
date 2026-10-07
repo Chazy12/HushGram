@@ -418,11 +418,19 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     L10n.t("About this reel keeps its summary and Sources without the Ask Meta AI box under them.")));
         }
 
-        if (build.contains(PatchFamily.EXPLORE_GRID)) {
+        if (build.contains(PatchFamily.EXPLORE_GRID) || build.contains(PatchFamily.RECENT_SEARCHES)) {
             PreferenceCategory explore = category(screen, L10n.t("Explore"));
-            explore.addPreference(toggle(context, Settings.HIDE_EXPLORE_GRID, L10n.t("Hide the Explore grid"),
-                    L10n.t("The posts and reels under the Search tab's bar. Search, your recent searches and "
-                            + "search results stay.")));
+            if (build.contains(PatchFamily.EXPLORE_GRID)) {
+                explore.addPreference(toggle(context, Settings.HIDE_EXPLORE_GRID, L10n.t("Hide the Explore grid"),
+                        L10n.t("The posts and reels under the Search tab's bar. Search, your recent searches and "
+                                + "search results stay.")));
+            }
+            if (build.contains(PatchFamily.RECENT_SEARCHES)) {
+                explore.addPreference(toggle(context, Settings.DONT_SAVE_RECENT_SEARCHES,
+                        L10n.t("Don't save recent searches"),
+                        L10n.t("What you open from search stays out of Recent, in the app and on Instagram's side. "
+                                + "Searches already there stay until you clear them.")));
+            }
         }
 
         if (build.contains(PatchFamily.NOTES_ROW) || build.contains(PatchFamily.INSTANTS)

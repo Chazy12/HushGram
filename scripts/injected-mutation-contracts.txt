@@ -287,6 +287,14 @@ no-call Landroid/content/pm/ShortcutManager;->addDynamicShortcuts(Ljava/util/Lis
 no-call Landroid/content/pm/ShortcutManager;->setDynamicShortcuts(Ljava/util/List;)Z outside Lapp/hushgram/extension/
 no-call Landroid/content/pm/ShortcutManager;->updateShortcuts(Ljava/util/List;)Z outside Lapp/hushgram/extension/
 no-call Landroid/content/pm/ShortcutManager;->removeAllDynamicShortcuts()V outside Lapp/hushgram/extension/
+# Don't save recent searches asks RecentSearches.keep first in the call that tells Instagram's
+# servers about a search result you opened, and in the recent searches cache's add, picked from its
+# remove by the add at the top of its list. Each is skipped on a false. Left out, what you open
+# from search lands in Recent as before.
+start-call Lapp/hushgram/extension/instagram/explore/RecentSearches;->keep()Z in instance (Lcom/instagram/common/session/UserSession;Ljava/lang/String;Ljava/lang/String;I)V holding fbsearch/register_recent_search_click/
+shared-call Lapp/hushgram/extension/instagram/explore/RecentSearches;->keep()Z in instance (Lcom/instagram/common/session/UserSession;Ljava/lang/String;Ljava/lang/String;I)V holding fbsearch/register_recent_search_click/
+start-call Lapp/hushgram/extension/instagram/explore/RecentSearches;->keep()Z in instance (Ljava/lang/Object;)V calling instance Ljava/util/List;->add(ILjava/lang/Object;)V class-holding RecentSearchCache Error\ssaving\srecent\ssearches.\sClearing\sresults.
+shared-call Lapp/hushgram/extension/instagram/explore/RecentSearches;->keep()Z in instance (Ljava/lang/Object;)V calling instance Ljava/util/List;->add(ILjava/lang/Object;)V class-holding RecentSearchCache Error\ssaving\srecent\ssearches.\sClearing\sresults.
 # Group Instagram's notifications sends every notification Instagram posts to NotificationGroups,
 # which posts it in HushGram's group while the switch is on and as Instagram built it while it's
 # off. One left in Instagram's code is a notification that never joins the group.
