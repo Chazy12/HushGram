@@ -4,10 +4,6 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
-* **Tooling:** The patched APK check now holds Hide the comment bar on reposted reels' guards where they belong: first thing in the comment bar's show, and once in the step that sets the bar up.
-
-* **Instagram:** With Show it as a chip on, a profile you've left no longer stays in memory until Instagram closes. The chip kept hold of each profile's header, and through it the whole screen, so opening a lot of profiles in one go slowly used up memory. Turning the phone or switching dark mode while a profile was open left the old screen behind the same way.
-
 ## 0.0.6 (2026-10-07)
 
 * **Instagram:** HushGram 0.0.6 adds 27 patches, for 75 in all, and moves to Instagram 450.0.0.50.77 (build 385611438, arm64-v8a) on Android 9 and newer. It needs Morphe Manager 1.34.0 or newer.
@@ -222,6 +218,7 @@ Every HushGram release, newest first.
 
 * **Tooling:** The release check counts every top-level test class a Kotlin test file declares, so a second class in one file no longer reads as left over from a deleted one and the index push goes through.
 * **Tooling:** The injected-code contracts no longer count a method another rule picks for the same hook as a stray call, so the two touch methods Stop swiping between tabs hooks each pass on their own. A rule can also say how many times its method calls the hook, which Hide the home feed needs since it filters both reads of Home's saved feed.
+* **Tooling:** The patched APK check now holds Hide the comment bar on reposted reels' guards where they belong: first thing in the comment bar's show, and once in the step that sets the bar up.
 
 ## 0.0.5 (2026-10-03)
 
