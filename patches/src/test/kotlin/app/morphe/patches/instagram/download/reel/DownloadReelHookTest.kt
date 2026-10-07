@@ -12,8 +12,11 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.instagram.FixtureDex
+import app.morphe.patches.instagram.download.IMAGE_INFO
+import app.morphe.patches.instagram.download.IMAGE_URL
 import app.morphe.patches.instagram.download.INSTAGRAM_MEDIA
 import app.morphe.patches.instagram.download.MEDIA
+import app.morphe.patches.instagram.download.PANDO_IMAGE_INFO
 import app.morphe.patches.instagram.download.PANDO_VIDEO_VERSION
 import app.morphe.patches.instagram.download.USER
 import app.morphe.patches.instagram.download.VIDEO_VERSION
@@ -131,7 +134,10 @@ class DownloadReelHookTest {
         for (branch in listOf(2, 8)) assertEquals("the branch at $branch", 10, code.target(branch))
     }
 
-    /** Each bridge casts its argument and calls the getter that reads its field. */
+    /**
+     * Each bridge casts its argument and calls the getter that reads its field. The picture's
+     * bridges are written too, for a photo the Reels viewer shows with its music (#71).
+     */
     @Test
     fun theBridgesCallTheGetters() {
         val context = PatchContexts.of(classes())
@@ -148,13 +154,28 @@ class DownloadReelHookTest {
             "versionUrl" to "$VIDEO_VERSION->getUrl()Ljava/lang/String;",
             "versionWidth" to "$VIDEO_VERSION->DvO()Ljava/lang/Integer;",
             "versionHeight" to "$VIDEO_VERSION->CK7()Ljava/lang/Integer;",
+            "imageVersions" to "$MEDIA->A3F()$IMAGE_INFO",
+            "imageCandidates" to "$IMAGE_INFO->Bd1()Ljava/util/List;",
+            "candidateUrl" to "$IMAGE_URL->getUrl()Ljava/lang/String;",
+            "candidateWidth" to "$IMAGE_URL->getWidth()I",
+            "candidateHeight" to "$IMAGE_URL->getHeight()I",
         )
         expected.forEach { (bridge, getter) ->
             val code = context.method(INSTAGRAM_MEDIA, bridge).code()
-            assertEquals(bridge, listOf(Opcode.CHECK_CAST, if (getter.startsWith(VIDEO_VERSION)) Opcode.INVOKE_INTERFACE else Opcode.INVOKE_VIRTUAL,
-                Opcode.MOVE_RESULT_OBJECT, Opcode.RETURN_OBJECT), code.take(4).map { it.opcode })
+            val call = if (getter.startsWith(MEDIA) || getter.startsWith(USER)) Opcode.INVOKE_VIRTUAL else Opcode.INVOKE_INTERFACE
+            val answer = if (getter.endsWith(")I")) listOf(Opcode.MOVE_RESULT, Opcode.RETURN) else listOf(Opcode.MOVE_RESULT_OBJECT, Opcode.RETURN_OBJECT)
+            assertEquals(bridge, listOf(Opcode.CHECK_CAST, call) + answer, code.take(4).map { it.opcode })
             assertEquals(bridge, getter, code[1].referenceText())
         }
+    }
+
+    /** A build whose picture has no candidates getter stops the patch before anything changes. */
+    @Test
+    fun aMissingPictureGetterFailsBeforeAnythingChanges() {
+        val context = PatchContexts.of(classes(leaveOutCandidates = true))
+        val failure = assertThrows(PatchException::class.java) { context.offerDownloadOnEveryReel() }
+        assertTrue(failure.message!!, failure.message!!.contains("candidates"))
+        assertUntouched(context)
     }
 
     /** A flag that lets Download in only when it's on is a gate this patch doesn't know, and nothing changes. */
@@ -191,12 +212,12 @@ class DownloadReelHookTest {
      * In each declared build, every builder of the reel menu gets the download check's filter once
      * and the flag's at most once, at least one has the flag, the reduced menu's list passes through
      * addTo() at each return and no jump skips that, the handler asks save() first, and every
-     * bridge is written.
+     * bridge is written, the picture's among them.
      */
     @Test
     fun eachDeclaredBuildOffersDownloadOnEveryReel() {
         val versions = AppCompatibilities.instagram().single().targets.mapNotNull { it.version }.toSet()
-        val types = setOf(MEDIA, USER, VIDEO_VERSION, PANDO_VIDEO_VERSION)
+        val types = setOf(MEDIA, USER, VIDEO_VERSION, PANDO_VIDEO_VERSION, IMAGE_INFO, PANDO_IMAGE_INFO, IMAGE_URL)
         val markers = setOf(HANDLER_MARKER, ELIGIBLE_MARKER, REDUCED_MARKER)
         val checked = mutableSetOf<String>()
         for (version in versions) {
@@ -251,8 +272,8 @@ class DownloadReelHookTest {
                 // Opcode.name is the smali name, "if-eqz" or "goto/16".
                 list.indices.filter { index -> list[index] is OffsetInstruction && list[index].opcode.name.let { it.startsWith("if-") || it.startsWith("goto") } }
                     .forEach { jump -> assertTrue("${bundle.name}: the jump at $jump skips addTo()", list.target(jump) !in returns) }
-                val bridges = context.classDefBy(INSTAGRAM_MEDIA).methods.filter { it.name in videoBridges }
-                assertEquals("${bundle.name}: the video bridges", videoBridges.size, bridges.size)
+                val bridges = context.classDefBy(INSTAGRAM_MEDIA).methods.filter { it.name in reelBridges }
+                assertEquals("${bundle.name}: the reel's bridges", reelBridges.size, bridges.size)
                 bridges.forEach { assertEquals("${bundle.name}: ${it.name}", Opcode.CHECK_CAST, it.code().first().opcode) }
                 checked += version
             }
@@ -260,9 +281,10 @@ class DownloadReelHookTest {
         assertEquals("a declared build has no fixture", versions, checked)
     }
 
-    /** The bridges this patch writes. The picture's and the story's are Download any story's. */
-    private val videoBridges = setOf(
+    /** The bridges this patch writes: the video's, and the picture's, which Download any story writes too. */
+    private val reelBridges = setOf(
         "videoVersions", "dashManifest", "mediaId", "owner", "takenAt", "username", "versionUrl", "versionWidth", "versionHeight",
+        "imageVersions", "imageCandidates", "candidateUrl", "candidateWidth", "candidateHeight",
     )
 
     private fun assertFiltered(code: List<Instruction>, call: String, hook: String) {
@@ -282,6 +304,7 @@ class DownloadReelHookTest {
         assertTrue("the reduced menu changed", context.method(controller, "A03").code().none { it.referenceText() == ADD_TO })
         assertEquals("the handler changed", Opcode.CONST_STRING, context.method(helper, "A0T").code().first().opcode)
         assertEquals("a bridge was written", Opcode.CONST_4, context.method(INSTAGRAM_MEDIA, "videoVersions").code().first().opcode)
+        assertEquals("a picture bridge was written", Opcode.CONST_4, context.method(INSTAGRAM_MEDIA, "imageVersions").code().first().opcode)
     }
 
     private fun BytecodePatchContext.method(type: String, name: String, parameters: List<String>? = null): Method =
@@ -304,6 +327,7 @@ class DownloadReelHookTest {
         secondMedia: Boolean = false,
         handlerMarker: String = HANDLER_MARKER,
         reducedMarker: String = REDUCED_MARKER,
+        leaveOutCandidates: Boolean = false,
     ): List<ClassDef> {
         val helperFields = listOfNotNull(
             field(helper, "media", MEDIA),
@@ -380,6 +404,7 @@ class DownloadReelHookTest {
             "A8P" to ("video_dash_manifest" to "Ljava/lang/String;"),
             "A3Q" to ("user" to USER),
             "A6v" to ("taken_at" to "Ljava/lang/Long;"),
+            "A3F" to ("image_versions2" to IMAGE_INFO),
             // Another getter of the user field, answering whether it's there: the answer's type tells them apart.
             "ALu" to ("user" to "Z"),
         ).filter { it.second.first != leaveOutField }.map { (name, field) -> getter(MEDIA, name, field.first, field.second) } +
@@ -389,22 +414,27 @@ class DownloadReelHookTest {
             """)
         val versionGetters = listOf("getUrl" to ("url" to "Ljava/lang/String;"), "DvO" to ("width" to "Ljava/lang/Integer;"),
             "CK7" to ("height" to "Ljava/lang/Integer;"))
+        val imageGetters = if (leaveOutCandidates) emptyList() else listOf("Bd1" to ("candidates" to "Ljava/util/List;"))
         return listOf(
             helperClass, controllerClass, feed, eligible,
             classDef(MEDIA, mediaGetters),
             classDef(USER, listOf(getter(USER, "A89", "username", "Ljava/lang/String;"))),
-            ImmutableClassDef(
-                VIDEO_VERSION, AccessFlags.PUBLIC.value or AccessFlags.INTERFACE.value or AccessFlags.ABSTRACT.value,
-                "Ljava/lang/Object;", null, null, null, null,
-                versionGetters.map { (name, field) ->
-                    ImmutableMethod(VIDEO_VERSION, name, emptyList(), field.second,
-                        AccessFlags.PUBLIC.value or AccessFlags.ABSTRACT.value, null, null, null)
-                },
-            ),
+            anInterface(VIDEO_VERSION, versionGetters.map { it.first to it.second.second }),
             classDef(PANDO_VIDEO_VERSION, versionGetters.map { (name, field) -> getter(PANDO_VIDEO_VERSION, name, field.first, field.second) }),
+            anInterface(IMAGE_INFO, imageGetters.map { it.first to it.second.second }),
+            classDef(PANDO_IMAGE_INFO, imageGetters.map { (name, field) -> getter(PANDO_IMAGE_INFO, name, field.first, field.second) }),
+            anInterface(IMAGE_URL, listOf("getUrl" to "Ljava/lang/String;", "getWidth" to "I", "getHeight" to "I")),
             ExtensionDex.classDef(INSTAGRAM_MEDIA),
         )
     }
+
+    private fun anInterface(type: String, methods: List<Pair<String, String>>): ClassDef = ImmutableClassDef(
+        type, AccessFlags.PUBLIC.value or AccessFlags.INTERFACE.value or AccessFlags.ABSTRACT.value,
+        "Ljava/lang/Object;", null, null, null, null,
+        methods.map { (name, returns) ->
+            ImmutableMethod(type, name, emptyList(), returns, AccessFlags.PUBLIC.value or AccessFlags.ABSTRACT.value, null, null, null)
+        },
+    )
 
     /** The feed's menu: Download after the same check, built through a class that isn't the reel menu's. */
     private fun feedSheetMethod() = method(feedSheet, "invoke", emptyList(), "Ljava/lang/Object;", 4, static = false, body = """

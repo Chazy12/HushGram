@@ -14,6 +14,7 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.instagram.download.MEDIA
+import app.morphe.patches.instagram.download.imageBridges
 import app.morphe.patches.instagram.download.mediaBridges
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.instagram.misc.extension.enableStatus
@@ -67,6 +68,10 @@ internal const val REDUCED_MARKER = "ClipsOrganicMediaItemViewMoreOptionsControl
  * Some accounts get a reduced menu instead: a short list of options (Playback, Interested, Report
  * and a few more) that never includes Download. Its list gets Download added before it's shown,
  * and its rows go through the same handler.
+ *
+ * The Reels viewer also shows photo posts that come with music, which have no video at all. A tap
+ * on Download there saves the picture at its largest size, through the picture bridges Download
+ * any story uses, which this patch writes too (#71).
  *
  * Everything is found before anything changes, so a build that differs stops the patch naming
  * what it couldn't find, and nothing is half done.
@@ -129,6 +134,7 @@ internal fun BytecodePatchContext.offerDownloadOnEveryReel() {
     val media = instanceField(helper, MEDIA)
     val activity = instanceField(helper, FRAGMENT_ACTIVITY)
     val writeBridges = mediaBridges(PATCH)
+    val writeImageBridges = imageBridges(PATCH)
     val menu = mutable(handler)
     menu.requireLocals(PATCH, 3)
 
@@ -181,6 +187,7 @@ internal fun BytecodePatchContext.offerDownloadOnEveryReel() {
         ExternalLabel("handle", menu.getInstruction(0)),
     )
     writeBridges()
+    writeImageBridges()
 }
 
 private fun one(methods: List<Method>, marker: String): Method = methods.singleOrNull() ?: throw PatchException(

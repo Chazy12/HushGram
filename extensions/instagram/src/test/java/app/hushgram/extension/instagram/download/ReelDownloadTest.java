@@ -12,6 +12,7 @@ import static org.junit.Assert.assertTrue;
 import android.app.Activity;
 import android.os.Looper;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,10 +24,15 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.Shadows;
+import org.robolectric.annotation.Config;
+import org.robolectric.annotation.Implementation;
+import org.robolectric.annotation.Implements;
 import org.robolectric.shadows.ShadowToast;
 
+import app.hushgram.extension.instagram.settings.FamilyNames;
 import app.hushgram.extension.instagram.settings.Settings;
 import app.hushgram.extension.shared.SettingsContextRule;
+import app.hushgram.extension.shared.diagnostics.HookStatus;
 
 /** What the reel menu's hooks answer, and what a tap on Download does with them. */
 @RunWith(RobolectricTestRunner.class)
@@ -34,7 +40,15 @@ public class ReelDownloadTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
     @After
-    public void tearDown() {
+    public void tearDown() throws InterruptedException {
+        // A save a test started ends before the next test, so none of them holds a slot.
+        long deadline = System.currentTimeMillis() + 10_000;
+        while (MediaSave.savesInFlight() > 0 && System.currentTimeMillis() < deadline) Thread.sleep(20);
+        MediaSave.policyForTests = null;
+        Item.videos = null;
+        Item.manifest = null;
+        Item.pictures = null;
+        HookStatus.clear();
         Settings.DOWNLOAD_REELS.save(true);
     }
 
@@ -112,11 +126,80 @@ public class ReelDownloadTest {
     @Test
     public void aTapWithNothingToSaveSaysSo() {
         Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+        HookStatus.clear();
 
         assertTrue(ReelDownload.save(new Object(), activity));
         Shadows.shadowOf(Looper.getMainLooper()).idle();
 
         assertEquals("Download failed", String.valueOf(ShadowToast.getTextOfLatestToast()));
+        assertEquals(List.of(FamilyNames.REEL_DOWNLOAD + ": invoked 1, 0 found, 0 missing. Counted: no video versions 1, no manifest 1"),
+                HookStatus.report());
+    }
+
+    /**
+     * A photo the Reels viewer shows with its music has no video file and no manifest, only its
+     * picture's sizes. A tap saves the picture rather than failing (#71), and the report says which
+     * way it went.
+     */
+    @Test
+    @Config(shadows = Item.class)
+    public void aReelItemWithNoVideoSavesItsPicture() {
+        Item.pictures = List.of(new MediaSave.Rendition(META + "1080.jpg", 1080, 1350, 0),
+                new MediaSave.Rendition(META + "150.jpg", 150, 150, 0));
+        refuseEveryFetch();
+        Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+        HookStatus.clear();
+
+        assertTrue(ReelDownload.save(new Object(), activity));
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+
+        assertEquals(List.of(FamilyNames.REEL_DOWNLOAD + ": invoked 1, 0 found, 0 missing. "
+                + "Counted: no video versions 1, no manifest 1, has image candidates 1, saved as photo 1"), HookStatus.report());
+        assertTrue("the save didn't say it started", ShadowToast.showedToast("Saving...")
+                || ShadowToast.showedToast("Saving... Cancel: Downloads in HushGram."));
+    }
+
+    /** A reel with a video saves the video, never the picture every video has as its cover. */
+    @Test
+    @Config(shadows = Item.class)
+    public void aReelWithAVideoNeverSavesItsCover() {
+        Item.videos = List.of(new MediaSave.Rendition(META + "720.mp4", 720, 1280, 0));
+        Item.pictures = List.of(new MediaSave.Rendition(META + "cover.jpg", 720, 1280, 0));
+        refuseEveryFetch();
+        Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
+        HookStatus.clear();
+
+        assertTrue(ReelDownload.save(new Object(), activity));
+
+        assertEquals(List.of(FamilyNames.REEL_DOWNLOAD + ": invoked 1, 0 found, 0 missing. Counted: no manifest 1"),
+                HookStatus.report());
+    }
+
+    /** An address on Meta's media servers, which the save takes. */
+    private static final String META = "https://scontent.cdninstagram.com/v/t51.2885-15/";
+
+    /** Every lookup answers a private address, so a started save ends at once and nothing goes out. */
+    private static void refuseEveryFetch() {
+        MediaSave.policyForTests = new MediaUrlPolicy(host -> new InetAddress[] {InetAddress.getByName("10.9.8.7")});
+    }
+
+    /** A reel item as the bridges read it: its video files, its manifest and its picture's sizes. */
+    @Implements(value = InstagramMedia.class, isInAndroidSdk = false)
+    public static class Item {
+        static List<MediaSave.Rendition> videos;
+        static String manifest;
+        static List<MediaSave.Rendition> pictures;
+
+        @Implementation protected static List<?> videoVersions(Object media) { return videos; }
+        @Implementation protected static String dashManifest(Object media) { return manifest; }
+        @Implementation protected static String versionUrl(Object version) { return ((MediaSave.Rendition) version).url; }
+        @Implementation protected static Integer versionWidth(Object version) { return ((MediaSave.Rendition) version).width; }
+        @Implementation protected static Integer versionHeight(Object version) { return ((MediaSave.Rendition) version).height; }
+        @Implementation protected static Object imageVersions(Object media) { return pictures == null ? null : media; }
+        @Implementation protected static List<?> imageCandidates(Object versions) { return pictures; }
+        @Implementation protected static String candidateUrl(Object candidate) { return ((MediaSave.Rendition) candidate).url; }
+        @Implementation protected static int candidateWidth(Object candidate) { return ((MediaSave.Rendition) candidate).width; }
+        @Implementation protected static int candidateHeight(Object candidate) { return ((MediaSave.Rendition) candidate).height; }
     }
 
     /** Without the bridges written, a reel has no files and no details, and neither read throws. */
