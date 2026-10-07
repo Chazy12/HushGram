@@ -6,6 +6,8 @@ Every HushGram release, newest first.
 
 * **Instagram:** Ask before a refresh now also asks on Home, in your messages inbox and the other lists that pull down with Instagram's newer refresh layout. The question comes up once a pull goes far enough to refresh, and Cancel puts the spinner away there too.
 
+* **Instagram:** Resume long videos forgets a signed-out account's places in the background, so signing out never waits on its file.
+
 * **Instagram:** Resume long videos doesn't save a place again for an account that just signed out. Its videos close a moment after the sign-out clears its places, and that close used to put one back.
 
 * **Instagram:** Clear the media cache leaves a clear over the limit for a later start when the last one crashed early, since that start might be the one that turns safe mode on.

@@ -367,8 +367,9 @@ public final class ResumePlayback {
      * The hook, first thing in UserSession.completeEndSession(), where Instagram lets an account's
      * session go: at an account switch, once the old account's screens have let go of it, and at
      * once when the account signs out or is removed from the phone. Runs with the switch off and
-     * while paused, as Clear remembered positions does, since all it does is forget. See
-     * {@link #forgetAccount}. Never throws.
+     * while paused, as Clear remembered positions does, since all it does is forget. It runs inside
+     * Instagram's session manager lock, at a sign-out on the main thread, so it never waits on the
+     * points: see {@link #forgetAccount}. Never throws.
      */
     public static void sessionEnded(Object session) {
         try {
@@ -466,26 +467,47 @@ public final class ResumePlayback {
      * once another account is on screen, and when it [loggedOut] its points go too, from the file
      * and from the copy Undo would bring back. A session whose user ID isn't known can't be told
      * from another, so every waiting resume is dropped and no point is touched.
+     *
+     * Only the players are let go here, on their own lock. The points wait for a worker: a resume
+     * holds POINTS_LOCK across Instagram's seek, the first read of the file can block, and this
+     * runs where Instagram holds its session manager. A save that slips in first is gone with the
+     * rest, and the account's players save nothing after (see {@link #owner}).
      */
     static void forgetAccount(@Nullable String userId, boolean loggedOut, long now) {
-        synchronized (POINTS_LOCK) {
-            count(SESSION_ENDED);
-            if (userId == null || userId.isEmpty()) {
-                PLAYERS.clear();
-                log(() -> "Resume long videos: a session whose account isn't known ended, so no resume waits");
-                return;
+        count(SESSION_ENDED);
+        if (userId == null || userId.isEmpty()) {
+            PLAYERS.clear();
+            log(() -> "Resume long videos: a session whose account isn't known ended, so no resume waits");
+            return;
+        }
+        String prefix = ResumePoints.owner(userId) + '/';
+        int waiting = PLAYERS.forget(prefix);
+        if (!loggedOut) {
+            log(() -> "Resume long videos: an account's session ended, " + waiting + " player(s) let go");
+            return;
+        }
+        Runnable forget = () -> forgetPoints(prefix, now);
+        if (Utils.runOnBackgroundThread(forget)) return;
+        // The queue is full. The points still go, on a thread of their own.
+        Thread worker = new Thread(forget, "HushGram resume sign-out");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    /** A signed-out account's points, from the file and from the copy Undo would bring back. On a worker. */
+    private static void forgetPoints(String prefix, long now) {
+        try {
+            int removed;
+            synchronized (POINTS_LOCK) {
+                ResumePoints store = points();
+                removed = store == null ? 0 : store.removeOwner(prefix, now);
+                if (clearedPoints != null) clearedPoints.keySet().removeIf(key -> key.startsWith(prefix));
             }
-            String prefix = ResumePoints.owner(userId) + '/';
-            int waiting = PLAYERS.forget(prefix);
-            if (!loggedOut) {
-                log(() -> "Resume long videos: an account's session ended, " + waiting + " player(s) let go");
-                return;
-            }
-            ResumePoints store = points();
-            int forgotten = store == null ? 0 : store.removeOwner(prefix, now);
-            if (clearedPoints != null) clearedPoints.keySet().removeIf(key -> key.startsWith(prefix));
+            int forgotten = removed;
             count(ACCOUNT_FORGOTTEN);
             log(() -> "Resume long videos: an account signed out, " + forgotten + " point(s) forgotten");
+        } catch (Throwable failure) {
+            Logger.printException(() -> "Resume long videos: could not forget a signed-out account's points", failure);
         }
     }
 

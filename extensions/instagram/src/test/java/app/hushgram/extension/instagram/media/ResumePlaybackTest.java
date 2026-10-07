@@ -705,7 +705,7 @@ public class ResumePlaybackTest {
      * in the file too, with the switch off as well. Another account's points stay.
      */
     @Test
-    public void signingOutForgetsThatAccountsPoints() {
+    public void signingOutForgetsThatAccountsPoints() throws Exception {
         Video video = longVideo("3712345678901234567");
         leftAt(video, 5 * MINUTE);
         leftAt(longVideo("3712345678901234568"), 6 * MINUTE);
@@ -714,6 +714,7 @@ public class ResumePlaybackTest {
 
         Settings.RESUME_LONG_VIDEOS.save(false);
         ResumePlayback.sessionEnded(new ResumePlaybackForTests.Session(ResumePlaybackForTests.ACCOUNT, true));
+        Utils.awaitBackgroundTasksForTests();
         assertEquals("only the other account's point is left", 1, pointsFile().getAll().size());
 
         Settings.RESUME_LONG_VIDEOS.save(true);
@@ -728,7 +729,7 @@ public class ResumePlaybackTest {
      * session resumes nothing.
      */
     @Test
-    public void aSignedOutAccountsPlayersSaveNothingAsTheyGo() {
+    public void aSignedOutAccountsPlayersSaveNothingAsTheyGo() throws Exception {
         Video video = longVideo("3712345678901234567");
         Player mine = new Player(video);
         mine.position = 5 * MINUTE;
@@ -737,6 +738,7 @@ public class ResumePlaybackTest {
 
         mine.signedOut = true;
         ResumePlayback.sessionEnded(new ResumePlaybackForTests.Session(ResumePlaybackForTests.ACCOUNT, true));
+        Utils.awaitBackgroundTasksForTests();
         assertTrue(pointsFile().getAll().isEmpty());
         mine.position = 7 * MINUTE;
         ResumePlayback.stopped(mine, "teardown");
@@ -761,9 +763,42 @@ public class ResumePlaybackTest {
         assertNull(ResumePlayback.playerSession(new Object()));
     }
 
+    /**
+     * Instagram's session end runs inside its session manager's lock, at a sign-out on the main
+     * thread. The hook lets go of the account's players there and leaves the points to a worker,
+     * so it never waits on the points lock, which a resume holds across Instagram's own seek.
+     */
+    @Test
+    public void theSessionEndNeverWaitsForThePoints() throws Exception {
+        Video video = longVideo("3712345678901234567");
+        leftAt(video, 5 * MINUTE);
+        Player mine = new Player(video);
+        ResumePlayback.started(mine);
+        assertEquals(1, ResumePlayback.playersKnown());
+        Field field = ResumePlayback.class.getDeclaredField("POINTS_LOCK");
+        field.setAccessible(true);
+        CountDownLatch ended = new CountDownLatch(1);
+        Thread ending = new Thread(() -> {
+            ResumePlayback.sessionEnded(new ResumePlaybackForTests.Session(ResumePlaybackForTests.ACCOUNT, true));
+            ended.countDown();
+        });
+        synchronized (field.get(null)) {
+            ending.start();
+            assertTrue("the session end waited on the points lock", ended.await(10, TimeUnit.SECONDS));
+            assertEquals("the players weren't let go at once", 0, ResumePlayback.playersKnown());
+            assertEquals("the file changed under the lock", 1, pointsFile().getAll().size());
+        }
+        ending.join();
+        Utils.awaitBackgroundTasksForTests();
+        ResumePlaybackForTests.runLater();
+        assertEquals(Collections.emptyList(), mine.seeks);
+        assertTrue(pointsFile().getAll().isEmpty());
+        assertTrue(report(), report().contains(ResumePlayback.ACCOUNT_FORGOTTEN + " 1"));
+    }
+
     /** Undo of an earlier Clear brings back the other account's points, never a signed-out one's. */
     @Test
-    public void undoDoesntBringBackASignedOutAccountsPoints() {
+    public void undoDoesntBringBackASignedOutAccountsPoints() throws Exception {
         Video video = longVideo("3712345678901234567");
         leftAt(video, 5 * MINUTE);
         leftByOther(video, 9 * MINUTE);
@@ -771,6 +806,7 @@ public class ResumePlaybackTest {
         assertTrue(pointsFile().getAll().isEmpty());
 
         ResumePlayback.sessionEnded(new ResumePlaybackForTests.Session(ResumePlaybackForTests.ACCOUNT, true));
+        Utils.awaitBackgroundTasksForTests();
         assertTrue(ResumePlayback.undoHistory());
 
         assertEquals(1, pointsFile().getAll().size());
