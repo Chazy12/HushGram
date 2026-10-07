@@ -185,6 +185,10 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting HIDE_THREADS_POSTS =
             new BooleanSetting("hushgram_hide_threads_posts", TRUE);
 
+    /** The surveys in the home feed that ask you to rate what you saw. */
+    public static final BooleanSetting HIDE_FEED_SURVEYS =
+            new BooleanSetting("hushgram_hide_feed_surveys", TRUE);
+
     /**
      * Every post in Home's feed, on purpose, leaving the stories row
      * ({@link app.hushgram.extension.instagram.feed.HomeFeed}). Read as each page arrives, so a

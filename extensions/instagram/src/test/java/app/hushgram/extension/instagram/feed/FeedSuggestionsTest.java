@@ -34,7 +34,8 @@ public class FeedSuggestionsTest {
         SUGGESTED_PRODUCERS, SUGGESTED_PRODUCERS_V2, SUGGESTED_CLOSE_FRIENDS, SUGGESTED_BUSINESSES, SUGGESTED_SHOPS,
         SUGGESTED_HASHTAGS, SUGGESTED_SHAREABLE_LISTS, FOLLOW_CHAIN_USERS, TYA_SUGGESTIONS_IN_FEED_UNIT,
         THREADS_IN_FEED_UNIT, TIFU_IN_EXPLORE, EOF_TIFU, KICKSTART_FEED_UNIT, COMMUNITIES_IN_FEED_UNIT, SMSL_IN_FEED_UNIT,
-        LIVE_CHAT_IN_FEED_UNIT, SPORT_GAME_IN_FEED_UNIT, MEMU_IN_FEED_UNIT
+        LIVE_CHAT_IN_FEED_UNIT, SPORT_GAME_IN_FEED_UNIT, MEMU_IN_FEED_UNIT, THREADS_IN_FEED_UNIT_MUSE,
+        VERTICALS_IN_FEED_UNIT, FEED_SURVEY
     }
 
     /** The item's other enum on 449: why the feed was fetched. */
@@ -55,6 +56,19 @@ public class FeedSuggestionsTest {
     public void everySuggestedAccountsUnitIsTakenOut() {
         for (String name : FeedSuggestions.ACCOUNT_UNITS) {
             assertNull(name, FeedSuggestions.filter(new Item(Kind.valueOf(name))));
+        }
+    }
+
+    @Test
+    public void aSurveyIsTakenOutWhileItsSwitchIsOn() {
+        assertNull(FeedSuggestions.filter(new Item(Kind.FEED_SURVEY)));
+        Settings.HIDE_FEED_SURVEYS.save(false);
+        try {
+            Item survey = new Item(Kind.FEED_SURVEY);
+            assertSame(survey, FeedSuggestions.filter(survey));
+            assertNull(FeedSuggestions.filter(new Item(Kind.THREADS_IN_FEED_UNIT)));
+        } finally {
+            Settings.HIDE_FEED_SURVEYS.resetToDefault();
         }
     }
 

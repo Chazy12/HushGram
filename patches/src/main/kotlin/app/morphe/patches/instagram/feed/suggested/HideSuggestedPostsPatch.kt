@@ -27,18 +27,26 @@ internal val ACCOUNT_UNITS = listOf(
 /** The kind of a single suggested post or reel ("explore_story" in the feed's JSON). */
 internal const val SUGGESTED_POST = "EXPLORE_STORY"
 
-/** Threads' units: its posts, and the accounts, communities, live chats and game threads it suggests. */
+/**
+ * Threads' units: its posts, and the accounts, communities, live chats, game threads and topics it
+ * suggests. The last two are new in Instagram 450.
+ */
 internal val THREADS_UNITS = listOf(
     "THREADS_IN_FEED_UNIT", "TIFU_IN_EXPLORE", "EOF_TIFU", "KICKSTART_FEED_UNIT",
     "COMMUNITIES_IN_FEED_UNIT", "SMSL_IN_FEED_UNIT", "LIVE_CHAT_IN_FEED_UNIT", "SPORT_GAME_IN_FEED_UNIT",
+    "THREADS_IN_FEED_UNIT_MUSE", "VERTICALS_IN_FEED_UNIT",
 )
+
+/** The survey Instagram asks you to fill in between posts ("in_feed_survey" in the feed's JSON). */
+internal val SURVEY_UNITS = listOf("FEED_SURVEY")
 
 @Suppress("unused")
 val hideSuggestedPostsPatch = bytecodePatch(
     name = "Hide suggested posts",
     description = "Removes the posts and reels from accounts you don't follow that Instagram puts in your home feed " +
-        "as Suggested for you, the rows of accounts, shops and hashtags it suggests you follow, and the posts " +
-        "and accounts from Threads it mixes in. Each has its own switch. Posts from accounts you follow stay.",
+        "as Suggested for you, the rows of accounts, shops and hashtags it suggests you follow, the posts " +
+        "and accounts from Threads it mixes in, and the surveys it asks you to fill in. Each has its own switch. " +
+        "Posts from accounts you follow stay.",
 ) {
     category("Feed")
     dependsOn(settingsPatch)
@@ -58,4 +66,4 @@ val hideSuggestedPostsPatch = bytecodePatch(
  * Explore's grid.
  */
 internal fun BytecodePatchContext.filterSuggestedFeedItems() =
-    filterParsedFeedItems(PATCH, SUGGESTIONS_FILTER, ACCOUNT_UNITS + SUGGESTED_POST + THREADS_UNITS)
+    filterParsedFeedItems(PATCH, SUGGESTIONS_FILTER, ACCOUNT_UNITS + SUGGESTED_POST + THREADS_UNITS + SURVEY_UNITS)

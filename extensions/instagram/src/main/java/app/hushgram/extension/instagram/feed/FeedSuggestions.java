@@ -26,7 +26,8 @@ import app.hushgram.extension.shared.settings.BooleanSetting;
  * account you don't follow, labeled "Suggested for you" or "Suggested Reel", is an
  * {@link #SUGGESTED_POST}, which carries its post inside it. A post from an account you follow is a
  * MEDIA item and stays. Threads' units ({@link #THREADS_UNITS}) bring in posts, communities and
- * accounts from Threads. Each comes back as null while its switch is on, and every caller of that
+ * accounts from Threads, and a survey ({@link #SURVEY_UNITS}) asks you to rate what you saw. Each
+ * comes back as null while its switch is on, and every caller of that
  * helper skips a null item, the home feed's page loads and its cache of recommended posts alike.
  *
  * <p>Explore's grid doesn't go through that helper (S22, Instagram 449), so it keeps its posts.
@@ -51,7 +52,11 @@ public final class FeedSuggestions {
      */
     static final Set<String> THREADS_UNITS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             "THREADS_IN_FEED_UNIT", "TIFU_IN_EXPLORE", "EOF_TIFU", "KICKSTART_FEED_UNIT",
-            "COMMUNITIES_IN_FEED_UNIT", "SMSL_IN_FEED_UNIT", "LIVE_CHAT_IN_FEED_UNIT", "SPORT_GAME_IN_FEED_UNIT")));
+            "COMMUNITIES_IN_FEED_UNIT", "SMSL_IN_FEED_UNIT", "LIVE_CHAT_IN_FEED_UNIT", "SPORT_GAME_IN_FEED_UNIT",
+            "THREADS_IN_FEED_UNIT_MUSE", "VERTICALS_IN_FEED_UNIT")));
+
+    /** The survey between posts ("in_feed_survey" in the feed's JSON). */
+    static final Set<String> SURVEY_UNITS = Collections.singleton("FEED_SURVEY");
 
     /** Every kind this patch reads. */
     static final Set<String> KINDS;
@@ -60,6 +65,7 @@ public final class FeedSuggestions {
         Set<String> kinds = new HashSet<>(ACCOUNT_UNITS);
         kinds.add(SUGGESTED_POST);
         kinds.addAll(THREADS_UNITS);
+        kinds.addAll(SURVEY_UNITS);
         KINDS = Collections.unmodifiableSet(kinds);
     }
 
@@ -165,6 +171,7 @@ public final class FeedSuggestions {
     private static BooleanSetting switchFor(String kind) {
         if (SUGGESTED_POST.equals(kind)) return Settings.HIDE_SUGGESTED_POSTS;
         if (THREADS_UNITS.contains(kind)) return Settings.HIDE_THREADS_POSTS;
+        if (SURVEY_UNITS.contains(kind)) return Settings.HIDE_FEED_SURVEYS;
         return Settings.HIDE_SUGGESTED_ACCOUNTS;
     }
 }

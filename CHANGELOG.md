@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Hide suggested posts has a new switch, Hide surveys, on to start, for the cards between posts that ask you to rate what you saw. Hide Threads posts also takes out the two Threads units that are new in Instagram 450, its picked posts and its topic rows.
+
 * **Instagram:** Patching takes a little less time. HushGram settings' entry on the tab bar and Disable analytics' skip of the setup screens now find their places through the patcher's index rather than reading all of Instagram's code. Reported in #60.
 
 * **Instagram:** Save comment photo now offers Save on photo comments in Instagram 450. Instagram 450 leaves the media type out of a comment's photo, and Save used to wait for it, so the row never showed. It now goes by the photo itself, and GIFs, videos and text replies still don't get the row. Asked for in #1.
