@@ -10,6 +10,7 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.smali.ExternalLabel
+import app.morphe.patches.instagram.misc.extension.PURGE_MARKER
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.freeLocalsAt
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
@@ -100,7 +101,7 @@ internal fun BytecodePatchContext.hideReelParts() {
     if (shapes.size != 1) throw PatchException("$PATCH: the renders don't share one shape: $shapes")
     val none = noBubbles(bubbles)
     val line = socialContextType(socialContext)
-    val bar = commentBar(holding(COMMENT_BAR_SHOW), holding(COMMENT_BAR_HIDE), holding(COMMENT_BAR_CREATED))
+    val bar = commentBar(holding(COMMENT_BAR_SHOW), holding(COMMENT_BAR_HIDE), holding(COMMENT_BAR_CREATED), holding(COMMENT_BAR_UNVANISH))
 
     methods.forEach { (part, found) ->
         val method = mutable(found)
@@ -126,7 +127,8 @@ internal fun BytecodePatchContext.hideReelParts() {
 /**
  * The comment bar's controller: [show], its showCommentBar, [hide], its hideCommentBar, and
  * [created], its onViewCreated, which keeps the bar it inflates at instruction [stored] - 1. The
- * viewer's source is in [source], and [free] is a local nothing reads at [stored].
+ * viewer's source is in [source], and [free] is a local nothing reads at [stored]. [unVanish] is
+ * where Instagram puts the bar back without asking the show.
  */
 internal class CommentBar(
     val show: Method,
@@ -135,7 +137,15 @@ internal class CommentBar(
     val stored: Int,
     val free: Int,
     val source: String,
+    val unVanish: UnVanish,
 )
+
+/**
+ * The comment bar's unVanish, [method]: the hook goes in at instruction [at], right after the
+ * marker's trace call, reads the source off the controller in v[controller], borrows v[free], and
+ * jumps to the call of Instagram's own hide at instruction [hidden] when it says to hide.
+ */
+internal class UnVanish(val method: Method, val at: Int, val controller: Int, val hidden: Int, val free: Int)
 
 /**
  * Checks the comment bar's controller before anything changes. Its show and hide are instance
@@ -144,7 +154,7 @@ internal class CommentBar(
  * in one field. A hook put right after that store has to find `this` intact and a local free, and
  * nothing may jump there past it.
  */
-private fun BytecodePatchContext.commentBar(show: Method, hide: Method, created: Method): CommentBar {
+private fun BytecodePatchContext.commentBar(show: Method, hide: Method, created: Method, unVanish: Method): CommentBar {
     val type = show.definingClass
     val what = "$PATCH: the comment bar's controller $type"
     if (hide.definingClass != type || created.definingClass != type) {
@@ -160,6 +170,9 @@ private fun BytecodePatchContext.commentBar(show: Method, hide: Method, created:
     }
     val sources = classDefBy(type).fields.filter { it.type == CLIPS_VIEWER_SOURCE && !AccessFlags.STATIC.isSet(it.accessFlags) }
     val source = sources.singleOrNull() ?: throw PatchException("$what: expected one field holding the viewer's source, found ${sources.size}")
+    if (unVanish.definingClass != type && !AccessFlags.PUBLIC.isSet(source.accessFlags)) {
+        throw PatchException("$what: its unVanish, in ${unVanish.definingClass}, can't read the viewer's source, which isn't public")
+    }
     val bars = hide.implementation!!.instructions.filter { it.opcode == Opcode.IGET_OBJECT }
         .mapNotNull { (it as ReferenceInstruction).reference as? FieldReference }
         .filter { it.definingClass == type && it.type == VIEW }.map { "${it.definingClass}->${it.name}:${it.type}" }.distinct()
@@ -179,13 +192,57 @@ private fun BytecodePatchContext.commentBar(show: Method, hide: Method, created:
     }
     created.requireThisIntact(what, listOf(after))
     val free = created.freeLocalsAt(what, after, 1).single()
-    return CommentBar(show, hide, created, after, free, "${source.definingClass}->${source.name}:${source.type}")
+    return CommentBar(show, hide, created, after, free, "${source.definingClass}->${source.name}:${source.type}", unVanished(unVanish, hide))
 }
 
 /**
+ * Checks the comment bar's unVanish before anything changes. It loads its marker once and hands
+ * it straight to a trace call, and calls the controller's [hide] once, on its hidden branch. The
+ * hook goes in right after the trace, where the method's own next instruction reads a field of the
+ * controller off the register the hide is later called on, so the controller is known to be there.
+ * Nothing may jump past the hook, and it needs a local that neither its own code nor the hide reads.
+ */
+private fun unVanished(method: Method, hide: Method): UnVanish {
+    val type = hide.definingClass
+    val what = "$PATCH: the comment bar's unVanish ${method.definingClass}->${method.name}"
+    val code = method.implementation?.instructions?.toList() ?: throw PatchException("$what has no body")
+    val loads = code.indices.filter { at ->
+        (code[at].opcode == Opcode.CONST_STRING || code[at].opcode == Opcode.CONST_STRING_JUMBO) &&
+            ((code[at] as ReferenceInstruction).reference as StringReference).string
+                .let { PURGE_MARKER.find(it)?.groupValues?.get(1) } == COMMENT_BAR_UNVANISH
+    }
+    val loaded = loads.singleOrNull() ?: throw PatchException("$what: expected it to load its marker once, found ${loads.size}")
+    val trace = code.getOrNull(loaded + 1) as? FiveRegisterInstruction
+    if (trace == null || trace.opcode != Opcode.INVOKE_STATIC || trace.registerCount != 1 ||
+        trace.registerC != (code[loaded] as OneRegisterInstruction).registerA
+    ) throw PatchException("$what doesn't hand its marker to a trace call right after loading it")
+    val at = loaded + 2
+    val hides = code.indices.filter { index ->
+        code[index].opcode == Opcode.INVOKE_VIRTUAL && ((code[index] as ReferenceInstruction).reference as MethodReference).let {
+            it.definingClass == type && it.name == hide.name && it.parameterTypes.isEmpty() && it.returnType == "V"
+        }
+    }
+    val hidden = hides.singleOrNull() ?: throw PatchException("$what: expected it to call the hide once, found ${hides.size}")
+    val controller = (code[hidden] as FiveRegisterInstruction).registerC
+    val next = code.getOrNull(at)
+    val field = (next as? ReferenceInstruction)?.reference as? FieldReference
+    if (next == null || next.opcode !in INSTANCE_READS || field?.definingClass != type ||
+        (next as TwoRegisterInstruction).registerB != controller
+    ) throw PatchException("$what doesn't read the controller in v$controller right after its trace, so the hook can't tell it's there")
+    if (at in method.jumpTargets()) throw PatchException("$what jumps to just after its trace, so the hook would be skipped")
+    val free = method.freeLocalsAt(what, at, 1, listOf(hidden)).single()
+    return UnVanish(method, at, controller, hidden, free)
+}
+
+private val INSTANCE_READS = setOf(
+    Opcode.IGET, Opcode.IGET_WIDE, Opcode.IGET_OBJECT, Opcode.IGET_BOOLEAN, Opcode.IGET_BYTE, Opcode.IGET_CHAR, Opcode.IGET_SHORT,
+)
+
+/**
  * Has the comment bar hidden, with Instagram's own hide, when the hook says so for the viewer's
- * source: first thing whenever the controller would show it, and right after onViewCreated keeps
- * the bar it inflated, which is drawn until the controller first decides.
+ * source: first thing whenever the controller would show it, right after onViewCreated keeps the
+ * bar it inflated, which is drawn until the controller first decides, and in unVanish, which would
+ * otherwise put the bar back after a vanish, by taking its own hidden branch.
  */
 private fun BytecodePatchContext.hideCommentBar(bar: CommentBar) {
     val hide = "${bar.hide.definingClass}->${bar.hide.name}()V"
@@ -214,6 +271,18 @@ private fun BytecodePatchContext.hideCommentBar(bar: CommentBar) {
             invoke-virtual { p0 }, $hide
         """,
         ExternalLabel("keep", created.getInstruction(bar.stored)),
+    )
+    val back = bar.unVanish
+    val unVanish = mutable(back.method)
+    unVanish.addInstructionsWithLabels(
+        back.at,
+        """
+            iget-object v${back.free}, v${back.controller}, ${bar.source}
+            invoke-static { v${back.free} }, $HIDE_COMMENT_BAR
+            move-result v${back.free}
+            if-nez v${back.free}, :hide
+        """,
+        ExternalLabel("hide", unVanish.getInstruction(back.hidden)),
     )
 }
 

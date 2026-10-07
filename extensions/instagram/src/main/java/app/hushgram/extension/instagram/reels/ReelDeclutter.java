@@ -39,8 +39,8 @@ import app.hushgram.extension.shared.settings.BooleanSetting;
  *       line, the faces with Liked by or Followed by beside them, with the line's type. The check
  *       answers yes for {@link #FRIENDS_ACTIVITY}, so a follower count or a seller's rating stays.
  *   <li>{@link #hideCommentBar} first thing whenever the controller of the Add comment bar under a
- *       reel opened outside the Reels tab would show it, and once it inflates the bar, with where
- *       the viewer was opened from. It answers yes for a profile's reposts, {@link #REPOSTS}, and
+ *       reel opened outside the Reels tab would show it, once it inflates the bar, and when it
+ *       would put the bar back after hiding it for a while, with where the viewer was opened from. It answers yes for a profile's reposts, {@link #REPOSTS}, and
  *       Instagram's own hide then takes the bar off. The reel's comment button stays.
  * </ul>
  *

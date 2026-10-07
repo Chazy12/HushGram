@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Hide the comment bar on reposted reels now keeps the bar hidden after Instagram tucks it away for a moment and brings it back, which some reposted reels do and which used to put the bar back under them. Asked for in #64.
+
 ## 0.0.6 (2026-10-07)
 
 * **Instagram:** HushGram 0.0.6 adds 27 patches, for 75 in all, and moves to Instagram 450.0.0.50.77 (build 385611438, arm64-v8a) on Android 9 and newer. It needs Morphe Manager 1.34.0 or newer.

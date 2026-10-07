@@ -229,7 +229,9 @@ shared-call Lapp/hushgram/extension/instagram/reels/ReelWatchHistory;->holdBack(
 # out a reel's Liked by or Followed by line, its only caller (it reads the line's type before that).
 # Hide the comment bar on reposted reels asks hideCommentBar(Object) with the viewer's source first
 # thing in the comment bar controller's showCommentBar, and once in its onViewCreated, right after
-# the bar is kept, so both are shared-call and only the show's guard is a start-call.
+# the bar is kept, so both are shared-call and only the show's guard is a start-call. It asks once
+# more in unVanish (a lambda on 450), right after the marker's trace call, and takes unVanish's own
+# hidden branch to Instagram's hide when it says so: a third shared-call.
 start-call Lapp/hushgram/extension/instagram/reels/ReelDeclutter;->hideFollowButton()Z holding android_purge_26_q3_ClipsFollowButtonComponent_render
 once-call Lapp/hushgram/extension/instagram/reels/ReelDeclutter;->hideFollowButton()Z holding android_purge_26_q3_ClipsFollowButtonComponent_render
 start-call Lapp/hushgram/extension/instagram/reels/ReelDeclutter;->hideChips()Z holding android_purge_26_q3_ClipsBaselAttributionPillComponent_render
@@ -271,6 +273,7 @@ once-call Lapp/hushgram/extension/instagram/reels/ReelDeclutter;->hideSocialCont
 start-call Lapp/hushgram/extension/instagram/reels/ReelDeclutter;->hideCommentBar(Ljava/lang/Object;)Z holding android_purge_26_q2_ClipsViewerCommentBarController_showCommentBar
 shared-call Lapp/hushgram/extension/instagram/reels/ReelDeclutter;->hideCommentBar(Ljava/lang/Object;)Z holding android_purge_26_q2_ClipsViewerCommentBarController_showCommentBar
 shared-call Lapp/hushgram/extension/instagram/reels/ReelDeclutter;->hideCommentBar(Ljava/lang/Object;)Z holding android_purge_26_q2_ClipsViewerCommentBarController_onViewCreated
+shared-call Lapp/hushgram/extension/instagram/reels/ReelDeclutter;->hideCommentBar(Ljava/lang/Object;)Z holding android_purge_26_q2_ClipsViewerCommentBarController_unVanishCommentBar
 #
 # Sanitize sharing links passes the link each of Instagram's two share link parsers reads through
 # the extension, once, before the parser stores it: the permalink parser for a post or reel and the

@@ -77,15 +77,17 @@ internal val SOCIAL_CONTEXT_TYPES = listOf("FOLLOWED_BY", "LIKED_BY")
 
 /**
  * The controller of the Add comment bar under a reel opened outside the Reels tab, such as from a
- * profile's reposts: its show, the hide Instagram calls itself, and its onViewCreated, which
- * inflates the bar and keeps it.
+ * profile's reposts: its show, the hide Instagram calls itself, its onViewCreated, which inflates
+ * the bar and keeps it, and its unVanish, which puts the bar back after the viewer hid it for a
+ * while without going through the show (on 450 a lambda outside the controller holds it).
  */
 internal const val COMMENT_BAR_SHOW = "ClipsViewerCommentBarController_showCommentBar"
 internal const val COMMENT_BAR_HIDE = "ClipsViewerCommentBarController_hideCommentBar"
 internal const val COMMENT_BAR_CREATED = "ClipsViewerCommentBarController_onViewCreated"
+internal const val COMMENT_BAR_UNVANISH = "ClipsViewerCommentBarController_unVanishCommentBar"
 
 /** Where the viewer was opened from, an enum that keeps its name, which the controller holds. */
 internal const val CLIPS_VIEWER_SOURCE = "Lcom/instagram/clips/intf/ClipsViewerSource;"
 
 internal val CLEANUP_MARKERS = REEL_PARTS.map { it.marker } + FLOATING_BUBBLES + SOCIAL_CONTEXT_CHECK +
-    COMMENT_BAR_SHOW + COMMENT_BAR_HIDE + COMMENT_BAR_CREATED
+    COMMENT_BAR_SHOW + COMMENT_BAR_HIDE + COMMENT_BAR_CREATED + COMMENT_BAR_UNVANISH
