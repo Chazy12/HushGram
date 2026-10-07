@@ -757,6 +757,9 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                         L10n.t("The same Download on a photo post, and on a carousel showing a photo. Saves the largest "
                                 + "size Instagram has.")));
             }
+            downloads.addPreference(toggle(context, Settings.SEND_DOWNLOADS_TO_APP, L10n.t("Send downloads to another app"),
+                    L10n.t("Download on a reel, a feed post or a story opens the share sheet with its link, for a "
+                            + "downloader app such as Seal. Save all and the other save rows still save here.")));
             // Every save reads it, whichever download patch started it, so it's here above the
             // quality it keeps within.
             downloads.addPreference(toggle(context, Settings.DOWNLOAD_COMPATIBLE, L10n.t("Save videos other apps can open"),

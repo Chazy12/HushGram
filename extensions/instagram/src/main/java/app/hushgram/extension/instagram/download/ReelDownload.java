@@ -241,6 +241,10 @@ public final class ReelDownload {
             ours = row != null;
             if (!on()) return ours;
             Context context = activity != null ? activity : Utils.getContext();
+            if ((row == null || REEL_OPTION.equals(row))
+                    && ExternalDownload.handOff(context, ExternalDownload.postLink(media, true), FamilyNames.REEL_DOWNLOAD)) {
+                return true;
+            }
             boolean started = VIDEO_OPTION.equals(row) ? saveAsVideo(context, media)
                 : PHOTO_OPTION.equals(row) ? savePicture(context, StoryDownload.pictures(media), media)
                 : COVER_OPTION.equals(row) ? saveCover(context, media)

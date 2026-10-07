@@ -122,6 +122,10 @@ public final class StoryDownload {
             if (choice == null) return false;
             Context context = Utils.getContext().getApplicationContext();
             Object media = InstagramMedia.storyMedia(menu);
+            if (choice == Choice.STORY && media != null
+                    && ExternalDownload.handOff(context, ExternalDownload.storyLink(media), FamilyNames.STORY_DOWNLOAD)) {
+                return true;
+            }
             boolean started = media != null && (choice == Choice.PHOTO ? savePhoto(context, media) : saveMedia(context, media));
             if (!started) {
                 Feedback.show(context, L10n.t(context, "Download failed"), true);

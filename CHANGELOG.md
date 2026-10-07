@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** Send downloads to another app, a new switch under Downloads that starts off. With it on, Download on a reel, a feed post or a story opens the share sheet with the item's link, for a downloader app such as Seal or YTDLnis, instead of saving it here.
+
 * **Instagram:** Download any reel has a Download cover switch under Download on reels, off to start. With it on, a reel's menu gets Download cover under Download, which saves the still picture Instagram shows before the reel plays at its largest size (#48).
 
 * **Instagram:** New opt-in patch, Spoof location. Set a place under Ads and privacy and turn it on, and Instagram is told the phone is there, for the location sticker, nearby places and maps. Photos keep their own places.

@@ -234,6 +234,9 @@ public final class VideoDownload {
             Save what = what(shown);
             if (what == Save.NONE) return false;
             Context context = activity != null ? activity : Utils.getContext();
+            if (ExternalDownload.handOff(context, ExternalDownload.postLink(media, false), FamilyNames.VIDEO_DOWNLOAD)) {
+                return true;
+            }
             PostDetails details = details(shown, media);
             final String on = shown != media ? " on a carousel page" : "";
             boolean started;

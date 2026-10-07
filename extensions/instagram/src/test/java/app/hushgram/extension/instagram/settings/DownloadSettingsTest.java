@@ -64,6 +64,7 @@ public class DownloadSettingsTest {
         Settings.SAVE_FOLDER.resetToDefault();
         Settings.DOWNLOAD_QUALITY.resetToDefault();
         Settings.FILENAME_TEMPLATE.resetToDefault();
+        Settings.SEND_DOWNLOADS_TO_APP.resetToDefault();
         Settings.DOWNLOAD_REELS.resetToDefault();
         Settings.DOWNLOAD_REEL_COVER.resetToDefault();
     }
@@ -193,6 +194,21 @@ public class DownloadSettingsTest {
      * The save folder's row keeps the one clean folder name a save would use, whatever is typed
      * into it, and says where videos and photos go.
      */
+    /** Send downloads to another app is under Downloads, above the switch every save reads, and starts off. */
+    @Test
+    public void sendToAnotherAppSitsAboveTheCompatibleSwitch() {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.REEL_DOWNLOAD);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            List<Preference> rows = rowsOf(pageIn(controller));
+            int send = indexOfKey(rows, Settings.SEND_DOWNLOADS_TO_APP.key);
+            assertEquals(indexOfKey(rows, Settings.DOWNLOAD_COMPATIBLE.key) - 1, send);
+            Preference row = rows.get(send);
+            assertEquals("Send downloads to another app", String.valueOf(row.getTitle()));
+            assertFalse(((SwitchPreference) row).isChecked());
+            assertTrue(ConfigurationBackup.eligible().containsKey(Settings.SEND_DOWNLOADS_TO_APP.key));
+        }
+    }
+
     @Test
     public void theFolderRowKeepsOneCleanNameAndSaysWhereSavesGo() {
         PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.REEL_DOWNLOAD);

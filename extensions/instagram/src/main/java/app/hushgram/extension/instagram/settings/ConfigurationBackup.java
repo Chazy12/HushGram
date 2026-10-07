@@ -75,6 +75,7 @@ public final class ConfigurationBackup {
         if (PatchFamily.REEL_DOWNLOAD.inBuild() || PatchFamily.STORY_DOWNLOAD.inBuild()
                 || PatchFamily.VIDEO_DOWNLOAD.inBuild()) {
             settings.put(Settings.DOWNLOAD_COMPATIBLE.key, Settings.DOWNLOAD_COMPATIBLE);
+            settings.put(Settings.SEND_DOWNLOADS_TO_APP.key, Settings.SEND_DOWNLOADS_TO_APP);
             settings.put(Settings.DOWNLOAD_QUALITY.key, Settings.DOWNLOAD_QUALITY);
             settings.put(Settings.SAVE_FOLDER.key, Settings.SAVE_FOLDER);
             settings.put(Settings.FILENAME_TEMPLATE.key, Settings.FILENAME_TEMPLATE);

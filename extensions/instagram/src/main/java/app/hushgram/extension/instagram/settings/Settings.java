@@ -697,6 +697,13 @@ public class Settings extends BaseSettings {
             new EnumSetting<>("hushgram_download_quality", DownloadQuality.BEST);
 
     /**
+     * Download on a reel, a feed post or a story hands the item's link to an app picked from the
+     * share sheet, a downloader such as Seal, instead of saving it here. Starts off.
+     */
+    public static final BooleanSetting SEND_DOWNLOADS_TO_APP =
+            new BooleanSetting("hushgram_send_downloads_to_app", FALSE);
+
+    /**
      * Video saves keep to what other apps open: H.264 video with AAC-LC or HE-AAC sound, within
      * {@link #DOWNLOAD_QUALITY}, or the app's single MP4 file when the manifest has no such pair.
      * The sharpest version Meta streams is often AV1 with xHE-AAC sound, which Gallery and VLC play
