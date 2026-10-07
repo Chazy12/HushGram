@@ -361,6 +361,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     L10n.t("The posts, accounts and communities from Threads that Instagram mixes into your feed.")));
             feed.addPreference(toggle(context, Settings.HIDE_FEED_SURVEYS, L10n.t("Hide surveys"),
                     L10n.t("The cards between posts that ask you to rate what you saw.")));
+            feed.addPreference(toggle(context, Settings.HIDE_FEED_SHOPPING, L10n.t("Hide shopping"),
+                    L10n.t("The rows of products to shop and live shopping that Instagram puts between posts.")));
         }
         if (homeFeed) {
             feed.addPreference(toggle(context, Settings.HIDE_HOME_FEED, L10n.t("Hide the home feed"),

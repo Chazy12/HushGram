@@ -209,6 +209,10 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting HIDE_FEED_SURVEYS =
             new BooleanSetting("hushgram_hide_feed_surveys", TRUE);
 
+    /** The rows of products and live shopping in the home feed. */
+    public static final BooleanSetting HIDE_FEED_SHOPPING =
+            new BooleanSetting("hushgram_hide_feed_shopping", TRUE);
+
     /**
      * Every post in Home's feed, on purpose, leaving the stories row
      * ({@link app.hushgram.extension.instagram.feed.HomeFeed}). Read as each page arrives, so a

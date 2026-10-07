@@ -40,13 +40,16 @@ internal val THREADS_UNITS = listOf(
 /** The survey Instagram asks you to fill in between posts ("in_feed_survey" in the feed's JSON). */
 internal val SURVEY_UNITS = listOf("FEED_SURVEY")
 
+/** The shopping units: products to shop, product picks from a post, and live shopping. */
+internal val SHOPPING_UNITS = listOf("SHOPPING_RECOMMENDATION_UNIT", "PRODUCT_PIVOTS", "LIVE_SHOPPING_NETEGO")
+
 @Suppress("unused")
 val hideSuggestedPostsPatch = bytecodePatch(
     name = "Hide suggested posts",
     description = "Removes the posts and reels from accounts you don't follow that Instagram puts in your home feed " +
         "as Suggested for you, the rows of accounts, shops and hashtags it suggests you follow, the posts " +
-        "and accounts from Threads it mixes in, and the surveys it asks you to fill in. Each has its own switch. " +
-        "Posts from accounts you follow stay.",
+        "and accounts from Threads it mixes in, the surveys it asks you to fill in, and its shopping rows. Each has " +
+        "its own switch. Posts from accounts you follow stay.",
 ) {
     category("Feed")
     dependsOn(settingsPatch)
@@ -66,4 +69,4 @@ val hideSuggestedPostsPatch = bytecodePatch(
  * Explore's grid.
  */
 internal fun BytecodePatchContext.filterSuggestedFeedItems() =
-    filterParsedFeedItems(PATCH, SUGGESTIONS_FILTER, ACCOUNT_UNITS + SUGGESTED_POST + THREADS_UNITS + SURVEY_UNITS)
+    filterParsedFeedItems(PATCH, SUGGESTIONS_FILTER, ACCOUNT_UNITS + SUGGESTED_POST + THREADS_UNITS + SURVEY_UNITS + SHOPPING_UNITS)

@@ -8,6 +8,8 @@ Every HushGram release, newest first.
 
 * **Instagram:** New Lock your messages patch. Turn its switch on under Messages and your inbox and chats stay covered until your fingerprint, face or screen lock says it's you. They lock again when you leave Instagram. While they're locked, message notifications say only New message, and the banner for a new message inside Instagram waits. It's in simple mode with the switch off.
 
+* **Instagram:** Hide suggested posts has another new switch, Hide shopping, on to start, for the rows of products to shop and live shopping that Instagram puts between posts in Home.
+
 * **Instagram:** Hide suggested posts has a new switch, Hide surveys, on to start, for the cards between posts that ask you to rate what you saw. Hide Threads posts also takes out the two Threads units that are new in Instagram 450, its picked posts and its topic rows.
 
 * **Instagram:** Patching takes a little less time. HushGram settings' entry on the tab bar and Disable analytics' skip of the setup screens now find their places through the patcher's index rather than reading all of Instagram's code. Reported in #60.
