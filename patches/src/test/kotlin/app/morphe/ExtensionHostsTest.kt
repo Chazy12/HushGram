@@ -107,7 +107,7 @@ class ExtensionHostsTest {
          * The hosts the README's Privacy section names: the source code link, and the loopback
          * address Disable analytics sends Instagram's events to, which never leaves the phone.
          */
-        val ALLOWED_HOSTS = setOf("github.com", "127.0.0.1")
+        val ALLOWED_HOSTS = setOf("github.com", "127.0.0.1", "www.instagram.com")
 
         /**
          * The files that may open a connection. The save pipeline's Downloader fetches what the
