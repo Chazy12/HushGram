@@ -97,6 +97,16 @@ start-call Lapp/hushgram/extension/instagram/direct/MessagesLock;->notification(
 once-call Lapp/hushgram/extension/instagram/direct/MessagesLock;->notification(Landroid/app/Notification;)Landroid/app/Notification; in instance (Ljava/lang/String;ILandroid/app/Notification;)V holding android.support.useSideChannel
 start-call Lapp/hushgram/extension/instagram/direct/MessagesLock;->holdBanner()Z in static (Landroid/content/Context;L*;L*;)V holding no\sforeground\sactivity\sto\srender\sin-app\snotification
 once-call Lapp/hushgram/extension/instagram/direct/MessagesLock;->holdBanner()Z in static (Landroid/content/Context;L*;L*;)V holding no\sforeground\sactivity\sto\srender\sin-app\snotification
+# Allow screenshots hands every Window.setFlags and Window.addFlags call outside the extension to
+# ScreenshotBlock's stand-ins, which leave FLAG_SECURE off while the switch is on, and asks
+# ScreenshotBlock.lift() first in the secure window helper's (window, reason) mark (04Bs.A01 on 450),
+# the one method of that shape calling Window.setFlags with FLAG_SECURE, so it doesn't count a window
+# it never marked. Its partner clearing the flag (04Bs.A02) calls clearFlags and is left alone. A call
+# left behind turns disappearing photos and videos black in screenshots again.
+no-call Landroid/view/Window;->setFlags(II)V outside Lapp/hushgram/
+no-call Landroid/view/Window;->addFlags(I)V outside Lapp/hushgram/
+start-call Lapp/hushgram/extension/instagram/direct/ScreenshotBlock;->lift()Z in instance (Landroid/view/Window;Ljava/lang/String;)V calling static Lapp/hushgram/extension/instagram/direct/ScreenshotBlock;->setFlags(Landroid/view/Window;II)V holding Landroid/view/WindowManager$LayoutParams;->flags:I
+once-call Lapp/hushgram/extension/instagram/direct/ScreenshotBlock;->lift()Z in instance (Landroid/view/Window;Ljava/lang/String;)V calling static Lapp/hushgram/extension/instagram/direct/ScreenshotBlock;->setFlags(Landroid/view/Window;II)V holding Landroid/view/WindowManager$LayoutParams;->flags:I
 # Don't report screenshots asks ScreenshotReports.hold() first where each of Instagram's two
 # screenshot detectors hands a new screenshot on: the media detector's (time, path, list) method
 # (0aC7.AaT on 450, in the class whose session starter logs ScreenshotDetectorByContent) and the folder

@@ -175,6 +175,12 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting HIDE_SCREENSHOTS = new BooleanSetting("hushgram_hide_screenshots", FALSE);
 
     /**
+     * Screenshots and screen recordings work wherever Instagram blocks them, like disappearing
+     * photos and videos ({@link app.hushgram.extension.instagram.direct.ScreenshotBlock}). Off to start.
+     */
+    public static final BooleanSetting ALLOW_SCREENSHOTS = new BooleanSetting("hushgram_allow_screenshots", FALSE);
+
+    /**
      * The Mark as seen button in the story viewer's header
      * ({@link app.hushgram.extension.instagram.stories.StorySeenButton}). Off to start. A story you
      * tap it on is sent as seen while the rest stay held back. Read each time a story is shown and

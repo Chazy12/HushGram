@@ -307,6 +307,11 @@ tasks.register("verifyAndroidBoundaries") {
                 "pausedAndUnreadySendTheIndicator[28]", "pausedAndUnreadySendTheIndicator[37]",
                 "aThrowingSwitchSendsTheIndicatorAndIsReported[28]", "aThrowingSwitchSendsTheIndicatorAndIsReported[37]",
                 "theSeenReceiptSwitchIsAnIndependentChoice[28]", "theSeenReceiptSwitchIsAnIndependentChoice[37]"),
+            "app.hushgram.extension.instagram.direct.ScreenshotBlockTest" to listOf(
+                "withTheSwitchOnWindowsStayCapturable[28]", "withTheSwitchOnWindowsStayCapturable[37]",
+                "offPausedUnreadyAndThrowingLeaveItToInstagram[28]", "offPausedUnreadyAndThrowingLeaveItToInstagram[37]",
+                "withTheSwitchOnInstagramCantMarkAWindowSecure[28]", "withTheSwitchOnInstagramCantMarkAWindowSecure[37]",
+                "offOrClearingLeavesTheFlagsAsInstagramAsked[28]", "offOrClearingLeavesTheFlagsAsInstagramAsked[37]"),
             "app.hushgram.extension.instagram.direct.ScreenshotReportsTest" to listOf(
                 "withTheSwitchOnScreenshotsAreKept[28]", "withTheSwitchOnScreenshotsAreKept[37]",
                 "offPausedUnreadyAndThrowingLeaveItToInstagram[28]", "offPausedUnreadyAndThrowingLeaveItToInstagram[37]"),

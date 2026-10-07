@@ -265,4 +265,9 @@ public final class SettingsStatus {
     public static boolean screenshotReports() {
         return false;
     }
+
+    /** Rewritten by the Allow screenshots patch. */
+    public static boolean screenshotBlock() {
+        return false;
+    }
 }

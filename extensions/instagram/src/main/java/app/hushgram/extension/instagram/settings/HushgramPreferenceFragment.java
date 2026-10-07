@@ -417,7 +417,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         if (build.contains(PatchFamily.NOTES_ROW) || build.contains(PatchFamily.INSTANTS)
                 || build.contains(PatchFamily.THREAD_SEEN) || build.contains(PatchFamily.TYPING)
                 || build.contains(PatchFamily.MESSAGES_LOCK)
-                || build.contains(PatchFamily.SCREENSHOT_REPORTS)) {
+                || build.contains(PatchFamily.SCREENSHOT_REPORTS)
+                || build.contains(PatchFamily.SCREENSHOT_BLOCK)) {
             PreferenceCategory messages = category(screen, L10n.t("Messages"));
             if (build.contains(PatchFamily.NOTES_ROW)) {
                 messages.addPreference(toggle(context, Settings.HIDE_NOTES_ROW, L10n.t("Hide the notes row"),
@@ -444,6 +445,10 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             if (build.contains(PatchFamily.SCREENSHOT_REPORTS)) {
                 messages.addPreference(toggle(context, Settings.HIDE_SCREENSHOTS, L10n.t("Don't report screenshots"),
                         L10n.t("Instagram doesn't notice when you take a screenshot, so whoever sent you a disappearing photo or video isn't told. Your screenshots save as usual.")));
+            }
+            if (build.contains(PatchFamily.SCREENSHOT_BLOCK)) {
+                messages.addPreference(toggle(context, Settings.ALLOW_SCREENSHOTS, L10n.t("Allow screenshots"),
+                        L10n.t("Screenshots and screen recordings work wherever Instagram blocks them, like disappearing photos and videos. Turn on Don't report screenshots too if the sender shouldn't hear about it.")));
             }
             if (build.contains(PatchFamily.MESSAGES_LOCK)) {
                 messages.addPreference(lockToggle(context, Settings.LOCK_MESSAGES, L10n.t("Lock your messages"),
