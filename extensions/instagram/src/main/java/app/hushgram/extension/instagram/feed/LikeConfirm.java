@@ -6,8 +6,11 @@ package app.hushgram.extension.instagram.feed;
 
 import android.content.Context;
 
+import android.app.Dialog;
+
 import androidx.annotation.Nullable;
 
+import java.lang.ref.WeakReference;
 import java.util.function.Supplier;
 
 import app.hushgram.extension.instagram.settings.FamilyNames;
@@ -25,7 +28,9 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  * have run it, through {@link #likeAgain}, which the patch fills. That second run goes through
  * unasked. Cancel, Back or a tap outside leave the post as it was. The handler doesn't know yet
  * whether the post is liked when it starts, so the same question covers an unlike. A double tap
- * goes through other code and isn't asked about.
+ * goes through other code and isn't asked about. One question is up at a time: a tap that comes
+ * before it goes away, a quick second tap on Like, is held without a second question, so one
+ * Continue never likes and then unlikes.
  *
  * <p>The question shows over the screen the handler belongs to, found through {@link #contextOf},
  * which the patch fills with its fragment's context.
@@ -42,6 +47,10 @@ public final class LikeConfirm {
 
     /** Set while a tap the person said yes to runs again, so the hook lets it through. Main thread only. */
     private static boolean replaying;
+
+    /** The question that's up, held weakly, since it holds its activity. Main thread only. */
+    @Nullable
+    private static WeakReference<Dialog> open;
 
     private LikeConfirm() {
     }
@@ -68,16 +77,30 @@ public final class LikeConfirm {
         try {
             HookStatus.invoked(FamilyNames.ASK_BEFORE_LIKE);
             if (replaying || !Utils.settingsReady() || !Settings.ASK_BEFORE_LIKE.get()) return false;
-            if (ConfirmDialog.ask(screen.get(), L10n.t("Like or unlike this post?"), L10n.t("Continue"),
-                    () -> again(again), null) == null) {
-                return false;
-            }
+            if (ConfirmDialog.up(open())) return true;
+            Dialog question = ConfirmDialog.ask(screen.get(), L10n.t("Like or unlike this post?"), L10n.t("Continue"),
+                    () -> again(again), null, LikeConfirm::forget);
+            if (question == null) return false;
+            open = new WeakReference<>(question);
             HookStatus.counted(FamilyNames.ASK_BEFORE_LIKE, ASKED);
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.ASK_BEFORE_LIKE, ASK, failure);
             return false;
         }
+    }
+
+    /** The question that's up, or null. */
+    @Nullable
+    static Dialog open() {
+        WeakReference<Dialog> held = open;
+        return held == null ? null : held.get();
+    }
+
+    /** Lets go of [gone] once it's gone, unless a newer question has taken its place. */
+    private static void forget(Dialog gone) {
+        Dialog up = open();
+        if (up == null || up == gone) open = null;
     }
 
     private static void again(Runnable again) {

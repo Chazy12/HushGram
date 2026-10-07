@@ -9,6 +9,7 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
@@ -30,6 +31,8 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 
 private const val REFRESH_PATCH = "Ask before a refresh"
 
@@ -37,6 +40,10 @@ internal const val REFRESH_CONFIRM = "$EXTENSION_PACKAGE/feed/RefreshConfirm;"
 internal const val REFRESH_LISTENER =
     "$REFRESH_CONFIRM->listener(Landroid/view/View;Ljava/lang/Object;Landroid/view/animation/Animation\$AnimationListener;)Ljava/lang/Object;"
 internal const val ANIMATION_LISTENER = "Landroid/view/animation/Animation\$AnimationListener;"
+
+/** The extension's stub the patch fills with a direct call of the layout's setRefreshing(false). */
+internal const val SPINNER_OFF = "spinnerOff"
+private const val VIEW = "Landroid/view/View;"
 private const val ANIMATION = "Landroid/view/animation/Animation;"
 
 /**
@@ -65,7 +72,8 @@ private fun refuse(why: String): Nothing = throw PatchException("$REFRESH_PATCH:
 
 /**
  * The end-of-pull animation's onAnimationEnd, the index of its read of the refresh listener, the
- * listener's type, and the registers holding the listener, the layout and the animation itself.
+ * listener's type, the registers holding the listener, the layout and the animation itself, and the
+ * layout's class, whose public setRefreshing(boolean) Cancel calls.
  */
 internal class PullEndTarget(
     val method: MutableMethod,
@@ -74,15 +82,18 @@ internal class PullEndTarget(
     val held: Int,
     val layout: Int,
     val self: Int,
+    val layoutType: String,
 )
 
 /**
  * Finds where a pull-down refresh layout's end-of-pull animation reads the layout's refresh
  * listener, and checks it before anything changes. The layout is the one class with a
  * setOnRefreshListener that only stores its listener in a field of its own and a
- * setRefreshing(boolean). The read is the one in an animation listener's onAnimationEnd, checked
- * for null right after and then called with no arguments, in registers the hook can reach, with
- * nothing jumping to the check and the animation itself still in its register there.
+ * setRefreshing(boolean), which must be public in a public class, since Cancel calls it from the
+ * extension to stop the spinner. The read is the one in an animation listener's onAnimationEnd,
+ * into a register of its own, checked for null right after and then called with no arguments, in
+ * registers the hook can reach, with nothing jumping to the check and the animation itself still in
+ * its register there.
  */
 internal fun BytecodePatchContext.findPullEnd(): PullEndTarget {
     val layouts = mutableListOf<FieldReference>()
@@ -92,6 +103,12 @@ internal fun BytecodePatchContext.findPullEnd(): PullEndTarget {
     }
     val listener = layouts.singleOrNull()
         ?: refuse("expected one pull-down refresh layout that only stores its listener, found ${layouts.size}")
+    val layoutClass = classDefBy(listener.definingClass)
+    if (!AccessFlags.PUBLIC.isSet(layoutClass.accessFlags) ||
+        layoutClass.publicInstance("setRefreshing", listOf("Z"), "V") == null
+    ) {
+        refuse("${layoutClass.type}'s setRefreshing(boolean) isn't public, so Cancel couldn't stop its spinner")
+    }
 
     val sites = mutableListOf<Pair<Method, Int>>()
     classDefForEach { classDef ->
@@ -108,6 +125,7 @@ internal fun BytecodePatchContext.findPullEnd(): PullEndTarget {
     val code = end.implementation!!.instructions.toList()
     val load = code[read] as TwoRegisterInstruction
     val held = load.registerA
+    if (held == load.registerB) refuse("the end-of-pull animation reads the listener over the layout it reads it from")
     val test = code.getOrNull(read + 1)
     if (test?.opcode != Opcode.IF_EQZ || (test as OneRegisterInstruction).registerA != held) {
         refuse("the end-of-pull animation doesn't check the refresh listener right after reading it")
@@ -126,12 +144,19 @@ internal fun BytecodePatchContext.findPullEnd(): PullEndTarget {
     if (read + 1 in end.jumpTargets()) refuse("a jump lands on the end-of-pull animation's listener check")
     end.requireThisIntact(REFRESH_PATCH, listOf(read + 1))
 
-    classDefByOrNull(REFRESH_CONFIRM)?.publicStatic(REFRESH_LISTENER)
-        ?: refuse("the extension has no public static $REFRESH_LISTENER")
+    val extension = classDefByOrNull(REFRESH_CONFIRM) ?: refuse("the extension has no $REFRESH_CONFIRM")
+    extension.publicStatic(REFRESH_LISTENER) ?: refuse("the extension has no public static $REFRESH_LISTENER")
+    extension.spinnerStub() ?: refuse("the extension has no static $SPINNER_OFF(View) to fill")
     val method = mutableClassDefBy(end.definingClass).methods.single {
         it.name == end.name && it.parameterTypes.map(Any::toString) == listOf(ANIMATION)
     }
-    return PullEndTarget(method, read, listener.type, held, load.registerB, self)
+    return PullEndTarget(method, read, listener.type, held, load.registerB, self, layoutClass.type)
+}
+
+/** The extension's static void spinnerOff(View), or null. */
+private fun ClassDef.spinnerStub(): Method? = methods.singleOrNull {
+    it.name == SPINNER_OFF && it.returnType == "V" && it.parameterTypes.map(Any::toString) == listOf(VIEW) &&
+        AccessFlags.STATIC.isSet(it.accessFlags)
 }
 
 /**
@@ -147,6 +172,27 @@ internal fun BytecodePatchContext.askBeforeRefresh() {
             move-result-object v${found.held}
             check-cast v${found.held}, ${found.listenerType}
         """,
+    )
+    // spinnerOff's own body finds the method by name, for the tests. In its place goes a direct
+    // call, in a body of two registers, since the compiled stub may have only its parameter's.
+    val confirm = mutableClassDefBy(REFRESH_CONFIRM)
+    val stub = confirm.methods.single { it.name == SPINNER_OFF && it.parameterTypes.map(Any::toString) == listOf(VIEW) }
+    confirm.methods.remove(stub)
+    confirm.methods.add(
+        ImmutableMethod(
+            stub.definingClass, stub.name, stub.parameters, stub.returnType, stub.accessFlags, null,
+            stub.hiddenApiRestrictions, ImmutableMethodImplementation(2, emptyList(), null, null),
+        ).toMutable().apply {
+            addInstructions(
+                0,
+                """
+                    check-cast p0, ${found.layoutType}
+                    const/4 v0, 0x0
+                    invoke-virtual { p0, v0 }, ${found.layoutType}->setRefreshing(Z)V
+                    return-void
+                """,
+            )
+        },
     )
 }
 

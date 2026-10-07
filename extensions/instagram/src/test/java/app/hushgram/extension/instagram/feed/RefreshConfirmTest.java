@@ -111,7 +111,9 @@ public class RefreshConfirmTest {
         assertNull("a second pull doesn't put up a second question", end.handed.get(1));
         assertSame(question, ShadowDialog.getLatestDialog());
 
+        assertTrue(RefreshConfirm.holds(layout));
         tap(question, AlertDialog.BUTTON_POSITIVE);
+        assertFalse("the question is let go once it's gone", RefreshConfirm.holds(layout));
         assertEquals("Refresh ends the pull again, and this time it refreshes", 3, end.handed.size());
         assertSame(end.listener, end.handed.get(2));
         assertTrue("the spinner is left to the refresh", layout.refreshing.isEmpty());
@@ -124,15 +126,18 @@ public class RefreshConfirmTest {
         Spinner layout = new Spinner(activity);
         PullEnd end = new PullEnd(layout);
         end.onAnimationEnd(null);
+        assertTrue(RefreshConfirm.holds(layout));
         tap(shown(), AlertDialog.BUTTON_NEGATIVE);
         assertEquals(List.of(false), layout.refreshing);
         assertEquals(1, end.handed.size());
+        assertFalse("Cancel lets the question go", RefreshConfirm.holds(layout));
 
         end.onAnimationEnd(null);
         assertNull("the next pull asks again", end.handed.get(1));
         shown().cancel();
         Shadows.shadowOf(Looper.getMainLooper()).idle();
         assertEquals(List.of(false, false), layout.refreshing);
+        assertFalse("Back lets the question go", RefreshConfirm.holds(layout));
     }
 
     /** Paused, unready, with no screen to ask on or throwing, the refresh goes ahead as Instagram's. */

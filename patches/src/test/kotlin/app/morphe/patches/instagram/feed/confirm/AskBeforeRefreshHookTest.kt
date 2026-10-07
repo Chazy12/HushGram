@@ -53,6 +53,19 @@ class AskBeforeRefreshHookTest {
         assertEquals(0, (code[5] as OneRegisterInstruction).registerA)
         assertEquals(LISTENER, (code[6] as ReferenceInstruction).reference.toString())
         assertEquals(0, (code[6] as OneRegisterInstruction).registerA)
+        assertSpinnerOff(context, LAYOUT)
+    }
+
+    /** Cancel's spinnerOff calls the layout's public setRefreshing(false) directly, in two registers. */
+    private fun assertSpinnerOff(context: BytecodePatchContext, layout: String, case: String = "") {
+        val stub = context.spinnerOff()
+        assertEquals("$case: two registers", 2, stub.implementation!!.registerCount)
+        val code = stub.implementation!!.instructions.toList()
+        assertEquals(case, listOf(Opcode.CHECK_CAST, Opcode.CONST_4, Opcode.INVOKE_VIRTUAL, Opcode.RETURN_VOID), code.map { it.opcode })
+        assertEquals(case, layout, (code[0] as ReferenceInstruction).reference.toString())
+        assertEquals(case, "$layout->setRefreshing(Z)V", (code[2] as ReferenceInstruction).reference.toString())
+        val call = code[2] as FiveRegisterInstruction
+        assertEquals("$case: the layout and false", listOf(1, 0), listOf(call.registerC, call.registerD))
     }
 
     @Test
@@ -69,6 +82,9 @@ class AskBeforeRefreshHookTest {
         refuses("registers out of reach", listOf(listener(), layout(), pullEnd(entry = "move-object/from16 v1, p0", owner = "v1", registers = 20), extension()))
         refuses("a branch onto the check", listOf(listener(), layout(), pullEnd(entry = "if-nez p1, :test"), extension()))
         refuses("no extension", listOf(listener(), layout(), pullEnd()))
+        refuses("a setRefreshing that isn't public", listOf(listener(), layout(spinnerFlags = 0), pullEnd(), extension()))
+        refuses("a layout class that isn't public", listOf(listener(), layout(classFlags = AccessFlags.ABSTRACT.value), pullEnd(), extension()))
+        refuses("the listener read over the layout", listOf(listener(), layout(), pullEnd(held = "v2"), extension()))
     }
 
     /**
@@ -108,6 +124,10 @@ class AskBeforeRefreshHookTest {
                 assertEquals("${bundle.name}: the listener goes in", held, (end[at] as FiveRegisterInstruction).registerD)
                 assertEquals("${bundle.name}: and the answer back in its place", held, (end[at + 1] as OneRegisterInstruction).registerA)
                 assertEquals(bundle.name, 1, end.count { it.calls(REFRESH_LISTENER) })
+                val layout = classes.single { it.methods.any { method -> method.name == "setOnRefreshListener" } &&
+                    it.methods.any { method -> method.name == "setRefreshing" && method.parameterTypes.map(Any::toString) == listOf("Z") } }
+                assertTrue("${bundle.name}: a public layout", AccessFlags.PUBLIC.isSet(layout.accessFlags))
+                assertSpinnerOff(context, layout.type, bundle.name)
                 checked++
             }
         }
@@ -117,9 +137,15 @@ class AskBeforeRefreshHookTest {
     private fun refuses(case: String, classes: List<ClassDef>) {
         val context = PatchContexts.of(classes)
         val before = context.pullEndCode()?.map(::shape)
+        val stub = context.classDefByOrNull(REFRESH_CONFIRM)?.let { context.spinnerOff().implementation!!.instructions.map { it.opcode } }
         assertNotNull(case, assertThrows(case, PatchException::class.java) { context.askBeforeRefresh() })
         assertEquals(case, before, context.pullEndCode()?.map(::shape))
+        assertEquals("$case: spinnerOff untouched", stub,
+            context.classDefByOrNull(REFRESH_CONFIRM)?.let { context.spinnerOff().implementation!!.instructions.map { it.opcode } })
     }
+
+    private fun BytecodePatchContext.spinnerOff(): Method =
+        mutableClassDefBy(REFRESH_CONFIRM).methods.single { it.name == SPINNER_OFF }
 
     private fun shape(instruction: Instruction): String =
         if (instruction.calls(REFRESH_LISTENER)) REFRESH_LISTENER else instruction.opcode.name
@@ -150,14 +176,16 @@ class AskBeforeRefreshHookTest {
             type: String = LAYOUT,
             spinner: Boolean = true,
             setter: String = "iput-object p1, p0, $type->listener:$LISTENER\nreturn-void",
+            spinnerFlags: Int = PUBLIC,
+            classFlags: Int = PUBLIC or AccessFlags.ABSTRACT.value,
         ): ClassDef {
             val methods = mutableListOf(method(type, "setOnRefreshListener", listOf(LISTENER), 2, PUBLIC, setter))
-            if (spinner) methods += method(type, "setRefreshing", listOf("Z"), 2, PUBLIC, "return-void")
+            if (spinner) methods += method(type, "setRefreshing", listOf("Z"), 2, spinnerFlags, "return-void")
             val fields = listOf(
                 ImmutableField(type, "listener", LISTENER, 0, null, null, null),
                 ImmutableField(type, "notify", "Z", 0, null, null, null),
             )
-            return ImmutableClassDef(type, PUBLIC or AccessFlags.ABSTRACT.value, "Landroid/view/ViewGroup;", null, null, null, fields, methods)
+            return ImmutableClassDef(type, classFlags, "Landroid/view/ViewGroup;", null, null, null, fields, methods)
         }
 
         /**
@@ -169,7 +197,8 @@ class AskBeforeRefreshHookTest {
             listens: Boolean = true,
             entry: String = "",
             between: String = "",
-            call: String = "invoke-interface { v0 }, $LISTENER->refresh()V",
+            held: String = "v0",
+            call: String = "invoke-interface { $held }, $LISTENER->refresh()V",
             owner: String = "p0",
             registers: Int = 5,
         ): ClassDef {
@@ -178,10 +207,10 @@ class AskBeforeRefreshHookTest {
                 iget-object v2, $owner, $type->layout:$LAYOUT
                 iget-boolean v0, v2, $LAYOUT->notify:Z
                 if-eqz v0, :done
-                iget-object v0, v2, $LAYOUT->listener:$LISTENER
+                iget-object $held, v2, $LAYOUT->listener:$LISTENER
                 $between
                 ${if (":test" in entry) ":test" else ""}
-                if-eqz v0, :done
+                if-eqz $held, :done
                 $call
                 :done
                 return-void

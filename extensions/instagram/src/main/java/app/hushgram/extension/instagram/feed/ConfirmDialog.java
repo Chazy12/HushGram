@@ -6,10 +6,13 @@ package app.hushgram.extension.instagram.feed;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.ContextWrapper;
 
 import androidx.annotation.Nullable;
+
+import java.util.function.Consumer;
 
 import app.hushgram.extension.shared.L10n;
 
@@ -21,11 +24,13 @@ final class ConfirmDialog {
     /**
      * Shows [question] over the activity behind [context], with [yes] and Cancel. [onYes] runs when
      * yes is tapped, and [onNo], when there is one, when the question goes away any other way:
-     * Cancel, Back or a tap outside. Answers null, showing nothing, when there's no activity behind
-     * [context] or it's going away.
+     * Cancel, Back or a tap outside. [onGone] is handed the question once it's gone, whichever way it
+     * went, so a caller holding on to it can let go. Answers null, showing nothing, when there's no
+     * activity behind [context] or it's going away.
      */
     @Nullable
-    static AlertDialog ask(@Nullable Context context, String question, String yes, Runnable onYes, @Nullable Runnable onNo) {
+    static AlertDialog ask(@Nullable Context context, String question, String yes, Runnable onYes, @Nullable Runnable onNo,
+            Consumer<AlertDialog> onGone) {
         Activity activity = activityOf(context);
         if (activity == null || activity.isFinishing() || activity.isDestroyed()) return null;
         boolean[] answered = {false};
@@ -37,11 +42,25 @@ final class ConfirmDialog {
                 })
                 .setNegativeButton(L10n.t("Cancel"), null)
                 .setOnDismissListener(shown -> {
-                    if (!answered[0] && onNo != null) onNo.run();
+                    try {
+                        if (!answered[0] && onNo != null) onNo.run();
+                    } finally {
+                        onGone.accept((AlertDialog) shown);
+                    }
                 })
                 .create();
         dialog.show();
         return dialog;
+    }
+
+    /**
+     * Whether [question] is still up: showing, over an activity that isn't going away. A question
+     * whose activity went without dismissing it still says it's showing, and must not hold a tap.
+     */
+    static boolean up(@Nullable Dialog question) {
+        if (question == null || !question.isShowing()) return false;
+        Activity activity = activityOf(question.getContext());
+        return activity != null && !activity.isFinishing() && !activity.isDestroyed();
     }
 
     /** The activity behind [context], or null when there's none. */

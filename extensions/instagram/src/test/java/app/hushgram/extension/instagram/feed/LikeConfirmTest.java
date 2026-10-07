@@ -22,6 +22,7 @@ import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.Shadows;
+import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowDialog;
 import app.hushgram.extension.instagram.settings.FamilyNames;
@@ -48,6 +49,9 @@ public class LikeConfirmTest {
     }
 
     @After public void restore() {
+        Dialog left = LikeConfirm.open();
+        if (left != null) left.dismiss();
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
         Settings.ASK_BEFORE_LIKE.resetToDefault();
         PauseForTests.resume();
         HookStatus.clear();
@@ -89,6 +93,42 @@ public class LikeConfirmTest {
         assertFalse(ShadowDialog.getLatestDialog().isShowing());
         assertEquals(List.of(FamilyNames.ASK_BEFORE_LIKE + ": invoked 2, 0 found, 0 missing. Counted: " + LikeConfirm.ASKED + " 1"),
                 HookStatus.report());
+    }
+
+    /**
+     * A second tap before the question goes away, a quick double tap on Like, is held without a
+     * second question, so Continue likes once. Once it's gone, the question is let go.
+     */
+    @Test public void aSecondTapWhileTheQuestionIsUpIsHeldWithoutASecondQuestion() {
+        Settings.ASK_BEFORE_LIKE.save(true);
+        assertTrue(like(activity));
+        AlertDialog question = shown();
+        assertTrue("the second tap is held", like(activity));
+        assertSame("no second question", question, ShadowDialog.getLatestDialog());
+        assertEquals(1, ShadowDialog.getShownDialogs().size());
+        tap(question, AlertDialog.BUTTON_POSITIVE);
+        assertEquals("Continue likes once", 1, likes);
+        assertNull("the question is let go", LikeConfirm.open());
+
+        assertTrue("the next tap asks again", like(activity));
+        tap(shown(), AlertDialog.BUTTON_NEGATIVE);
+        assertNull(LikeConfirm.open());
+        assertEquals(List.of(FamilyNames.ASK_BEFORE_LIKE + ": invoked 4, 0 found, 0 missing. Counted: " + LikeConfirm.ASKED + " 2"),
+                HookStatus.report());
+    }
+
+    /** A question whose activity went without dismissing it doesn't hold the next tap on another screen. */
+    @Test public void aQuestionWhoseScreenWentDoesntHoldTheNextTap() {
+        Settings.ASK_BEFORE_LIKE.save(true);
+        ActivityController<Activity> gone = Robolectric.buildActivity(Activity.class).setup();
+        assertTrue(like(gone.get()));
+        Dialog left = shown();
+        gone.pause().stop().destroy();
+        assertTrue("it still says it's showing", left.isShowing());
+        assertTrue(like(activity));
+        assertNotSame("a new question on the new screen", left, ShadowDialog.getLatestDialog());
+        tap(shown(), AlertDialog.BUTTON_POSITIVE);
+        assertEquals(1, likes);
     }
 
     @Test public void theQuestionNeedsAnActivityBehindTheScreensContext() {
