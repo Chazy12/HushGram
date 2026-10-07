@@ -812,6 +812,10 @@ shared-call Lapp/hushgram/extension/instagram/share/RepostButton;->eligible(Ljav
 # stores them. No rule: every kind above holds a callee to one call in its method, and this one is
 # called twice there. HideRepostFeedStateTest checks on the 450 fixture that both land right before
 # their write, with the answer going back into the register the write stores.
+# Hide comments passes the same state's Comment button flag and comment count flag through
+# CommentsButton.feedState right before the constructor stores each. No rule, for the same
+# reason: it's called twice there. HideCommentsHookTest checks on the 450 fixture that both land
+# right before their write, with Hide the Repost button's hooks in the same constructor.
 # Remove the empty space at the bottom passes the navigation bar height Instagram's window insets
 # listener guesses, when the phone reports none, through BottomSpace.navigationBarHeight right after
 # the listener reads it (00OO.Exr on 449, the one method loading both strings below). Left out, the

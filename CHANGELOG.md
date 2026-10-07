@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** New patch, Hide comments, in simple mode with its switch off. Turn it on under Comments and the Comment button and comment count come off the posts in your feed.
+
 * **Instagram:** Stop loading stories, a new switch under Stories that starts off. With it on, nothing in the row of stories at the top of Home loads, your own story included, which saves data. A story ring on a profile or in a chat still opens its stories.
 
 * **Instagram:** Hide suggested stories has two more switches under Stories, both off to start. Hide story rewinds takes the rewind cards that bring back old highlights out of the row of stories at the top of Home, and Hide memories and recaps does the same for Instagram's memories, your week, the year in review, follow anniversaries and birthday cards. Stories people post stay either way.

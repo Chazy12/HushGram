@@ -483,6 +483,14 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting SAVE_COMMENT_PHOTOS =
             new BooleanSetting("hushgram_save_comment_photos", FALSE);
 
+    /**
+     * Feed's action rows leave out the Comment button and the comment count
+     * ({@link app.hushgram.extension.instagram.feed.CommentsButton}). Read as each row's state is
+     * built, so a post already drawn changes the next time Feed draws it. Off to start.
+     */
+    public static final BooleanSetting HIDE_COMMENTS =
+            new BooleanSetting("hushgram_hide_comments", FALSE);
+
     /** The Follow button beside a reel's author in the Reels viewer. */
     public static final BooleanSetting HIDE_REEL_FOLLOW_BUTTON =
             new BooleanSetting("hushgram_hide_reel_follow_button", TRUE);

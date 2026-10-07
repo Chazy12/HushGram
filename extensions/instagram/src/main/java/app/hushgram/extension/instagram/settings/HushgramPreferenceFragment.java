@@ -689,7 +689,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             }
         }
 
-        if (build.contains(PatchFamily.COMMENT_COPY) || build.contains(PatchFamily.COMMENT_PHOTO)) {
+        if (build.contains(PatchFamily.COMMENT_COPY) || build.contains(PatchFamily.COMMENT_PHOTO)
+                || build.contains(PatchFamily.HIDE_COMMENTS)) {
             PreferenceCategory comments = category(screen, L10n.t("Comments"));
             if (build.contains(PatchFamily.COMMENT_COPY)) {
                 comments.addPreference(toggle(context, Settings.COPY_COMMENTS, L10n.t("Copy comment"),
@@ -698,6 +699,10 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             if (build.contains(PatchFamily.COMMENT_PHOTO)) {
                 comments.addPreference(toggle(context, Settings.SAVE_COMMENT_PHOTOS, L10n.t("Save comment photo"),
                         L10n.t("Adds Save to a selected comment's menu when the comment has its own photo. Saves the largest size Instagram sent.")));
+            }
+            if (build.contains(PatchFamily.HIDE_COMMENTS)) {
+                comments.addPreference(toggle(context, Settings.HIDE_COMMENTS, L10n.t("Hide comments"),
+                        L10n.t("Takes the Comment button and the comment count off the posts in your feed.")));
             }
         }
 

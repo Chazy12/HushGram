@@ -201,6 +201,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean hideComments() {
+        return false;
+    }
+
     public static boolean followingFeed() {
         return false;
     }
