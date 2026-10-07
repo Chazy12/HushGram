@@ -35,6 +35,7 @@ public final class FamilyNames {
     public static final String STORY_RING = "Story ring size";
     public static final String FEED_REELS = "Hide Reels in the feed";
     public static final String FEED_SUGGESTIONS = "Hide suggested posts";
+    public static final String HOME_FEED = "Hide the home feed";
     public static final String FOLLOWING_FEED = "Start Home on Following";
     public static final String SWIPE_TO_CREATE = "Stop swipe to create";
     public static final String FULL_RESOLUTION = "Full resolution photos";

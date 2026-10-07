@@ -74,8 +74,9 @@ public final class FeedSuggestions {
 
     /**
      * Injected at each read of the home feed adapter's "no next page" flag. Answers 1 (no next
-     * page) once {@link #filter} has taken items out and a suggestion switch is still on, and
-     * [noMorePages] otherwise. Turning every switch off restores Instagram's answer in this run.
+     * page) once {@link #filter} has taken items out and a suggestion switch is still on, or once
+     * Hide the home feed has emptied Home ({@link HomeFeed#emptied}), and [noMorePages] otherwise.
+     * Turning every switch off restores Instagram's answer in this run.
      *
      * <p>Instagram reads that flag only beside its own checks that the feed is empty and no page is
      * loading. With both true and a next page left it draws its loading placeholder, and nothing asks
@@ -84,7 +85,9 @@ public final class FeedSuggestions {
      * left, or one waiting on a page, draws what it did.
      */
     public static int feedEnded(int noMorePages) {
-        if (noMorePages != 0 || !tookOut) return noMorePages;
+        if (noMorePages != 0) return noMorePages;
+        if (HomeFeed.emptied()) return 1;
+        if (!tookOut) return noMorePages;
         try {
             if (!Utils.settingsReady()) return noMorePages;
             return Settings.HIDE_SUGGESTED_POSTS.get() || Settings.HIDE_SUGGESTED_ACCOUNTS.get()

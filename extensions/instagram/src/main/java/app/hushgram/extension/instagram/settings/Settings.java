@@ -185,6 +185,14 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting HIDE_THREADS_POSTS =
             new BooleanSetting("hushgram_hide_threads_posts", TRUE);
 
+    /**
+     * Every post in Home's feed, on purpose, leaving the stories row
+     * ({@link app.hushgram.extension.instagram.feed.HomeFeed}). Read as each page arrives, so a
+     * change shows on the next pull to refresh. Off to start.
+     */
+    public static final BooleanSetting HIDE_HOME_FEED =
+            new BooleanSetting("hushgram_hide_home_feed", FALSE);
+
     /** Stories in the tray at the top of Home from accounts you don't follow, and accounts it suggests. */
     public static final BooleanSetting HIDE_SUGGESTED_STORIES =
             new BooleanSetting("hushgram_hide_suggested_stories", TRUE);

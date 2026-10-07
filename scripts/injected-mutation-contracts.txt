@@ -319,6 +319,10 @@ shared-call Lapp/hushgram/extension/instagram/misc/TranslatedStart;->protectCode
 # the patch wrote.
 once-call Lapp/hushgram/extension/instagram/reels/FeedReels;->filter(Ljava/lang/Object;)Ljava/lang/Object; in static (L*;)LX/*; calling L*;->parseFromJsonParser(*)Ljava/lang/Object; class-holding feedContent feedItemType
 once-call Lapp/hushgram/extension/instagram/feed/FeedSuggestions;->filter(Ljava/lang/Object;)Ljava/lang/Object; in static (L*;)LX/*; calling L*;->parseFromJsonParser(*)Ljava/lang/Object; class-holding feedContent feedItemType
+# Hide the home feed passes the same item through HomeFeed.filter at the same return, whatever its
+# kind. Left out, Home keeps its posts with the switch on; twice or elsewhere, it isn't the filter
+# the patch wrote.
+once-call Lapp/hushgram/extension/instagram/feed/HomeFeed;->filter(Ljava/lang/Object;)Ljava/lang/Object; in static (L*;)LX/*; calling L*;->parseFromJsonParser(*)Ljava/lang/Object; class-holding feedContent feedItemType
 once-call Lapp/hushgram/extension/instagram/metaai/MetaAi;->filter(Ljava/lang/Object;)Ljava/lang/Object; in static (L*;)LX/*; calling L*;->parseFromJsonParser(*)Ljava/lang/Object; class-holding feedContent feedItemType
 #
 # Hide suggested posts answers the home feed adapter's "no next page" flag through feedEnded() at

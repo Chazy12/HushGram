@@ -39,7 +39,7 @@ internal object FeedItemParserFingerprint : Fingerprint(
  * filter answers null for null, so the order doesn't change what comes back.
  *
  * [kinds] are the item kinds [filter] drops, which one of the item's enum types has to name; see
- * [requireOneKindField].
+ * [requireOneKindField]. A filter that drops every item, whatever its kind, passes none.
  */
 internal fun BytecodePatchContext.filterParsedFeedItems(patch: String, filter: String, kinds: List<String>) {
     val parser = uniqueMethod(patch, "feed item parser", FeedItemParserFingerprint)
@@ -51,7 +51,7 @@ internal fun BytecodePatchContext.filterParsedFeedItems(patch: String, filter: S
     val itemType = itemTypes.singleOrNull() ?: throw PatchException(
         "$patch: expected the feed item parser to make one class with a $CLIPS_NETEGO field, found $itemTypes",
     )
-    requireOneKindField(patch, itemType, kinds)
+    if (kinds.isNotEmpty()) requireOneKindField(patch, itemType, kinds)
 
     val item = mutableClassDefBy(itemType)
     val helpers = item.methods.filter { method ->

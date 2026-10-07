@@ -337,7 +337,9 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         boolean following = build.contains(PatchFamily.FOLLOWING_FEED);
         boolean swipe = build.contains(PatchFamily.SWIPE_TO_CREATE);
         boolean fullResolution = build.contains(PatchFamily.FULL_RESOLUTION);
-        PreferenceCategory feed = suggestions || following || swipe || fullResolution ? category(screen, L10n.t("Feed")) : null;
+        boolean homeFeed = build.contains(PatchFamily.HOME_FEED);
+        PreferenceCategory feed = suggestions || following || swipe || fullResolution || homeFeed
+                ? category(screen, L10n.t("Feed")) : null;
         if (following) {
             feed.addPreference(toggle(context, Settings.START_ON_FOLLOWING, L10n.t("Start Home on Following"),
                     L10n.t("Home opens on posts from accounts you follow. Tap Following at the top to switch to For you, "
@@ -354,6 +356,11 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                             + "accounts you follow stay.")));
             feed.addPreference(toggle(context, Settings.HIDE_THREADS_POSTS, L10n.t("Hide Threads posts"),
                     L10n.t("The posts, accounts and communities from Threads that Instagram mixes into your feed.")));
+        }
+        if (homeFeed) {
+            feed.addPreference(toggle(context, Settings.HIDE_HOME_FEED, L10n.t("Hide the home feed"),
+                    L10n.t("Empties Home on purpose, so you get the stories row and nothing under it. Profiles, "
+                            + "Explore and Reels still show posts. Pull to refresh Home after changing it.")));
         }
         if (swipe) {
             feed.addPreference(toggle(context, Settings.STOP_SWIPE_TO_CREATE, L10n.t("Stop swipe to create"),

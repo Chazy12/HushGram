@@ -43,11 +43,10 @@ val hideSuggestedPostsPatch = bytecodePatch(
     category("Feed")
     dependsOn(settingsPatch)
     compatibleWith(*AppCompatibilities.instagram())
-    dependsOn(instagramExtensionPatch)
+    dependsOn(instagramExtensionPatch, emptiedFeedEndPatch)
 
     execute {
         filterSuggestedFeedItems()
-        endEmptiedFeed(findFeedEnd())
         endFollowingAtItsCard()
         enableStatus("feedSuggestions")
     }
