@@ -491,7 +491,6 @@ After 20 reels, swiping in Reels stops until Instagram has been in the backgroun
 Clear the cache now	Borrar la caché ahora
 Clear the media cache	Borrar la caché de contenido
 Couldn't clear the cache. Try again.	No se pudo borrar la caché. Inténtalo de nuevo.
-Deletes the images and videos Instagram keeps to show again, whatever their size.	Elimina las imágenes y los videos que Instagram guarda para volver a mostrarlos, sin importar su tamaño.
 Don't save recent searches	No guardar búsquedas recientes
 Download cover	Descargar portada
 Download on a reel, a feed post or a story opens the share sheet with its link, for a downloader app such as Seal. Save all and the other save rows still save here.	Descargar en un reel, una publicación del feed o una historia abre el menú para compartir con su enlace, para una app de descargas como Seal. Guardar todo y las demás filas de guardado siguen guardando aquí.
@@ -515,7 +514,6 @@ That's %1$d reels. Swiping in Reels is off until Instagram has been in the backg
 The latitude and the longitude in degrees, with a comma between them, like 40.758, -73.9855. North and east are positive, south and west negative. A map app shows both when you press and hold a spot.	La latitud y la longitud en grados, separadas por una coma, como 40.758, -73.9855. Norte y este son positivos, sur y oeste negativos. Una app de mapas muestra ambas si mantienes presionado un punto.
 Turn off HDR brightness boosts	Desactivar el brillo extra de HDR
 What you open from search stays out of Recent, in the app and on Instagram's side. Searches already there stay until you clear them.	Lo que abres desde la búsqueda no aparece en Recientes, ni en la app ni del lado de Instagram. Las búsquedas que ya están ahí se quedan hasta que las borres.
-When Instagram goes to the background with more than 500 MB of images and videos in its cache, HushGram deletes them. Your sign-in, drafts and settings stay.	Cuando Instagram pasa a segundo plano con más de 500 MB de imágenes y videos en su caché, HushGram los elimina. Tu inicio de sesión, borradores y ajustes se mantienen.
 Wi-Fi stays as it is. Turn this off to save data on every network.	El Wi-Fi se queda como está. Desactiva este interruptor para ahorrar datos en cualquier red.
 Hide comments	Ocultar comentarios
 Hide memories and recaps	Ocultar recuerdos y resúmenes
@@ -531,3 +529,22 @@ A double tap on a comment doesn't like it. Starts off, so comments keep double t
 Hide the Share button	Ocultar el botón Compartir
 On comments	En los comentarios
 Takes the Share button and its count off the posts in your feed and off reels.	Quita el botón Compartir y su número de las publicaciones de tu feed y de los reels.
+Ask before a call	Preguntar antes de una llamada
+Call	Llamar
+Change the like animation	Cambiar la animación de me gusta
+Deletes the images Instagram keeps to show again now, whatever their size, and the videos the next time it starts.	Elimina ahora las imágenes que Instagram guarda para volver a mostrarlas, sin importar su tamaño, y los videos la próxima vez que se abra.
+Freed %1$s. The videos go the next time Instagram starts.	Se liberaron %1$s. Los videos se eliminan la próxima vez que se abra Instagram.
+Like animation	Animación de me gusta
+Links keep instagram.com.	Los enlaces mantienen instagram.com.
+Links to instagram.com go out on %1$s.	Los enlaces a instagram.com salen con %1$s.
+Links to instagram.com that you copy or share go out on this domain instead, for a site that shows Instagram posts and reels in chat apps. Type the domain alone, like example.com. Leave it blank to keep instagram.com.	Los enlaces a instagram.com que copias o compartes salen con este dominio, para un sitio que muestra publicaciones y reels de Instagram en apps de chat. Escribe solo el dominio, como example.com. Déjalo en blanco para mantener instagram.com.
+Pick an animation. Until you do, the heart stays Instagram's.	Elige una animación. Hasta entonces, el corazón sigue siendo el de Instagram.
+Sharing domain	Dominio para compartir
+Start a video call?	¿Iniciar una videollamada?
+Start a voice call?	¿Iniciar una llamada de voz?
+Tapping a call button in a chat asks first, so a stray tap doesn't ring anyone. Call starts it, Cancel doesn't.	Tocar un botón de llamada en un chat pregunta primero, para que un toque sin querer no llame a nadie. Llamar la inicia, Cancelar no.
+That isn't a domain. Type one like example.com, or leave it blank.	Eso no es un dominio. Escribe uno como example.com o déjalo en blanco.
+The heart plays %1$s when you double tap a post.	El corazón reproduce %1$s cuando tocas dos veces una publicación.
+The heart that pops up when you double tap a post plays the animation you pick below, one of the ones Instagram made for Instagram Rings creators.	El corazón que aparece cuando tocas dos veces una publicación reproduce la animación que elijas abajo, una de las que Instagram hizo para los creadores de Instagram Rings.
+Turn on Change the like animation to use this choice.	Activa Cambiar la animación de me gusta para usar esta opción.
+When Instagram goes to the background with more than 500 MB of images and videos in its cache, HushGram deletes the images, and the videos the next time Instagram starts. Your sign-in, drafts and settings stay.	Cuando Instagram pasa a segundo plano con más de 500 MB de imágenes y videos en su caché, HushGram elimina las imágenes, y los videos la próxima vez que se abra Instagram. Tu inicio de sesión, borradores y ajustes se mantienen.

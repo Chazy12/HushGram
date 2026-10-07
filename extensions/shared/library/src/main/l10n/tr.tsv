@@ -491,7 +491,6 @@ After 20 reels, swiping in Reels stops until Instagram has been in the backgroun
 Clear the cache now	Önbelleği şimdi temizle
 Clear the media cache	Medya önbelleğini temizle
 Couldn't clear the cache. Try again.	Önbellek temizlenemedi. Tekrar dene.
-Deletes the images and videos Instagram keeps to show again, whatever their size.	Instagram'ın yeniden göstermek için sakladığı görsel ve videoları, boyutları ne olursa olsun siler.
 Don't save recent searches	Son aramaları kaydetme
 Download cover	Kapağı indir
 Download on a reel, a feed post or a story opens the share sheet with its link, for a downloader app such as Seal. Save all and the other save rows still save here.	Bir reel, akış gönderisi veya hikayede İndir, bağlantısıyla paylaşım sayfasını Seal gibi bir indirme uygulaması için açar. Tümünü kaydet ve diğer kaydetme satırları yine buraya kaydeder.
@@ -515,7 +514,6 @@ That's %1$d reels. Swiping in Reels is off until Instagram has been in the backg
 The latitude and the longitude in degrees, with a comma between them, like 40.758, -73.9855. North and east are positive, south and west negative. A map app shows both when you press and hold a spot.	Derece cinsinden enlem ve boylam, aralarında virgülle, örneğin 40.758, -73.9855. Kuzey ve doğu pozitif, güney ve batı negatiftir. Bir harita uygulaması, bir noktaya basılı tuttuğunda ikisini de gösterir.
 Turn off HDR brightness boosts	HDR parlaklık artışını kapat
 What you open from search stays out of Recent, in the app and on Instagram's side. Searches already there stay until you clear them.	Aramadan açtıkların ne uygulamada ne de Instagram tarafında Son aramalar'a girer. Orada zaten olan aramalar sen temizleyene kadar kalır.
-When Instagram goes to the background with more than 500 MB of images and videos in its cache, HushGram deletes them. Your sign-in, drafts and settings stay.	Instagram önbelleğinde 500 MB'tan fazla görsel ve video ile arka plana geçtiğinde HushGram bunları siler. Oturum açma bilgilerin, taslakların ve ayarların kalır.
 Wi-Fi stays as it is. Turn this off to save data on every network.	Wi-Fi olduğu gibi kalır. Her ağda veri tasarrufu için bu anahtarı kapat.
 Hide comments	Yorumları gizle
 Hide memories and recaps	Anıları ve özetleri gizle
@@ -531,3 +529,22 @@ A double tap on a comment doesn't like it. Starts off, so comments keep double t
 Hide the Share button	Paylaş düğmesini gizle
 On comments	Yorumlarda
 Takes the Share button and its count off the posts in your feed and off reels.	Paylaş düğmesini ve sayısını akışındaki gönderilerden ve reel'lerden kaldırır.
+Ask before a call	Aramadan önce sor
+Call	Ara
+Change the like animation	Beğeni animasyonunu değiştir
+Deletes the images Instagram keeps to show again now, whatever their size, and the videos the next time it starts.	Instagram'ın yeniden göstermek için sakladığı görselleri boyutları ne olursa olsun hemen, videoları ise bir sonraki açılışta siler.
+Freed %1$s. The videos go the next time Instagram starts.	%1$s boşaltıldı. Videolar Instagram bir sonraki açılışında silinir.
+Like animation	Beğeni animasyonu
+Links keep instagram.com.	Bağlantılar instagram.com olarak kalır.
+Links to instagram.com go out on %1$s.	instagram.com bağlantıları %1$s ile gider.
+Links to instagram.com that you copy or share go out on this domain instead, for a site that shows Instagram posts and reels in chat apps. Type the domain alone, like example.com. Leave it blank to keep instagram.com.	Kopyaladığın veya paylaştığın instagram.com bağlantıları bunun yerine bu alan adıyla gider. Bu, Instagram gönderilerini ve reel'lerini sohbet uygulamalarında gösteren bir site içindir. Yalnızca alan adını yaz, örneğin example.com. instagram.com'u korumak için boş bırak.
+Pick an animation. Until you do, the heart stays Instagram's.	Bir animasyon seç. Seçene kadar kalp Instagram'ınki olarak kalır.
+Sharing domain	Paylaşım alan adı
+Start a video call?	Görüntülü arama başlatılsın mı?
+Start a voice call?	Sesli arama başlatılsın mı?
+Tapping a call button in a chat asks first, so a stray tap doesn't ring anyone. Call starts it, Cancel doesn't.	Bir sohbette arama düğmesine dokunmak önce sorar, böylece yanlışlıkla bir dokunuş kimseyi aramaz. Ara başlatır, İptal başlatmaz.
+That isn't a domain. Type one like example.com, or leave it blank.	Bu bir alan adı değil. example.com gibi bir tane yaz veya boş bırak.
+The heart plays %1$s when you double tap a post.	Bir gönderiye iki kez dokunduğunda kalp %1$s oynatır.
+The heart that pops up when you double tap a post plays the animation you pick below, one of the ones Instagram made for Instagram Rings creators.	Bir gönderiye iki kez dokunduğunda çıkan kalp, aşağıda seçtiğin animasyonu oynatır. Bunlar Instagram'ın Instagram Rings içerik üreticileri için yaptığı animasyonlardır.
+Turn on Change the like animation to use this choice.	Bu seçimi kullanmak için Beğeni animasyonunu değiştir'i aç.
+When Instagram goes to the background with more than 500 MB of images and videos in its cache, HushGram deletes the images, and the videos the next time Instagram starts. Your sign-in, drafts and settings stay.	Instagram önbelleğinde 500 MB'tan fazla görsel ve video ile arka plana geçtiğinde HushGram görselleri hemen, videoları ise Instagram bir sonraki açılışında siler. Oturum açma bilgilerin, taslakların ve ayarların kalır.

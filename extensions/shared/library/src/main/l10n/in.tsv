@@ -491,7 +491,6 @@ After 20 reels, swiping in Reels stops until Instagram has been in the backgroun
 Clear the cache now	Bersihkan cache sekarang
 Clear the media cache	Bersihkan cache media
 Couldn't clear the cache. Try again.	Tidak dapat membersihkan cache. Coba lagi.
-Deletes the images and videos Instagram keeps to show again, whatever their size.	Menghapus gambar dan video yang disimpan Instagram untuk ditampilkan lagi, berapa pun ukurannya.
 Don't save recent searches	Jangan simpan pencarian terbaru
 Download cover	Unduh sampul
 Download on a reel, a feed post or a story opens the share sheet with its link, for a downloader app such as Seal. Save all and the other save rows still save here.	Unduh pada reel, postingan feed, atau cerita membuka lembar berbagi dengan tautannya, untuk aplikasi pengunduh seperti Seal. Simpan semua dan baris simpan lainnya tetap menyimpan di sini.
@@ -515,7 +514,6 @@ That's %1$d reels. Swiping in Reels is off until Instagram has been in the backg
 The latitude and the longitude in degrees, with a comma between them, like 40.758, -73.9855. North and east are positive, south and west negative. A map app shows both when you press and hold a spot.	Lintang dan bujur dalam derajat, dengan koma di antaranya, seperti 40.758, -73.9855. Utara dan timur positif, selatan dan barat negatif. Aplikasi peta menampilkan keduanya saat Anda menekan lama sebuah titik.
 Turn off HDR brightness boosts	Matikan peningkatan kecerahan HDR
 What you open from search stays out of Recent, in the app and on Instagram's side. Searches already there stay until you clear them.	Apa yang Anda buka dari pencarian tidak masuk ke Terbaru, baik di aplikasi maupun di sisi Instagram. Pencarian yang sudah ada di sana tetap ada sampai Anda menghapusnya.
-When Instagram goes to the background with more than 500 MB of images and videos in its cache, HushGram deletes them. Your sign-in, drafts and settings stay.	Saat Instagram masuk ke latar belakang dengan lebih dari 500 MB gambar dan video di cache-nya, HushGram menghapusnya. Info masuk, draf, dan pengaturan Anda tetap ada.
 Wi-Fi stays as it is. Turn this off to save data on every network.	Wi-Fi tetap seperti semula. Matikan sakelar ini untuk menghemat data di setiap jaringan.
 Hide comments	Sembunyikan komentar
 Hide memories and recaps	Sembunyikan kenangan dan rangkuman
@@ -531,3 +529,22 @@ A double tap on a comment doesn't like it. Starts off, so comments keep double t
 Hide the Share button	Sembunyikan tombol Bagikan
 On comments	Pada komentar
 Takes the Share button and its count off the posts in your feed and off reels.	Menghapus tombol Bagikan dan jumlahnya dari postingan di feed Anda dan dari reel.
+Ask before a call	Tanya sebelum menelepon
+Call	Telepon
+Change the like animation	Ubah animasi suka
+Deletes the images Instagram keeps to show again now, whatever their size, and the videos the next time it starts.	Menghapus sekarang gambar yang disimpan Instagram untuk ditampilkan lagi, berapa pun ukurannya, dan videonya saat Instagram dibuka berikutnya.
+Freed %1$s. The videos go the next time Instagram starts.	%1$s dikosongkan. Video dihapus saat Instagram dibuka berikutnya.
+Like animation	Animasi suka
+Links keep instagram.com.	Tautan tetap memakai instagram.com.
+Links to instagram.com go out on %1$s.	Tautan ke instagram.com dikirim dengan %1$s.
+Links to instagram.com that you copy or share go out on this domain instead, for a site that shows Instagram posts and reels in chat apps. Type the domain alone, like example.com. Leave it blank to keep instagram.com.	Tautan ke instagram.com yang Anda salin atau bagikan dikirim dengan domain ini, untuk situs yang menampilkan postingan dan reel Instagram di aplikasi chat. Ketik domainnya saja, seperti example.com. Biarkan kosong untuk tetap memakai instagram.com.
+Pick an animation. Until you do, the heart stays Instagram's.	Pilih animasi. Sampai Anda memilih, hati tetap milik Instagram.
+Sharing domain	Domain berbagi
+Start a video call?	Mulai panggilan video?
+Start a voice call?	Mulai panggilan suara?
+Tapping a call button in a chat asks first, so a stray tap doesn't ring anyone. Call starts it, Cancel doesn't.	Mengetuk tombol panggilan di chat akan bertanya dulu, jadi ketukan tak sengaja tidak menelepon siapa pun. Telepon memulainya, Batal tidak.
+That isn't a domain. Type one like example.com, or leave it blank.	Itu bukan domain. Ketik domain seperti example.com, atau biarkan kosong.
+The heart plays %1$s when you double tap a post.	Hati memutar %1$s saat Anda mengetuk dua kali sebuah postingan.
+The heart that pops up when you double tap a post plays the animation you pick below, one of the ones Instagram made for Instagram Rings creators.	Hati yang muncul saat Anda mengetuk dua kali sebuah postingan memutar animasi yang Anda pilih di bawah, salah satu yang dibuat Instagram untuk kreator Instagram Rings.
+Turn on Change the like animation to use this choice.	Nyalakan Ubah animasi suka untuk memakai pilihan ini.
+When Instagram goes to the background with more than 500 MB of images and videos in its cache, HushGram deletes the images, and the videos the next time Instagram starts. Your sign-in, drafts and settings stay.	Saat Instagram masuk ke latar belakang dengan lebih dari 500 MB gambar dan video di cache-nya, HushGram menghapus gambarnya, dan videonya saat Instagram dibuka berikutnya. Info masuk, draf, dan pengaturan Anda tetap ada.
