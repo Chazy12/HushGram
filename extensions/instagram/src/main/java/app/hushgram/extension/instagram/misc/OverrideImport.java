@@ -129,6 +129,15 @@ public final class OverrideImport {
 
     private OverrideImport() {}
 
+    /**
+     * Takes every override in this session away the way an import does, saving the current ones for
+     * Restore first. Overrides holding Instagram's null value stay, since they couldn't be put back.
+     */
+    public static Result reset(Activity activity) throws IOException {
+        allowed();
+        return run(activity, OverrideExchange.exportReset(OverrideExchange.capture(activity)), false);
+    }
+
     /** Imports a document chosen by the user. Throws before any native call when it doesn't fit. */
     public static Result apply(Activity activity, byte[] document) throws IOException {
         return run(activity, document, false);

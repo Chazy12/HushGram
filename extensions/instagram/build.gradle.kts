@@ -655,7 +655,8 @@ tasks.register("verifyAndroidBoundaries") {
                 "aFailedDiscardReportsIncompleteCleanupAndItsRowCanRetry[28]", "aFailedDiscardReportsIncompleteCleanupAndItsRowCanRetry[37]",
                 "cancelledMalformedAndUnsavedRequestsLeaveTheNativeStoreByteIdentical[28]", "cancelledMalformedAndUnsavedRequestsLeaveTheNativeStoreByteIdentical[37]",
                 "anArmedStoreNamesBothWaysOutAndDiscardLetsImportsRunAgain[28]", "anArmedStoreNamesBothWaysOutAndDiscardLetsImportsRunAgain[37]",
-                "aSwitchTurnedOffWhileThePickerIsOpenReadsNeitherTheFileNorTheStore[28]", "aSwitchTurnedOffWhileThePickerIsOpenReadsNeitherTheFileNorTheStore[37]"),
+                "aSwitchTurnedOffWhileThePickerIsOpenReadsNeitherTheFileNorTheStore[28]", "aSwitchTurnedOffWhileThePickerIsOpenReadsNeitherTheFileNorTheStore[37]",
+                "resetTakesTheOverridesAwayAndRestorePutsThemBack[28]", "resetTakesTheOverridesAwayAndRestorePutsThemBack[37]"),
             "app.hushgram.extension.instagram.misc.InstagramSignatureTest" to listOf(
                 "thisAppStillGetsInstagramsTwoCertificates[28]", "thisAppStillGetsInstagramsTwoCertificates[37]",
                 "aRecordThatOnlyNamesThisAppSeedsNoSigners[28]", "aRecordThatOnlyNamesThisAppSeedsNoSigners[37]",

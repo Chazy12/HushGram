@@ -156,11 +156,40 @@ public final class OverrideExchange {
 
     public static byte[] export(Snapshot snapshot) throws IOException {
         if (snapshot == null) throw invalid();
+        return document(snapshot, snapshot.overrides);
+    }
+
+    /**
+     * {@link #export} keeping only what an import can't take away and put back: overrides holding
+     * Instagram's null value, and its experiment section. Imported, it takes every other override away.
+     */
+    static byte[] exportReset(Snapshot snapshot) throws IOException {
+        if (snapshot == null) throw invalid();
+        try {
+            JSONObject all = new JSONObject(snapshot.overrides), kept = new JSONObject();
+            for (java.util.Iterator<String> labels = all.keys(); labels.hasNext();) {
+                String label = labels.next();
+                if (EXPERIMENTS.equals(label)) {
+                    kept.put(label, all.get(label));
+                    continue;
+                }
+                JSONArray records = all.getJSONArray(label), nulls = new JSONArray();
+                for (int i = 0; i < records.length(); i++) {
+                    String record = records.getString(i);
+                    if (record.endsWith(": " + NULL)) nulls.put(record);
+                }
+                if (nulls.length() > 0) kept.put(label, nulls);
+            }
+            return document(snapshot, kept.toString());
+        } catch (JSONException failure) { throw invalid(); }
+    }
+
+    private static byte[] document(Snapshot snapshot, String overrides) throws IOException {
         try {
             JSONObject host = new JSONObject().put("package", HOST).put("version", snapshot.version).put("code", snapshot.code);
             JSONObject schema = new JSONObject().put("sha256", snapshot.hash).put("parameters", snapshot.parameters.size());
             byte[] file = new JSONObject().put("project", "HushGram-overrides").put("format", 1).put("host", host)
-                    .put("schema", schema).put("overrides", new JSONObject(snapshot.overrides)).toString().getBytes(StandardCharsets.UTF_8);
+                    .put("schema", schema).put("overrides", new JSONObject(overrides)).toString().getBytes(StandardCharsets.UTF_8);
             if (file.length > MAX_BYTES) throw invalid();
             return file;
         } catch (JSONException failure) { throw invalid(); }

@@ -130,8 +130,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
     private static final int EXPORT_OVERRIDES = 0x4849;
     private static final int VALIDATE_OVERRIDES = 0x484a;
     private static final int IMPORT_OVERRIDES = 0x484b;
-    /** Restore and Discard read HushGram's saved copy, so they never become a document request. */
-    private static final int RESTORE_OVERRIDES = 0, DISCARD_OVERRIDES = -1;
+    /** Restore, Discard and Reset need no document, so they never become a document request. */
+    private static final int RESTORE_OVERRIDES = 0, DISCARD_OVERRIDES = -1, RESET_OVERRIDES = -2;
     /** Framework fragment callbacks run on the main thread. Never reuse a code across pages. */
     private static int documentSequence = IMPORT_OVERRIDES;
     private int documentRequest;
@@ -150,9 +150,9 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
     @Nullable private Row validateOverrides;
     @Nullable static volatile String overrideExportFeedback, overrideValidationFeedback;
     /** Shown only while Allow importing overrides is on; absent rows can't be found or searched. */
-    @Nullable private Row importOverrides, restoreOverrides, discardOverrides;
+    @Nullable private Row importOverrides, restoreOverrides, discardOverrides, resetOverrides;
     @Nullable private PreferenceCategory developerSection;
-    @Nullable static volatile String overrideImportFeedback, overrideRestoreFeedback, overrideDiscardFeedback;
+    @Nullable static volatile String overrideImportFeedback, overrideRestoreFeedback, overrideDiscardFeedback, overrideResetFeedback;
 
     private String searchQuery = "";
     @Nullable private SearchRow search;
@@ -755,10 +755,18 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             discardOverrides.setSummary(L10n.t("Forget the copy saved for Restore so imports can run again. "
                     + "Instagram's overrides don't change."));
             discardOverrides.setOnPreferenceClickListener(row -> { exchangeOverrides(null, DISCARD_OVERRIDES); return true; });
+            resetOverrides = new Row(context);
+            resetOverrides.setKey("hushgram_reset_overrides");
+            resetOverrides.setPersistent(false);
+            resetOverrides.setTitle(L10n.t("Reset all overrides"));
+            resetOverrides.setSummary(L10n.t("Take every override in this signed-in session away, so Instagram goes back to "
+                    + "its own flags. The current overrides are saved for Restore first."));
+            resetOverrides.setOnPreferenceClickListener(row -> { exchangeOverrides(null, RESET_OVERRIDES); return true; });
             if (Settings.ALLOW_OVERRIDE_IMPORT.get()) {
                 developer.addPreference(importOverrides);
                 developer.addPreference(restoreOverrides);
                 developer.addPreference(discardOverrides);
+                developer.addPreference(resetOverrides);
             }
         }
 
@@ -951,10 +959,11 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
     /** Import, Restore and Discard exist on the page, and in search, only while their switch is on. */
     private void showOverrideImport() {
         PreferenceCategory group = developerSection;
-        if (group == null || importOverrides == null || restoreOverrides == null || discardOverrides == null) return;
+        if (group == null || importOverrides == null || restoreOverrides == null || discardOverrides == null
+                || resetOverrides == null) return;
         boolean allowed = Settings.ALLOW_OVERRIDE_IMPORT.get();
         List<Preference> rows = searchableRows.get(group);
-        for (Row row : new Row[]{importOverrides, restoreOverrides, discardOverrides}) {
+        for (Row row : new Row[]{importOverrides, restoreOverrides, discardOverrides, resetOverrides}) {
             if (allowed) {
                 if (rows != null && !rows.contains(row)) rows.add(row);
                 if (row.getParent() != group) group.addPreference(row);
@@ -1057,6 +1066,10 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             discardOverrides.setEnabled(!busy);
             if (overrideDiscardFeedback != null) discardOverrides.setSummary(overrideDiscardFeedback);
         }
+        if (resetOverrides != null) {
+            resetOverrides.setEnabled(!busy);
+            if (overrideResetFeedback != null) resetOverrides.setSummary(overrideResetFeedback);
+        }
         filterSettings();
     }
 
@@ -1154,7 +1167,7 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
 
     /** Restore and Discard read HushGram's saved copy instead of a document. */
     private void exchangeOverrides(@Nullable Uri uri, int request) {
-        boolean saved = request == RESTORE_OVERRIDES || request == DISCARD_OVERRIDES;
+        boolean saved = request == RESTORE_OVERRIDES || request == DISCARD_OVERRIDES || request == RESET_OVERRIDES;
         if (saved && (documentRequest != 0 || changingConfiguration || changingOverrides || ExportStatus.CONFIGURATION.active())) return;
         boolean importing = saved || request == IMPORT_OVERRIDES;
         boolean validating = request == VALIDATE_OVERRIDES;
@@ -1172,6 +1185,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                     overrideFeedback(request, L10n.t("Allow importing overrides is off or HushGram is paused. Nothing changed."));
                 } else if (request == RESTORE_OVERRIDES) {
                     overrideFeedback(request, overrideOutcome(OverrideImport.restore(activity), true));
+                } else if (request == RESET_OVERRIDES) {
+                    overrideFeedback(request, resetOutcome(OverrideImport.reset(activity)));
                 } else if (request == DISCARD_OVERRIDES) {
                     overrideFeedback(request, OverrideImport.discard(activity)
                             ? L10n.t("Discarded the saved copy. Imports can run again, and Instagram's overrides haven't changed.")
@@ -1227,6 +1242,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                 Logger.printInfo(() -> "Override document operation failed before native mutation");
                 overrideFeedback(request, request == RESTORE_OVERRIDES
                         ? L10n.t("Couldn't restore overrides. Open settings from Home while signed in. Nothing changed.")
+                        : request == RESET_OVERRIDES
+                        ? L10n.t("Couldn't reset overrides. Open settings from Home while signed in. Nothing changed.")
                         : request == DISCARD_OVERRIDES
                         ? L10n.t("Couldn't finish discarding the saved copies. Try Discard saved overrides again. Native overrides haven't changed.")
                         : request == IMPORT_OVERRIDES
@@ -1240,6 +1257,16 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             overrideFeedback(request, L10n.t("Couldn't start the override operation. Try again. Nothing changed."));
             showConfiguration();
         }
+    }
+
+    private static String resetOutcome(OverrideImport.Result result) {
+        if (result.outcome == OverrideImport.Outcome.UNCHANGED) {
+            return L10n.t("There are no overrides to reset. Nothing changed.");
+        }
+        if (result.outcome != OverrideImport.Outcome.APPLIED) return overrideOutcome(result, false);
+        String message = L10n.f("Removed %1$d overrides. Restart Instagram to go back to its own flags.", result.changes);
+        return result.blocked ? message + " " + L10n.t("Recovery cleanup didn't finish. Use Restore previous overrides or "
+                + "Discard saved overrides.") : message;
     }
 
     private static String overrideOutcome(OverrideImport.Result result, boolean restoring) {
@@ -1271,6 +1298,7 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         else if (request == IMPORT_OVERRIDES) overrideImportFeedback = message;
         else if (request == RESTORE_OVERRIDES) overrideRestoreFeedback = message;
         else if (request == DISCARD_OVERRIDES) overrideDiscardFeedback = message;
+        else if (request == RESET_OVERRIDES) overrideResetFeedback = message;
         else overrideExportFeedback = message;
         Utils.showToastLong(message);
         Utils.runOnMainThread(this::showConfiguration);
