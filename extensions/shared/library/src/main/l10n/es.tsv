@@ -633,3 +633,6 @@ Mentioned in this story	Mencionados en esta historia
 See who a story mentions	Ver a quién menciona una historia
 Every emoji draws in Google's style, from the emoji font Instagram gets through Google Play services, instead of your phone's own style. Restart Instagram after changing it.	Todos los emojis se ven con el estilo de Google, de la fuente de emojis que Instagram obtiene de los servicios de Google Play, en lugar del estilo de tu teléfono. Reinicia Instagram después de cambiarlo.
 Google's emoji everywhere	Emojis de Google en todas partes
+# context: Downloads switch under Download feed videos; it adds Download cover to a feed video post's menu
+Download video covers	Descargar portadas de videos
+Adds Download cover to the menu of a feed post with a video, and of a carousel showing one. It saves the still picture shown before the video plays, at its largest size.	Añade Descargar portada al menú de una publicación del feed con video y de un carrusel que muestre uno. Guarda la imagen fija que se ve antes de que se reproduzca el video, en su tamaño más grande.

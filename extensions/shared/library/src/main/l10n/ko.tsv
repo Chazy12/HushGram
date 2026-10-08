@@ -632,3 +632,6 @@ Mentioned in this story	이 스토리에서 언급한 사람
 See who a story mentions	스토리에서 언급한 사람 보기
 Every emoji draws in Google's style, from the emoji font Instagram gets through Google Play services, instead of your phone's own style. Restart Instagram after changing it.	모든 이모티콘이 휴대전화 고유의 스타일 대신 Instagram이 Google Play 서비스에서 받는 이모티콘 글꼴의 Google 스타일로 표시됩니다. 설정을 변경한 후 Instagram을 다시 시작하세요.
 Google's emoji everywhere	모든 곳에 Google 이모티콘
+# context: Downloads switch under Download feed videos; it adds Download cover to a feed video post's menu
+Download video covers	동영상 커버 다운로드
+Adds Download cover to the menu of a feed post with a video, and of a carousel showing one. It saves the still picture shown before the video plays, at its largest size.	동영상이 있는 피드 게시물과 동영상을 보여 주는 캐러셀의 메뉴에 커버 다운로드를 추가합니다. 동영상이 재생되기 전에 보이는 정지 이미지를 가장 큰 크기로 저장합니다.

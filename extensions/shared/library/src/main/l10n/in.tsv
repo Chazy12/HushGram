@@ -633,3 +633,6 @@ Mentioned in this story	Disebut di cerita ini
 See who a story mentions	Lihat siapa yang disebut cerita
 Every emoji draws in Google's style, from the emoji font Instagram gets through Google Play services, instead of your phone's own style. Restart Instagram after changing it.	Setiap emoji tampil dengan gaya Google, dari font emoji yang didapat Instagram lewat layanan Google Play, bukan gaya ponselmu sendiri. Mulai ulang Instagram setelah mengubahnya.
 Google's emoji everywhere	Emoji Google di mana saja
+# context: Downloads switch under Download feed videos; it adds Download cover to a feed video post's menu
+Download video covers	Unduh sampul video
+Adds Download cover to the menu of a feed post with a video, and of a carousel showing one. It saves the still picture shown before the video plays, at its largest size.	Menambahkan Unduh sampul ke menu postingan feed berisi video, dan ke carousel yang sedang menampilkan video. Ini menyimpan gambar diam yang tampil sebelum video diputar, dalam ukuran terbesarnya.
