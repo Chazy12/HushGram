@@ -439,6 +439,7 @@ public class BadDexFixture {
             "no-call Landroid/view/SurfaceControl$Transaction;->setDesiredHdrHeadroom(Landroid/view/SurfaceControl;F)Landroid/view/SurfaceControl$Transaction; outside Lapp/hushgram/extension/",
             "no-call Landroid/view/Window;->setDesiredHdrHeadroom(F)V outside Lapp/hushgram/extension/",
             "no-call Landroid/view/Window;->setColorMode(I)V outside Lapp/hushgram/extension/",
+            "no-call Landroid/view/SurfaceControl$Transaction;->setExtendedRangeBrightness(Landroid/view/SurfaceControl;FF)Landroid/view/SurfaceControl$Transaction; outside Lapp/hushgram/extension/",
             "no-call Landroid/app/NotificationManager;->cancel(I)V outside Lapp/hushgram/extension/",
             "no-call Landroid/app/NotificationManager;->cancel(Ljava/lang/String;I)V outside Lapp/hushgram/extension/",
             "no-call Lcom/facebook/mobileconfig/troubleshooting/MobileConfigOverridesWriterHolder;->importOverridesFromUser(Ljava/lang/String;)Ljava/lang/String; outside Lcom/facebook/mobileconfig/",
@@ -522,7 +523,7 @@ public class BadDexFixture {
         }
     }
 
-    /** All eighteen, as the contract file names them. The update and the transaction's headroom go as range calls. */
+    /** All nineteen, as the contract file names them. The update and the transaction's two calls go as range calls. */
     private static final List<ShortcutCall> SHORTCUT_CALLS = Arrays.asList(
             new ShortcutCall(SHORTCUT_MANAGER, "pushDynamicShortcut", "V", "push", "push", false, SHORTCUT_INFO),
             new ShortcutCall(SHORTCUT_MANAGER, "addDynamicShortcuts", "Z", "add", "add", false, SHORTCUT_LIST),
@@ -542,6 +543,8 @@ public class BadDexFixture {
                     true, SURFACE_CONTROL, "F"),
             new ShortcutCall(WINDOW, "setDesiredHdrHeadroom", "V", "windowHeadroom", "window-headroom", false, "F"),
             new ShortcutCall(WINDOW, "setColorMode", "V", "colorMode", "color-mode", false, "I"),
+            new ShortcutCall(TRANSACTION, "setExtendedRangeBrightness", TRANSACTION, "extendedRange", "extended-range",
+                    true, SURFACE_CONTROL, "F", "F"),
             new ShortcutCall(NOTIFICATION_MANAGER, "cancel", "V", "cancel", "cancel", false, "I"),
             new ShortcutCall(NOTIFICATION_MANAGER, "cancel", "V", "cancelTagged", "cancel-tagged", false,
                     "Ljava/lang/String;", "I"));

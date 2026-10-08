@@ -705,8 +705,8 @@ try {
     # The settings patch sends each of these ShortcutManager calls to SettingsEntry, Group
     # notifications sends both NotificationManager.notify and both cancel calls to its stand-ins,
     # Allow screenshots sends Window.setFlags and Window.addFlags to ScreenshotBlock, Spoof location
-    # sends Location's reads to SpoofLocation and Turn off HDR brightness boosts sends the headroom
-    # and color mode calls to HdrBoost. The fixture's publisher makes each one from a method of its
+    # sends Location's reads to SpoofLocation and Turn off HDR brightness boosts sends the headroom,
+    # color mode and extended range brightness calls to HdrBoost. The fixture's publisher makes each one from a method of its
     # own (Caller).
     $shortcutManager = 'Landroid/content/pm/ShortcutManager;'
     $notificationManager = 'Landroid/app/NotificationManager;'
@@ -729,6 +729,7 @@ try {
         [pscustomobject]@{ Case = 'transaction-headroom'; Manager = 'Landroid/view/SurfaceControl$Transaction;'; Call = 'setDesiredHdrHeadroom'; Takes = 'Landroid/view/SurfaceControl;F'; Answers = 'Landroid/view/SurfaceControl$Transaction;'; Caller = 'transactionHeadroom' }
         [pscustomobject]@{ Case = 'window-headroom'; Manager = 'Landroid/view/Window;'; Call = 'setDesiredHdrHeadroom'; Takes = 'F'; Answers = 'V'; Caller = 'windowHeadroom' }
         [pscustomobject]@{ Case = 'color-mode'; Manager = 'Landroid/view/Window;'; Call = 'setColorMode'; Takes = 'I'; Answers = 'V'; Caller = 'colorMode' }
+        [pscustomobject]@{ Case = 'extended-range'; Manager = 'Landroid/view/SurfaceControl$Transaction;'; Call = 'setExtendedRangeBrightness'; Takes = 'Landroid/view/SurfaceControl;FF'; Answers = 'Landroid/view/SurfaceControl$Transaction;'; Caller = 'extendedRange' }
         [pscustomobject]@{ Case = 'cancel'; Manager = $notificationManager; Call = 'cancel'; Takes = 'I'; Answers = 'V'; Caller = 'cancel' }
         [pscustomobject]@{ Case = 'cancel-tagged'; Manager = $notificationManager; Call = 'cancel'; Takes = 'Ljava/lang/String;I'; Answers = 'V'; Caller = 'cancelTagged' }
     )
