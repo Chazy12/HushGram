@@ -10,8 +10,10 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.smali.ExternalLabel
+import app.morphe.patches.instagram.misc.analytics.loadsString
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.instagram.misc.extension.classesHolding
+import app.morphe.patches.instagram.misc.extension.classesLoadingString
 import app.morphe.patches.instagram.misc.extension.enableStatus
 import app.morphe.patches.instagram.misc.extension.instagramExtensionPatch
 import app.morphe.patches.instagram.misc.extension.patchLog
@@ -120,17 +122,19 @@ internal fun BytecodePatchContext.overrideExchangeOrWarn(editor: OverrideEditor)
 internal class OptionsOpener(val instance: String, val open: String)
 
 /**
- * Finds the class whose one static taking a context, an activity, a session and a Callable holds
+ * Finds the class whose one static taking a context, an activity, a session and a Callable loads
  * [OPTIONS_ERROR], and in it the instance it keeps of itself and the instance method taking the
- * first three, which Instagram's settings link and its debug button call to open the options.
+ * first three, which Instagram's settings link and its debug button call to open the options. The
+ * static holds the key on 385611438 and asks a string pool for it on 385611395 and 385611400 (#77),
+ * so it's read either way.
  */
 internal fun BytecodePatchContext.findOptionsOpener(): OptionsOpener {
     val found = mutableListOf<String>()
-    classesHolding(OPTIONS_ERROR).forEach { classDef ->
+    classesLoadingString(OPTIONS_ERROR).forEach { classDef ->
         val holds = classDef.methods.any { method ->
             AccessFlags.STATIC.isSet(method.accessFlags) &&
                 method.parameterTypes.map(Any::toString) == listOf(CONTEXT, FRAGMENT_ACTIVITY, USER_SESSION, "Ljava/util/concurrent/Callable;") &&
-                OPTIONS_ERROR in method.strings()
+                loadsString(method, OPTIONS_ERROR)
         }
         if (holds) found += classDef.type
     }
