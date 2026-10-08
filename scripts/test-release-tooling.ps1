@@ -3548,6 +3548,19 @@ try {
                 "*the receipt proves $($releaseNames.Count) patches*")) {
             Assert-True ($said -like $expected) "The index push from the gate's run did not say $expected`: $said"
         }
+        # A bundle built here that isn't the gate's can't borrow the gate's test results: the set
+        # names it as -ArtifactPath beside -FromGate, and the check reads the build outputs here
+        # (aside, so none) in place of the gate's run.
+        $localSet = [ordered]@{}
+        foreach ($key in $gateSet.Keys) { $localSet[$key] = $gateSet[$key] }
+        $localSet['ArtifactPath'] = $releaseBundle
+        [System.IO.File]::WriteAllBytes($releaseBundle, [byte[]](1, 2, 3))
+        try {
+            Assert-Throws { Invoke-IndexPushCheck $localSet } '*No runtime test results found*' `
+                "A local bundle other than the gate's was checked against the gate's test results."
+        } finally {
+            Remove-Item -LiteralPath $releaseBundle -Force -ErrorAction SilentlyContinue
+        }
         $sevenPatchTests = Get-ChildItem -LiteralPath (Join-Path $indexGate 'test-results/test') -Filter '*.xml' | Select-Object -First 1
         $sevenPatchTestsText = [System.IO.File]::ReadAllText($sevenPatchTests.FullName)
         try {

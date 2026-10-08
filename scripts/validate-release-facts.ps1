@@ -178,6 +178,12 @@ $gateRun = $null
 if ($FromGate) {
     . (Join-Path $PSScriptRoot 'gate-evidence.ps1')
     $gateRun = Find-GateEvidence -Root $rootPath -AllowIndexCommits -Prefix '[release]'
+    # A bundle built here that isn't the gate's can't borrow the gate's test results.
+    if ($gateRun -and $ArtifactPath -and (Test-Path -LiteralPath $ArtifactPath -PathType Leaf) -and
+            (Get-EvidenceHash -Path $ArtifactPath) -cne [string]$gateRun.Manifest.bundle.sha256) {
+        Write-Host "[release] the bundle at $ArtifactPath isn't the one the gate built and tested, so the gate's run isn't read"
+        $gateRun = $null
+    }
     if (-not $gateRun) { Write-Host '[release] -FromGate found no gate run that stands for this checkout, so the build outputs here are read' }
 }
 
