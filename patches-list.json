@@ -2749,7 +2749,7 @@
     },
     {
       "name": "Turn off double tap to like",
-      "description": "Stops a double tap on a post or a reel from liking it, and the heart doesn't show. A switch for comments starts off. A single tap still does what it did, and the Like button still likes.",
+      "description": "Stops a double tap on a post or a reel from liking it, and the heart doesn't show. Switches for comments and chat messages start off. A single tap still does what it did, and the Like button still likes.",
       "category": "Interface",
       "use": false,
       "dependencies": [

@@ -5,6 +5,8 @@ Every HushGram release, newest first.
 ## Unreleased
 
 * **Instagram:** The other arm64 builds of 450.0.0.50.77, 385611395, 385611400, 385611404 and 385611431, patch the way 385611438 does. Each build is compiled on its own, and Instagram's compiler moves a different set of strings into shared tables in each one and puts some code in other classes, so on 385611395 six patches and the story links part of Sanitize sharing links couldn't find what they change, and on 385611400 the HushGram row couldn't find the Settings screen. They read those tables now and look where the code moved, so they find the same places on all five builds. Morphe Manager still calls the four an unsupported version, since it can only be told one build number for each kind of phone. Reported in #77.
+* **Instagram:** Turn off double tap to like has an On messages switch under it, off to start. With it on, a double tap on a message in a chat doesn't send a reaction. A long press still shows the reactions, and you can pick one there.
+
 * **Instagram:** Copy comment can also copy the username of whoever wrote a comment. Turn on Copy the commenter's username under Comments, then open a comment's menu and pick Copy username. It starts off and copies the name exactly. Asked for in #35.
 
 * **Instagram:** Settings entry has a new switch, Hide the HushGram row in Instagram's menu, for people who open HushGram from a tab long press and don't want the extra row at the top of Instagram's Settings and activity. It starts off. The row only goes while the tab you picked can open HushGram, so turning the long press off, or pausing HushGram, brings it back and there's always a way in. Asked for in #84.

@@ -699,6 +699,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_turn_off_double_tap_like_on_comments", FALSE, parent(TURN_OFF_DOUBLE_TAP_LIKE));
 
     /**
+     * Under {@link #TURN_OFF_DOUBLE_TAP_LIKE}: a double tap on a message in a chat doesn't react to
+     * it. Off to start. A long press still offers the reactions.
+     */
+    public static final BooleanSetting TURN_OFF_DOUBLE_TAP_LIKE_ON_MESSAGES =
+            new BooleanSetting("hushgram_turn_off_double_tap_like_on_messages", FALSE, parent(TURN_OFF_DOUBLE_TAP_LIKE));
+
+    /**
      * The heart that pops up when you double tap a post plays {@link #LIKE_ANIMATION}
      * ({@link app.hushgram.extension.instagram.feed.LikeAnimation}). Read as each post's heart is set
      * up, so one already on screen changes the next time it's set up. Off to start.

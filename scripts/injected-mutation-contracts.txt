@@ -789,6 +789,12 @@ once-call Lapp/hushgram/extension/instagram/reels/DoubleTapLike;->likeAction(Lja
 start-call Lapp/hushgram/extension/instagram/reels/DoubleTapLike;->holdBackComment()Z in instance (Landroid/view/MotionEvent;)Z holding fb_comment_double_tap LX/0SxY;->A02:LX/0Bjh;
 start-call Lapp/hushgram/extension/instagram/reels/DoubleTapLike;->holdBackComment()Z in instance (Landroid/view/MotionEvent;)Z holding fb_comment_double_tap LX/0Sxd;->A02:LX/0ZOm;
 start-call Lapp/hushgram/extension/instagram/reels/DoubleTapLike;->holdBackComment()Z in instance (Landroid/view/MotionEvent;)Z holding like_comment unlike_comment
+# Its On messages switch asks first thing in the chat's double tap on a message, the one static
+# method loading should_show_like_direct_message_count and double_tap (450 0A4f.A00), and returns
+# there before the tip count and the reaction. The thread's gesture listeners (through 0A4f.A01) and
+# the Compose message list (05Yt.FJi) both call it. Left out, a double tap on a message reacts.
+start-call Lapp/hushgram/extension/instagram/reels/DoubleTapLike;->holdBackMessage()Z in static (L*;L*;L*;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Z)V holding should_show_like_direct_message_count double_tap
+once-call Lapp/hushgram/extension/instagram/reels/DoubleTapLike;->holdBackMessage()Z in static (L*;L*;L*;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Z)V holding should_show_like_direct_message_count double_tap
 #
 # Hide the Reels tab asks the extension first thing in the tab host's switch to a tab, the one
 # static method holding the report it files when it finds no pager, and the switch goes on with the
