@@ -20,6 +20,8 @@ Every HushGram release, newest first.
 
 * **Tooling:** A push that changes a PowerShell script has every tracked script parsed before anything else runs, and a script that doesn't parse stops the push. Most of them run only for a release or with a phone, so a slip such as a variable name run into a colon used to surface there first.
 
+* **Instagram:** Sanitize sharing links now also takes off the share id Instagram began adding to copied post, reel and profile links under a different short name each time, such as ?obrf= or ?mdxt=. Every other part of the link stays as Instagram wrote it.
+
 ## 0.0.7 (2026-10-08)
 
 * **Instagram:** HushGram 0.0.7 adds 3 patches, for 78 in all, and stays on Instagram 450.0.0.50.77 with Morphe Manager 1.34.0 or newer. Besides build 385611438, the other arm64 builds of that version (385611395, 385611400, 385611404 and 385611431) and the x86 and x86_64 ones (385611439 and 385611440) patch now too.
