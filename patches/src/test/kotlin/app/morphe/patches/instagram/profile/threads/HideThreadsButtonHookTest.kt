@@ -69,6 +69,17 @@ class HideThreadsButtonHookTest {
         assertStub("the stand-in", context, button, "$button->icon:I")
     }
 
+    /** Another list the builder walks, like 450's list of Booleans, isn't taken for the buttons. */
+    @Test
+    fun anotherListTheBuilderWalksIsLeftOut() {
+        val context = PatchContexts.of(classes(otherWalk = true))
+
+        context.hide()
+
+        assertHooked("the stand-in with a second walk", context.binder(), register = 0)
+        assertStub("the stand-in with a second walk", context, button, "$button->icon:I")
+    }
+
     /** A branch inside the stretch from the read to the build, like 450's, is fine: every way in still passes the hook. */
     @Test
     fun aBranchInsideTheStretchIsFine() {
@@ -208,6 +219,7 @@ class HideThreadsButtonHookTest {
         builder: Boolean = true,
         builderName: String = "build",
         loops: Int = 1,
+        otherWalk: Boolean = false,
         button: Boolean = true,
         buttonPublic: Boolean = true,
         iconFields: Int = 1,
@@ -247,7 +259,18 @@ class HideThreadsButtonHookTest {
         }
         if (builder) {
             val step = "invoke-interface { v0 }, Ljava/util/Iterator;->next()Ljava/lang/Object;\nmove-result-object v1\ncheck-cast v1, ${this.button}"
+            // 450's builder also walks a list of Booleans, through an iterator of its own.
+            val other = """
+                invoke-static {}, Ljava/util/Collections;->emptyList()Ljava/util/List;
+                move-result-object v1
+                invoke-interface { v1 }, Ljava/util/List;->iterator()Ljava/util/Iterator;
+                move-result-object v1
+                invoke-interface { v1 }, Ljava/util/Iterator;->next()Ljava/lang/Object;
+                move-result-object v1
+                check-cast v1, Ljava/lang/Boolean;
+            """.takeIf { otherWalk }.orEmpty()
             val body = """
+                $other
                 invoke-interface { p4 }, Ljava/util/List;->iterator()Ljava/util/Iterator;
                 move-result-object v0
                 :loop

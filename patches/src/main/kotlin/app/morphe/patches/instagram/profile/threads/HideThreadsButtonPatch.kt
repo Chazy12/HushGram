@@ -46,6 +46,7 @@ internal const val ICON_STUB = "icon"
 private const val LIST = "Ljava/util/List;"
 private const val OBJECT = "Ljava/lang/Object;"
 private const val NEXT = "Ljava/util/Iterator;->next()Ljava/lang/Object;"
+private const val ITERATOR = "Ljava/util/List;->iterator()Ljava/util/Iterator;"
 
 /**
  * Takes the Threads button off the top bar of profiles. Included in the default selection with its
@@ -96,7 +97,8 @@ internal class ThreadsButtonSite(
  * read once, from a getter with no arguments. Between that read and the call, branches are fine as
  * long as nothing jumps in from outside and nothing writes over the list's register, so every build
  * gets the list the hook answered. The builder goes through
- * the list once, casting each item to the button type, which is public with one int field: the icon.
+ * the list it's handed once, casting each item to the button type, which is public with one int
+ * field: the icon. Other lists it walks don't count.
  */
 internal fun BytecodePatchContext.findThreadsButton(): ThreadsButtonSite {
     val bar = classDefByOrNull(PROFILE_ACTION_BAR) ?: refuse("this Instagram build has no $PROFILE_ACTION_BAR")
@@ -137,8 +139,17 @@ internal fun BytecodePatchContext.findThreadsButton(): ThreadsButtonSite {
     val build = built.methods.singleOrNull { it.name == builder.name && it.parameters() == takes && it.returnType == builder.returnType }
         ?: refuse("${builder.definingClass} has no ${builder.name}")
     val steps = build.code()
+    // Only the walk of the list it was handed: 450's builder also walks a list of Booleans later on.
+    val width = { type: String -> if (type == "J" || type == "D") 2 else 1 }
+    val registers = build.implementation?.registerCount ?: refuse("${builder.definingClass}->${builder.name} has no code")
+    val handed = registers - takes.sumOf(width) + takes.take(takes.indexOf(LIST)).sumOf(width)
+    val walks = steps.indices.filter { at ->
+        steps[at].call()?.toString() == ITERATOR && steps[at].arguments() == listOf(handed) &&
+            steps.getOrNull(at + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
+    }.map { (steps[it + 1] as OneRegisterInstruction).registerA }.toSet()
     val casts = steps.indices.filter { at ->
-        steps[at].call()?.toString() == NEXT && steps.getOrNull(at + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT &&
+        steps[at].call()?.toString() == NEXT && steps[at].arguments().singleOrNull() in walks &&
+            steps.getOrNull(at + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT &&
             steps.getOrNull(at + 2)?.opcode == Opcode.CHECK_CAST &&
             (steps[at + 2] as OneRegisterInstruction).registerA == (steps[at + 1] as OneRegisterInstruction).registerA
     }
