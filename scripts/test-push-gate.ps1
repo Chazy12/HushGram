@@ -22,10 +22,10 @@ $Root = [IO.Path]::GetFullPath($Root)
 $scratch = [IO.Path]::GetFullPath((Join-Path ([IO.Path]::GetTempPath()) ('hushgram-push-gate-' + [guid]::NewGuid().ToString('N'))))
 $passed = 0
 $version = '450.0.0.50.77'
-$hookScripts = @('pre-push.ps1', 'common.ps1', 'patch-target.ps1', 'build-jobs.ps1')
+$hookScripts = @('pre-push.ps1', 'common.ps1', 'patch-target.ps1', 'build-jobs.ps1', 'gate-evidence.ps1')
 $hookVariables = @('HUSHGRAM_SKIP_PRE_PUSH', 'HUSHGRAM_ALLOW_RELEASE', 'HUSHGRAM_FIXTURE_DIR', 'HUSHGRAM_DESKTOP_JAR',
     'HUSHGRAM_WORKDIR', 'HUSHGRAM_BUILD_WRAPPER', 'BUILD_QUEUE_SCRIPT', 'BUILD_QUEUE_PRIORITY', 'BUILD_QUEUE_TICKET',
-    'HUSHGRAM_GATE_TEST_LOG', 'HUSHGRAM_GATE_TEST_FAIL', 'HUSHGRAM_GATE_TEST_STALE')
+    'HUSHGRAM_GATE_CACHE', 'HUSHGRAM_GATE_TEST_LOG', 'HUSHGRAM_GATE_TEST_FAIL', 'HUSHGRAM_GATE_TEST_STALE')
 $saved = @{}
 foreach ($name in $hookVariables) { $saved[$name] = [Environment]::GetEnvironmentVariable($name, [EnvironmentVariableTarget]::Process) }
 
@@ -65,6 +65,7 @@ function Invoke-Push {
     $env:HUSHGRAM_BUILD_WRAPPER = $script:wrapper
     $env:BUILD_QUEUE_SCRIPT = $script:queue
     $env:HUSHGRAM_GATE_TEST_LOG = $script:log
+    $env:HUSHGRAM_GATE_CACHE = $script:gateCache
     # Somewhere that isn't a folder, so a maintainer's own fixtures aren't read unless a case asks.
     $env:HUSHGRAM_FIXTURE_DIR = Join-Path $scratch 'no-fixtures'
     $env:HUSHGRAM_DESKTOP_JAR = Join-Path $scratch 'no-cli.jar'
@@ -133,6 +134,7 @@ function Exit-BuildQueue {
 function Get-BuildQueueMask { param([int]$Slot) [System.Diagnostics.Process]::GetCurrentProcess().ProcessorAffinity }
 '@
 
+    $script:gateCache = Join-Path $scratch 'gate-cache'
     $script:repo = Join-Path $scratch 'repo'
     New-Item -ItemType Directory -Path $script:repo | Out-Null
     Invoke-FixtureGit init -q -b main | Out-Null
@@ -140,6 +142,26 @@ function Get-BuildQueueMask { param([int]$Slot) [System.Diagnostics.Process]::Ge
     foreach ($name in $hookScripts) {
         Write-FixtureFile "scripts/$name" ([IO.File]::ReadAllText((Join-Path $Root "scripts/$name")))
     }
+    # The stand-in patch check: writes the reports the real one leaves beside its result, and keeps
+    # a stamped run through gate-evidence.ps1 the way the real one does with -KeepIn.
+    Write-FixtureFile 'scripts/verify-all-patches.ps1' @'
+param([string]$Apk, [string]$DesktopJar, [string]$WorkDir, [string]$Bundle, [string]$PatchList, [string]$KeepIn)
+Add-Content -LiteralPath $env:HUSHGRAM_GATE_TEST_LOG -Value "verify $(Split-Path -Leaf $Apk) keep=$([bool]$KeepIn) slot=$([bool]$env:BUILD_QUEUE_TICKET)"
+$result = Join-Path $WorkDir 'verify-all-result-standin.json'
+Set-Content -LiteralPath $result -Value '{"appliedPatches":[]}'
+Set-Content -LiteralPath (Join-Path $WorkDir 'verify-all-registers-standin.txt') -Value 'registers'
+if ($env:HUSHGRAM_GATE_TEST_FAIL -eq 'verify') { exit 1 }
+if ($KeepIn) {
+    . (Join-Path $PSScriptRoot 'gate-evidence.ps1')
+    $patched = Join-Path $WorkDir 'patched.apk'
+    $merged = Join-Path $WorkDir 'merged.apk'
+    Set-Content -LiteralPath $patched -Value 'patched'
+    Set-Content -LiteralPath $merged -Value 'merged'
+    Write-GateKeptRun -KeepIn $KeepIn -PatchedApk $patched -Result $result -MergedApk $merged -Apk $Apk -Bundle $Bundle `
+        -PatchList $PatchList -DesktopJar $DesktopJar -VersionName '450.0.0.50.77' -VersionCode '385611438' -Forced $false
+}
+exit 0
+'@
     Write-FixtureFile 'gradle.properties' "version = 0.0.1`n"
     Write-FixtureFile 'patches-list.json' (@{
         version = 'v0.0.1'
@@ -167,6 +189,17 @@ function Get-BuildQueueMask { param([int]$Slot) [System.Diagnostics.Process]::Ge
         @($builds | Where-Object { $_ -like '*slot=True' }).Count -eq 2) `
         "The gate didn't build inside one everyday slot: $((Read-Log) -join '; ')"
     Assert-True ($run.Output -like '*HUSHGRAM_FIXTURE_DIR is not set*') "The gate didn't say it patched nothing: $($run.Output)"
+    # It kept its results by commit, outside the worktree it deleted, and says it patched nothing.
+    $manifestPath = Join-Path $script:gateCache "$tip/manifest.json"
+    function Read-Manifest { Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json }
+    $manifest = Read-Manifest
+    Assert-True ($manifest.commit -eq $tip -and $manifest.passed -eq $true -and $manifest.fixturesPatched -eq $false -and
+        $manifest.tests.runtime.tests -eq 3 -and $manifest.tests.patches.tests -eq 2 -and $manifest.bundle.file -eq 'patches-0.0.1.mpp' -and
+        $manifest.tree -eq "$(Invoke-FixtureGit rev-parse "$tip^{tree}")".Trim()) `
+        "The passing gate's manifest isn't what it ran: $($manifest | ConvertTo-Json -Depth 6 -Compress)"
+    Assert-True ((Test-Path -LiteralPath (Join-Path $script:gateCache "$tip/release/patches-0.0.1.cdx.json")) -and
+        (Test-Path -LiteralPath (Join-Path $script:gateCache "$tip/test-results/testDebugUnitTest/TEST-app.hushgram.RuntimeTest.xml"))) `
+        "The gate didn't keep its SBOM and test results."
 
     # A lint that fails stops the push before the quarter hour of patch tests.
     $run = Invoke-Push -Tip $tip -Base $base -Environment @{ HUSHGRAM_GATE_TEST_FAIL = ':extensions:instagram:lint' }
@@ -174,6 +207,11 @@ function Get-BuildQueueMask { param([int]$Slot) [System.Diagnostics.Process]::Ge
         "A failed quick build didn't stop the gate before the patch tests: $((Get-GradleRuns) -join '; ') $($run.Output)"
     Assert-True ((@(Read-Log | Where-Object { $_ -like 'queue *' }) -join ',') -eq "queue enter hushgram gate $short normal,queue exit") `
         'A refused gate did not give its slot back.'
+    # Its results are kept too, marked failed, so they outlive the worktree and nothing reuses them.
+    $manifest = Read-Manifest
+    Assert-True ($manifest.passed -eq $false -and $manifest.stage -eq 'quick' -and $manifest.reason -like '*a lint*' -and
+        $manifest.tests.runtime.tests -eq 3 -and $null -eq $manifest.bundle) `
+        "The refused gate's manifest doesn't say where it stopped: $($manifest | ConvertTo-Json -Depth 6 -Compress)"
 
     # So does a catalog that doesn't match the patches.
     $run = Invoke-Push -Tip $tip -Base $base -Environment @{ HUSHGRAM_GATE_TEST_STALE = '1' }
@@ -199,6 +237,103 @@ function Get-BuildQueueMask { param([int]$Slot) [System.Diagnostics.Process]::Ge
     Assert-True ($run.Exit -eq 0 -and @(Get-GradleRuns | Where-Object { $_ -like '*priority=release slot=True' }).Count -eq 2 -and
         (Read-Log) -contains "queue enter hushgram gate $short release") `
         "A release push didn't take its slot at release priority: $((Read-Log) -join '; ')"
+
+    # A patch run that fails is kept with its reports, marked failed, and nothing patched is kept.
+    $fixtureApk = Join-Path $fixtureDir "instagram-$version-385611438.apks"
+    Set-Content -LiteralPath $fixtureApk -Value 'bundle of splits'
+    $withFixtures = @{ HUSHGRAM_FIXTURE_DIR = $fixtureDir; HUSHGRAM_DESKTOP_JAR = $desktop }
+    $run = Invoke-Push -Tip $tip -Base $base -Environment ($withFixtures + @{ HUSHGRAM_GATE_TEST_FAIL = 'verify' })
+    $manifest = Read-Manifest
+    Assert-True ($run.Exit -ne 0 -and $manifest.passed -eq $false -and $manifest.stage -eq 'fixtures' -and
+        $manifest.fixtures[0].reports -eq 2 -and $manifest.fixtures[0].kept -eq $false -and $manifest.fixturesPatched -eq $false) `
+        "A failed patch run wasn't kept as a failure with its reports: $($manifest | ConvertTo-Json -Depth 6 -Compress) $($run.Output)"
+
+    # A passing one is kept with the stamped run, made inside the gate's slot.
+    $run = Invoke-Push -Tip $tip -Base $base -Environment $withFixtures
+    $manifest = Read-Manifest
+    Assert-True ($run.Exit -eq 0 -and (Read-Log) -contains "verify $(Split-Path -Leaf $fixtureApk) keep=True slot=True") `
+        "The gate didn't patch the declared build with -KeepIn inside its slot: $((Read-Log) -join '; ') $($run.Output)"
+    Assert-True ($manifest.passed -eq $true -and $manifest.stage -eq 'done' -and $manifest.fixturesPatched -eq $true -and
+        $manifest.fixtures[0].version -eq $version -and $manifest.fixtures[0].kept -eq $true -and $manifest.fixtures[0].reports -eq 2) `
+        "The passing gate's manifest doesn't record its patch run: $($manifest | ConvertTo-Json -Depth 6 -Compress)"
+
+    # What the release scripts read back, and every way it stops standing for HEAD.
+    $env:HUSHGRAM_GATE_CACHE = $script:gateCache
+    . (Join-Path $PSScriptRoot 'gate-evidence.ps1')
+    $evidence = Find-GateEvidence -Root $script:repo
+    Assert-True ($null -ne $evidence -and $evidence.Commit -eq $tip -and -not $evidence.IndexOnly -and
+        (Test-Path -LiteralPath $evidence.Bundle) -and (Test-Path -LiteralPath $evidence.Sbom)) 'The passing gate run was not found for HEAD.'
+    $bundleHash = Get-EvidenceHash -Path $evidence.Bundle
+    $catalogFile = Join-Path $script:repo 'patches-list.json'
+    $why = ''
+    $kept = Get-GateKeptRun -Evidence $evidence -VersionName $version -Apk $fixtureApk -BundleSha256 $bundleHash `
+        -PatchList $catalogFile -DesktopJar $desktop -Forced $false -Why ([ref]$why)
+    Assert-True ($null -ne $kept -and (Test-Path -LiteralPath $kept.PatchedApk) -and (Test-Path -LiteralPath $kept.MergedApk) -and
+        (Test-Path -LiteralPath $kept.Result)) "The kept patch run wasn't handed back: $why"
+    $otherCli = Join-Path $scratch 'morphe-desktop-other.jar'
+    Set-Content -LiteralPath $otherCli -Value 'another jar'
+    foreach ($case in @(
+            @{ Why = 'CLI'; Cli = $otherCli; Forced = $false; Bundle = $bundleHash },
+            @{ Why = 'forcing'; Cli = $desktop; Forced = $true; Bundle = $bundleHash },
+            @{ Why = 'bundle'; Cli = $desktop; Forced = $false; Bundle = ('0' * 64) })) {
+        $why = ''
+        $refused = Get-GateKeptRun -Evidence $evidence -VersionName $version -Apk $fixtureApk -BundleSha256 $case.Bundle `
+            -PatchList $catalogFile -DesktopJar $case.Cli -Forced $case.Forced -Why ([ref]$why)
+        Assert-True ($null -eq $refused -and $why -like "*another*$($case.Why)*") "A kept run made with another $($case.Why) was handed back: $why"
+    }
+    $why = ''
+    Assert-True ($null -eq (Get-GateKeptRun -Evidence $evidence -VersionName '1.2.3' -Apk $fixtureApk -BundleSha256 $bundleHash `
+        -PatchList $catalogFile -DesktopJar $desktop -Forced $false -Why ([ref]$why)) -and $why -like '*no run of 1.2.3*') `
+        "A build the gate never patched was handed a kept run: $why"
+
+    function Assert-NotFound([string]$Case, [string]$Reason) {
+        $said = @(Find-GateEvidence -Root $script:repo 6>&1)
+        $found = @($said | Where-Object { $null -ne $_ -and $_ -isnot [System.Management.Automation.InformationRecord] })
+        $text = @($said | Where-Object { $_ -is [System.Management.Automation.InformationRecord] }) -join ' '
+        Assert-True ($found.Count -eq 0 -and $text -like "*$Reason*") "The gate run stood for HEAD with $Case`: $text"
+    }
+    $keptBundle = $evidence.Bundle
+    $original = [IO.File]::ReadAllBytes($keptBundle)
+    [IO.File]::WriteAllBytes($keptBundle, $original + [byte]0)
+    Assert-NotFound 'its bundle changed' "isn't the patches-0.0.1.mpp the manifest hashes"
+    [IO.File]::WriteAllBytes($keptBundle, $original)
+    $keptResults = Join-Path $script:gateCache "$tip/test-results/test/TEST-app.morphe.PatchTest.xml"
+    $resultsText = [IO.File]::ReadAllText($keptResults)
+    [IO.File]::WriteAllText($keptResults, $resultsText.Replace('<testcase name="case2" classname="app.morphe.PatchTest"/>', ''))
+    Assert-NotFound 'a test result removed' 'read 1 tests'
+    [IO.File]::WriteAllText($keptResults, $resultsText)
+    $manifestText = [IO.File]::ReadAllText($manifestPath)
+    [IO.File]::WriteAllText($manifestPath, $manifestText.Replace('"passed": true', '"passed": false'))
+    Assert-NotFound 'a failed run' "didn't pass"
+    [IO.File]::WriteAllText($manifestPath, $manifestText)
+    Write-FixtureFile 'patches/src/main/kotlin/StandIn.kt' "// edited, not committed`n"
+    Assert-NotFound 'an uncommitted change' 'uncommitted changes'
+    Invoke-FixtureGit checkout -q -- patches/src/main/kotlin/StandIn.kt | Out-Null
+    Write-FixtureFile 'patches/src/main/kotlin/StandIn.kt' "// third`n"
+    $later = New-FixtureCommit 'another change'
+    Assert-NotFound 'another commit checked out' 'no gate run is kept'
+    Invoke-FixtureGit reset -q --hard $tip | Out-Null
+    Assert-True ($null -ne (Find-GateEvidence -Root $script:repo)) 'The restored gate run was not found again.'
+
+    # Only the newest runs are kept, and a folder still being written is left alone for a while.
+    $pruneCache = Join-Path $scratch 'prune-cache'
+    $env:HUSHGRAM_GATE_CACHE = $pruneCache
+    $ages = @(5, 4, 3, 2, 1)
+    $names = @($ages | ForEach-Object { '{0:x40}' -f $_ })
+    for ($i = 0; $i -lt $ages.Count; $i++) {
+        $dir = Join-Path $pruneCache $names[$i]
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+        Set-Content -LiteralPath (Join-Path $dir 'manifest.json') -Value '{}'
+        (Get-Item -LiteralPath (Join-Path $dir 'manifest.json')).LastWriteTimeUtc = [DateTime]::UtcNow.AddHours(-$ages[$i])
+    }
+    $running = Join-Path $pruneCache ('b' * 40)
+    $abandoned = Join-Path $pruneCache ('c' * 40)
+    New-Item -ItemType Directory -Force -Path $running, $abandoned | Out-Null
+    (Get-Item -LiteralPath $abandoned).LastWriteTimeUtc = [DateTime]::UtcNow.AddDays(-3)
+    Remove-StaleGateEvidence
+    $left = @(Get-ChildItem -LiteralPath $pruneCache -Directory | ForEach-Object Name | Sort-Object)
+    $expected = @(@($names[2], $names[3], $names[4], ('b' * 40)) | Sort-Object)
+    Assert-True (($left -join ',') -eq ($expected -join ',')) "Pruning left $($left -join ', '), not the newest three and the running one."
 
     Assert-True (@(Invoke-FixtureGit worktree list).Count -eq 1) 'A gate left its worktree behind.'
     . (Join-Path $PSScriptRoot 'script-wiring.ps1')

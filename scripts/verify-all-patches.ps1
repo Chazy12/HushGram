@@ -31,6 +31,12 @@
     Its report goes beside the result file too. The device half of that script (dex2oat on a
     phone or emulator) runs only when it's called with -Serial, which this script never passes.
 
+    With -KeepIn, a run that passes every check moves the patched APK and the merge it was
+    patched from into that folder, copies the result report beside them, and writes a stamp of
+    what made them: the bundle, the APK, the patch list and the CLI by SHA-256, and whether it was
+    forced. The push gate keeps its runs this way, and build-release-receipt.ps1 -FromGate reads
+    one back instead of patching the same build again when every hash in the stamp still matches.
+
 .EXAMPLE
     scripts/verify-all-patches.ps1 -Apk C:\path\to\native-fixture.apk `
         -DesktopJar C:\path\to\morphe-desktop.jar -WorkDir C:\path\to\scratch
@@ -53,7 +59,9 @@ param(
     [string]$PatchList,
     [string]$Java,
     [switch]$Force,
-    [string]$Aapt2
+    [string]$Aapt2,
+    # Where a passing run is kept, stamped, for the release scripts to read back.
+    [string]$KeepIn
 )
 
 $ErrorActionPreference = 'Stop'
@@ -65,6 +73,7 @@ $root = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'patch-target.ps1')
 . (Join-Path $PSScriptRoot 'common.ps1')
 . (Join-Path $PSScriptRoot 'build-jobs.ps1')
+. (Join-Path $PSScriptRoot 'gate-evidence.ps1')
 
 if (-not $Bundle) {
     $version = Get-BundleVersion -Root $root
@@ -274,6 +283,19 @@ try {
             }
         } else {
             Write-Warning "[verify] the patched resource table failed its check against the stock one (exit $resourceExitCode)."
+        }
+    }
+    if ($KeepIn -and $exitCode -eq 0) {
+        # A keep that fails costs the release a second patch run, not this one its verdict.
+        try {
+            Write-GateKeptRun -KeepIn $KeepIn -PatchedApk $out -Result $result `
+                -MergedApk $(if ($patchInput -eq $mergedApk) { $mergedApk } else { $null }) -Apk $Apk -Bundle $Bundle `
+                -PatchList $PatchList -DesktopJar $DesktopJar -VersionName ([string]$stock.versionName) `
+                -VersionCode ([string]$stock.versionCode) -Forced ([bool]$forced)
+            Write-Host "[verify] kept the patched APK and its stamp in $KeepIn"
+        } catch {
+            Write-Warning "[verify] could not keep the run in ${KeepIn}: $($_.Exception.Message)"
+            Remove-Item -LiteralPath $KeepIn -Recurse -Force -ErrorAction SilentlyContinue
         }
     }
 } finally {
