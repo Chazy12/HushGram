@@ -4,6 +4,8 @@
  */
 package app.hushgram.extension.instagram.feed;
 
+import androidx.annotation.Nullable;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -11,6 +13,7 @@ import java.util.Set;
 import java.util.function.ToIntFunction;
 
 import app.hushgram.extension.instagram.settings.FamilyNames;
+import app.hushgram.extension.instagram.settings.PatchFamily;
 import app.hushgram.extension.instagram.settings.Settings;
 import app.hushgram.extension.shared.Logger;
 import app.hushgram.extension.shared.Utils;
@@ -98,6 +101,23 @@ public final class FeedSuggestions {
     /** Set once {@link #homeItem} has taken a post out of Home in this run. Tests clear it. */
     static volatile boolean typesTookOut;
 
+    /**
+     * Set on the thread {@link #filter} has just taken an item out on, and cleared by its next call
+     * there, so the Home read right after it can tell an item it lost to a suggestion switch from one
+     * the helper had none for.
+     */
+    private static final ThreadLocal<Boolean> JUST_TOOK_OUT = new ThreadLocal<>();
+
+    /** Set once one of Home's own reads has lost an item to {@link #filter} in this run. Tests clear it. */
+    static volatile boolean homeLost;
+
+    /** Set once one of Home's own reads has kept an item in this run. Tests clear it. */
+    static volatile boolean homeKept;
+
+    /** Whether Home's reads go through {@link #homeItem}, when a test says so instead of the build. */
+    @Nullable
+    static volatile Boolean homeReadsForTests;
+
     private FeedSuggestions() {
     }
 
@@ -113,6 +133,8 @@ public final class FeedSuggestions {
      * for that page while the feed is empty, so a Home emptied of suggestions kept the placeholder for
      * good. Saying there's no next page gets Instagram's own empty feed card instead. A feed with posts
      * left, or one waiting on a page, draws what it did.
+     *
+     * <p>The suggestion switches end Home only once they can have emptied it ({@link #suggestionsEmptiedHome}).
      */
     public static int feedEnded(int noMorePages) {
         if (noMorePages != 0) return noMorePages;
@@ -120,14 +142,29 @@ public final class FeedSuggestions {
         if (!tookOut && !typesTookOut) return noMorePages;
         try {
             if (!Utils.settingsReady()) return noMorePages;
-            if (tookOut && (Settings.HIDE_SUGGESTED_POSTS.get() || Settings.HIDE_SUGGESTED_ACCOUNTS.get()
-                    || Settings.HIDE_THREADS_POSTS.get())) return 1;
+            if (tookOut && suggestionsEmptiedHome() && (Settings.HIDE_SUGGESTED_POSTS.get()
+                    || Settings.HIDE_SUGGESTED_ACCOUNTS.get() || Settings.HIDE_THREADS_POSTS.get())) return 1;
             return typesTookOut && (Settings.HIDE_FEED_VIDEOS.get() || Settings.HIDE_FEED_PHOTOS.get()
                     || Settings.HIDE_FEED_CAROUSELS.get()) ? 1 : noMorePages;
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.FEED_SUGGESTIONS, "empty feed", failure);
             return noMorePages;
         }
+    }
+
+    /**
+     * Whether the suggestion switches can have emptied Home. Where Home's reads go through
+     * {@link #homeItem}, that's once those reads have lost an item to {@link #filter} and kept none.
+     * The helper {@link #filter} sits on also reads Explore's chain of posts and the shop and ad
+     * feeds, and Home reads its store of the last run before its first page, so an item taken out
+     * anywhere used to end a Home that was only waiting for that page, and Instagram drew its
+     * Welcome to Instagram card there for a few seconds at startup (#28). Without those reads in the
+     * build, it's once anything's been taken out.
+     */
+    private static boolean suggestionsEmptiedHome() {
+        Boolean forced = homeReadsForTests;
+        boolean homeReads = forced != null ? forced : PatchFamily.feedTypesInBuild();
+        return !homeReads || (homeLost && !homeKept);
     }
 
     /**
@@ -176,6 +213,7 @@ public final class FeedSuggestions {
      * itself otherwise, or when anything goes wrong. Never throws.
      */
     public static Object filter(Object item) {
+        JUST_TOOK_OUT.remove();
         if (item == null) return null;
         try {
             HookStatus.invoked(FamilyNames.FEED_SUGGESTIONS);
@@ -186,6 +224,7 @@ public final class FeedSuggestions {
             if (!Utils.settingsReady() || !setting.get()) return item;
             FeedFilterCounters.removed(ROUTE, 1, kind);
             tookOut = true;
+            JUST_TOOK_OUT.set(Boolean.TRUE);
             Logger.printDebug(() -> "Feed suggestions: took out a " + kind + " item");
             return null;
         } catch (Throwable failure) {
@@ -199,14 +238,27 @@ public final class FeedSuggestions {
      * of the last run, beside Hide the home feed's filter when both are in. Answers null for a post
      * of one video, one photo or a carousel while that type's switch is on, and [item] itself
      * otherwise, or when anything goes wrong. An item with no post, a row of suggested accounts for
-     * one, stays. Never throws.
+     * one, stays. Also notes whether Home lost the item to {@link #filter} or kept it, for
+     * {@link #suggestionsEmptiedHome}. Never throws.
      */
     public static Object homeItem(Object item) {
         return homeItem(item, FeedSuggestions::mediaType);
     }
 
     static Object homeItem(Object item, ToIntFunction<Object> typeOf) {
-        if (item == null) return null;
+        boolean lost = Boolean.TRUE.equals(JUST_TOOK_OUT.get());
+        JUST_TOOK_OUT.remove();
+        if (item == null) {
+            if (lost) homeLost = true;
+            return null;
+        }
+        Object kept = byType(item, typeOf);
+        if (kept != null) homeKept = true;
+        return kept;
+    }
+
+    /** [item], or null while the switch for its post's type is on. */
+    private static Object byType(Object item, ToIntFunction<Object> typeOf) {
         try {
             if (!Utils.settingsReady()) return item;
             boolean videos = Settings.HIDE_FEED_VIDEOS.get();

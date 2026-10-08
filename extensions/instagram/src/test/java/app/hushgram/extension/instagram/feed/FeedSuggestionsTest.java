@@ -9,6 +9,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,6 +52,22 @@ public class FeedSuggestionsTest {
         Item(Kind kind) {
             this.kind = kind;
         }
+    }
+
+    /** Every test but the one about Home's own reads runs the way a build without them does. */
+    @Before
+    public void withoutHomeReads() {
+        FeedSuggestions.homeReadsForTests = false;
+        FeedSuggestions.homeLost = false;
+        FeedSuggestions.homeKept = false;
+    }
+
+    @After
+    public void resetHomeReads() {
+        FeedSuggestions.homeReadsForTests = null;
+        FeedSuggestions.homeLost = false;
+        FeedSuggestions.homeKept = false;
+        FeedSuggestions.tookOut = false;
     }
 
     @Test
@@ -191,6 +209,32 @@ public class FeedSuggestionsTest {
 
         FeedSuggestions.filter(new Item(Kind.EXPLORE_STORY));
         assertEquals(1, FeedSuggestions.feedEnded(0));
+        assertEquals(1, FeedSuggestions.feedEnded(1));
+    }
+
+    /**
+     * Where Home's reads go through homeItem, only Home's own losses end it (#28). An item taken out
+     * of another feed, a null the helper answered on its own, or a loss beside a kept post leaves
+     * Instagram's answer, so a Home waiting on its first page keeps its loading placeholder.
+     */
+    @Test
+    public void onlyHomesOwnReadsEndHome() {
+        FeedSuggestions.homeReadsForTests = true;
+        FeedSuggestions.tookOut = false;
+        assertNull(FeedSuggestions.filter(new Item(Kind.EXPLORE_STORY)));
+        assertEquals("taken out of another feed", 0, FeedSuggestions.feedEnded(0));
+        assertEquals(1, FeedSuggestions.feedEnded(1));
+
+        assertNull(FeedSuggestions.homeItem(FeedSuggestions.filter(null), item -> 0));
+        assertEquals("the helper's own null", 0, FeedSuggestions.feedEnded(0));
+
+        assertNull(FeedSuggestions.homeItem(FeedSuggestions.filter(new Item(Kind.SUGGESTED_USERS)), item -> 0));
+        assertEquals("Home lost one and kept none", 1, FeedSuggestions.feedEnded(0));
+        assertEquals(1, FeedSuggestions.feedEnded(1));
+
+        Item post = new Item(Kind.MEDIA);
+        assertSame(post, FeedSuggestions.homeItem(FeedSuggestions.filter(post), item -> FeedSuggestions.PHOTO));
+        assertEquals("Home kept a post", 0, FeedSuggestions.feedEnded(0));
         assertEquals(1, FeedSuggestions.feedEnded(1));
     }
 

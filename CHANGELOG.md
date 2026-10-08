@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** With Hide suggested posts on, Home could open on Instagram's Welcome to Instagram card for a few seconds, the one it shows when you follow nobody, before your posts loaded. A suggestion taken out anywhere in the app, or from what Home saved last time, was enough to make Home look finished while it was still waiting for its first page. Now only suggestions taken out of Home's own posts can end it, so it shows its usual loading placeholder until your posts arrive. Reported in #28.
+
 * **Instagram:** Open settings with a tab long press works as soon as you pick a tab. Before, the choice saved but only reached the tabs after Instagram restarted, so until then the tab's long press still did what it always had, which looked like the choice hadn't stuck. Profile could also go on opening Instagram's account switcher, even after a restart, because Instagram puts that long press on the Profile button a second way. That one follows your choice now too. Reported in #82.
 
 * **Instagram:** Download cover no longer fails with Download failed on a reel whose cover address has its size written into it, which the photo save mistook for a thumbnail. It saves the largest size the reel lists for its cover. Reported in #79, and thanks to @talhaeenss for finding the cause in #81.
