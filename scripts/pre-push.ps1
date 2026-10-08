@@ -91,14 +91,13 @@ $zero = '0' * 40
 
 function Write-Step([string]$Message) { Write-Host "[pre-push] $Message" }
 function Stop-Push([string]$Message) { $script:gateRefusal = $Message; Write-Host "[pre-push] refused: $Message"; exit 1 }
-# The fixture a gate patches for each build the catalog declares: the first instagram-<version>-*
-# APK, bundle or split bundle in -Folder. Apk is $null for a declared build with none there.
+# The fixture a gate patches for each build the catalog declares: the instagram-<version>-<code>
+# APK, bundle or split bundle of the declared version code in -Folder (Find-DeclaredFixture). Apk is
+# $null for a declared build with none there.
 function Get-DeclaredFixtures([string]$CatalogText, [string]$Folder) {
     $target = Get-PatchTarget -PatchList ($CatalogText | ConvertFrom-Json)
     foreach ($version in @($target.PackageVersions)) {
-        $apk = Get-ChildItem -LiteralPath $Folder -File | Where-Object {
-            $_.Name -like "instagram-$version-*" -and $_.Extension -in '.apk', '.apks', '.apkm', '.xapk'
-        } | Select-Object -First 1
+        $apk = Find-DeclaredFixture -Target $target -Version $version -Folder $Folder
         [pscustomobject]@{ Version = $version; Apk = $apk }
     }
 }

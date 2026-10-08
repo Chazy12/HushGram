@@ -169,9 +169,7 @@ if (-not $Fixture -or $Fixture.Count -eq 0) {
             "The receipt needs a run of $($expectedTarget.PackageName) $(Format-DeclaredBuilds -Target $expectedTarget).")
     }
     $Fixture = @(foreach ($version in @($expectedTarget.PackageVersions)) {
-        Get-ChildItem -LiteralPath $fixtureDir -File | Where-Object {
-            $_.Name -like "instagram-$version-*" -and $_.Extension -in '.apk', '.apks', '.apkm', '.xapk'
-        } | Sort-Object Name | Select-Object -First 1 | ForEach-Object { $_.FullName }
+        Find-DeclaredFixture -Target $expectedTarget -Version $version -Folder $fixtureDir | ForEach-Object { $_.FullName }
     })
     if ($Fixture.Count -eq 0) {
         throw ("HUSHGRAM_FIXTURE_DIR ($fixtureDir) holds no fixture of " +

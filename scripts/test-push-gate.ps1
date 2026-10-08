@@ -168,8 +168,10 @@ exit 0
     Write-FixtureFile 'gradle.properties' "version = 0.0.1`n"
     Write-FixtureFile 'patches-list.json' (@{
         version = 'v0.0.1'
-        patches = @(@{ name = 'Stand-in patch'; compatiblePackages = @{ 'com.instagram.android' = @($version) } })
-    } | ConvertTo-Json -Depth 6)
+        patches = @(@{ name = 'Stand-in patch'; compatiblePackages = @{ 'com.instagram.android' = @($version) }
+            compatibility = @(@{ packageName = 'com.instagram.android'
+                targets = @(@{ version = $version; versionCodes = @{ ARM64_V8A = 385611438 } }) }) })
+    } | ConvertTo-Json -Depth 10)
     Write-FixtureFile 'patches/src/main/kotlin/StandIn.kt' "// first`n"
     $base = New-FixtureCommit 'base'
     Write-FixtureFile 'patches/src/main/kotlin/StandIn.kt' "// second`n"
@@ -235,6 +237,13 @@ exit 0
     Assert-True ($run.Exit -ne 0 -and (Get-GradleRuns).Count -eq 0 -and $run.Output -like "*no fixture for the declared build $version*") `
         "A missing fixture didn't stop the gate before the build: $((Get-GradleRuns) -join '; ') $($run.Output)"
 
+    # Another build of the declared version (a full bundle that sorts first) is not the declared one.
+    $otherBuild = Join-Path $fixtureDir "instagram-$version-385611395.apkm"
+    Set-Content -LiteralPath $otherBuild -Value 'bundle of another build'
+    $run = Invoke-Push -Tip $tip -Base $base -Environment @{ HUSHGRAM_FIXTURE_DIR = $fixtureDir; HUSHGRAM_DESKTOP_JAR = $desktop }
+    Assert-True ($run.Exit -ne 0 -and (Get-GradleRuns).Count -eq 0 -and $run.Output -like "*no fixture for the declared build $version*") `
+        "A fixture of another build of the version was taken for the declared one: $((Get-GradleRuns) -join '; ') $($run.Output)"
+
     # A push made for a release is first in line, and its builds know it.
     $run = Invoke-Push -Tip $tip -Base $base -Environment @{ HUSHGRAM_ALLOW_RELEASE = '1' }
     Assert-True ($run.Exit -eq 0 -and @(Get-GradleRuns | Where-Object { $_ -like '*priority=release slot=True' }).Count -eq 2 -and
@@ -244,6 +253,10 @@ exit 0
     # A patch run that fails is kept with its reports, marked failed, and nothing patched is kept.
     $fixtureApk = Join-Path $fixtureDir "instagram-$version-385611438.apks"
     Set-Content -LiteralPath $fixtureApk -Value 'bundle of splits'
+    . (Join-Path $PSScriptRoot 'patch-target.ps1')
+    $picked = Find-DeclaredFixture -Target (Get-PatchTarget -PatchList ((Get-Content -LiteralPath (Join-Path $script:repo 'patches-list.json') -Raw) | ConvertFrom-Json)) `
+        -Version $version -Folder $fixtureDir
+    Assert-True ($null -ne $picked -and $picked.Name -eq (Split-Path -Leaf $fixtureApk)) "The declared fixture wasn't picked over a file that sorts first: $($picked.Name)"
     $withFixtures = @{ HUSHGRAM_FIXTURE_DIR = $fixtureDir; HUSHGRAM_DESKTOP_JAR = $desktop }
     $run = Invoke-Push -Tip $tip -Base $base -Environment ($withFixtures + @{ HUSHGRAM_GATE_TEST_FAIL = 'verify' })
     $manifest = Read-Manifest

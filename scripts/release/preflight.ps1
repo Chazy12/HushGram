@@ -88,10 +88,8 @@ if (-not $folder -or -not (Test-Path -LiteralPath $folder -PathType Container)) 
 }
 $target = Get-PatchTarget -PatchList (Get-Content -LiteralPath (Join-Path $Root 'patches-list.json') -Raw | ConvertFrom-Json)
 foreach ($declared in @($target.PackageVersions)) {
-    $fixture = Get-ChildItem -LiteralPath $folder -File | Where-Object {
-        $_.Name -like "instagram-$declared-*" -and $_.Extension -in '.apk', '.apks', '.apkm', '.xapk'
-    } | Select-Object -First 1
-    if (-not $fixture) { Stop-Preflight "no fixture of the declared build $declared in $folder" }
+    $fixture = Find-DeclaredFixture -Target $target -Version $declared -Folder $folder
+    if (-not $fixture) { Stop-Preflight "no fixture of the declared build $(Format-DeclaredBuilds -Target $target) in $folder" }
     Write-Host "[preflight]   $declared`: $($fixture.Name)"
 }
 try { $cli = Resolve-DesktopCli -Root $Root -Required } catch { Stop-Preflight $_.Exception.Message }
