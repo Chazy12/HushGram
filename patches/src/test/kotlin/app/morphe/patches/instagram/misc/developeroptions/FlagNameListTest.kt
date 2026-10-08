@@ -126,6 +126,8 @@ class FlagNameListTest {
      * The other builds of a declared version (#77). 385611404 and 385611431 build MetaConfig's list
      * the way 385611438 does and take the hooks. 385611395 and 385611400 build it some other way, so
      * there the finder refuses before anything changes, and Import flag names is left out of them.
+     * The x86 and x86_64 builds (385611439, 385611440, #95) either take the hooks whole or refuse the
+     * same clean way, never half.
      */
     @Test fun everyOtherBuildHooksMetaConfigsListOrLeavesItAlone() {
         val hooked = mutableSetOf<String>()
@@ -135,6 +137,10 @@ class FlagNameListTest {
                 val patch = PatchContexts.of(slice(bundle))
                 val failure = runCatching { patch.findFlagNameList() }.exceptionOrNull()
                 assertTrue("$label: $failure", failure?.message?.startsWith("Open developer options: ") == true)
+            } else if (label.endsWith("-385611439") || label.endsWith("-385611440")) {
+                val failure = runCatching { hooksTheList(bundle, label) }.exceptionOrNull()
+                if (failure == null) hooked += label
+                else assertTrue("$label: $failure", failure !is AssertionError && failure.message?.startsWith("Open developer options: ") == true)
             } else {
                 hooksTheList(bundle, label)
                 hooked += label
