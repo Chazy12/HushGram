@@ -4,6 +4,10 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+## 0.0.7 (2026-10-08)
+
+* **Instagram:** HushGram 0.0.7 adds 3 patches, for 78 in all, and stays on Instagram 450.0.0.50.77 with Morphe Manager 1.34.0 or newer. Besides build 385611438, the other arm64 builds of that version (385611395, 385611400, 385611404 and 385611431) and the x86 and x86_64 ones (385611439 and 385611440) patch now too.
+
 * **Instagram:** Show if a profile follows you now goes by what the profile screen itself heard, the same answer Instagram's own menu on that profile uses to offer Remove follower. On a few profiles the label said Doesn't follow you while that menu offered Remove follower, because the label read an older follow status Instagram had saved for the account. The saved status only counts now when the screen has no answer yet, and the chip under the counts goes by the same answer. Reported in #40.
 
 * **Instagram:** Open developer options adds Import flag names under Developer. Pick a name list, such as a file in Instagram's own id_name_mapping.json format or a text file of `config=name` lines, and Instagram's MetaConfig editor shows those names in its list and its search in place of numbers like _23355. Searching by a config's number still works. The names stay in HushGram's private folder and only change the editor's labels, so Instagram's schema and overrides keep the numbers, and so does an override export. Remove flag names puts the numbers back. HushGram doesn't ship a name list. Asked for in #50, #67 and #91.
