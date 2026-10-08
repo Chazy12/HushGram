@@ -189,7 +189,7 @@ exit 3
     # run inside a slot it gives back in a finally block.
     function Get-Live([string]$Relative) { @(Get-LiveCommands (Get-ScriptAst (Join-Path $Root $Relative))) }
     foreach ($relative in @('scripts/pre-push.ps1', 'scripts/audit-dependencies.ps1', 'scripts/build-release-receipt.ps1',
-            'scripts/verify-all-patches.ps1')) {
+            'scripts/verify-all-patches.ps1', 'scripts/release/patch-all-builds.ps1', 'scripts/release/preflight.ps1')) {
         $direct = @(Get-Live $relative | Where-Object {
             $_.Extent.Text -match '^&\s*(\$gradle|\$wrapper|\S*gradlew)' -or $_.GetCommandName() -match '(?i)^(\./)?gradlew(\.bat)?$' })
         Assert-True ($direct.Count -eq 0) "$relative starts Gradle straight: $($direct[0].Extent.Text)"
@@ -200,7 +200,11 @@ exit 3
     Assert-True (@(Get-Live 'scripts/audit-dependencies.ps1' | Where-Object {
         $_.GetCommandName() -eq 'Invoke-GradleBuild' -and $_.Extent.Text -like '*dependencyGraphReport*' }).Count -eq 1) `
         'audit-dependencies.ps1 does not resolve its graphs through Invoke-GradleBuild.'
-    foreach ($relative in @('scripts/pre-push.ps1', 'scripts/build-release-receipt.ps1', 'scripts/verify-all-patches.ps1')) {
+    Assert-True (@(Get-Live 'scripts/release/preflight.ps1' | Where-Object {
+        $_.GetCommandName() -eq 'Invoke-GradleBuild' -and $_.Extent.Text -like '*-ProjectDir $Root*' }).Count -eq 1) `
+        'preflight.ps1 does not run its Gradle step through Invoke-GradleBuild.'
+    foreach ($relative in @('scripts/pre-push.ps1', 'scripts/build-release-receipt.ps1', 'scripts/verify-all-patches.ps1',
+            'scripts/release/patch-all-builds.ps1')) {
         $ast = Get-ScriptAst (Join-Path $Root $relative)
         $enter = @(Get-Live $relative | Where-Object { $_.GetCommandName() -eq 'Enter-HeavyJob' })
         $exits = @($ast.FindAll({ param($node)

@@ -282,9 +282,17 @@ if (@($changed | Where-Object {
 }
 if (@($changed | Where-Object {
     $_ -in @('scripts/build-jobs.ps1', 'scripts/test-build-jobs.ps1', 'scripts/audit-dependencies.ps1',
-        'scripts/build-release-receipt.ps1', 'scripts/verify-all-patches.ps1', 'scripts/pre-push.ps1', 'scripts/script-wiring.ps1')
+        'scripts/build-release-receipt.ps1', 'scripts/verify-all-patches.ps1', 'scripts/pre-push.ps1', 'scripts/script-wiring.ps1',
+        'scripts/release/patch-all-builds.ps1', 'scripts/release/preflight.ps1')
 }).Count -gt 0) {
     $suites += , @('scripts/test-build-jobs.ps1', 'the build queue wiring changed, checking its stand-ins')
+}
+if (@($changed | Where-Object {
+    $_ -like 'scripts/release/*' -or $_ -in @('scripts/test-release-helpers.ps1', 'scripts/common.ps1', 'scripts/patch-target.ps1',
+        'scripts/patch-report.ps1', 'scripts/apk-facts.ps1', 'scripts/build-jobs.ps1', 'scripts/gate-evidence.ps1',
+        'scripts/Resolve-Java.ps1', 'scripts/pre-push.ps1', 'scripts/script-wiring.ps1')
+}).Count -gt 0) {
+    $suites += , @('scripts/test-release-helpers.ps1', 'a release helper changed, running its stand-ins')
 }
 if (@($changed | Where-Object {
     $_ -in @('scripts/pre-push.ps1', 'scripts/test-push-gate.ps1', 'scripts/build-jobs.ps1', 'scripts/gate-evidence.ps1',
