@@ -4,8 +4,9 @@ With no folders named, it reads this checkout's two: the runtime tests'
 (extensions/instagram/build/test-results/testDebugUnitTest) and the patch tests'
 (patches/build/test-results/test). --gate reads the ones the push gate kept for a commit instead
 (HEAD unless one is named), from HUSHGRAM_GATE_CACHE or HushGram\\gate in the local application
-data folder, the place scripts/gate-evidence.ps1 keeps them, and refuses a run whose manifest
-doesn't say it passed.
+data folder (or HUSHGRAM_GATE_CACHE set only for the user on Windows), the place
+scripts/gate-evidence.ps1 keeps them, and refuses a run whose manifest doesn't say it passed or
+names another commit or tree than the one asked for.
 
 Tests are counted one per testcase element, the way validate-release-facts.ps1 counts them, so
 the numbers are the ones the index description has to quote. A folder with no results, or with
@@ -48,17 +49,39 @@ def count(folder: pathlib.Path) -> dict[str, int]:
     return totals
 
 
+def user_environment(name: str) -> str | None:
+    """A variable set for the user only (Windows), which a shell started earlier doesn't carry."""
+    if sys.platform != "win32":
+        return None
+    import winreg
+
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
+            value, _ = winreg.QueryValueEx(key, name)
+    except OSError:
+        return None
+    return os.path.expandvars(value) if isinstance(value, str) and value else None
+
+
 def gate_root() -> pathlib.Path:
-    configured = os.environ.get("HUSHGRAM_GATE_CACHE")
+    configured = os.environ.get("HUSHGRAM_GATE_CACHE") or user_environment("HUSHGRAM_GATE_CACHE")
     if configured:
         return pathlib.Path(configured)
     base = os.environ.get("LOCALAPPDATA") or str(pathlib.Path.home() / ".cache")
     return pathlib.Path(base) / "HushGram" / "gate"
 
 
+def git_value(root: pathlib.Path, *arguments: str) -> str:
+    """One line of git's answer, empty when git can't say."""
+    result = subprocess.run(["git", "-C", str(root), *arguments], capture_output=True, text=True)
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+
 def gate_folders(root: pathlib.Path, commit: str | None) -> list[pathlib.Path]:
-    if not commit:
-        commit = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
+    full = git_value(root, "rev-parse", "--verify", "--quiet", f"{commit or 'HEAD'}^{{commit}}")
+    if not full:
+        raise SystemExit(f"[tests] git can't say what {commit or 'HEAD'} is in {root}")
+    commit = full
     run = gate_root() / commit
     manifest_path = run / "manifest.json"
     if not manifest_path.is_file():
@@ -66,11 +89,16 @@ def gate_folders(root: pathlib.Path, commit: str | None) -> list[pathlib.Path]:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     if manifest.get("passed") is not True:
         raise SystemExit(f"[tests] the gate's run of {commit[:12]} didn't pass (it stopped at {manifest.get('stage')})")
+    if manifest.get("commit") != commit:
+        raise SystemExit(f"[tests] the manifest in {run} names commit {manifest.get('commit')}, not {commit[:12]}")
+    tree = git_value(root, "rev-parse", "--verify", "--quiet", f"{commit}^{{tree}}")
+    if not tree or manifest.get("tree") != tree:
+        raise SystemExit(f"[tests] the gate's run of {commit[:12]} names tree {manifest.get('tree')} and git says {tree or 'nothing'}")
     return [run / "test-results" / "testDebugUnitTest", run / "test-results" / "test"]
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser = argparse.ArgumentParser(description=(__doc__ or "").split("\n\n")[0])
     parser.add_argument("folders", nargs="*", help="folders of TEST-*.xml files")
     parser.add_argument("--root", default=str(ROOT), help="the checkout whose results are read")
     parser.add_argument("--gate", nargs="?", const="", metavar="COMMIT", help="read the gate's kept results for COMMIT (HEAD)")

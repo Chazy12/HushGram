@@ -158,20 +158,47 @@ try {
         "A run with a skip was counted as quotable: $($run.Output)"
     $run = Invoke-Python $countTool (Join-Path $scratch 'no-results')
     Assert-True ($run.Exit -eq 1 -and $run.Output -like '*holds no results*') "A folder with no results was counted: $($run.Output)"
-    # The gate's kept results for a commit, and none from a gate that didn't pass.
+    # The gate's kept results for a commit, and none from a gate that didn't pass, that names another
+    # commit or tree, or that belongs to a commit git can't find.
     $gateCache = Join-Path $scratch 'gate-cache'
-    $countCommit = 'a' * 40
+    $countRepo = Join-Path $scratch 'count-repo'
+    New-Item -ItemType Directory -Force -Path $countRepo | Out-Null
+    function Invoke-CountGit { $gitArguments = $args; $out = & git -C $countRepo @gitArguments 2>&1; if ($LASTEXITCODE -ne 0) { throw "git $gitArguments failed: $out" }; $out }
+    Invoke-CountGit init -q -b main | Out-Null
+    Write-Text (Join-Path $countRepo 'a.txt') 'one'
+    Invoke-CountGit add -A | Out-Null
+    Invoke-CountGit -c user.name=SysAdminDoc -c user.email=matt_parker@outlook.com commit -q -m one | Out-Null
+    $countCommit = "$(Invoke-CountGit rev-parse HEAD)".Trim()
+    $countTree = "$(Invoke-CountGit rev-parse 'HEAD^{tree}')".Trim()
     Write-Results (Join-Path $gateCache "$countCommit/test-results/testDebugUnitTest") 4
     Write-Results (Join-Path $gateCache "$countCommit/test-results/test") 6
-    Write-Text (Join-Path $gateCache "$countCommit/manifest.json") '{"passed": true, "stage": "done"}'
+    $countManifest = Join-Path $gateCache "$countCommit/manifest.json"
+    function Write-CountManifest([string]$Passed = 'true', [string]$Commit = $countCommit, [string]$Tree = $countTree) {
+        Write-Text $countManifest "{`"passed`": $Passed, `"stage`": `"done`", `"commit`": `"$Commit`", `"tree`": `"$Tree`"}"
+    }
+    Write-CountManifest
     $env:HUSHGRAM_GATE_CACHE = $gateCache
-    $run = Invoke-Python $countTool '--root' $countRoot '--gate' $countCommit '--description'
+    $run = Invoke-Python $countTool '--root' $countRepo '--gate' $countCommit '--description'
     Assert-True ($run.Exit -eq 0 -and $run.Output -like '*4 runtime tests passed locally. All 6 patch tests*') "The gate's kept results weren't counted: $($run.Output)"
-    Write-Text (Join-Path $gateCache "$countCommit/manifest.json") '{"passed": false, "stage": "full"}'
-    $run = Invoke-Python $countTool '--root' $countRoot '--gate' $countCommit
-    Assert-True ($run.Exit -ne 0 -and $run.Output -like "*didn't pass (it stopped at full)*") "A failed gate's results were counted: $($run.Output)"
-    $run = Invoke-Python $countTool '--root' $countRoot '--gate' ('b' * 40)
-    Assert-True ($run.Exit -ne 0 -and $run.Output -like '*kept no run of bbbbbbbbbbbb*') "A commit the gate never ran was counted: $($run.Output)"
+    $run = Invoke-Python $countTool '--root' $countRepo '--gate' '--description'
+    Assert-True ($run.Exit -eq 0 -and $run.Output -like '*4 runtime tests passed locally. All 6 patch tests*') "The gate's results for HEAD weren't counted: $($run.Output)"
+    Write-CountManifest -Passed 'false'
+    $run = Invoke-Python $countTool '--root' $countRepo '--gate' $countCommit
+    Assert-True ($run.Exit -ne 0 -and $run.Output -like "*didn't pass (it stopped at done)*") "A failed gate's results were counted: $($run.Output)"
+    Write-CountManifest -Commit ('c' * 40)
+    $run = Invoke-Python $countTool '--root' $countRepo '--gate' $countCommit
+    Assert-True ($run.Exit -ne 0 -and $run.Output -like "*names commit $('c' * 40)*") "A manifest naming another commit was counted: $($run.Output)"
+    Write-CountManifest -Tree ('d' * 40)
+    $run = Invoke-Python $countTool '--root' $countRepo '--gate' $countCommit
+    Assert-True ($run.Exit -ne 0 -and $run.Output -like "*names tree $('d' * 40) and git says $countTree*") "A manifest naming another tree was counted: $($run.Output)"
+    Write-CountManifest
+    Write-Text (Join-Path $countRepo 'a.txt') 'two'
+    Invoke-CountGit -c user.name=SysAdminDoc -c user.email=matt_parker@outlook.com commit -q -am two | Out-Null
+    $run = Invoke-Python $countTool '--root' $countRepo '--gate'
+    Assert-True ($run.Exit -ne 0 -and $run.Output -like '*kept no run of*') "A commit the gate never ran was counted: $($run.Output)"
+    $run = Invoke-Python $countTool '--root' $countRepo '--gate' ('b' * 40)
+    Assert-True ($run.Exit -ne 0 -and $run.Output -like "*git can't say what*") `
+        "A commit git doesn't know was counted: $($run.Output)"
     Remove-Item Env:\HUSHGRAM_GATE_CACHE
     Write-Host '[release-helpers] test counter passed'
 

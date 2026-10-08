@@ -97,7 +97,7 @@ def build_notes(section: str, intro: str, highlights: str, install: str, validat
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser = argparse.ArgumentParser(description=(__doc__ or "").split("\n\n")[0])
     parser.add_argument("--changelog", default=str(pathlib.Path(__file__).resolve().parents[2] / "CHANGELOG.md"))
     parser.add_argument("--version", help="a dated release section; Unreleased when left out with --check")
     parser.add_argument("--check", action="store_true", help="check the section's bullets and write nothing")
