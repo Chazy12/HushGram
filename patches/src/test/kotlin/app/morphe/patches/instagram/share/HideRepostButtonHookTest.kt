@@ -10,6 +10,7 @@ import app.morphe.PatchContexts
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patches.instagram.FixtureDex
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.ControlFlow
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
@@ -211,7 +212,9 @@ class HideRepostButtonHookTest {
      * guarded, every tree read of the field is filtered, and the component renderer's Repost part
      * returns nothing. On 450's declared build there are five reads, two of them in one lambda's
      * invoke; 449 had six, and so has 450's 385611395, so another build's count isn't pinned. The x86
-     * build 385611439 numbers the Repost label 0x7f136e0f where 438 has 0x7f136e0d (#95).
+     * build 385611439 numbers the Repost label 0x7f136e0f where 438 has 0x7f136e0d (#95). On 438
+     * the hook goes where it went when the renderer was found by that label: [RENDERER_438], at
+     * [PART_438], the one part reaching both the repost icon and the label.
      */
     @Test
     fun eachDeclaredBuildHidesTheButton() {
@@ -219,7 +222,7 @@ class HideRepostButtonHookTest {
         var checked = 0
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apks" && it.name.contains("-$version-") }) {
-                hidesTheButtonIn(bundle, bundle.name, reads = 5)
+                hidesTheButtonIn(bundle, bundle.name, reads = 5, pinned = bundle.name.contains("-385611438."))
                 checked++
             }
         }
@@ -227,8 +230,11 @@ class HideRepostButtonHookTest {
         for (base in Fixtures.otherBuilds()) hidesTheButtonIn(base, base.parentFile.name, reads = null)
     }
 
-    /** Hooks everything in [bundle] and checks each hook; [reads] is how many tree reads it has, when that's known. */
-    private fun hidesTheButtonIn(bundle: java.io.File, label: String, reads: Int?) {
+    /**
+     * Hooks everything in [bundle] and checks each hook; [reads] is how many tree reads it has, when
+     * that's known, and [pinned] says it's 438, whose component hook lands where it's pinned.
+     */
+    private fun hidesTheButtonIn(bundle: java.io.File, label: String, reads: Int?, pinned: Boolean = false) {
         val holders = mutableListOf<ClassDef>()
         FixtureDex.forEach(bundle) { dex ->
             for (classDef in dex.classes) {
@@ -244,6 +250,16 @@ class HideRepostButtonHookTest {
         if (reads != null) assertEquals(found, reads, sites.reads.size) else assertTrue(found, sites.reads.isNotEmpty())
         val feedUfi = context.findFeedUfiSite()
         val component = context.findFeedRepostComponent()
+        if (pinned) {
+            val renderer = "${component.method.definingClass}->${component.method.name}"
+            assertEquals("$label: the renderer, at ${component.at}", RENDERER_438, renderer)
+            assertEquals("$label: the Repost part", PART_438, component.at)
+            val reached = partReached(component.method, component.at)
+            val code = component.method.implementation!!.instructions.toList()
+            for ((what, id) in listOf("icon" to REPOSTS_UFI_ICON_ID, "label" to LABEL)) {
+                assertTrue("$label: the part loads the $what", reached.any { (code[it] as? NarrowLiteralInstruction)?.narrowLiteral == id })
+            }
+        }
         val branchesToShare = context.mutableClassDefBy(feedUfi.type).methods.single { it.name == feedUfi.name }
             .implementation!!.instructions.filterIsInstance<BuilderOffsetInstruction>()
             .filter { it.target.location.index == feedUfi.insert }
@@ -339,6 +355,27 @@ class HideRepostButtonHookTest {
         assertEquals(what, expected.toString(), ((instruction as ReferenceInstruction).reference as FieldReference).toString())
     }
 
+    /**
+     * The instructions of [method] reached from [at] without crossing into another part: every
+     * edge is followed, stopping at an instance-of whose answer the next if-eqz tests.
+     */
+    private fun partReached(method: Method, at: Int): Set<Int> {
+        val flow = ControlFlow.of(method)
+        val code = flow.instructions
+        fun isCheck(index: Int) = code[index].opcode == Opcode.INSTANCE_OF && code.getOrNull(index + 1)?.let { skip ->
+            skip.opcode == Opcode.IF_EQZ && (skip as OneRegisterInstruction).registerA == (code[index] as OneRegisterInstruction).registerA
+        } == true
+        val seen = HashSet<Int>()
+        val pending = ArrayDeque(listOf(at))
+        while (pending.isNotEmpty()) {
+            val next = pending.removeFirst()
+            if (isCheck(next) || !seen.add(next)) continue
+            pending.addAll(flow.normal[next])
+            pending.addAll(flow.exceptional[next])
+        }
+        return seen
+    }
+
     private fun assertComponentGuarded(method: Method, at: Int) {
         val code = method.implementation!!.instructions.toList()
         assertEquals(1, code.count { it.names(REPOSTS_FEED_COMPONENT) })
@@ -424,6 +461,10 @@ class HideRepostButtonHookTest {
 
         /** 438's Repost label. Other builds number it otherwise. */
         const val LABEL = 0x7f136e0d
+
+        /** 438's Feed component renderer, and where its Repost part starts. */
+        const val RENDERER_438 = "LX/009F;->A0o"
+        const val PART_438 = 688
 
         /** A renderer of its own: the icon, the label, the [role] it gives the button, then null. */
         fun feedComponent(
