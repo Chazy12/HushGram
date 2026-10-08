@@ -42,6 +42,15 @@ public class Settings extends BaseSettings {
             new EnumSetting<>("hushgram_navigation_settings_target", NavigationTarget.OFF, false);
 
     /**
+     * Leaves the HushGram row out of Instagram's own settings menu while a tab long press opens
+     * HushGram (#84). Off to start. The row is left out only while the chosen tab is on a button
+     * Instagram built ({@link NavigationSettings#opensFromATab}), so turning the long press off,
+     * or Pause, brings the row back and there's always a way in.
+     */
+    public static final BooleanSetting HIDE_MENU_ROW =
+            new BooleanSetting("hushgram_hide_menu_row", FALSE);
+
+    /**
      * HushGram's settings list their categories, and a tap opens one as its own page. Search still
      * looks through every category. Off to start, so the page stays one long list. A choice about
      * the page itself, so it's read saved, not through Pause.

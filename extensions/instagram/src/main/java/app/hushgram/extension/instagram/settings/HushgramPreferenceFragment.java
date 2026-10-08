@@ -326,6 +326,9 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
         Set<PatchFamily> build = PatchFamily.inThisBuild();
         PreferenceCategory entry = category(screen, L10n.t("Settings entry"));
         entry.addPreference(navigationRow(context));
+        entry.addPreference(toggle(context, Settings.HIDE_MENU_ROW, L10n.t("Hide the HushGram row in Instagram's menu"),
+                L10n.t("While a tab long press opens HushGram, Instagram's Settings and activity screen leaves out "
+                        + "the HushGram row. Turn the long press off and the row comes back.")));
         entry.addPreference(toggle(context, Settings.CATEGORY_PAGES, L10n.t("Open categories as pages"),
                 L10n.t("Settings shows a list of its categories, and a tap opens one on its own page. "
                         + "Search still looks through all of them.")));
