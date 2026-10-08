@@ -352,6 +352,8 @@ Whitehat settings are unavailable on this screen. Open HushGram settings from Ho
 Comments	Yorumlar
 Copy comment	Yorumu kopyala
 Adds Copy to a selected comment's menu. Copies the original text, including line breaks.	Seçilen yorumun menüsüne Kopyala seçeneğini ekler. Satır sonları dahil özgün metni kopyalar.
+Copy the commenter's username	Yorum yapanın kullanıcı adını kopyala
+Adds Copy username to a selected comment's menu, for the account that wrote it.	Seçilen bir yorumun menüsüne, yorumu yazan hesap için Kullanıcı adını kopyala seçeneğini ekler.
 Comment copied	Yorum kopyalandı
 Couldn't copy comment	Yorum kopyalanamadı
 Save comment photo	Yorum fotoğrafını kaydet

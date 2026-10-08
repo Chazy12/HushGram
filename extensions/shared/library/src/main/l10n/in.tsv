@@ -352,6 +352,8 @@ Whitehat settings are unavailable on this screen. Open HushGram settings from Ho
 Comments	Komentar
 Copy comment	Salin komentar
 Adds Copy to a selected comment's menu. Copies the original text, including line breaks.	Menambahkan Salin ke menu komentar yang dipilih. Menyalin teks asli, termasuk pergantian baris.
+Copy the commenter's username	Salin nama pengguna pemberi komentar
+Adds Copy username to a selected comment's menu, for the account that wrote it.	Menambahkan Salin nama pengguna ke menu komentar yang dipilih, untuk akun yang menulisnya.
 Comment copied	Komentar disalin
 Couldn't copy comment	Tidak dapat menyalin komentar
 Save comment photo	Simpan foto komentar

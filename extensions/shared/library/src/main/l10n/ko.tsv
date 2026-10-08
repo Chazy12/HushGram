@@ -353,6 +353,8 @@ Whitehat settings are unavailable on this screen. Open HushGram settings from Ho
 Comments	댓글
 Copy comment	댓글 복사
 Adds Copy to a selected comment's menu. Copies the original text, including line breaks.	선택한 댓글의 메뉴에 복사를 추가합니다. 줄바꿈을 포함한 원본 텍스트를 그대로 복사합니다
+Copy the commenter's username	댓글 작성자의 사용자 이름 복사
+Adds Copy username to a selected comment's menu, for the account that wrote it.	선택한 댓글의 메뉴에 그 댓글을 쓴 계정의 사용자 이름 복사를 추가합니다.
 Comment copied	댓글이 복사됨
 Couldn't copy comment	댓글을 복사할 수 없습니다
 Save comment photo	댓글 사진 저장

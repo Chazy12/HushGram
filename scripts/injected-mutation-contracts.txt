@@ -934,6 +934,13 @@ once-call Lapp/hushgram/extension/instagram/profile/FollowingList;->answered(Lja
 # matching selection-dismissal marker.
 once-call Lapp/hushgram/extension/instagram/comment/CommentActions;->rows(Ljava/util/List;Ljava/lang/Object;Landroid/content/Context;)Ljava/util/List; in instance (L*;L*;L*;Ljava/util/List;F)V class-holding select_comment_screen_comment_unselect_tap_
 
+# Copy comment's Copy username (#35) borrows Copy's string id for its row, so the same renderer's
+# one Context.getString on a row's label is replaced in place by CommentAuthor.label, which answers
+# the username row's own text and every other row's as before. Left out, no username row is added;
+# twice or elsewhere, it isn't the call the patch wrote. CopyCommentHookTest checks where it lands
+# on the 450 fixture.
+once-call Lapp/hushgram/extension/instagram/comment/CommentAuthor;->label(Landroid/content/Context;ILjava/lang/Object;)Ljava/lang/String; in instance (L*;L*;L*;Ljava/util/List;F)V class-holding select_comment_screen_comment_unselect_tap_
+
 # Hide suggested people on profiles hands the action row's show flag for its inline row of
 # suggestions to ProfileSuggestions right after the read, and the person-plus button to it right
 # after Instagram sets the button up, both in the one method loading the binder message below

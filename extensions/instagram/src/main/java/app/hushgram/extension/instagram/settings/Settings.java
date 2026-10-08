@@ -590,6 +590,13 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting COPY_COMMENTS =
             new BooleanSetting("hushgram_copy_comments", FALSE);
 
+    /**
+     * A selected comment's menu gets Copy username, for the account that wrote it
+     * ({@link app.hushgram.extension.instagram.comment.CommentAuthor}). Off until enabled.
+     */
+    public static final BooleanSetting COPY_COMMENT_AUTHORS =
+            new BooleanSetting("hushgram_copy_comment_authors", FALSE);
+
     /** An explicit Save action for a photo the comment itself carries. Off until enabled. */
     public static final BooleanSetting SAVE_COMMENT_PHOTOS =
             new BooleanSetting("hushgram_save_comment_photos", FALSE);

@@ -352,6 +352,8 @@ Whitehat settings are unavailable on this screen. Open HushGram settings from Ho
 Comments	Comentários
 Copy comment	Copiar comentário
 Adds Copy to a selected comment's menu. Copies the original text, including line breaks.	Adiciona Copiar ao menu de um comentário selecionado. Copia o texto original, incluindo quebras de linha.
+Copy the commenter's username	Copiar o nome de usuário de quem comentou
+Adds Copy username to a selected comment's menu, for the account that wrote it.	Adiciona Copiar nome de usuário ao menu de um comentário selecionado, para a conta que o escreveu.
 Comment copied	Comentário copiado
 Couldn't copy comment	Não foi possível copiar o comentário
 Save comment photo	Salvar foto do comentário
