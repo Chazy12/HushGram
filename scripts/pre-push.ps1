@@ -438,6 +438,7 @@ if ($changed.Count -gt 0 -and @($changed | Where-Object { $script:GateIndexFiles
         }
         if (-not $gap) {
             $gap = Get-GateRunGap -Evidence $passedRun -DesktopJar $(if ($wouldPatch.Count -gt 0) { Resolve-DesktopCli -Root $Root }) `
+                -FixtureFingerprint $(if ($fixtureFolder -and (Test-Path -LiteralPath $fixtureFolder -PathType Container)) { Get-FixtureFingerprint -Folder $fixtureFolder }) `
                 -Fixtures @($wouldPatch | ForEach-Object { [pscustomobject]@{ Version = $_.Version; Apk = $_.Apk.FullName } })
         }
         if (-not $gap) {
@@ -477,7 +478,10 @@ try {
     $before = Get-Content -LiteralPath $catalog -Raw
     $fixtures = $env:HUSHGRAM_FIXTURE_DIR
     $fixtureApks = @()
+    $fixtureFingerprint = $null
     if ($fixtures -and (Test-Path -LiteralPath $fixtures -PathType Container)) {
+        # Taken before anything is built: the patch tests read the whole folder.
+        $fixtureFingerprint = Get-FixtureFingerprint -Folder $fixtures
         $desktop = Resolve-DesktopCli -Root $Root -Required
         $fixtureApks = @(foreach ($fixture in @(Get-DeclaredFixtures -CatalogText $before -Folder $fixtures)) {
             if (-not $fixture.Apk) { Stop-Push "no fixture for the declared build $($fixture.Version) in $fixtures" }
@@ -539,7 +543,7 @@ try {
         # Kept even when the gate refused, so a failed run's test results outlive its worktree.
         try {
             Save-GateEvidence -Directory $evidence -GateRoot $gate -Commit $tip -Passed $gatePassed -Stage $gateStage `
-                -Reason $script:gateRefusal -FixtureRuns $fixtureRuns.ToArray() -FixturesPatched $fixturesPatched | Out-Null
+                -Reason $script:gateRefusal -FixtureRuns $fixtureRuns.ToArray() -FixturesPatched $fixturesPatched -FixtureFingerprint $fixtureFingerprint | Out-Null
             Write-Step "kept this gate's results in $evidence"
         } catch {
             Write-Warning "[pre-push] the gate's results could not be kept: $($_.Exception.Message)"

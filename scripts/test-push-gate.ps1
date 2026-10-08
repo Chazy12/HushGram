@@ -273,6 +273,17 @@ exit 0
         -PatchList $catalogFile -DesktopJar $desktop -Forced $false -Why ([ref]$why)
     Assert-True ($null -ne $kept -and (Test-Path -LiteralPath $kept.PatchedApk) -and (Test-Path -LiteralPath $kept.MergedApk) -and
         (Test-Path -LiteralPath $kept.Result)) "The kept patch run wasn't handed back: $why"
+    # Kept patch output that no longer hashes to its stamp is not handed back.
+    foreach ($case in @(@{ Name = 'patched.apk'; Path = $kept.PatchedApk }, @{ Name = 'result.json'; Path = $kept.Result },
+            @{ Name = 'stock-merged.apk'; Path = $kept.MergedApk })) {
+        $keptBytes = [IO.File]::ReadAllBytes($case.Path)
+        [IO.File]::WriteAllBytes($case.Path, $keptBytes + [byte]0)
+        $why = ''
+        $refused = Get-GateKeptRun -Evidence $evidence -VersionName $version -Apk $fixtureApk -BundleSha256 $bundleHash `
+            -PatchList $catalogFile -DesktopJar $desktop -Forced $false -Why ([ref]$why)
+        [IO.File]::WriteAllBytes($case.Path, $keptBytes)
+        Assert-True ($null -eq $refused -and $why -like "*$($case.Name)*isn't the one it stamped*") "A changed $($case.Name) was handed back: $why"
+    }
     $otherCli = Join-Path $scratch 'morphe-desktop-other.jar'
     Set-Content -LiteralPath $otherCli -Value 'another jar'
     foreach ($case in @(
@@ -375,6 +386,19 @@ exit 0
     Assert-True ($run.Exit -ne 0 -and $run.Output -like '*the published release does not agree with the index*' -and (Get-GradleRuns).Count -eq 0) `
         "An index push the release check refused went out: $($run.Output)"
 
+    # A build added to the fixture folder after the gate is something the patch tests would read.
+    $addedBuild = Join-Path $fixtureDir "instagram-$version-385611999"
+    New-Item -ItemType Directory -Path $addedBuild | Out-Null
+    Set-Content -LiteralPath (Join-Path $addedBuild 'base.apk') -Value 'another build'
+    try {
+        $run = Invoke-Push -Tip $index -Base $source -Environment ($withFixtures + $release)
+        Assert-True ($run.Exit -eq 0 -and (Get-GradleRuns).Count -eq 2 -and $run.Output -like '*the fixture folder changed since that gate ran*') `
+            "An index push after a build joined the fixture folder wasn't gated in full: $((Get-GradleRuns) -join '; ') $($run.Output)"
+    } finally {
+        Remove-Item -LiteralPath $addedBuild -Recurse -Force
+    }
+    Clear-IndexRun
+
     # Each run that doesn't cover the push is gated in full: one that didn't pass, one that patched
     # no declared build when a gate here would, and one made with another desktop CLI.
     foreach ($case in @(
@@ -382,6 +406,10 @@ exit 0
                 Spoil = { [IO.File]::WriteAllText($sourceManifest, ($sourceManifestText -replace '"passed":\s*true', '"passed": false')) } },
             @{ Name = 'a gate run that patched nothing'; Said = "*doesn't cover this push: that gate patched no declared build*"; Environment = $withFixtures
                 Spoil = { [IO.File]::WriteAllText($sourceManifest, ($sourceManifestText -replace '"fixturesPatched":\s*true', '"fixturesPatched": false')) } },
+            @{ Name = 'gate logic that has changed'; Said = "*isn't used: it was made by other gate logic*"; Environment = $withFixtures
+                Spoil = { [IO.File]::WriteAllText($sourceManifest, ($sourceManifestText -replace '"logicSha256":\s*"[0-9A-F]+"', '"logicSha256": "0000"')) } },
+            @{ Name = 'a gate run with no fixture fingerprint'; Said = "*doesn't cover this push: that gate recorded no fingerprint*"; Environment = $withFixtures
+                Spoil = { [IO.File]::WriteAllText($sourceManifest, ($sourceManifestText -replace '"fixtureFingerprint":\s*"[0-9A-F]+"', '"fixtureFingerprint": null')) } },
             @{ Name = 'another desktop CLI'; Said = "*doesn't cover this push: that gate patched $version with another desktop CLI*"
                 Environment = @{ HUSHGRAM_FIXTURE_DIR = $fixtureDir; HUSHGRAM_DESKTOP_JAR = $otherCli }; Spoil = {} })) {
         & $case.Spoil
@@ -449,6 +477,34 @@ exit 0
     $left = @(Get-ChildItem -LiteralPath $pruneCache -Directory | ForEach-Object Name | Sort-Object)
     $expected = @(@($names[2], $names[3], $names[4], ('b' * 40)) | Sort-Object)
     Assert-True (($left -join ',') -eq ($expected -join ',')) "Pruning left $($left -join ', '), not the newest three and the running one."
+
+    # Failed runs go before passed ones, so a release's passed run survives a drain of failures.
+    $failFirst = Join-Path $scratch 'prune-failed-cache'
+    $env:HUSHGRAM_GATE_CACHE = $failFirst
+    $mix = @(@{ Name = '{0:x40}' -f 11; Passed = 'true'; Hours = 9 }, @{ Name = '{0:x40}' -f 12; Passed = 'true'; Hours = 8 },
+        @{ Name = '{0:x40}' -f 13; Passed = 'false'; Hours = 7 }, @{ Name = '{0:x40}' -f 14; Passed = 'false'; Hours = 6 },
+        @{ Name = '{0:x40}' -f 15; Passed = 'false'; Hours = 5 })
+    foreach ($entry in $mix) {
+        $dir = Join-Path $failFirst $entry.Name
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+        Set-Content -LiteralPath (Join-Path $dir 'manifest.json') -Value "{ `"passed`": $($entry.Passed) }"
+        (Get-Item -LiteralPath (Join-Path $dir 'manifest.json')).LastWriteTimeUtc = [DateTime]::UtcNow.AddHours(-$entry.Hours)
+    }
+    Remove-StaleGateEvidence
+    $left = @(Get-ChildItem -LiteralPath $failFirst -Directory | ForEach-Object Name | Sort-Object)
+    $expected = @(@($mix[0].Name, $mix[1].Name, $mix[4].Name) | Sort-Object)
+    Assert-True (($left -join ',') -eq ($expected -join ',')) "Pruning left $($left -join ', '), not both passed runs and the newest failed one."
+
+    # Two gates of one commit: the second stops while the first holds it, and goes ahead once it's done.
+    $lockCommit = 'd' * 40
+    $null = Start-GateEvidence -Commit $lockCommit
+    $second = ". '$(Join-Path $Root 'scripts/gate-evidence.ps1')'; Start-GateEvidence -Commit '$lockCommit' | Out-Null; 'started'"
+    $said = @(& pwsh -NoProfile -Command $second 2>&1 | ForEach-Object { "$_" }) -join ' '
+    Assert-True ($LASTEXITCODE -ne 0 -and $said -like '*Another gate is keeping a run of*' -and $said -notlike '*started*') `
+        "A second gate of the same commit replaced the first one's folder: $said"
+    Unlock-GateEvidence -Commit $lockCommit
+    $said = @(& pwsh -NoProfile -Command $second 2>&1 | ForEach-Object { "$_" }) -join ' '
+    Assert-True ($LASTEXITCODE -eq 0 -and $said -like '*started*') "A gate was refused after the first let go of the commit: $said"
 
     Assert-True (@(Invoke-FixtureGit worktree list).Count -eq 1) 'A gate left its worktree behind.'
     . (Join-Path $PSScriptRoot 'script-wiring.ps1')

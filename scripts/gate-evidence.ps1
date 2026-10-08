@@ -51,6 +51,51 @@ function Get-EvidenceHash {
     return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToUpperInvariant()
 }
 
+function Get-Sha256OfText {
+    param([Parameter(Mandatory = $true)][AllowEmptyString()][string]$Text)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try { return [BitConverter]::ToString($sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($Text))).Replace('-', '') }
+    finally { $sha.Dispose() }
+}
+
+function Get-GateLogicHash {
+    <#
+    The SHA-256 of the gate logic that makes and reads a run: pre-push.ps1 and this file, as they
+    are in this checkout. A manifest stamped with another value was made by a gate that decided
+    differently, so it isn't taken for this one's word. $null when either file isn't there.
+    #>
+    $parts = @()
+    foreach ($name in @('pre-push.ps1', 'gate-evidence.ps1')) {
+        $path = Join-Path $PSScriptRoot $name
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return $null }
+        $parts += Get-EvidenceHash -Path $path
+    }
+    return Get-Sha256OfText -Text ($parts -join ':')
+}
+
+function Get-FixtureFingerprint {
+    <#
+    .SYNOPSIS
+        A fingerprint of everything :patches:test can read from the fixture folder.
+    .DESCRIPTION
+        patches/build.gradle.kts makes all of HUSHGRAM_FIXTURE_DIR an input to the patch tests, so a
+        build added or replaced there changes what a gate would test. The fingerprint covers the
+        top-level files and each folder's base.apk: sorted relative path, size and last-write time.
+        Size plus time rather than a content hash, because a push would otherwise read several
+        hundred megabytes of APKs to decide whether to skip a build, and the APK the gate patches
+        is content-hashed in its stamp anyway.
+    #>
+    param([Parameter(Mandatory = $true)][string]$Folder)
+    $root = (Resolve-Path -LiteralPath $Folder).ProviderPath.TrimEnd('\', '/')
+    $files = @(Get-ChildItem -LiteralPath $root -File) +
+        @(Get-ChildItem -LiteralPath $root -Directory | ForEach-Object { Get-ChildItem -LiteralPath $_.FullName -Filter 'base.apk' -File })
+    $lines = [string[]]@($files | ForEach-Object {
+        '{0}|{1}|{2}' -f $_.FullName.Substring($root.Length + 1).Replace('\', '/'), $_.Length, $_.LastWriteTimeUtc.Ticks
+    })
+    [Array]::Sort($lines, [StringComparer]::Ordinal)
+    return Get-Sha256OfText -Text ($lines -join "`n")
+}
+
 function Get-GateEvidenceRoot {
     <# The folder the gate keeps its runs in. #>
     $configured = [Environment]::GetEnvironmentVariable('HUSHGRAM_GATE_CACHE', [EnvironmentVariableTarget]::Process)
@@ -128,16 +173,42 @@ function Get-JUnitCounts {
     return [pscustomobject]$counts
 }
 
+$script:GateEvidenceLocks = @{}
+
+function Lock-GateEvidence {
+    <# Holds the commit's lock file open and exclusive, or throws when another gate has it. #>
+    param([Parameter(Mandatory = $true)][string]$Commit)
+    Unlock-GateEvidence -Commit $Commit
+    $root = Get-GateEvidenceRoot
+    New-Item -ItemType Directory -Force -Path $root | Out-Null
+    $path = Join-Path $root "$Commit.lock"
+    try { $stream = [System.IO.File]::Open($path, [System.IO.FileMode]::OpenOrCreate, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None) }
+    catch { throw "Another gate is keeping a run of $Commit right now ($path is locked), so this one can't replace it. Push again when that gate ends." }
+    $script:GateEvidenceLocks[$Commit] = [pscustomobject]@{ Stream = $stream; Path = $path }
+}
+
+function Unlock-GateEvidence {
+    param([Parameter(Mandatory = $true)][string]$Commit)
+    $held = $script:GateEvidenceLocks[$Commit]
+    if (-not $held) { return }
+    $script:GateEvidenceLocks.Remove($Commit)
+    $held.Stream.Dispose()
+    Remove-Item -LiteralPath $held.Path -Force -ErrorAction SilentlyContinue
+}
+
 function Start-GateEvidence {
     <#
     .SYNOPSIS
         The empty folder a gate of -Commit keeps its run in.
     .DESCRIPTION
         A gate of the same commit replaces what an earlier one kept. The manifest goes first, so
-        nothing reads the old run's word for the new one while it's being replaced.
+        nothing reads the old run's word for the new one while it's being replaced. Two gates of
+        one commit (two worktrees) share the folder, so the second one stops here while the first
+        holds the commit's lock, and Save-GateEvidence lets it go.
     #>
     param([Parameter(Mandatory = $true)][string]$Commit)
     $directory = Get-GateEvidenceDirectory -Commit $Commit
+    Lock-GateEvidence -Commit $Commit
     if (Test-Path -LiteralPath $directory) {
         Remove-Item -LiteralPath (Join-Path $directory 'manifest.json') -Force -ErrorAction SilentlyContinue
         Remove-Item -LiteralPath $directory -Recurse -Force
@@ -172,8 +243,10 @@ function Save-GateEvidence {
         [Parameter(Mandatory = $true)][string]$Stage,
         [string]$Reason,
         [object[]]$FixtureRuns = @(),
-        [bool]$FixturesPatched
+        [bool]$FixturesPatched,
+        [string]$FixtureFingerprint
     )
+    try {
     $runtimeDir = Join-Path $Directory 'test-results/testDebugUnitTest'
     $patchDir = Join-Path $Directory 'test-results/test'
     Copy-EvidenceFiles -From (Join-Path $GateRoot 'extensions/instagram/build/test-results/testDebugUnitTest') -To $runtimeDir -Filter '*.xml' | Out-Null
@@ -220,6 +293,8 @@ function Save-GateEvidence {
         commit          = $Commit
         tree            = Get-CommitTree -Root $GateRoot -Commit $Commit
         createdUtc      = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
+        logicSha256     = Get-GateLogicHash
+        fixtureFingerprint = if ($FixtureFingerprint) { $FixtureFingerprint } else { $null }
         passed          = $Passed
         stage           = $Stage
         reason          = if ($Reason) { $Reason } else { $null }
@@ -234,20 +309,29 @@ function Save-GateEvidence {
     Move-Item -LiteralPath $temporary -Destination $manifestPath -Force
     Remove-StaleGateEvidence
     return $manifestPath
+    } finally { Unlock-GateEvidence -Commit $Commit }
 }
 
 function Remove-StaleGateEvidence {
     <#
-    Keeps the newest runs and deletes the rest. A folder with no manifest is a gate still running
+    Keeps the newest runs and deletes the rest, failed ones first, so a release's passed run
+    outlives a busy drain of failing pushes. A folder with no manifest is a gate still running
     or one that was cut short; it goes only once it's two days old.
     #>
     $root = Get-GateEvidenceRoot
     if (-not (Test-Path -LiteralPath $root -PathType Container)) { return }
     $runs = @(Get-ChildItem -LiteralPath $root -Directory | Where-Object { $_.Name -match '^[0-9a-f]{40}$' })
-    $finished = @($runs | Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName 'manifest.json') -PathType Leaf } |
-        Sort-Object { (Get-Item -LiteralPath (Join-Path $_.FullName 'manifest.json')).LastWriteTimeUtc } -Descending)
-    $stale = @($finished | Select-Object -Skip $script:GateEvidenceKeep) +
-        @($runs | Where-Object { -not (Test-Path -LiteralPath (Join-Path $_.FullName 'manifest.json')) -and
+    $finished = @(foreach ($run in $runs) {
+        $manifestFile = Join-Path $run.FullName 'manifest.json'
+        if (-not (Test-Path -LiteralPath $manifestFile -PathType Leaf)) { continue }
+        $passed = $false
+        try { $passed = (Get-Content -LiteralPath $manifestFile -Raw | ConvertFrom-Json).passed -eq $true } catch { $passed = $false }
+        [pscustomobject]@{ Run = $run; Passed = $passed; Written = (Get-Item -LiteralPath $manifestFile).LastWriteTimeUtc }
+    })
+    $excess = $finished.Count - $script:GateEvidenceKeep
+    $stale = @(if ($excess -gt 0) {
+        $finished | Sort-Object @{ Expression = 'Passed' }, @{ Expression = 'Written' } | Select-Object -First $excess | ForEach-Object { $_.Run }
+    }) + @($runs | Where-Object { -not (Test-Path -LiteralPath (Join-Path $_.FullName 'manifest.json')) -and
             $_.LastWriteTimeUtc -lt [DateTime]::UtcNow.AddDays(-2) })
     foreach ($run in $stale) {
         try { Remove-Item -LiteralPath $run.FullName -Recurse -Force -ErrorAction Stop }
@@ -277,6 +361,10 @@ function Test-GateEvidence {
     if ($manifest.passed -ne $true) { return "that gate didn't pass (it stopped at $($manifest.stage): $($manifest.reason))" }
     $tree = Get-CommitTree -Root $Root -Commit $Commit
     if (-not $tree -or [string]$manifest.tree -cne $tree) { return "its manifest names tree $($manifest.tree) and git says $tree" }
+    $logic = Get-GateLogicHash
+    if (-not $logic -or [string]$manifest.logicSha256 -cne $logic) {
+        return "it was made by other gate logic than this checkout's (pre-push.ps1 or gate-evidence.ps1)"
+    }
     if (-not $manifest.bundle -or -not $manifest.bundle.file) { return 'it kept no bundle' }
     $bundle = Join-Path $Directory "release/$($manifest.bundle.file)"
     if (-not (Test-Path -LiteralPath $bundle -PathType Leaf) -or (Get-EvidenceHash -Path $bundle) -cne [string]$manifest.bundle.sha256) {
@@ -437,6 +525,14 @@ function Get-GateKeptRun {
     foreach ($file in @($patched, $result, $merged) | Where-Object { $_ }) {
         if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { & $say "the gate's run of $VersionName is missing $(Split-Path -Leaf $file)"; return $null }
     }
+    $stamped = [ordered]@{ 'patched.apk' = @($patched, $stamp.patchedSha256); 'result.json' = @($result, $stamp.resultSha256) }
+    if ($merged) { $stamped['stock-merged.apk'] = @($merged, $stamp.mergedSha256) }
+    foreach ($name in $stamped.Keys) {
+        if ([string]$stamped[$name][1] -cne (Get-EvidenceHash -Path $stamped[$name][0])) {
+            & $say "the $name of the gate's run of $VersionName isn't the one it stamped"
+            return $null
+        }
+    }
     return [pscustomobject]@{ Directory = $kept; PatchedApk = $patched; Result = $result; MergedApk = $merged; Stamp = $stamp }
 }
 
@@ -454,8 +550,15 @@ function Get-GateRunGap {
     param(
         [Parameter(Mandatory = $true)]$Evidence,
         [object[]]$Fixtures = @(),
-        [string]$DesktopJar
+        [string]$DesktopJar,
+        [string]$FixtureFingerprint
     )
+    # The patch tests read the whole fixture folder, so a folder that isn't the one the gate saw
+    # is a gap even where the declared builds' own APKs are unchanged.
+    if ($FixtureFingerprint) {
+        if (-not $Evidence.Manifest.fixtureFingerprint) { return 'that gate recorded no fingerprint of the fixture folder' }
+        if ([string]$Evidence.Manifest.fixtureFingerprint -cne $FixtureFingerprint) { return 'the fixture folder changed since that gate ran' }
+    }
     $wanted = @($Fixtures | Where-Object { $_ })
     if ($wanted.Count -eq 0) { return $null }
     if ($Evidence.Manifest.fixturesPatched -ne $true) {
@@ -511,6 +614,9 @@ function Write-GateKeptRun {
         versionCode      = $VersionCode
         forced           = $Forced
         merged           = [bool]$MergedApk
+        patchedSha256    = Get-EvidenceHash -Path (Join-Path $KeepIn 'patched.apk')
+        resultSha256     = Get-EvidenceHash -Path (Join-Path $KeepIn 'result.json')
+        mergedSha256     = if ($MergedApk) { Get-EvidenceHash -Path (Join-Path $KeepIn 'stock-merged.apk') } else { $null }
     }
     [System.IO.File]::WriteAllText((Join-Path $KeepIn 'stamp.json'), ($stamp | ConvertTo-Json),
         (New-Object System.Text.UTF8Encoding($false)))
