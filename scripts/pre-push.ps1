@@ -156,17 +156,17 @@ Write-Step "$($published.Count) commit(s): committer, trailers and machine names
 
 # Every tracked PowerShell file parses, once a push moves one. Most of these scripts run only for a
 # release or with a phone, and no suite reads them all, so a syntax slip would otherwise turn up
-# there first. Read as UTF-8, since Windows PowerShell's ParseFile reads a file with no byte order
-# mark as ANSI.
+# there first. Read from the pushed tip, not the working tree, which can hold other edits, and
+# parsed as text, since Windows PowerShell's ParseFile reads a file with no byte order mark as ANSI.
 if (@($changed | Where-Object { $_ -like '*.ps1' }).Count -gt 0) {
     $unparsed = New-Object System.Collections.Generic.List[string]
-    $trackedScripts = @(Invoke-Git ls-files -- '*.ps1' | Where-Object { $_ })
+    $parseTip = if ($tips.Count -gt 0) { $tips[$tips.Count - 1] } else { $published[0] }
+    $trackedScripts = @(Invoke-Git -c core.quotepath=false ls-tree -r --name-only $parseTip | Where-Object { $_ -like '*.ps1' })
     foreach ($trackedScript in $trackedScripts) {
-        $scriptPath = Join-Path $Root $trackedScript
-        if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) { continue }
+        $scriptText = (Invoke-Git show "${parseTip}:$trackedScript") -join "`n"
         $parseErrors = $null
         [void][System.Management.Automation.Language.Parser]::ParseInput(
-            [IO.File]::ReadAllText($scriptPath, [Text.Encoding]::UTF8), $scriptPath, [ref]$null, [ref]$parseErrors)
+            $scriptText, (Join-Path $Root $trackedScript), [ref]$null, [ref]$parseErrors)
         foreach ($parseError in @($parseErrors)) {
             $unparsed.Add("${trackedScript}:$($parseError.Extent.StartLineNumber) $($parseError.Message)")
         }
@@ -496,7 +496,7 @@ try {
         ':extensions:instagram:testDebugUnitTest', ':extensions:instagram:verifyAndroidBoundaries',
         ':extensions:instagram:lint', ':extensions:shared:library:lint')
     if ($LASTEXITCODE -ne 0) { Stop-Push 'the runtime tests, a lint or the catalog failed' }
-    if ((Get-Content -LiteralPath $catalog -Raw) -ne $before) {
+    if ((Get-Content -LiteralPath $catalog -Raw) -cne $before) {
         Stop-Push 'patches-list.json is stale: run :patches:generatePatchesList and commit it'
     }
 

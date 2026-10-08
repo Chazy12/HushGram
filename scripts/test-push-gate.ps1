@@ -101,7 +101,12 @@ function Write-Results([string]$Folder, [string]$Suite, [int]$Cases) {
         "<?xml version=`"1.0`"?><testsuite name=`"$Suite`" tests=`"$Cases`" failures=`"0`" errors=`"0`" skipped=`"0`">$body</testsuite>")
 }
 if ($Tasks -contains ':patches:generatePatchesList' -and $env:HUSHGRAM_GATE_TEST_STALE) {
-    Add-Content -LiteralPath (Join-Path $ProjectDir 'patches-list.json') -Value ' '
+    $catalogPath = Join-Path $ProjectDir 'patches-list.json'
+    if ($env:HUSHGRAM_GATE_TEST_STALE -eq 'case') {
+        [IO.File]::WriteAllText($catalogPath, [IO.File]::ReadAllText($catalogPath).Replace('Stand-in patch', 'stand-in patch'))
+    } else {
+        Add-Content -LiteralPath $catalogPath -Value ' '
+    }
 }
 if ($Tasks -contains ':extensions:instagram:testDebugUnitTest') {
     Write-Results (Join-Path $ProjectDir 'extensions/instagram/build/test-results/testDebugUnitTest') 'app.hushgram.RuntimeTest' 3
@@ -222,6 +227,11 @@ exit 0
     $run = Invoke-Push -Tip $tip -Base $base -Environment @{ HUSHGRAM_GATE_TEST_STALE = '1' }
     Assert-True ($run.Exit -ne 0 -and (Get-GradleRuns).Count -eq 1 -and $run.Output -like '*patches-list.json is stale*') `
         "A stale catalog didn't stop the gate before the patch tests: $($run.Output)"
+
+    # A catalog that differs only in letter case is just as stale.
+    $run = Invoke-Push -Tip $tip -Base $base -Environment @{ HUSHGRAM_GATE_TEST_STALE = 'case' }
+    Assert-True ($run.Exit -ne 0 -and (Get-GradleRuns).Count -eq 1 -and $run.Output -like '*patches-list.json is stale*') `
+        "A catalog regenerated with other letter case didn't stop the gate: $($run.Output)"
 
     # A failed patch test or bundle is still a refusal.
     $run = Invoke-Push -Tip $tip -Base $base -Environment @{ HUSHGRAM_GATE_TEST_FAIL = ':patches:test' }
@@ -469,6 +479,17 @@ exit 0
     $run = Invoke-Push -Tip $mended -Base $tip
     Assert-True ($run.Exit -eq 0 -and $run.Output -like '*tracked PowerShell files parse*') `
         "A push whose scripts all parse was refused: $($run.Output)"
+    Invoke-FixtureGit reset -q --hard $tip | Out-Null
+
+    # The parse check reads the pushed commit, not the working tree: a file committed broken stops
+    # the push even when the checkout has since been mended without a commit.
+    Write-FixtureFile 'scripts/stand-in-helper.ps1' ('param([string]$Label)' + "`n" + 'Write-Host "$Label: done"' + "`n")
+    $brokenTip = New-FixtureCommit 'commit a helper that does not parse'
+    Write-FixtureFile 'scripts/stand-in-helper.ps1' ('param([string]$Label)' + "`n" + 'Write-Host "${Label}: done"' + "`n")
+    $run = Invoke-Push -Tip $brokenTip -Base $tip
+    Assert-True ($run.Exit -ne 0 -and $run.Output -like '*scripts/stand-in-helper.ps1:2 *' -and (Get-GradleRuns).Count -eq 0) `
+        "A committed script that doesn't parse went through because the working tree's copy did: $($run.Output)"
+    Invoke-FixtureGit checkout -q -- scripts/stand-in-helper.ps1 | Out-Null
     Invoke-FixtureGit reset -q --hard $tip | Out-Null
 
     # Only the newest runs are kept, and a folder still being written is left alone for a while.
