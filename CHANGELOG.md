@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** The other arm64 builds of 450.0.0.50.77, 385611395, 385611400, 385611404 and 385611431, patch the way 385611438 does. Each build is compiled on its own, and Instagram's compiler moves a different set of strings into shared tables in each one and puts some code in other classes, so on 385611395 six patches and the story links part of Sanitize sharing links couldn't find what they change, and on 385611400 the HushGram row couldn't find the Settings screen. They read those tables now and look where the code moved, so they find the same places on all five builds. Morphe Manager still calls the four an unsupported version, since it can only be told one build number for each kind of phone. Reported in #77.
+
 * **Instagram:** With Hide suggested posts on, Home could open on Instagram's Welcome to Instagram card for a few seconds, the one it shows when you follow nobody, before your posts loaded. A suggestion taken out anywhere in the app, or from what Home saved last time, was enough to make Home look finished while it was still waiting for its first page. Now only suggestions taken out of Home's own posts can end it, so it shows its usual loading placeholder until your posts arrive. Reported in #28.
 
 * **Instagram:** Open settings with a tab long press works as soon as you pick a tab. Before, the choice saved but only reached the tabs after Instagram restarted, so until then the tab's long press still did what it always had, which looked like the choice hadn't stuck. Profile could also go on opening Instagram's account switcher, even after a restart, because Instagram puts that long press on the Profile button a second way. That one follows your choice now too. Reported in #82.
