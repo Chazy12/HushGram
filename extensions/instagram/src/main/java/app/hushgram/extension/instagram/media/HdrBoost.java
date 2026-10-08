@@ -24,6 +24,12 @@ import app.hushgram.extension.shared.diagnostics.HookStatus;
  * those calls here. With the switch on, every headroom asked becomes 1.0, which Android reads as no
  * HDR at all, and HDR color mode becomes the default mode, so nothing outshines the rest of the
  * screen. Off, paused or unready, each call goes through with Instagram's own value.
+ *
+ * <p>On Android 14 and newer Instagram also draws some videos a frame at a time into an extended
+ * range layer of its own (450 {@code LX/0201;->A02}), which shows them brighter than the rest of the
+ * screen, and asks Android for three times the screen's white for it (#85). That request's desired
+ * ratio is held the same way. The frame's own ratio stays Instagram's: it follows the ratio the
+ * screen reports, which stays at 1.0 when no boost is granted.
  */
 public final class HdrBoost {
     private HdrBoost() {
@@ -51,6 +57,15 @@ public final class HdrBoost {
     public static SurfaceControl.Transaction transactionHeadroom(SurfaceControl.Transaction transaction,
             SurfaceControl control, float headroom) {
         if (Build.VERSION.SDK_INT >= 35) return transaction.setDesiredHdrHeadroom(control, headroom(headroom));
+        return transaction;
+    }
+
+    /** Stands in for {@code transaction.setExtendedRangeBrightness(control, currentRatio, desiredRatio)}. */
+    public static SurfaceControl.Transaction extendedRangeBrightness(SurfaceControl.Transaction transaction,
+            SurfaceControl control, float currentRatio, float desiredRatio) {
+        if (Build.VERSION.SDK_INT >= 34) {
+            return transaction.setExtendedRangeBrightness(control, currentRatio, headroom(desiredRatio));
+        }
         return transaction;
     }
 

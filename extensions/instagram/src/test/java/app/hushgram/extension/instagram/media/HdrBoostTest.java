@@ -49,15 +49,19 @@ public class HdrBoostTest {
         HookStatus.clear();
     }
 
-    /** Every headroom Instagram asks for, a fixed 1.5, a server's 1.7 or automatic 0, becomes none. */
+    /**
+     * Every headroom Instagram asks for, a fixed 1.5, a server's 1.7, automatic 0 or the 3.0 its
+     * extended range video layer wants (#85), becomes none.
+     */
     @Test
     public void onEveryHeadroomBecomesNone() {
         assertEquals(1.0f, HdrBoost.headroom(1.5f), 0);
         assertEquals(1.0f, HdrBoost.headroom(1.7f), 0);
         assertEquals(1.0f, HdrBoost.headroom(0f), 0);
+        assertEquals(1.0f, HdrBoost.headroom(3.0f), 0);
         assertEquals(1.0f, HdrBoost.headroom(1.0f), 0);
         String report = String.join("\n", HookStatus.report());
-        assertTrue(report, report.contains(HdrBoost.HELD_BACK + " 3"));
+        assertTrue(report, report.contains(HdrBoost.HELD_BACK + " 4"));
     }
 
     /** HDR and HDR10 color modes become the default one. Wide color and the default stay. */
