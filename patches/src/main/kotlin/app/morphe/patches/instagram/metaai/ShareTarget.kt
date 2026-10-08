@@ -7,9 +7,11 @@ package app.morphe.patches.instagram.metaai
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
+import app.morphe.patches.instagram.misc.analytics.loadsString
 import app.morphe.patches.instagram.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.instagram.misc.extension.classesHolding
 import app.morphe.patches.instagram.misc.extension.jumpTargets
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
@@ -48,13 +50,19 @@ internal class ShareTargetSite(
  * The share sheet builds the targets in its bottom row from a list of names, one switch case per
  * name it knows. Meta AI's case compares the name with "hatch", and a no there goes on to the next
  * name the way an unknown one does, so the row is built without that target. The builder is the one
- * method holding [SHARE_ROW_NAMES]. Another check in it, which moves an existing hatch target in
- * the row, compares the other way round and isn't the case.
+ * method loading [SHARE_ROW_NAMES], each itself or from a pool of shared strings: 450's 385611400
+ * asks a pool for add_to_audio_note there (#77). Its case loads "hatch" itself on every build.
+ * Another check in it, which moves an existing hatch target in the row, compares the other way
+ * round and isn't the case.
  */
 internal fun BytecodePatchContext.findShareTargetCheck(): ShareTargetSite {
     val builders = mutableListOf<Pair<ClassDef, Method>>()
-    classesHolding(*SHARE_ROW_NAMES.toTypedArray()).forEach { classDef ->
-        classDef.methods.forEach { method -> if (method.targetStrings().containsAll(SHARE_ROW_NAMES)) builders += classDef to method }
+    classesHolding(HATCH_TARGET).forEach { classDef ->
+        classDef.methods.forEach { method ->
+            if (!method.isStringPool() && HATCH_TARGET in method.targetStrings() && SHARE_ROW_NAMES.all { loadsString(method, it) }) {
+                builders += classDef to method
+            }
+        }
     }
     val (classDef, method) = builders.singleOrNull()
         ?: refuseShare("${builders.size} methods hold ${SHARE_ROW_NAMES.joinToString(", ")}, not one")
@@ -98,6 +106,10 @@ internal fun BytecodePatchContext.holdShareTarget(site: ShareTargetSite) {
 
 private fun Method.targetStrings(): Set<String> = implementation?.instructions
     ?.mapNotNull { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string }?.toSet() ?: emptySet()
+
+/** A static (int)String pool of shared strings, which holds names without building anything. */
+private fun Method.isStringPool(): Boolean = AccessFlags.STATIC.isSet(accessFlags) && returnType == "Ljava/lang/String;" &&
+    parameterTypes.map(CharSequence::toString) == listOf("I")
 
 private fun Instruction.targetMethod(): MethodReference? = (this as? ReferenceInstruction)?.reference as? MethodReference
 
