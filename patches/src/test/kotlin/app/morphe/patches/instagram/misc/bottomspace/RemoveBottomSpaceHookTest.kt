@@ -107,6 +107,26 @@ class RemoveBottomSpaceHookTest {
         }
     }
 
+    /**
+     * A static holding the strings that's shaped like the listener rather than its moved check isn't
+     * followed to its callers. With the guess's helper inlined into a static (Context)I listener, the
+     * one method calling it would otherwise take its call to the listener for the guess, and pass the
+     * listener's whole answer through the switch.
+     */
+    @Test
+    fun aListenerShapedStaticIsNotFollowedToItsCaller() {
+        for ((case, classes) in mapOf(
+            "the guess inlined into a static listener" to listOf(inlinedListenerClass(), insetsCallerClass(guess = false)),
+            "a static answering an int whose caller reads the guess" to
+                listOf(inlinedListenerClass(dimension = false), insetsCallerClass(guess = true), dimensionsClass()),
+            "a moved check loading the dimension itself" to listOf(checkClass(dimension = true), callingListenerClass(), dimensionsClass()),
+        )) {
+            val context = PatchContexts.of(classes)
+            val failure = runCatching { context.findGuessedNavigationBar() }.exceptionOrNull()
+            assertTrue("$case: $failure", failure is PatchException)
+        }
+    }
+
     /** In each declared build the insets listener is found and its one guess goes through the switch. */
     @Test
     fun eachDeclaredBuildDropsTheGuess() {
@@ -203,6 +223,7 @@ class RemoveBottomSpaceHookTest {
 
         val GUESS = ImmutableMethodReference(DIMENSIONS, "navigationBar", listOf("Landroid/content/Context;"), "I")
         val CHECK = ImmutableMethodReference("Lfixture/NavigationBarCheck;", "hasNavigationBar", listOf("Landroid/content/res/Resources;"), "Z")
+        val INLINED = ImmutableMethodReference("Lfixture/InlinedInsets;", "onInsets", listOf("Landroid/content/Context;"), "I")
 
         /**
          * A static (Context)I shaped like the listener on 449: it loads the two strings, reads the
@@ -239,17 +260,49 @@ class RemoveBottomSpaceHookTest {
 
         /**
          * The listener's navigation bar check moved into a static of its own, as on 385611400: it
-         * loads the two strings, takes the Resources and answers a boolean.
+         * loads the two strings, takes the Resources and answers a boolean. [dimension] has it load
+         * the dimension too.
          */
-        fun checkClass(): ClassDef = stand(
+        fun checkClass(dimension: Boolean = false): ClassDef = stand(
             CHECK.definingClass, CHECK.name, 2,
-            listOf(
+            listOfNotNull(
                 ImmutableInstruction21c(Opcode.CONST_STRING, 0, ImmutableStringReference(SHOW_NAVIGATION_BAR)),
                 ImmutableInstruction21c(Opcode.CONST_STRING, 0, ImmutableStringReference(NAVIGATION_BAR_NOT_FOUND)),
+                if (dimension) ImmutableInstruction21c(Opcode.CONST_STRING, 0, ImmutableStringReference(NAVIGATION_BAR_DIMENSION)) else null,
                 ImmutableInstruction11n(Opcode.CONST_4, 0, 1),
                 ImmutableInstruction11x(Opcode.RETURN, 0),
             ),
             parameter = "Landroid/content/res/Resources;", returnType = "Z",
+        )
+
+        /**
+         * A static (Context)I listener with the guess's helper inlined into it: it loads the two
+         * strings and, with [dimension], the dimension itself, and calls no helper.
+         */
+        fun inlinedListenerClass(dimension: Boolean = true): ClassDef = stand(
+            INLINED.definingClass, INLINED.name, 2,
+            listOfNotNull(
+                ImmutableInstruction21c(Opcode.CONST_STRING, 0, ImmutableStringReference(SHOW_NAVIGATION_BAR)),
+                ImmutableInstruction21c(Opcode.CONST_STRING, 0, ImmutableStringReference(NAVIGATION_BAR_NOT_FOUND)),
+                if (dimension) ImmutableInstruction21c(Opcode.CONST_STRING, 0, ImmutableStringReference(NAVIGATION_BAR_DIMENSION)) else null,
+                ImmutableInstruction11n(Opcode.CONST_4, 0, 0),
+                ImmutableInstruction11x(Opcode.RETURN, 0),
+            ),
+        )
+
+        /**
+         * The one method calling [inlinedListenerClass]'s listener, answering what it answers, or
+         * with [guess] reading the guess after it and answering that.
+         */
+        fun insetsCallerClass(guess: Boolean): ClassDef = stand(
+            "Lfixture/Insets;", "apply", 4,
+            listOf(
+                ImmutableInstruction35c(Opcode.INVOKE_STATIC, 1, 3, 0, 0, 0, 0, INLINED),
+                ImmutableInstruction11x(Opcode.MOVE_RESULT, 1),
+            ) + (if (guess) listOf(
+                ImmutableInstruction35c(Opcode.INVOKE_STATIC, 1, 3, 0, 0, 0, 0, GUESS),
+                ImmutableInstruction11x(Opcode.MOVE_RESULT, 1),
+            ) else emptyList()) + ImmutableInstruction11x(Opcode.RETURN, 1),
         )
 
         /**
