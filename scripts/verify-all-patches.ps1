@@ -64,6 +64,7 @@ $root = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'patch-report.ps1')
 . (Join-Path $PSScriptRoot 'patch-target.ps1')
 . (Join-Path $PSScriptRoot 'common.ps1')
+. (Join-Path $PSScriptRoot 'build-jobs.ps1')
 
 if (-not $Bundle) {
     $version = Get-BundleVersion -Root $root
@@ -133,7 +134,11 @@ $temp = Resolve-WithinRoot -Path (Join-Path $runDir 'verify-all-tmp') -Root $wor
 $result = Resolve-WithinRoot -Path (Join-Path $workRoot "verify-all-result-$runId.json") -Root $workRoot
 $exitCode = 1
 
+# The merge, the patch run and the checks after it hold a slot in the machine's build queue
+# (build-jobs.ps1). Started from the push gate, which holds one already, this doesn't queue again.
+$patchJob = $null
 try {
+    $patchJob = Enter-HeavyJob -Label "verify $(Split-Path -Leaf $Apk)"
     # What the CLI patches: a bundle's merge, made here because the CLI deletes its own, or the APK
     # itself. A bundle that won't merge stops the run.
     $mergedApk = Resolve-WithinRoot -Path (Join-Path $runDir 'stock-merged.apk') -Root $workRoot
@@ -273,6 +278,7 @@ try {
     }
 } finally {
     Remove-GeneratedPath -Path $runDir -Root $workRoot
+    Exit-HeavyJob $patchJob
 }
 
 exit $exitCode

@@ -71,6 +71,10 @@ function New-TestBundleArchive {
 foreach ($name in @('HUSHGRAM_FIXTURE_DIR', 'HUSHGRAM_DESKTOP_JAR', 'HUSHGRAM_WORKDIR', 'HUSHGRAM_JAVA', 'HUSHGRAM_AAPT2')) {
     Remove-Item -LiteralPath "Env:\$name" -ErrorAction SilentlyContinue
 }
+# The stand-ins patch nothing heavy, so they don't wait for a slot in the machine's build queue.
+# build-jobs.ps1 reads the user's environment too, so these are switched off rather than cleared.
+$env:BUILD_QUEUE_SCRIPT = 'none'
+$env:HUSHGRAM_BUILD_WRAPPER = 'none'
 
 # --- release receipt -------------------------------------------------------------------------
 

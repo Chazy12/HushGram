@@ -6,6 +6,8 @@ Every HushGram release, newest first.
 
 * **Instagram:** Download any story now also looks at the type a story was posted as before it picks the menu's rows, the way Instagram's own story viewer tells a photo story with music from a filmed video. Instagram sends most photo stories with music as a video, and only some of them carry the flag the menu checked until now, so the rest got a single Download that saved the video. A story posted as a photo that arrives as a video gets Download as video and Download as photo. Plain photo and video stories keep their one Download, and the diagnostic report counts which kind of story each menu was for. Reported in #98.
 
+* **Tooling:** The push gate, the release receipt, the dependency audit and the all-patches check wait their turn in the machine's build queue now, when it has one, instead of starting Gradle or the patcher straight away. The gate holds one slot from its first build to its last patch run, and a push made with `HUSHGRAM_ALLOW_RELEASE=1` goes ahead of everyday builds in the line. `BUILD_QUEUE_SCRIPT` names the queue and `HUSHGRAM_BUILD_WRAPPER` the script that runs Gradle. Without them the scripts run as they did before and say so.
+
 ## 0.0.7 (2026-10-08)
 
 * **Instagram:** HushGram 0.0.7 adds 3 patches, for 78 in all, and stays on Instagram 450.0.0.50.77 with Morphe Manager 1.34.0 or newer. Besides build 385611438, the other arm64 builds of that version (385611395, 385611400, 385611404 and 385611431) and the x86 and x86_64 ones (385611439 and 385611440) patch now too.

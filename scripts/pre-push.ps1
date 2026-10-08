@@ -20,6 +20,11 @@
     them. The ledger's rules run when the ledger or its scripts move, and the injected-register,
     device helper, resource table and release tooling suites when their own files move.
 
+    The build waits for a slot in the machine's build queue and holds it to the end, and Gradle
+    runs through the machine's wrapper (scripts/build-jobs.ps1 says how both are found). Without
+    them it runs straight away with a warning. HUSHGRAM_ALLOW_RELEASE=1 puts the push ahead of
+    everyday builds in the queue.
+
     A push that changes a published file (README.md, CHANGELOG.md, the catalog, the version, the
     bug form, the index or the lists and scripts the release check reads) runs
     scripts/validate-release-facts.ps1 on the pushed tip: in place when the checkout is a clean
@@ -51,6 +56,7 @@ if ($env:HUSHGRAM_SKIP_PRE_PUSH -eq '1') {
 }
 . (Join-Path $PSScriptRoot 'common.ps1')
 . (Join-Path $PSScriptRoot 'patch-target.ps1')
+. (Join-Path $PSScriptRoot 'build-jobs.ps1')
 
 # A hook runs with git's environment, which can miss user variables set after the shell started.
 foreach ($envName in @('HUSHGRAM_DESKTOP_JAR', 'HUSHGRAM_FIXTURE_DIR', 'HUSHGRAM_WORKDIR')) {
@@ -68,7 +74,7 @@ $buildPaths = '^(extensions/|patches/|gradle/|build\.gradle\.kts$|settings\.grad
     'NOTICE$|provenance\.json$|README\.md$|patches-list\.json$|sources/|' +
     'scripts/(build-inputs\.gradle|canonical-build-inputs\.txt|build-identity\.ps1|test-build-identity\.ps1|DexDiff\.java|ResourceTableCheck\.java|MergeSplits\.java|injected-mutation-contracts\.txt|' +
     'injected-register-removal-allowlist\.txt|verify-all-patches\.ps1|verify-injected-registers\.ps1|' +
-    'test-android-boundaries\.ps1|pre-push\.ps1|script-wiring\.ps1)$)'
+    'test-android-boundaries\.ps1|pre-push\.ps1|script-wiring\.ps1|build-jobs\.ps1)$)'
 $ledgerPaths = '^(sources/|scripts/(instagram-sources|test-instagram-sources|audit-instagram-sources)\.ps1$|NOTICE$|provenance\.json$)'
 $zero = '0' * 40
 
@@ -116,6 +122,9 @@ if ($changed.Contains('patches-bundle.json')) { $release = $true }
 if ($release -and $env:HUSHGRAM_ALLOW_RELEASE -ne '1') {
     Stop-Push 'this push is a release (a tag or patches-bundle.json). Set HUSHGRAM_ALLOW_RELEASE=1 for the push once it has been approved.'
 }
+# A push made for a release, its source push included, goes ahead of everyday builds in the
+# machine's queue (build-jobs.ps1).
+if ($env:HUSHGRAM_ALLOW_RELEASE -eq '1') { $env:BUILD_QUEUE_PRIORITY = 'release' }
 
 $hits = @(Find-MachineNames -Root $Root -Commit @($published))
 if ($hits.Count -gt 0) {
@@ -178,6 +187,7 @@ $releaseToolingPaths = @(
     'scripts/dependency-graphs.init.gradle',
     'scripts/build-inputs.gradle',
     'scripts/build-identity.ps1',
+    'scripts/build-jobs.ps1',
     'scripts/canonical-build-inputs.txt',
     'scripts/test-build-identity.ps1',
     'scripts/dependency-advisory-exceptions.txt',
@@ -247,6 +257,12 @@ if (@($changed | Where-Object {
     $_ -like 'extensions/*/src/main/java/*' -or $_ -like 'extensions/shared/library/src/main/l10n/*'
 }).Count -gt 0) {
     $suites += , @('scripts/test-translations.ps1', 'translation catalog or tooling changed, checking its tests')
+}
+if (@($changed | Where-Object {
+    $_ -in @('scripts/build-jobs.ps1', 'scripts/test-build-jobs.ps1', 'scripts/audit-dependencies.ps1',
+        'scripts/build-release-receipt.ps1', 'scripts/verify-all-patches.ps1', 'scripts/pre-push.ps1', 'scripts/script-wiring.ps1')
+}).Count -gt 0) {
+    $suites += , @('scripts/test-build-jobs.ps1', 'the build queue wiring changed, checking its stand-ins')
 }
 foreach ($suite in $suites) {
     $suiteScript = Join-Path $Root $suite[0]
@@ -342,12 +358,16 @@ $tip = $tips[$tips.Count - 1]
 $gate = Join-Path ([System.IO.Path]::GetTempPath()) ('hushgram-gate-' + [guid]::NewGuid().ToString('N').Substring(0, 12))
 Write-Step "building $($tip.Substring(0, 12)) in a clean worktree"
 Invoke-Git worktree add --detach $gate $tip | Out-Null
+# The whole gate holds one slot in the machine's build queue, so another session's build can't
+# take the cores between its steps. Gradle, the boundary self-tests and the patch runs started
+# inside it see the slot and don't queue again.
+$gateJob = $null
 try {
+    $gateJob = Enter-HeavyJob -Label "gate $($tip.Substring(0, 12))"
     $localProperties = Join-Path $Root 'local.properties'
     if (Test-Path -LiteralPath $localProperties) { Copy-Item -LiteralPath $localProperties -Destination $gate }
-    $gradle = Join-Path $gate $(if ($IsWindows -or $env:OS -eq 'Windows_NT') { 'gradlew.bat' } else { 'gradlew' })
-    & $gradle -p $gate --console=plain :patches:test :extensions:instagram:testDebugUnitTest :extensions:instagram:verifyAndroidBoundaries `
-        :extensions:instagram:lint :extensions:shared:library:lint
+    Invoke-GradleBuild -ProjectDir $gate -Tasks @('--console=plain', ':patches:test', ':extensions:instagram:testDebugUnitTest',
+        ':extensions:instagram:verifyAndroidBoundaries', ':extensions:instagram:lint', ':extensions:shared:library:lint')
     if ($LASTEXITCODE -ne 0) { Stop-Push 'tests or lint failed' }
 
     if ($touchesAndroidBoundaries) {
@@ -357,7 +377,7 @@ try {
 
     $catalog = Join-Path $gate 'patches-list.json'
     $before = Get-Content -LiteralPath $catalog -Raw
-    & $gradle -p $gate --console=plain :patches:generatePatchesList :patches:buildAndroid
+    Invoke-GradleBuild -ProjectDir $gate -Tasks @('--console=plain', ':patches:generatePatchesList', ':patches:buildAndroid')
     if ($LASTEXITCODE -ne 0) { Stop-Push 'the bundle did not build' }
     if ((Get-Content -LiteralPath $catalog -Raw) -ne $before) {
         Stop-Push 'patches-list.json is stale: run :patches:generatePatchesList and commit it'
@@ -386,5 +406,6 @@ try {
 } finally {
     & git -C $Root worktree remove --force $gate 2>$null | Out-Null
     if (Test-Path -LiteralPath $gate) { Remove-Item -LiteralPath $gate -Recurse -Force -ErrorAction SilentlyContinue }
+    Exit-HeavyJob $gateJob
 }
 exit 0

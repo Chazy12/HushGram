@@ -92,6 +92,7 @@ if (-not $Root) { $Root = Split-Path -Parent $PSScriptRoot }
 . (Join-Path $PSScriptRoot 'release-receipt.ps1')
 . (Join-Path $PSScriptRoot 'release-advisories.ps1')
 . (Join-Path $PSScriptRoot 'common.ps1')
+. (Join-Path $PSScriptRoot 'build-jobs.ps1')
 
 $Java = Resolve-Java -Explicit $Java
 $Aapt2 = Resolve-Aapt2 -Explicit $Aapt2 -Root $Root
@@ -306,7 +307,10 @@ foreach ($apk in $Fixture) {
     $runId = [guid]::NewGuid().ToString('N')
     $runDir = Resolve-WithinRoot -Path (Join-Path $workRoot "receipt-$runId") -Root $workRoot
     New-Item -ItemType Directory -Force -Path $runDir | Out-Null
+    # The merge and the patch run take a slot in the machine's build queue (build-jobs.ps1).
+    $patchJob = $null
     try {
+        $patchJob = Enter-HeavyJob -Label "receipt $label"
         $stock = $stockFacts[$apk]
 
         $out = Resolve-WithinRoot -Path (Join-Path $runDir 'patched.apk') -Root $workRoot
@@ -398,6 +402,7 @@ foreach ($apk in $Fixture) {
             (Test-Path -LiteralPath $runDir)) {
             Remove-Item -LiteralPath $runDir -Recurse -Force -ErrorAction SilentlyContinue
         }
+        Exit-HeavyJob $patchJob
     }
 }
 
