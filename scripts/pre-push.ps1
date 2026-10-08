@@ -322,9 +322,11 @@ if (@($changed | Where-Object { $_ -in $releaseFactPaths }).Count -gt 0 -and $ti
             Stop-Push ("an index push checks the bundle and receipt this checkout built, so push it from a clean " +
                 "checkout of $factsTip")
         }
-        $builtHere = (Get-ReleaseFactsArguments -Push Index -Root $Root)['ArtifactPath']
-        if ($builtHere) {
-            Write-Step "a new index, checking the published release against $(Split-Path -Leaf $builtHere) built here"
+        $indexFacts = Get-ReleaseFactsArguments -Push Index -Root $Root
+        if ($indexFacts['ArtifactPath']) {
+            Write-Step "a new index, checking the published release against $(Split-Path -Leaf $indexFacts['ArtifactPath']) built here"
+        } elseif ($indexFacts['FromGate']) {
+            Write-Step "a new index, checking the published release against the bundle the gate built for it"
         } else {
             Write-Step 'a new index and no bundle built here for the version it publishes, so the published asset is checked on its own'
         }
