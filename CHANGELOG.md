@@ -8,6 +8,8 @@ Every HushGram release, newest first.
 
 * **Tooling:** The push gate, the release receipt, the dependency audit and the all-patches check wait their turn in the machine's build queue now, when it has one, instead of starting Gradle or the patcher straight away. The gate holds one slot from its first build to its last patch run, and a push made with `HUSHGRAM_ALLOW_RELEASE=1` goes ahead of everyday builds in the line. `BUILD_QUEUE_SCRIPT` names the queue and `HUSHGRAM_BUILD_WRAPPER` the script that runs Gradle. Without them the scripts run as they did before and say so.
 
+* **Tooling:** The push gate runs its quick checks first. The catalog, both lints and the runtime tests go in one build, and the patch tests (most of a quarter hour) and the bundle come after it, so a lint slip or a stale catalog stops the push in a few minutes. A declared build with no fixture stops it before anything is built.
+
 ## 0.0.7 (2026-10-08)
 
 * **Instagram:** HushGram 0.0.7 adds 3 patches, for 78 in all, and stays on Instagram 450.0.0.50.77 with Morphe Manager 1.34.0 or newer. Besides build 385611438, the other arm64 builds of that version (385611395, 385611400, 385611404 and 385611431) and the x86 and x86_64 ones (385611439 and 385611440) patch now too.

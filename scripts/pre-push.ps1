@@ -264,6 +264,12 @@ if (@($changed | Where-Object {
 }).Count -gt 0) {
     $suites += , @('scripts/test-build-jobs.ps1', 'the build queue wiring changed, checking its stand-ins')
 }
+if (@($changed | Where-Object {
+    $_ -in @('scripts/pre-push.ps1', 'scripts/test-push-gate.ps1', 'scripts/build-jobs.ps1', 'scripts/common.ps1',
+        'scripts/patch-target.ps1', 'scripts/script-wiring.ps1')
+}).Count -gt 0) {
+    $suites += , @('scripts/test-push-gate.ps1', 'the push gate changed, running it end to end on stand-ins')
+}
 foreach ($suite in $suites) {
     $suiteScript = Join-Path $Root $suite[0]
     if (-not (Test-Path -LiteralPath $suiteScript -PathType Leaf)) {
@@ -366,36 +372,52 @@ try {
     $gateJob = Enter-HeavyJob -Label "gate $($tip.Substring(0, 12))"
     $localProperties = Join-Path $Root 'local.properties'
     if (Test-Path -LiteralPath $localProperties) { Copy-Item -LiteralPath $localProperties -Destination $gate }
-    Invoke-GradleBuild -ProjectDir $gate -Tasks @('--console=plain', ':patches:test', ':extensions:instagram:testDebugUnitTest',
-        ':extensions:instagram:verifyAndroidBoundaries', ':extensions:instagram:lint', ':extensions:shared:library:lint')
-    if ($LASTEXITCODE -ne 0) { Stop-Push 'tests or lint failed' }
+
+    # The declared builds' fixtures and the desktop CLI are found before anything is built, so a
+    # missing one stops the push in seconds rather than after the tests.
+    $catalog = Join-Path $gate 'patches-list.json'
+    $before = Get-Content -LiteralPath $catalog -Raw
+    $fixtures = $env:HUSHGRAM_FIXTURE_DIR
+    $fixtureApks = @()
+    if ($fixtures -and (Test-Path -LiteralPath $fixtures -PathType Container)) {
+        $desktop = Resolve-DesktopCli -Root $Root -Required
+        $target = Get-PatchTarget -PatchList ($before | ConvertFrom-Json)
+        $fixtureApks = @(foreach ($version in @($target.PackageVersions)) {
+            $apk = Get-ChildItem -LiteralPath $fixtures -File | Where-Object {
+                $_.Name -like "instagram-$version-*" -and $_.Extension -in '.apk', '.apks', '.apkm', '.xapk'
+            } | Select-Object -First 1
+            if (-not $apk) { Stop-Push "no fixture for the declared build $version in $fixtures" }
+            [pscustomobject]@{ Version = $version; Apk = $apk }
+        })
+    }
+
+    # Cheap checks first: the catalog, both lints and the runtime tests take a few minutes, and
+    # :patches:test reads every fixture build for most of a quarter hour. v0.0.7's gates ran the
+    # lot as one build, so a lint slip or a stale catalog surfaced after the patch tests.
+    Invoke-GradleBuild -ProjectDir $gate -Tasks @('--console=plain', ':patches:generatePatchesList',
+        ':extensions:instagram:testDebugUnitTest', ':extensions:instagram:verifyAndroidBoundaries',
+        ':extensions:instagram:lint', ':extensions:shared:library:lint')
+    if ($LASTEXITCODE -ne 0) { Stop-Push 'the runtime tests, a lint or the catalog failed' }
+    if ((Get-Content -LiteralPath $catalog -Raw) -ne $before) {
+        Stop-Push 'patches-list.json is stale: run :patches:generatePatchesList and commit it'
+    }
 
     if ($touchesAndroidBoundaries) {
         & pwsh -NoProfile -File (Join-Path $gate 'scripts/test-android-boundaries.ps1') -Root $gate
         if ($LASTEXITCODE -ne 0) { Stop-Push 'Android boundary gate self-tests failed' }
     }
 
-    $catalog = Join-Path $gate 'patches-list.json'
-    $before = Get-Content -LiteralPath $catalog -Raw
-    Invoke-GradleBuild -ProjectDir $gate -Tasks @('--console=plain', ':patches:generatePatchesList', ':patches:buildAndroid')
-    if ($LASTEXITCODE -ne 0) { Stop-Push 'the bundle did not build' }
-    if ((Get-Content -LiteralPath $catalog -Raw) -ne $before) {
-        Stop-Push 'patches-list.json is stale: run :patches:generatePatchesList and commit it'
-    }
+    Invoke-GradleBuild -ProjectDir $gate -Tasks @('--console=plain', ':patches:test', ':patches:buildAndroid')
+    if ($LASTEXITCODE -ne 0) { Stop-Push 'the patch tests failed or the bundle did not build' }
 
     $bundle = Get-ChildItem -LiteralPath (Join-Path $gate 'patches/build/release') -Filter 'patches-*.mpp' | Select-Object -First 1
-    $fixtures = $env:HUSHGRAM_FIXTURE_DIR
-    if (-not $fixtures -or -not (Test-Path -LiteralPath $fixtures -PathType Container)) {
+    if ($fixtureApks.Count -eq 0) {
         Write-Step 'HUSHGRAM_FIXTURE_DIR is not set, so no build was patched'
         exit 0
     }
-    $desktop = Resolve-DesktopCli -Root $Root -Required
-    $target = Get-PatchTarget -PatchList (Get-Content -LiteralPath $catalog -Raw | ConvertFrom-Json)
-    foreach ($version in @($target.PackageVersions)) {
-        $apk = Get-ChildItem -LiteralPath $fixtures -File | Where-Object {
-            $_.Name -like "instagram-$version-*" -and $_.Extension -in '.apk', '.apks', '.apkm', '.xapk'
-        } | Select-Object -First 1
-        if (-not $apk) { Stop-Push "no fixture for the declared build $version in $fixtures" }
+    foreach ($fixture in $fixtureApks) {
+        $version = $fixture.Version
+        $apk = $fixture.Apk
         $work = Join-Path $gate "build/verify-$version"
         New-Item -ItemType Directory -Path $work -Force | Out-Null
         & pwsh -NoProfile -File (Join-Path $gate 'scripts/verify-all-patches.ps1') -Apk $apk.FullName `
