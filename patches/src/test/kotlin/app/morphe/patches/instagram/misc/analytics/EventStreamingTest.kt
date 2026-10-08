@@ -59,6 +59,24 @@ class EventStreamingTest {
         assertEquals(register, (code[call + 2] as OneRegisterInstruction).registerA)
     }
 
+    /**
+     * A step split in two, as on 385611400: the part holding the strings reads no switch, and the
+     * one method calling it reads the switch and branches on it, so the call goes in there (#77).
+     */
+    @Test
+    fun aSplitStepHasTheSwitchGoThroughTheExtensionInItsCaller() {
+        val context = PatchContexts.of(splitClasses())
+
+        assertNull(context.keepEventsOffTheStream(STREAM_EVENTS))
+
+        val code = context.classDefBy(step).methods.single { it.name == "handle" }.code()
+        val call = code.indices.single { code[it].referenceText() == STREAM_EVENTS }
+        assertEquals("$settings->streaming:Z", code[call - 1].referenceText())
+        assertEquals(Opcode.MOVE_RESULT, code[call + 1].opcode)
+        assertEquals("the branch tests the answer", Opcode.IF_EQZ, code[call + 2].opcode)
+        assertTrue(context.step().code().none { it.referenceText() == STREAM_EVENTS })
+    }
+
     /** A build missing either piece, or whose step doesn't branch on the switch, says so and changes nothing. */
     @Test
     fun whatItCantPlaceItLeavesAlone() {
@@ -67,6 +85,8 @@ class EventStreamingTest {
             "no step" to classes(stepStrings = listOf("event.streaming.eligible")),
             "two steps" to classes(steps = 2),
             "no branch" to classes(branch = false),
+            "split step with two callers" to splitClasses(callers = 2),
+            "split step whose caller reads no switch" to splitClasses(callerReadsSwitch = false),
         )
         for ((case, classes) in cases) {
             val context = PatchContexts.of(classes)
@@ -113,6 +133,44 @@ class EventStreamingTest {
             }
         }
         assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    /**
+     * The same in the other builds of each declared version (#77, #95). 385611400 splits the step,
+     * and the switch read goes through streamEvents() in the one method calling the part holding the
+     * strings.
+     */
+    @Test
+    fun everyOtherBuildKeepsEventsOffTheStream() {
+        val split = mutableSetOf<String>()
+        for (bundle in Fixtures.otherBuilds()) {
+            val label = bundle.parentFile.name
+            val classes = mutableListOf<ClassDef>()
+            FixtureDex.forEach(bundle) { dex ->
+                if ((EVENT_SETTINGS_STRINGS + STREAM_STEP_STRINGS).none { it in dex.stringSection }) return@forEach
+                for (classDef in dex.classes) {
+                    val wanted = classDef.methods.any { method ->
+                        val strings = method.strings()
+                        (method.name == "<init>" && strings.containsAll(EVENT_SETTINGS_STRINGS)) || strings.containsAll(STREAM_STEP_STRINGS)
+                    }
+                    if (wanted) classes += ImmutableClassDef.of(classDef)
+                }
+            }
+            val context = PatchContexts.of(classes)
+
+            assertNull(label, context.keepEventsOffTheStream(STREAM_EVENTS))
+
+            val config = classes.single { classDef -> classDef.methods.any { it.name == "<init>" && it.strings().containsAll(EVENT_SETTINGS_STRINGS) } }
+            val hooked = classes.flatMap { classDef -> context.classDefBy(classDef.type).methods }
+                .single { method -> method.code().any { it.referenceText() == STREAM_EVENTS } }
+            val code = hooked.code()
+            val call = code.indices.single { code[it].referenceText() == STREAM_EVENTS }
+            assertEquals("$label: the switch read", Opcode.IGET_BOOLEAN, code[call - 1].opcode)
+            assertTrue("$label: a switch of the event settings", code[call - 1].referenceText()!!.startsWith("${config.type}->"))
+            assertEquals("$label: the branch on it", Opcode.IF_EQZ, code[call + 2].opcode)
+            if (!hooked.strings().containsAll(STREAM_STEP_STRINGS)) split += label.substringAfterLast('-')
+        }
+        assertEquals("the builds that split the step", setOf("385611400"), split)
     }
 
     private fun BytecodePatchContext.step(): Method = classDefBy(step).methods.single { it.name == "log" }
@@ -168,6 +226,33 @@ class EventStreamingTest {
                 listOf(constructor)),
             ImmutableClassDef(step, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", null, null, null,
                 listOf(ImmutableField(step, "first", "Z", AccessFlags.PUBLIC.value, null, null, null)), logs),
+        )
+    }
+
+    /**
+     * The settings as [classes] has them, and a step split in two: `log` holds the strings and reads
+     * no switch, and each caller (`handle`, then `handleAgain`) reads the stream switch, or with
+     * [callerReadsSwitch] off its own flag, branches to the batch upload on it, and calls `log`.
+     */
+    private fun splitClasses(callers: Int = 1, callerReadsSwitch: Boolean = true): List<ClassDef> {
+        val (settingsClass, _) = classes()
+        val log = method(step, "log", listOf(settings), 4, AccessFlags.PRIVATE.value,
+            STREAM_STEP_STRINGS.joinToString("\n") { "const-string v1, \"$it\"" } + "\nreturn-void")
+        val handlers = listOf("handle", "handleAgain").take(callers).map { name ->
+            method(step, name, listOf(settings), 4, AccessFlags.PUBLIC.value, """
+                ${if (callerReadsSwitch) "iget-boolean v0, p1, $settings->streaming:Z" else "iget-boolean v0, p0, $step->first:Z"}
+                if-eqz v0, :batch
+                invoke-direct { p0, p1 }, $step->log($settings)V
+                return-void
+                :batch
+                invoke-static { p0 }, $state->batch(Ljava/lang/Object;)V
+                return-void
+            """)
+        }
+        return listOf(
+            settingsClass,
+            ImmutableClassDef(step, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", null, null, null,
+                listOf(ImmutableField(step, "first", "Z", AccessFlags.PUBLIC.value, null, null, null)), listOf(log) + handlers),
         )
     }
 

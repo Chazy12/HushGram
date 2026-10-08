@@ -5,15 +5,18 @@
 package app.morphe.patches.instagram.misc.analytics
 
 import app.morphe.patcher.patch.BytecodePatchContext
+import app.morphe.patches.instagram.misc.extension.classesCalling
 import app.morphe.patches.instagram.misc.extension.classesHolding
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
 /** Two names only the logger's event settings constructor holds, which pick its class out. */
@@ -31,6 +34,10 @@ internal val STREAM_STEP_STRINGS = listOf("event.streaming.eligible", "stream_is
  * (test-gateway.instagram.com on 449). That host also carries the app's realtime GraphQL
  * subscriptions, so it can't be refused itself.
  *
+ * 385611400 splits the step in two (#77): the part holding [STREAM_STEP_STRINGS] starts the stream,
+ * and the switch and the branch to the batch move to the one method calling it, so where the method
+ * holding the strings reads no switch, its one caller has to.
+ *
  * Answers null when the call went in, or why not.
  */
 internal fun BytecodePatchContext.keepEventsOffTheStream(hook: String): String? {
@@ -46,16 +53,25 @@ internal fun BytecodePatchContext.keepEventsOffTheStream(hook: String): String? 
     }
     val config = settings.distinct().singleOrNull()
         ?: return "expected one class whose constructor holds $EVENT_SETTINGS_STRINGS, found ${settings.distinct().size}"
-    val step = steps.singleOrNull() ?: return "expected one method holding $STREAM_STEP_STRINGS, found ${steps.size}"
+    val found = steps.singleOrNull() ?: return "expected one method holding $STREAM_STEP_STRINGS, found ${steps.size}"
+    val step = if (found.readsSwitchOf(config)) {
+        found
+    } else {
+        val callers = callersOf(found)
+        val caller = callers.singleOrNull()
+            ?: return "${found.definingClass}->${found.name} reads no switch of $config, and ${callers.size} methods call it, expected one"
+        if (!caller.readsSwitchOf(config)) {
+            return "neither ${found.definingClass}->${found.name} nor ${caller.definingClass}->${caller.name}, " +
+                "the one method calling it, reads a switch of $config"
+        }
+        caller
+    }
     val mutable = mutableClassDefBy(step.definingClass).methods.single {
         it.name == step.name && it.returnType == step.returnType &&
             it.parameterTypes.map(Any::toString) == step.parameterTypes.map(Any::toString)
     }
     val code = mutable.implementation!!.instructions.toList()
-    val read = code.indices.firstOrNull { index ->
-        code[index].opcode == Opcode.IGET_BOOLEAN &&
-            ((code[index] as ReferenceInstruction).reference as FieldReference).definingClass == config
-    } ?: return "${step.definingClass}->${step.name} reads no switch of $config"
+    val read = code.indices.first { index -> code[index].isSwitchOf(config) }
     val register = (code[read] as TwoRegisterInstruction).registerA
     val branch = code.getOrNull(read + 1)
     if (branch?.opcode != Opcode.IF_EQZ || (branch as OneRegisterInstruction).registerA != register) {
@@ -77,6 +93,24 @@ internal fun BytecodePatchContext.keepEventsOffTheStream(hook: String): String? 
         """,
     )
     return null
+}
+
+/** A read of one of [config]'s boolean switches. */
+private fun Instruction.isSwitchOf(config: String) =
+    opcode == Opcode.IGET_BOOLEAN && ((this as ReferenceInstruction).reference as FieldReference).definingClass == config
+
+private fun Method.readsSwitchOf(config: String) = implementation?.instructions?.any { it.isSwitchOf(config) } == true
+
+/** The methods outside the extension calling [method]. */
+private fun BytecodePatchContext.callersOf(method: Method): List<Method> {
+    val parameters = method.parameterTypes.map(Any::toString)
+    return classesCalling(method.definingClass, method.name).flatMap { it.methods }.filter { caller ->
+        caller.implementation?.instructions?.any { instruction ->
+            val called = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+            called != null && called.definingClass == method.definingClass && called.name == method.name &&
+                called.returnType == method.returnType && called.parameterTypes.map(Any::toString) == parameters
+        } == true
+    }
 }
 
 private fun Method.strings(): Set<String> = implementation?.instructions?.mapNotNull { instruction ->
