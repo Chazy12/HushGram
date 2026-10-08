@@ -477,6 +477,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                             + "The menu's other options stay.")));
             metaAi.addPreference(toggle(context, Settings.HIDE_ASK_META_AI, L10n.t("Hide Ask Meta AI in About this reel"),
                     L10n.t("About this reel keeps its summary and Sources without the Ask Meta AI box under them.")));
+            metaAi.addPreference(toggle(context, Settings.HIDE_META_AI_SHARE_TARGET, L10n.t("Hide Meta AI in the share sheet"),
+                    L10n.t("Takes Meta AI's target out of the row at the bottom of the share sheet. Some accounts see it as Muse.")));
         }
 
         if (build.contains(PatchFamily.EXPLORE_GRID) || build.contains(PatchFamily.RECENT_SEARCHES)) {

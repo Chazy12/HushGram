@@ -426,6 +426,13 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting HIDE_ASK_META_AI =
             new BooleanSetting("hushgram_hide_ask_meta_ai", FALSE);
 
+    /**
+     * Meta AI's target ("hatch", shown as Muse on some accounts) in the row at the bottom of the
+     * share sheet. The row is built each time the sheet opens. Off to start.
+     */
+    public static final BooleanSetting HIDE_META_AI_SHARE_TARGET =
+            new BooleanSetting("hushgram_hide_meta_ai_share_target", FALSE);
+
     /** The grid of posts and reels under the Search tab's bar. Search and its results stay. */
     public static final BooleanSetting HIDE_EXPLORE_GRID =
             new BooleanSetting("hushgram_hide_explore_grid", TRUE);

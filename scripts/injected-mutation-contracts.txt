@@ -501,6 +501,11 @@ once-call Lapp/hushgram/extension/instagram/metaai/MetaAi;->followUpBar(Landroid
 shared-call Lapp/hushgram/extension/instagram/metaai/MetaAi;->aboutThisReel(Ljava/lang/Object;)Ljava/lang/Object; in instance (Landroid/view/View;L*;L*;)V holding android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_hasAiDiscoveryMenu
 shared-call Lapp/hushgram/extension/instagram/metaai/MetaAi;->aboutThisReel(Ljava/lang/Object;)Ljava/lang/Object; in static (Landroid/view/View;L*;L*;Lcom/instagram/feed/media/Media;L*;ZZZ)V holding android_purge_26_q3_ClipsOrganicMediaItemViewMoreOptionsController_getBottomSheetHeaderItems
 once-call Lapp/hushgram/extension/instagram/metaai/MetaAi;->askMetaAiBox(Landroid/view/ViewGroup;Landroid/view/View;)V in instance ()V holding overflow_open defer_eligibility_enabled
+# The share sheet's target builder, the one static method holding these four target names (450
+# 0nuj.A00), passes the answer of its "hatch" case's name check through shareTarget(), once, between
+# the move-result and the if-eqz. A no there skips the name as an unknown one, so the bottom row has
+# no Meta AI target. Left out, the target stays with Hide Meta AI in the share sheet on.
+once-call Lapp/hushgram/extension/instagram/metaai/MetaAi;->shareTarget(I)Z in static (L*;Ljava/lang/Object;)Ljava/util/ArrayList; holding hatch whatsapp_status add_to_audio_note screenshot_preview
 #
 # Hide the Explore grid asks the extension once, at the return of the topical Explore page's JSON
 # parser, the one method holding "sectional_items" and "session_paging_token". Search results come
