@@ -14,6 +14,8 @@ Every HushGram release, newest first.
 
 * **Tooling:** `build-release-receipt.ps1 -FromGate` and `validate-release-facts.ps1 -FromGate` read the gate's run of the commit they check instead of doing its work again. The receipt takes the gate's bundle and SBOM when none was built here, and reads each declared build's patch run back when the gate made it with the same bundle, catalog, desktop CLI and APK. The release check takes the gate's test results, bundle and receipt when the checkout has none, and the index push passes `-FromGate` by itself. A run is read only when its manifest, tree, hashes and test counts still hold up for that commit, and every check runs on what's read. Anything else and the scripts build, test and patch as before.
 
+* **Tooling:** The index push that follows a release doesn't build and test the release's sources all over again. When every file it pushes is an index file and the only lines changed since a commit the gate passed are the index, the README's latest release sentence and the bug form's version, the gate is skipped. The release switch, the commit checks, the suites and the release check against the published release still run. The gate runs anyway when the kept run doesn't hold up, or when it would patch a build here that the kept run didn't patch with the same fixture and desktop CLI.
+
 ## 0.0.7 (2026-10-08)
 
 * **Instagram:** HushGram 0.0.7 adds 3 patches, for 78 in all, and stays on Instagram 450.0.0.50.77 with Morphe Manager 1.34.0 or newer. Besides build 385611438, the other arm64 builds of that version (385611395, 385611400, 385611404 and 385611431) and the x86 and x86_64 ones (385611439 and 385611440) patch now too.

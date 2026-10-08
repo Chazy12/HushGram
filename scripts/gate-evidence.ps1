@@ -440,6 +440,45 @@ function Get-GateKeptRun {
     return [pscustomobject]@{ Directory = $kept; PatchedApk = $patched; Result = $result; MergedApk = $merged; Stamp = $stamp }
 }
 
+function Get-GateRunGap {
+    <#
+    .SYNOPSIS
+        What a gate started here now would patch that the kept run didn't, or $null when it
+        covers all of it.
+    .DESCRIPTION
+        -Fixtures are the declared builds a gate here would patch now, each with its Version and
+        the Apk it would take, and none when HUSHGRAM_FIXTURE_DIR is unset. Each needs a passing
+        run of that build in the kept one, stamped with the same APK, the same desktop CLI and the
+        bundle the gate built.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]$Evidence,
+        [object[]]$Fixtures = @(),
+        [string]$DesktopJar
+    )
+    $wanted = @($Fixtures | Where-Object { $_ })
+    if ($wanted.Count -eq 0) { return $null }
+    if ($Evidence.Manifest.fixturesPatched -ne $true) {
+        return "that gate patched no declared build, and one here would patch $(@($wanted | ForEach-Object { $_.Version }) -join ', ')"
+    }
+    foreach ($fixture in $wanted) {
+        $stampPath = Join-Path $Evidence.Directory "fixtures/$($fixture.Version)/kept/stamp.json"
+        if (-not (Test-Path -LiteralPath $stampPath -PathType Leaf)) { return "that gate kept no passing run of $($fixture.Version)" }
+        try { $stamp = Get-Content -LiteralPath $stampPath -Raw | ConvertFrom-Json }
+        catch { return "the stamp of its run of $($fixture.Version) doesn't parse" }
+        if ([string]$stamp.apkSha256 -cne (Get-EvidenceHash -Path ([string]$fixture.Apk))) {
+            return "that gate patched another APK of $($fixture.Version) than $(Split-Path -Leaf ([string]$fixture.Apk))"
+        }
+        if (-not $DesktopJar -or [string]$stamp.desktopJarSha256 -cne (Get-EvidenceHash -Path $DesktopJar)) {
+            return "that gate patched $($fixture.Version) with another desktop CLI"
+        }
+        if ([string]$stamp.bundleSha256 -cne [string]$Evidence.Manifest.bundle.sha256) {
+            return "that gate's run of $($fixture.Version) was made with another bundle"
+        }
+    }
+    return $null
+}
+
 function Write-GateKeptRun {
     <#
     Keeps a passing patch run for the release scripts: the patched APK and the merge are moved in,

@@ -8,6 +8,8 @@
     reads as a build change. The stand-ins write what a real build would leave in the gate's
     worktree (test results, the bundle, its SBOM) and log what they were asked, so the order of
     the builds, the queue slot and the release priority can be read back. Nothing is compiled.
+    The last cases push an index commit over a gated release commit, with the release check and
+    the suites it starts as stand-ins, to see which pushes skip the build and which don't.
 .NOTES
     Copyright 2026 HushGram contributors. https://github.com/SysAdminDoc/HushGram
     GPL-3.0-only.
@@ -25,7 +27,8 @@ $version = '450.0.0.50.77'
 $hookScripts = @('pre-push.ps1', 'common.ps1', 'patch-target.ps1', 'build-jobs.ps1', 'gate-evidence.ps1')
 $hookVariables = @('HUSHGRAM_SKIP_PRE_PUSH', 'HUSHGRAM_ALLOW_RELEASE', 'HUSHGRAM_FIXTURE_DIR', 'HUSHGRAM_DESKTOP_JAR',
     'HUSHGRAM_WORKDIR', 'HUSHGRAM_BUILD_WRAPPER', 'BUILD_QUEUE_SCRIPT', 'BUILD_QUEUE_PRIORITY', 'BUILD_QUEUE_TICKET',
-    'HUSHGRAM_GATE_CACHE', 'HUSHGRAM_GATE_TEST_LOG', 'HUSHGRAM_GATE_TEST_FAIL', 'HUSHGRAM_GATE_TEST_STALE')
+    'HUSHGRAM_GATE_CACHE', 'HUSHGRAM_GATE_TEST_LOG', 'HUSHGRAM_GATE_TEST_FAIL', 'HUSHGRAM_GATE_TEST_STALE',
+    'HUSHGRAM_GATE_TEST_FACTS_EXIT')
 $saved = @{}
 foreach ($name in $hookVariables) { $saved[$name] = [Environment]::GetEnvironmentVariable($name, [EnvironmentVariableTarget]::Process) }
 
@@ -314,6 +317,102 @@ exit 0
     Assert-NotFound 'another commit checked out' 'no gate run is kept'
     Invoke-FixtureGit reset -q --hard $tip | Out-Null
     Assert-True ($null -ne (Find-GateEvidence -Root $script:repo)) 'The restored gate run was not found again.'
+
+    # The index push. A release source commit with the README sentence, the bug form placeholder
+    # and an index, gated with the declared build patched, and then an index commit over it. The
+    # release check and the suites a README change starts are stand-ins that log their calls.
+    Write-FixtureFile 'scripts/validate-release-facts.ps1' @'
+Add-Content -LiteralPath $env:HUSHGRAM_GATE_TEST_LOG -Value "facts $($args -join ' ')"
+exit [int]$env:HUSHGRAM_GATE_TEST_FACTS_EXIT
+'@
+    foreach ($suite in @('test-release-tooling.ps1', 'test-carried-licenses.ps1')) {
+        Write-FixtureFile "scripts/$suite" @'
+param([string]$Root)
+Add-Content -LiteralPath $env:HUSHGRAM_GATE_TEST_LOG -Value "suite $(Split-Path -Leaf $PSCommandPath)"
+exit 0
+'@
+    }
+    function Write-IndexFiles([string]$Release, [int]$Patches, [string]$Extra = '') {
+        Write-FixtureFile 'README.md' ("# HushGram`n`nThe latest release is [v$Release](https://github.com/SysAdminDoc/HushGram/releases/tag/v$Release), " +
+            "with $Patches patches. Add it to Morphe Manager.`n`nWhat the patches do.$Extra`n")
+        Write-FixtureFile '.github/ISSUE_TEMPLATE/bug_report.yml' "body:`n  - type: input`n    attributes:`n      placeholder: HushGram $Release`n"
+        Write-FixtureFile 'patches-bundle.json' "{`"version`": `"$Release`"}`n"
+    }
+    Write-IndexFiles '0.0.1' 1
+    $source = New-FixtureCommit 'release source'
+    $release = @{ HUSHGRAM_ALLOW_RELEASE = '1' }
+    $run = Invoke-Push -Tip $source -Base $tip -Environment ($withFixtures + $release)
+    Assert-True ($run.Exit -eq 0 -and (Get-GradleRuns).Count -eq 2 -and
+        (Test-Path -LiteralPath (Join-Path $script:gateCache "$source/fixtures/$version/kept/stamp.json"))) `
+        "The release source push didn't gate and keep its patch run: $($run.Output)"
+    Write-IndexFiles '0.0.2' 2
+    $index = New-FixtureCommit 'index'
+    $sourceManifest = Join-Path $script:gateCache "$source/manifest.json"
+    $sourceManifestText = [IO.File]::ReadAllText($sourceManifest)
+    function Clear-IndexRun { Remove-Item -LiteralPath (Join-Path $script:gateCache $index) -Recurse -Force -ErrorAction SilentlyContinue }
+
+    # Over the gated source, the index push isn't built or tested again, and everything else still
+    # runs: the release switch, the suites and the release check against the published release.
+    $run = Invoke-Push -Tip $index -Base $source -Environment ($withFixtures + $release)
+    $facts = @(Read-Log | Where-Object { $_ -like 'facts *' })
+    Assert-True ($run.Exit -eq 0 -and (Get-GradleRuns).Count -eq 0 -and @(Read-Log | Where-Object { $_ -like 'queue *' -or $_ -like 'verify *' }).Count -eq 0 -and
+        $run.Output -like "*everything since $($source.Substring(0, 12)) is the index*isn't built and tested again*") `
+        "An index push over a gated commit was built again: $((Read-Log) -join '; ') $($run.Output)"
+    Assert-True ($facts.Count -eq 1 -and $facts[0] -like '*-VerifyPublishedAsset*' -and $facts[0] -like '*-FromGate*' -and
+        (Read-Log) -contains 'suite test-release-tooling.ps1' -and (Read-Log) -contains 'suite test-carried-licenses.ps1') `
+        "The skipped index push didn't run the release check against the published release, or the suites: $((Read-Log) -join '; ')"
+    # With no fixture folder, a gate here wouldn't patch either, so a run that patched nothing does.
+    [IO.File]::WriteAllText($sourceManifest, ($sourceManifestText -replace '"fixturesPatched":\s*true', '"fixturesPatched": false'))
+    $run = Invoke-Push -Tip $index -Base $source -Environment $release
+    Assert-True ($run.Exit -eq 0 -and (Get-GradleRuns).Count -eq 0) "An index push with nothing to patch was built again: $($run.Output)"
+    [IO.File]::WriteAllText($sourceManifest, $sourceManifestText)
+
+    # The release protections hold: no release switch, or a release check that refuses, stops it.
+    $run = Invoke-Push -Tip $index -Base $source -Environment $withFixtures
+    Assert-True ($run.Exit -ne 0 -and $run.Output -like '*this push is a release*' -and (Get-GradleRuns).Count -eq 0) `
+        "An index push went out without the release switch: $($run.Output)"
+    $run = Invoke-Push -Tip $index -Base $source -Environment ($withFixtures + $release + @{ HUSHGRAM_GATE_TEST_FACTS_EXIT = '1' })
+    Assert-True ($run.Exit -ne 0 -and $run.Output -like '*the published release does not agree with the index*' -and (Get-GradleRuns).Count -eq 0) `
+        "An index push the release check refused went out: $($run.Output)"
+
+    # Each run that doesn't cover the push is gated in full: one that didn't pass, one that patched
+    # no declared build when a gate here would, and one made with another desktop CLI.
+    foreach ($case in @(
+            @{ Name = 'a failed gate run'; Said = "*isn't used: that gate didn't pass*"; Environment = $withFixtures
+                Spoil = { [IO.File]::WriteAllText($sourceManifest, ($sourceManifestText -replace '"passed":\s*true', '"passed": false')) } },
+            @{ Name = 'a gate run that patched nothing'; Said = "*doesn't cover this push: that gate patched no declared build*"; Environment = $withFixtures
+                Spoil = { [IO.File]::WriteAllText($sourceManifest, ($sourceManifestText -replace '"fixturesPatched":\s*true', '"fixturesPatched": false')) } },
+            @{ Name = 'another desktop CLI'; Said = "*doesn't cover this push: that gate patched $version with another desktop CLI*"
+                Environment = @{ HUSHGRAM_FIXTURE_DIR = $fixtureDir; HUSHGRAM_DESKTOP_JAR = $otherCli }; Spoil = {} })) {
+        & $case.Spoil
+        try {
+            $run = Invoke-Push -Tip $index -Base $source -Environment ($case.Environment + $release)
+            Assert-True ($run.Exit -eq 0 -and (Get-GradleRuns).Count -eq 2 -and $run.Output -like $case.Said) `
+                "An index push over $($case.Name) wasn't gated in full: $((Get-GradleRuns) -join '; ') $($run.Output)"
+        } finally {
+            [IO.File]::WriteAllText($sourceManifest, $sourceManifestText)
+        }
+        if ($case.Name -ne 'another desktop CLI') { Clear-IndexRun }
+    }
+    # That last gate passed this very commit with the other CLI, so pushing it again with that CLI
+    # needs no build.
+    $run = Invoke-Push -Tip $index -Base $source -Environment @{ HUSHGRAM_FIXTURE_DIR = $fixtureDir; HUSHGRAM_DESKTOP_JAR = $otherCli; HUSHGRAM_ALLOW_RELEASE = '1' }
+    Assert-True ($run.Exit -eq 0 -and (Get-GradleRuns).Count -eq 0 -and $run.Output -like "*the gate passed this commit*") `
+        "A push of a commit the gate already passed was built again: $($run.Output)"
+    Clear-IndexRun
+
+    # And a push that changes more than the index lines, or another file with them, is gated.
+    foreach ($case in @(
+            @{ Name = 'another README line'; Write = { Write-IndexFiles '0.0.2' 2 ' And one more thing.' }; Said = "*a line of README.md other than the index's changed*" },
+            @{ Name = 'another file'; Write = { Write-IndexFiles '0.0.2' 2; Write-FixtureFile 'docs/notes.md' "notes`n" }; Said = '*' })) {
+        Invoke-FixtureGit reset -q --hard $source | Out-Null
+        & $case.Write
+        $wider = New-FixtureCommit "index with $($case.Name)"
+        $run = Invoke-Push -Tip $wider -Base $source -Environment ($withFixtures + $release)
+        Assert-True ($run.Exit -eq 0 -and (Get-GradleRuns).Count -eq 2 -and $run.Output -like $case.Said -and
+            $run.Output -notlike "*isn't built and tested again*") "An index push with $($case.Name) wasn't gated in full: $($run.Output)"
+    }
+    Invoke-FixtureGit reset -q --hard $tip | Out-Null
 
     # Only the newest runs are kept, and a folder still being written is left alone for a while.
     $pruneCache = Join-Path $scratch 'prune-cache'

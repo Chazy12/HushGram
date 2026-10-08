@@ -29,7 +29,10 @@
     named for the commit (scripts/gate-evidence.ps1 says where): the test results, the bundle and
     its SBOM, each declared build's reports and passing patch run, and a manifest. The release
     receipt and the release check read them back with -FromGate rather than building, testing and
-    patching the same commit again.
+    patching the same commit again. A push whose files are all index files, over a commit the
+    gate passed with nothing since but the index's own lines, isn't built or tested again. Its
+    release check still runs, and a gate here that would patch the declared builds needs the kept
+    run to have patched the same fixtures with the same desktop CLI.
 
     A push that changes a published file (README.md, CHANGELOG.md, the catalog, the version, the
     bug form, the index or the lists and scripts the release check reads) runs
@@ -87,6 +90,17 @@ $zero = '0' * 40
 
 function Write-Step([string]$Message) { Write-Host "[pre-push] $Message" }
 function Stop-Push([string]$Message) { $script:gateRefusal = $Message; Write-Host "[pre-push] refused: $Message"; exit 1 }
+# The fixture a gate patches for each build the catalog declares: the first instagram-<version>-*
+# APK, bundle or split bundle in -Folder. Apk is $null for a declared build with none there.
+function Get-DeclaredFixtures([string]$CatalogText, [string]$Folder) {
+    $target = Get-PatchTarget -PatchList ($CatalogText | ConvertFrom-Json)
+    foreach ($version in @($target.PackageVersions)) {
+        $apk = Get-ChildItem -LiteralPath $Folder -File | Where-Object {
+            $_.Name -like "instagram-$version-*" -and $_.Extension -in '.apk', '.apks', '.apkm', '.xapk'
+        } | Select-Object -First 1
+        [pscustomobject]@{ Version = $version; Apk = $apk }
+    }
+}
 function Invoke-Git {
     # git's output is read as UTF-8 (Use-Utf8ConsoleOutput), so a non-ASCII path or message comes
     # back whole when the push starts in Git Bash. $args is copied first, since inside the block
@@ -370,6 +384,38 @@ if (@($changed | Where-Object { $_ -match $buildPaths }).Count -eq 0 -or $tips.C
     exit 0
 }
 
+# An index push over a commit the gate passed. Every file pushed is an index file, and everything
+# since that commit is the index's own lines (gate-evidence.ps1 says which), which nothing the gate
+# builds or tests reads, so the same sources aren't built and tested a second time. The release
+# switch, the commit checks, the suites and the release facts above ran as on any push, the last
+# against the published release. When a gate here would patch the declared builds, the kept run
+# has to have patched the same fixtures with the same desktop CLI, or the gate runs.
+if ($changed.Count -gt 0 -and @($changed | Where-Object { $script:GateIndexFiles -cnotcontains $_ }).Count -eq 0 -and
+        "$(Invoke-Git rev-parse HEAD)".Trim() -eq $tips[$tips.Count - 1]) {
+    $passedRun = Find-GateEvidence -Root $Root -AllowIndexCommits -Prefix '[pre-push]'
+    if ($passedRun) {
+        $gap = $null
+        $wouldPatch = @()
+        $fixtureFolder = $env:HUSHGRAM_FIXTURE_DIR
+        if ($fixtureFolder -and (Test-Path -LiteralPath $fixtureFolder -PathType Container)) {
+            $wouldPatch = @(Get-DeclaredFixtures -CatalogText (Get-Content -LiteralPath (Join-Path $Root 'patches-list.json') -Raw) `
+                -Folder $fixtureFolder)
+            $unfixed = @($wouldPatch | Where-Object { -not $_.Apk })
+            if ($unfixed.Count -gt 0) { $gap = "no fixture for the declared build $($unfixed[0].Version) in $fixtureFolder" }
+        }
+        if (-not $gap) {
+            $gap = Get-GateRunGap -Evidence $passedRun -DesktopJar $(if ($wouldPatch.Count -gt 0) { Resolve-DesktopCli -Root $Root }) `
+                -Fixtures @($wouldPatch | ForEach-Object { [pscustomobject]@{ Version = $_.Version; Apk = $_.Apk.FullName } })
+        }
+        if (-not $gap) {
+            $since = if ($passedRun.IndexOnly) { "everything since $($passedRun.Commit.Substring(0, 12)) is the index" } else { 'the gate passed this commit' }
+            Write-Step "$since, and the gate's run of it holds up, so it isn't built and tested again"
+            exit 0
+        }
+        Write-Step "the gate's run of $($passedRun.Commit.Substring(0, 12)) doesn't cover this push: $gap"
+    }
+}
+
 $tip = $tips[$tips.Count - 1]
 $gate = Join-Path ([System.IO.Path]::GetTempPath()) ('hushgram-gate-' + [guid]::NewGuid().ToString('N').Substring(0, 12))
 Write-Step "building $($tip.Substring(0, 12)) in a clean worktree"
@@ -400,13 +446,9 @@ try {
     $fixtureApks = @()
     if ($fixtures -and (Test-Path -LiteralPath $fixtures -PathType Container)) {
         $desktop = Resolve-DesktopCli -Root $Root -Required
-        $target = Get-PatchTarget -PatchList ($before | ConvertFrom-Json)
-        $fixtureApks = @(foreach ($version in @($target.PackageVersions)) {
-            $apk = Get-ChildItem -LiteralPath $fixtures -File | Where-Object {
-                $_.Name -like "instagram-$version-*" -and $_.Extension -in '.apk', '.apks', '.apkm', '.xapk'
-            } | Select-Object -First 1
-            if (-not $apk) { Stop-Push "no fixture for the declared build $version in $fixtures" }
-            [pscustomobject]@{ Version = $version; Apk = $apk }
+        $fixtureApks = @(foreach ($fixture in @(Get-DeclaredFixtures -CatalogText $before -Folder $fixtures)) {
+            if (-not $fixture.Apk) { Stop-Push "no fixture for the declared build $($fixture.Version) in $fixtures" }
+            $fixture
         })
     }
 
