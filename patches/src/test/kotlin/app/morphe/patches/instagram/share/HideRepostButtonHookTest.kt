@@ -169,6 +169,16 @@ class HideRepostButtonHookTest {
         }
     }
 
+    /**
+     * Instagram numbers its string resources per build, so the label's number isn't matched: 450's
+     * x86 build 385611439 has 438's Repost label at 0x7f136e0f.
+     */
+    @Test
+    fun aLabelNumberedForAnotherBuildIsStillFound() {
+        val context = PatchContexts.of(listOf(feedComponent(label = 0x7f136e0f)))
+        assertEquals("Lfixture/RepostComponent;", context.findFeedRepostComponent().method.definingClass)
+    }
+
     @Test
     fun missingAmbiguousOrChangedComponentRenderersFailThePatch() {
         assertThrows(PatchException::class.java) { PatchContexts.of(classes()).findFeedRepostComponent() }
@@ -176,7 +186,7 @@ class HideRepostButtonHookTest {
             PatchContexts.of(listOf(feedComponent(), feedComponent("Lfixture/OtherComponent;"))).findFeedRepostComponent()
         }
         assertThrows(PatchException::class.java) {
-            PatchContexts.of(listOf(feedComponent(label = 123))).findFeedRepostComponent()
+            PatchContexts.of(listOf(feedComponent(role = "android.widget.ImageView"))).findFeedRepostComponent()
         }
         val noLocals = PatchContexts.of(listOf(feedComponent(registers = 2)))
         assertThrows(PatchException::class.java) { noLocals.hideFeedComponent(noLocals.findFeedRepostComponent()) }
@@ -197,8 +207,11 @@ class HideRepostButtonHookTest {
     }
 
     /**
-     * In each declared build the model's getter is guarded and every tree read of the field is
-     * filtered. On 450 there are five reads, two of them in one lambda's invoke; 449 had six.
+     * In each declared build, and in each other build of a declared version, the model's getter is
+     * guarded, every tree read of the field is filtered, and the component renderer's Repost part
+     * returns nothing. On 450's declared build there are five reads, two of them in one lambda's
+     * invoke; 449 had six, and so has 450's 385611395, so another build's count isn't pinned. The x86
+     * build 385611439 numbers the Repost label 0x7f136e0f where 438 has 0x7f136e0d (#95).
      */
     @Test
     fun eachDeclaredBuildHidesTheButton() {
@@ -206,54 +219,67 @@ class HideRepostButtonHookTest {
         var checked = 0
         for (version in versions) {
             for (bundle in Fixtures.files { it.extension == "apks" && it.name.contains("-$version-") }) {
-                val holders = mutableListOf<ClassDef>()
-                FixtureDex.forEach(bundle) { dex ->
-                    for (classDef in dex.classes) {
-                        if (classDef.type == MEDIA || classDef.methods.any { it.loadsHash() || it.loadsFeedUfiId() }) {
-                            holders += ImmutableClassDef.of(classDef)
-                        }
-                    }
-                }
-                val context = PatchContexts.of(holders.distinctBy { it.type })
-
-                val sites = context.findRepostSites()
-                assertEquals("${bundle.name}: tree reads ${sites.reads.map { "${it.type}->${it.name}" }}", 5, sites.reads.size)
-                val feedUfi = context.findFeedUfiSite()
-                val component = context.findFeedRepostComponent()
-                val branchesToShare = context.mutableClassDefBy(feedUfi.type).methods.single { it.name == feedUfi.name }
-                    .implementation!!.instructions.filterIsInstance<BuilderOffsetInstruction>()
-                    .filter { it.target.location.index == feedUfi.insert }
-                assertTrue("${bundle.name}: expected native repost branches converging on Share", branchesToShare.isNotEmpty())
-                context.guardRepostGetter(sites.getter)
-                val byMethod = sites.reads.groupBy { Triple(it.type, it.name, it.parameters) }
-                byMethod.values.forEach { context.filterRepostReads(it) }
-                context.hideFeedUfi(feedUfi)
-                context.hideFeedComponent(component)
-
-                assertGetterGuarded("${bundle.name} ${sites.getter}", context.mutableClassDefBy(MEDIA).methods.single {
-                    it.name == sites.getter && it.parameterTypes.isEmpty()
-                })
-                for ((key, reads) in byMethod) {
-                    val method = context.mutableClassDefBy(key.first).methods.single {
-                        it.name == key.second && it.parameterTypes.map(CharSequence::toString) == key.third
-                    }
-                    // Each earlier read's filter moves the later ones down by two.
-                    val shifted = reads.sortedBy { it.at }.mapIndexed { i, read -> read.at + 2 * i }
-                    assertReadsFiltered("${bundle.name} ${key.first}->${key.second}", method, shifted)
-                }
-                val feedMethod = context.mutableClassDefBy(feedUfi.type).methods.single {
-                    it.name == feedUfi.name && it.parameterTypes.map(CharSequence::toString) == feedUfi.parameters
-                }
-                assertFeedUfiHidden("${bundle.name} ${feedUfi.type}->${feedUfi.name}", feedMethod, feedUfi.icon, feedUfi.count)
-                val hide = feedMethod.implementation!!.instructions.indexOfFirst { it.names(REPOSTS_FEED_UFI) }
-                branchesToShare.forEach { assertEquals("${bundle.name}: a native branch skipped hiding", hide - 2, it.target.location.index) }
-                assertComponentGuarded(context.mutableClassDefBy(component.method.definingClass).methods.single {
-                    it.name == component.method.name && it.parameterTypes == component.method.parameterTypes
-                }, component.at)
+                hidesTheButtonIn(bundle, bundle.name, reads = 5)
                 checked++
             }
         }
         assertTrue("no fixture of a declared build", checked > 0)
+        for (base in Fixtures.otherBuilds()) hidesTheButtonIn(base, base.parentFile.name, reads = null)
+    }
+
+    /** Hooks everything in [bundle] and checks each hook; [reads] is how many tree reads it has, when that's known. */
+    private fun hidesTheButtonIn(bundle: java.io.File, label: String, reads: Int?) {
+        val holders = mutableListOf<ClassDef>()
+        FixtureDex.forEach(bundle) { dex ->
+            for (classDef in dex.classes) {
+                if (classDef.type == MEDIA || classDef.methods.any { it.loadsHash() || it.loadsFeedUfiId() }) {
+                    holders += ImmutableClassDef.of(classDef)
+                }
+            }
+        }
+        val context = PatchContexts.of(FixtureDex.withStringPools(bundle, holders.distinctBy { it.type }))
+
+        val sites = context.findRepostSites()
+        val found = "$label: tree reads ${sites.reads.map { "${it.type}->${it.name}" }}"
+        if (reads != null) assertEquals(found, reads, sites.reads.size) else assertTrue(found, sites.reads.isNotEmpty())
+        val feedUfi = context.findFeedUfiSite()
+        val component = context.findFeedRepostComponent()
+        val branchesToShare = context.mutableClassDefBy(feedUfi.type).methods.single { it.name == feedUfi.name }
+            .implementation!!.instructions.filterIsInstance<BuilderOffsetInstruction>()
+            .filter { it.target.location.index == feedUfi.insert }
+        assertTrue("$label: expected native repost branches converging on Share", branchesToShare.isNotEmpty())
+        context.guardRepostGetter(sites.getter)
+        val byMethod = sites.reads.groupBy { Triple(it.type, it.name, it.parameters) }
+        byMethod.values.forEach { context.filterRepostReads(it) }
+        context.hideFeedUfi(feedUfi)
+        context.hideFeedComponent(component)
+
+        assertGetterGuarded("$label ${sites.getter}", context.mutableClassDefBy(MEDIA).methods.single {
+            it.name == sites.getter && it.parameterTypes.isEmpty()
+        })
+        for ((key, reads) in byMethod) {
+            val method = context.mutableClassDefBy(key.first).methods.single {
+                it.name == key.second && it.parameterTypes.map(CharSequence::toString) == key.third
+            }
+            // Each earlier read's filter moves the later ones down by two.
+            val shifted = reads.sortedBy { it.at }.mapIndexed { i, read -> read.at + 2 * i }
+            assertReadsFiltered("$label ${key.first}->${key.second}", method, shifted)
+        }
+        val feedMethod = context.mutableClassDefBy(feedUfi.type).methods.single {
+            it.name == feedUfi.name && it.parameterTypes.map(CharSequence::toString) == feedUfi.parameters
+        }
+        assertFeedUfiHidden("$label ${feedUfi.type}->${feedUfi.name}", feedMethod, feedUfi.icon, feedUfi.count)
+        val hide = feedMethod.implementation!!.instructions.indexOfFirst { it.names(REPOSTS_FEED_UFI) }
+        branchesToShare.forEach { assertEquals("$label: a native branch skipped hiding", hide - 2, it.target.location.index) }
+        val render = context.mutableClassDefBy(component.method.definingClass).methods.single {
+            it.name == component.method.name && it.parameterTypes == component.method.parameterTypes
+        }
+        assertComponentGuarded(render, component.at)
+        // The guarded part is the one that draws the repost icon, after the guard.
+        val drawn = render.implementation!!.instructions.toList()
+        assertTrue("$label: the Repost part draws the icon", (component.at + 5 until drawn.size).any {
+            (drawn[it] as? NarrowLiteralInstruction)?.narrowLiteral == REPOSTS_UFI_ICON_ID
+        })
     }
 
     /** The getter opens with the extension call and its test, then on a yes answers FALSE; one call in all. */
@@ -396,7 +422,16 @@ class HideRepostButtonHookTest {
             ),
         )
 
-        fun feedComponent(type: String = "Lfixture/RepostComponent;", label: Int = REPOSTS_LABEL_ID, registers: Int = 3) = classOf(
+        /** 438's Repost label. Other builds number it otherwise. */
+        const val LABEL = 0x7f136e0d
+
+        /** A renderer of its own: the icon, the label, the [role] it gives the button, then null. */
+        fun feedComponent(
+            type: String = "Lfixture/RepostComponent;",
+            label: Int = LABEL,
+            role: String = BUTTON_ROLE,
+            registers: Int = 3,
+        ) = classOf(
             type,
             listOf(ImmutableMethod(
                 type, "render", listOf(ImmutableMethodParameter("Lfixture/Scope;", null, null)), "Lfixture/Component;",
@@ -404,7 +439,7 @@ class HideRepostButtonHookTest {
                 ImmutableMethodImplementation(registers, listOf(
                     ImmutableInstruction31i(Opcode.CONST, 0, REPOSTS_UFI_ICON_ID),
                     ImmutableInstruction31i(Opcode.CONST, 0, label),
-                    ImmutableInstruction21c(Opcode.CONST_STRING, 0, ImmutableStringReference("android.widget.Button")),
+                    ImmutableInstruction21c(Opcode.CONST_STRING, 0, ImmutableStringReference(role)),
                     ImmutableInstruction11n(Opcode.CONST_4, 0, 0),
                     ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0),
                 ), null, null),
@@ -447,8 +482,8 @@ class HideRepostButtonHookTest {
             ImmutableInstruction22c(Opcode.INSTANCE_OF, 0, 1, ImmutableTypeReference("Lfixture/Repost;")),
             ImmutableInstruction21t(Opcode.IF_EQZ, 0, skip),
             ImmutableInstruction31i(Opcode.CONST, 0, REPOSTS_UFI_ICON_ID),
-            ImmutableInstruction31i(Opcode.CONST, 0, REPOSTS_LABEL_ID),
-            ImmutableInstruction21c(Opcode.CONST_STRING, 0, ImmutableStringReference("android.widget.Button")),
+            ImmutableInstruction31i(Opcode.CONST, 0, LABEL),
+            ImmutableInstruction21c(Opcode.CONST_STRING, 0, ImmutableStringReference(BUTTON_ROLE)),
             ImmutableInstruction11n(Opcode.CONST_4, 0, 0),
             ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0),
         )
