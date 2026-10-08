@@ -4,6 +4,8 @@ Every HushGram release, newest first.
 
 ## Unreleased
 
+* **Instagram:** With View stories anonymously on, a story you watch keeps its colored ring and stays where it was in the tray. Before, the view was held back but Instagram still noted on the phone that you'd seen it, so the ring went gray and moved to the end of the row, which looked as if the view had gone out. A story you mark as seen still grays once its mark goes out. Reported in #92.
+
 * **Instagram:** The other arm64 builds of 450.0.0.50.77, 385611395, 385611400, 385611404 and 385611431, patch the way 385611438 does. Each build is compiled on its own, and Instagram's compiler moves a different set of strings into shared tables in each one and puts some code in other classes, so on 385611395 six patches and the story links part of Sanitize sharing links couldn't find what they change, and on 385611400 the HushGram row couldn't find the Settings screen. They read those tables now and look where the code moved, so they find the same places on all five builds. Morphe Manager still calls the four an unsupported version, since it can only be told one build number for each kind of phone. Reported in #77.
 
 * **Instagram:** Hide Meta AI has a new switch, Hide Meta AI in the share sheet, that starts off. Turn it on and Meta AI's target, which some accounts see as Muse, is gone from the row at the bottom of the share sheet. The other targets stay where they were.
