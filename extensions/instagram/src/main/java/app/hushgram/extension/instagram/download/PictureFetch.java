@@ -11,6 +11,8 @@ import android.graphics.BitmapFactory;
 import androidx.annotation.Nullable;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 
 import app.hushgram.extension.shared.Logger;
 
@@ -58,16 +60,28 @@ public final class PictureFetch {
 
     /** [file] decoded at the smallest power-of-two step that's still [size] pixels across. */
     @Nullable
-    static Bitmap decode(File file, int size) {
+    static Bitmap decode(File file, int size) throws IOException {
         BitmapFactory.Options bounds = new BitmapFactory.Options();
         bounds.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(file.getPath(), bounds);
+        decodeFile(file, bounds);
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null;
         int step = 1;
         int smaller = Math.min(bounds.outWidth, bounds.outHeight);
         while (size > 0 && smaller / (step * 2) >= size) step *= 2;
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inSampleSize = step;
-        return BitmapFactory.decodeFile(file.getPath(), options);
+        return decodeFile(file, options);
+    }
+
+    /**
+     * [file] decoded with [options] through a stream that's closed before this returns, so the work
+     * file can be deleted right after. Android 17's own decodeFile decodes from a file descriptor it
+     * opens itself, and under the Windows test host that left the file open and undeletable.
+     */
+    @Nullable
+    static Bitmap decodeFile(File file, BitmapFactory.Options options) throws IOException {
+        try (FileInputStream in = new FileInputStream(file)) {
+            return BitmapFactory.decodeStream(in, null, options);
+        }
     }
 }

@@ -154,11 +154,11 @@ final class ProfilePictureViewer {
             if (!fetched.ok()) return null;
             BitmapFactory.Options bounds = new BitmapFactory.Options();
             bounds.inJustDecodeBounds = true;
-            BitmapFactory.decodeFile(file.getPath(), bounds);
+            PictureFetch.decodeFile(file, bounds);
             if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null;
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inSampleSize = sampleSize(bounds.outWidth, bounds.outHeight, MAX_SIDE);
-            Bitmap bitmap = BitmapFactory.decodeFile(file.getPath(), options);
+            Bitmap bitmap = PictureFetch.decodeFile(file, options);
             return bitmap == null ? null : new Picture(bitmap, bounds.outWidth);
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.PROFILE_PICTURE, "load profile picture", failure);

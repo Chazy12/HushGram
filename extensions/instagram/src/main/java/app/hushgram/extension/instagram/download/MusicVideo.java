@@ -604,7 +604,7 @@ final class MusicVideo {
     private static BitmapFactory.Options bounds(File picture) throws IOException {
         BitmapFactory.Options bounds = new BitmapFactory.Options();
         bounds.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(picture.getPath(), bounds);
+        PictureFetch.decodeFile(picture, bounds);
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) throw new IOException("the picture could not be read");
         return bounds;
     }
@@ -614,7 +614,7 @@ final class MusicVideo {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inSampleSize = sampleSize(bounds.outWidth, bounds.outHeight, size[0], size[1]);
         options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-        Bitmap decoded = BitmapFactory.decodeFile(file.getPath(), options);
+        Bitmap decoded = PictureFetch.decodeFile(file, options);
         if (decoded == null) throw new IOException("the picture could not be decoded");
         Bitmap scaled = decoded;
         try {
