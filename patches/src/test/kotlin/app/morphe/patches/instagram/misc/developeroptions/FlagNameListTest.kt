@@ -123,24 +123,20 @@ class FlagNameListTest {
     }
 
     /**
-     * The other builds of a declared version (#77). 385611404 and 385611431 build MetaConfig's list
-     * the way 385611438 does and take the hooks. 385611395 and 385611400 build it some other way, so
-     * there the finder refuses before anything changes, and Import flag names is left out of them.
-     * The x86 and x86_64 builds (385611439, 385611440, #95) either take the hooks whole or refuse the
-     * same clean way, never half.
+     * The other builds of a declared version (#77, #95). 385611404 and 385611431 build MetaConfig's
+     * list the way 385611438 does and take the hooks. 385611395, 385611400 and the x86 and x86_64
+     * builds (385611439, 385611440) make each label in a separate method, so there the finder
+     * refuses before anything changes, and Import flag names is left out of them.
      */
     @Test fun everyOtherBuildHooksMetaConfigsListOrLeavesItAlone() {
         val hooked = mutableSetOf<String>()
+        val elsewhere = listOf("-385611395", "-385611400", "-385611439", "-385611440")
         for (bundle in Fixtures.otherBuilds()) {
             val label = bundle.parentFile.name
-            if (label.endsWith("-385611395") || label.endsWith("-385611400")) {
+            if (elsewhere.any { label.endsWith(it) }) {
                 val patch = PatchContexts.of(slice(bundle))
                 val failure = runCatching { patch.findFlagNameList() }.exceptionOrNull()
                 assertTrue("$label: $failure", failure?.message?.startsWith("Open developer options: ") == true)
-            } else if (label.endsWith("-385611439") || label.endsWith("-385611440")) {
-                val failure = runCatching { hooksTheList(bundle, label) }.exceptionOrNull()
-                if (failure == null) hooked += label
-                else assertTrue("$label: $failure", failure !is AssertionError && failure.message?.startsWith("Open developer options: ") == true)
             } else {
                 hooksTheList(bundle, label)
                 hooked += label
