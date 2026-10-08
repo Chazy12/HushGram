@@ -140,6 +140,11 @@ internal class HookSite(
  * On 450 the lookup is the findViewById, and a null there takes the path for a bar inflated earlier,
  * which asserts it's there. So the check is the null test of the view the lookup searches, just
  * before it, and the site is the instruction that sets that view, with nothing jumping in between.
+ *
+ * The lookup is a static (View, int) call answering a ViewStub. The x86_64 build 385611440 has it
+ * inlined, a findViewById whose answer is cast to ViewStub, which then counts as the lookup. 449
+ * finds the pills' stub inside the bar that way too, so an inlined lookup is only taken when the
+ * method makes no static one.
  */
 internal fun BytecodePatchContext.findFollowUpBarCheck(): HookSite {
     val setups = mutableListOf<Pair<ClassDef, Method>>()
@@ -152,17 +157,27 @@ internal fun BytecodePatchContext.findFollowUpBarCheck(): HookSite {
         ?: refuse("${setups.size} methods hold ${FOLLOW_UP_SETUP.joinToString(" and ")}, not one")
     val where = "${classDef.type}->${method.name}"
     val code = method.implementation!!.instructions.toList()
-    val lookups = code.indices.filter { index ->
+    // Whether the stub held at [ready] (a static lookup's move-result, an inlined one's cast) goes to inflate() soon after.
+    fun inflatedAfter(ready: Int): Boolean {
+        val stub = (code[ready] as OneRegisterInstruction).registerA
+        return (ready + 1..minOf(code.lastIndex, ready + CHECK_WITHIN)).any {
+            code[it].methodReference()?.toString() == INFLATE && code[it].arguments() == listOf(stub)
+        }
+    }
+    val statics = code.indices.filter { index ->
         val call = code[index].methodReference() ?: return@filter false
-        val result = code.getOrNull(index + 1)
         code[index].opcode == Opcode.INVOKE_STATIC && call.returnType == VIEW_STUB &&
             call.parameterTypes.map(CharSequence::toString) == listOf("Landroid/view/View;", "I") &&
-            result?.opcode == Opcode.MOVE_RESULT_OBJECT &&
-            (index + 2..minOf(code.lastIndex, index + 1 + CHECK_WITHIN)).any {
-                code[it].methodReference()?.toString() == INFLATE &&
-                    code[it].arguments() == listOf((result as OneRegisterInstruction).registerA)
-            }
+            code.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT && inflatedAfter(index + 1)
     }
+    val inlined = code.indices.filter { index ->
+        val result = code.getOrNull(index + 1)
+        val cast = code.getOrNull(index + 2)
+        code[index].methodReference()?.toString() == FIND_VIEW && result?.opcode == Opcode.MOVE_RESULT_OBJECT &&
+            cast?.opcode == Opcode.CHECK_CAST && (cast as ReferenceInstruction).reference.toString() == VIEW_STUB &&
+            (cast as OneRegisterInstruction).registerA == (result as OneRegisterInstruction).registerA && inflatedAfter(index + 2)
+    }
+    val lookups = statics.ifEmpty { inlined }
     val lookup = lookups.singleOrNull() ?: refuse("$where looks up a stub to inflate ${lookups.size} times, not once")
     val site = (lookup - 1 downTo maxOf(0, lookup - CHECK_WITHIN))
         .firstOrNull { code[it].methodReference()?.toString() == FIND_VIEW }
