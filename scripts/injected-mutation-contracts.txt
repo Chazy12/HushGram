@@ -197,6 +197,11 @@ shared-call Lapp/hushgram/extension/instagram/misc/Analytics;->setupScreen(Ljava
 # two values the server can set the press to. Nothing else calls open().
 start-call Lapp/hushgram/extension/instagram/misc/DeveloperOptions;->open()I in instance (Landroid/view/View;)Z holding click activity
 once-call Lapp/hushgram/extension/instagram/misc/DeveloperOptions;->open()I in instance (Landroid/view/View;)Z holding click activity
+# Import flag names hands both labels of every row MetaConfig's list builder makes to FlagNames, in
+# both of its kinds of row. The builder is the one static ()List reading a schema entry's names,
+# and nothing else calls either hook. The schema entry type below is pinned 450 verification data.
+once-call Lapp/hushgram/extension/instagram/misc/FlagNames;->parameter(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/String; in static ()Ljava/util/List; sites 2 holding _ LX/026c;->A06:Ljava/lang/String;
+once-call Lapp/hushgram/extension/instagram/misc/FlagNames;->config(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/String; in static ()Ljava/util/List; sites 2 holding _ LX/026c;->A04:Ljava/lang/String;
 # Read-only override exchange mustn't introduce native writes or cache reloads. The holder's
 # own typed forwarding wrappers are allowed; extension callers aren't.
 no-call Lcom/facebook/mobileconfig/troubleshooting/MobileConfigOverridesWriterHolder;->importOverridesFromUser(Ljava/lang/String;)Ljava/lang/String; outside Lcom/facebook/mobileconfig/

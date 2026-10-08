@@ -65,24 +65,29 @@ val openDeveloperOptionsPatch = bytecodePatch(
         requireStatusMethod("developerOptions")
         requireStatusMethod(OVERRIDE_EXCHANGE_STATUS)
         requireStatusMethod(OVERRIDE_IMPORT_STATUS)
+        requireStatusMethod(FLAG_NAMES_STATUS)
         openDeveloperOptions(findOverrideEditor(), findWhitehatScreen())
     }
 }
 
 /**
  * Puts in developer options for the [editor] and the Whitehat [screen] already found: the long
- * press, the MetaConfig and Whitehat entries, and Export, Validate and Import as far as their reader
- * and writer are found. Every stub body is assembled and the opener found before anything changes,
- * so nothing after the long press hook can refuse.
+ * press, the MetaConfig and Whitehat entries, Export, Validate and Import as far as their reader
+ * and writer are found, and Import flag names when MetaConfig's list is found. Every stub body is
+ * assembled, every MetaConfig row traced and the opener found before anything changes, so nothing
+ * after the long press hook can refuse.
  */
 internal fun BytecodePatchContext.openDeveloperOptions(editor: OverrideEditor, screen: String) {
     val exchange = overrideExchangeOrWarn(editor)
+    val names = flagNamesOrWarn()
     val stubs = listOfNotNull(prepareOverrideEditor(editor), prepareWhitehatScreen(editor, screen), exchange?.reader, exchange?.writer)
     openOnLongPress(findOptionsOpener())
     stubs.forEach { putStubs(it) }
+    if (names != null) applyFlagNameList(names)
     enableStatus("developerOptions")
     if (exchange != null) enableStatus(OVERRIDE_EXCHANGE_STATUS)
     if (exchange?.writer != null) enableStatus(OVERRIDE_IMPORT_STATUS)
+    if (names != null) enableStatus(FLAG_NAMES_STATUS)
 }
 
 /** The override reader's stubs, and the writer's when it was found too, assembled and not yet put in. */

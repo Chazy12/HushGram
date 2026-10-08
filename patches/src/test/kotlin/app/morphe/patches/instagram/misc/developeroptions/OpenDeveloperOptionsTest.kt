@@ -95,9 +95,9 @@ class OpenDeveloperOptionsTest {
     }
 
     /**
-     * With no override reader to be found, the long press and the MetaConfig and Whitehat entries go
-     * in all the same. No reader or writer stub is filled, both of their statuses stay off, and the
-     * patch log says what was left out.
+     * With no override reader and no MetaConfig list to be found, the long press and the MetaConfig
+     * and Whitehat entries go in all the same. No reader, writer or flag name stub is filled, their
+     * statuses stay off, and the patch log says what was left out.
      */
     @Test
     fun aReaderThatMovedLeavesTheLongPressAndTheEntriesIn() {
@@ -106,15 +106,18 @@ class OpenDeveloperOptionsTest {
 
         val warnings = PatchLogCapture.warnings { patch.openDeveloperOptions(standInEditor, whitehat) }
 
-        assertEquals(warnings.toString(), 1, warnings.size)
-        assertTrue(warnings.single(), warnings.single().startsWith("Open developer options: expected one signed-in override diagnostics, found 0. "))
-        assertTrue(warnings.single(), warnings.single().endsWith(" without Export, Validate and Import."))
+        assertEquals(warnings.toString(), 2, warnings.size)
+        assertTrue(warnings[0], warnings[0].startsWith("Open developer options: expected one signed-in override diagnostics, found 0. "))
+        assertTrue(warnings[0], warnings[0].endsWith(" without Export, Validate and Import."))
+        assertTrue(warnings[1], warnings[1].startsWith("Open developer options: expected one MetaConfig schema getter, found 0. "))
+        assertTrue(warnings[1], warnings[1].endsWith(" without Import flag names."))
         assertEquals("asks first", OPEN_DEVELOPER_OPTIONS, patch.longPress().code()[0].referenceText())
         val filled = patch.bridge().filter { (stub, code) -> stock[stub] != code }.keys
         assertEquals(setOf("openOverridesNative(Ljava/lang/Object;)I", "openWhitehatNative(Ljava/lang/Object;)I"), filled)
         assertEquals(1, patch.answer("developerOptions"))
         assertEquals(0, patch.answer(OVERRIDE_EXCHANGE_STATUS))
         assertEquals(0, patch.answer(OVERRIDE_IMPORT_STATUS))
+        assertEquals(0, patch.answer(FLAG_NAMES_STATUS))
     }
 
     /** An opener that moved still stops the patch before a stub, the press or a status changes. */
@@ -130,6 +133,7 @@ class OpenDeveloperOptionsTest {
         assertEquals(0, patch.answer("developerOptions"))
         assertEquals(0, patch.answer(OVERRIDE_EXCHANGE_STATUS))
         assertEquals(0, patch.answer(OVERRIDE_IMPORT_STATUS))
+        assertEquals(0, patch.answer(FLAG_NAMES_STATUS))
     }
 
     /** In each declared build, the one long press with both strings asks first and opens the one opener. */
