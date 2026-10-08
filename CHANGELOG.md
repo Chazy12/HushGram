@@ -10,7 +10,7 @@ Every HushGram release, newest first.
 
 * **Instagram:** Download any reel saves every page of a carousel that turns up in Reels, in order. Before, it saved the first page whichever one you were looking at. Download as photo on a carousel with music saves them all too. Reported in #78.
 
-* **Instagram:** Turn off HDR brightness boosts also holds back the extra brightness Instagram asks for on the layer it draws some videos on, on Android 14 and newer. That layer shows a video brighter than the rest of the screen, and the switch didn't reach it before (#85).
+* **Instagram:** On Android 14 and newer, Turn off HDR brightness boosts also holds back the extra brightness Instagram asks for when it draws a video on a layer of its own. That layer shows the video brighter than the rest of the screen, and the switch didn't reach it before (#85).
 
 * **Instagram:** New patch, Hide the Threads button. Turn on its switch under Profiles and the Threads button at the top of a profile, yours or anyone else's, isn't built at all, so there's no gap where it was. The menu and the other buttons stay put. It's in the default selection with its switch off. Asked for in #50.
 
