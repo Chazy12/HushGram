@@ -38,13 +38,42 @@ public final class NavigationSettings {
     }
 
     public static View.OnLongClickListener remember(View view, Object tab, View.OnLongClickListener original) {
+        return remember(view, tab instanceof Enum<?> ? ((Enum<?>) tab).name() : null, original);
+    }
+
+    /**
+     * Stands in for each setOnLongClickListener call of Instagram's main activity (#82). Besides the
+     * tab's own setter, 450's activity puts the account switcher straight on the Profile button,
+     * sometimes after the setter has, and the listener kept for Profile was gone by the time a
+     * choice reached it, so Profile went on opening the switcher. A tab button takes the listener
+     * the way its setter would: the chosen tab keeps opening HushGram, and the others keep the
+     * newest listener Instagram gave them. Any other view gets it as it came.
+     */
+    public static void setOnLongClickListener(View view, View.OnLongClickListener listener) {
+        View.OnLongClickListener installed = listener;
+        try {
+            String tab = null;
+            if (view != null) {
+                synchronized (nativeBindings) {
+                    Binding binding = nativeBindings.get(view);
+                    if (binding != null) tab = binding.tab;
+                }
+            }
+            if (tab != null) installed = remember(view, tab, listener);
+        } catch (Throwable t) {
+            Logger.printException(() -> "Navigation settings: could not take a tab's long press", t);
+        }
+        view.setOnLongClickListener(installed);
+    }
+
+    private static View.OnLongClickListener remember(View view, String tab, View.OnLongClickListener original) {
         if (original instanceof Press) original = ((Press) original).original;
         if (view == null) return original;
         Binding binding = null;
         synchronized (nativeBindings) {
-            if (original == null || !(tab instanceof Enum<?>)) nativeBindings.remove(view);
+            if (original == null || tab == null) nativeBindings.remove(view);
             else {
-                binding = new Binding(((Enum<?>) tab).name(), original);
+                binding = new Binding(tab, original);
                 nativeBindings.put(view, binding);
             }
         }

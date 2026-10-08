@@ -31,7 +31,11 @@ internal const val NAV_REMEMBER = "$NAVIGATION->remember(Landroid/view/View;Ljav
 internal const val NAV_BIND = "$NAVIGATION->bind(Landroid/view/View;Ljava/lang/Object;)V"
 private const val VIEW = "Landroid/view/View;"
 private const val LONG_LISTENER = "Landroid/view/View\$OnLongClickListener;"
-private const val SET_LISTENER = "$VIEW->setOnLongClickListener($LONG_LISTENER)V"
+internal const val SET_LISTENER = "$VIEW->setOnLongClickListener($LONG_LISTENER)V"
+internal const val NAV_SET_LISTENER = "$NAVIGATION->setOnLongClickListener($VIEW$LONG_LISTENER)V"
+
+/** A setOnLongClickListener call of the main activity's own, on its view and listener registers. */
+internal data class ActivityLongPress(val method: Method, val index: Int, val view: Int, val listener: Int)
 
 /** All owners, registers and branch targets are checked before any patch writes an instruction. */
 internal data class NavigationEntryTargets(
@@ -41,6 +45,7 @@ internal data class NavigationEntryTargets(
     val tabRegister: Int,
     val enumField: String,
     val setters: List<Method>,
+    val activityLongPresses: List<ActivityLongPress>,
 )
 
 internal fun BytecodePatchContext.navigationEntryTargets(): NavigationEntryTargets {
@@ -157,7 +162,21 @@ internal fun BytecodePatchContext.navigationEntryTargets(): NavigationEntryTarge
             it.opcode != Opcode.INVOKE_VIRTUAL || (it as FiveRegisterInstruction).registerC !=
                 (code[getter.first] as FiveRegisterInstruction).registerC
         }) refuse("factory must bind its six native handlers to the returned proxy")
-    return NavigationEntryTargets(factory, end.index, view, tabRegister, enumField.toString(), setters)
+    // The activity also puts a long press straight on a tab button, past the proxy's setter: 450
+    // gives Profile its account switcher that way (#82). Each such call goes to the extension,
+    // which hands any view the factory didn't bind the listener as it came.
+    val activityLongPresses = classDefBy(MAIN_ACTIVITY).methods.flatMap { method ->
+        method.code().withIndex().filter { (it.value as? ReferenceInstruction)?.reference?.toString() == SET_LISTENER }
+            .map { (index, call) ->
+                val registers = call as? FiveRegisterInstruction
+                    ?: refuse("main activity sets a long press outside a plain two-register call")
+                if (call.opcode != Opcode.INVOKE_VIRTUAL || registers.registerCount != 2) {
+                    refuse("main activity sets a long press outside a plain two-register call")
+                }
+                ActivityLongPress(method, index, registers.registerC, registers.registerD)
+            }
+    }
+    return NavigationEntryTargets(factory, end.index, view, tabRegister, enumField.toString(), setters, activityLongPresses)
 }
 
 internal fun BytecodePatchContext.addNavigationEntry(found: NavigationEntryTargets = navigationEntryTargets()) {
@@ -168,6 +187,11 @@ internal fun BytecodePatchContext.addNavigationEntry(found: NavigationEntryTarge
                 invoke-static { v0, p0, p1 }, $NAV_REMEMBER
                 move-result-object p1
             """)
+    }
+    // In place of the call, on its registers, so a branch to it still reaches it and nothing shifts.
+    for (press in found.activityLongPresses) {
+        mutableClassDefBy(MAIN_ACTIVITY).methods.single { it.name == press.method.name && it.parameterTypes == press.method.parameterTypes }
+            .replaceInstruction(press.index, "invoke-static { v${press.view}, v${press.listener} }, $NAV_SET_LISTENER")
     }
     val factory = mutableClassDefBy(found.factory.definingClass).methods.single {
         it.name == found.factory.name && it.parameterTypes == found.factory.parameterTypes

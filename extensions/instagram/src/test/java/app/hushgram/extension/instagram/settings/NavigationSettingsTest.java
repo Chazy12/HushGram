@@ -147,6 +147,67 @@ public class NavigationSettingsTest {
         assertEquals(2, stock.get());
     }
 
+    /**
+     * 450's activity also puts the account switcher straight on the Profile button, past the tab's
+     * setter and sometimes after it. The listener kept for Profile was then gone, so a choice made
+     * in settings never reached Profile and it went on opening the switcher (#82). Instagram's
+     * order here: the factory binds Profile with no listener, the setter gives it one, then the
+     * activity replaces that one.
+     */
+    @Test public void theActivitysOwnLongPressStaysUnderTheChoice() {
+        Settings.NAVIGATION_SETTINGS_TARGET.save(NavigationTarget.OFF);
+        AtomicInteger replaced = new AtomicInteger();
+        NavigationSettings.bind(button, NativeTab.PROFILE);
+        button.setOnLongClickListener(NavigationSettings.remember(button, NativeTab.PROFILE,
+                view -> { replaced.incrementAndGet(); return true; }));
+        NavigationSettings.setOnLongClickListener(button, nativeListener);
+        assertTrue(button.performLongClick());
+        assertEquals(1, stock.get());
+
+        Settings.NAVIGATION_SETTINGS_TARGET.save(NavigationTarget.PROFILE);
+        NavigationSettings.applyChoice();
+        assertTrue(button.performLongClick());
+        assertEquals("Profile opened the switcher, not HushGram", 1, stock.get());
+        assertEquals(1, shown());
+
+        SettingsEntry.onClosedByUser();
+        activity.getFragmentManager().beginTransaction()
+                .remove(activity.getFragmentManager().findFragmentByTag(SettingsEntry.DIALOG_TAG)).commit();
+        activity.getFragmentManager().executePendingTransactions();
+        Settings.NAVIGATION_SETTINGS_TARGET.save(NavigationTarget.OFF);
+        NavigationSettings.applyChoice();
+        assertTrue(button.performLongClick());
+        assertEquals("Profile didn't get the activity's switcher back", 2, stock.get());
+        assertEquals(0, replaced.get());
+        assertEquals(0, shown());
+    }
+
+    /** The same replacement on a start with Profile chosen used to leave Profile on the switcher. */
+    @Test public void theActivitysLongPressAfterTheSetterKeepsTheChosenTab() {
+        Settings.NAVIGATION_SETTINGS_TARGET.save(NavigationTarget.PROFILE);
+        NavigationSettings.bind(button, NativeTab.PROFILE);
+        button.setOnLongClickListener(NavigationSettings.remember(button, NativeTab.PROFILE, view -> true));
+        NavigationSettings.setOnLongClickListener(button, nativeListener);
+        assertTrue(button.performLongClick());
+        assertEquals(0, stock.get());
+        assertEquals(1, shown());
+    }
+
+    @Test public void theActivitysLongPressOnAnyOtherViewIsUntouched() {
+        View other = new View(activity);
+        bar.addView(other, new LinearLayout.LayoutParams(60, 60));
+        NavigationSettings.setOnLongClickListener(other, nativeListener);
+        assertSame(nativeListener, shadowOf(other).getOnLongClickListener());
+        NavigationSettings.setOnLongClickListener(other, null);
+        assertNull(shadowOf(other).getOnLongClickListener());
+
+        nativeBind(NativeTab.FEED, nativeListener);
+        NavigationSettings.setOnLongClickListener(button, null);
+        assertNull("a tab's null long press is teardown", shadowOf(button).getOnLongClickListener());
+        assertFalse(button.performLongClick());
+        assertEquals(0, shown());
+    }
+
     @Test public void offAndUnselectedReturnTheExactNativeListener() {
         Settings.NAVIGATION_SETTINGS_TARGET.save(NavigationTarget.OFF);
         assertSame(nativeListener, NavigationSettings.remember(button, NativeTab.FEED, nativeListener));

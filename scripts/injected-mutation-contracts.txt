@@ -48,6 +48,11 @@ start-call Lapp/hushgram/extension/instagram/settings/NavigationSettings;->remem
 shared-call Lapp/hushgram/extension/instagram/settings/NavigationSettings;->remember(Landroid/view/View;Ljava/lang/Object;Landroid/view/View$OnLongClickListener;)Landroid/view/View$OnLongClickListener; in instance (Landroid/view/View$OnLongClickListener;)V calling instance Landroid/view/View;->setOnLongClickListener(Landroid/view/View$OnLongClickListener;)V holding LX/00OR;->A0A:Landroid/view/View;
 shared-call Lapp/hushgram/extension/instagram/settings/NavigationSettings;->remember(Landroid/view/View;Ljava/lang/Object;Landroid/view/View$OnLongClickListener;)Landroid/view/View$OnLongClickListener; in instance (Landroid/view/View$OnLongClickListener;)V calling instance Landroid/view/View;->setOnLongClickListener(Landroid/view/View$OnLongClickListener;)V holding LX/0DsQ;->A00:Lcom/facebook/litho/LithoView;
 once-call Lapp/hushgram/extension/instagram/settings/NavigationSettings;->bind(Landroid/view/View;Ljava/lang/Object;)V in static (Landroid/view/ViewGroup;Lcom/instagram/mainactivity/InstagramMainActivity;L*;L*;Lkotlin/jvm/functions/Function1;IZZ)Landroid/view/View; holding InstagramMainActivity.createTabButton(
+# The activity also puts the account switcher straight on the Profile button it keeps, past the
+# proxy's setter, in its create and in the static copy of that (#82). Each of the two calls goes to
+# the extension in its own place.
+shared-call Lapp/hushgram/extension/instagram/settings/NavigationSettings;->setOnLongClickListener(Landroid/view/View;Landroid/view/View$OnLongClickListener;)V in static (L*;Lcom/instagram/mainactivity/InstagramMainActivity;)V holding LX/00jL;->A01:Landroid/view/View;
+shared-call Lapp/hushgram/extension/instagram/settings/NavigationSettings;->setOnLongClickListener(Landroid/view/View;Landroid/view/View$OnLongClickListener;)V in instance (L*;)V holding LX/00jL;->A01:Landroid/view/View;
 
 start-call Lapp/hushgram/extension/instagram/direct/VisualSeen;->hold()Z in instance (L*;L*;L*;)V holding direct_v2/visual_threads/%s/item_seen/ raven_media
 once-call Lapp/hushgram/extension/instagram/direct/VisualSeen;->hold()Z in instance (L*;L*;L*;)V holding direct_v2/visual_threads/%s/item_seen/ raven_media
