@@ -18,6 +18,8 @@ Every HushGram release, newest first.
 
 * **Tooling:** `scripts/release/` holds the helpers a release used to need by hand. `preflight.ps1` runs the quick checks in a few minutes before the source push (a clean checkout on main, every declared build in the fixture folder, the desktop CLI, the release facts, the CHANGELOG section and the patch tests that read no Instagram build) and says how long each took. `patch-all-builds.ps1` patches every Instagram build in the fixture folder with the whole catalog and reports the patches each applied and missed and the CLI's warnings, patching a build kept as a bundle from the bundle rather than its base split, and reading the gate's run back with `-FromGate`. `release_notes.py` builds the GitHub notes from a CHANGELOG section with every bullet in it, and `count_tests.py` counts the test results, the gate's included, and prints the index description's validation sentence. The release steps in CONTRIBUTING.md use all four.
 
+* **Tooling:** A push that changes a PowerShell script has every tracked script parsed before anything else runs, and a script that doesn't parse stops the push. Most of them run only for a release or with a phone, so a slip such as a variable name run into a colon used to surface there first.
+
 ## 0.0.7 (2026-10-08)
 
 * **Instagram:** HushGram 0.0.7 adds 3 patches, for 78 in all, and stays on Instagram 450.0.0.50.77 with Morphe Manager 1.34.0 or newer. Besides build 385611438, the other arm64 builds of that version (385611395, 385611400, 385611404 and 385611431) and the x86 and x86_64 ones (385611439 and 385611440) patch now too.

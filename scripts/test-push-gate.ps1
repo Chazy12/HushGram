@@ -414,6 +414,22 @@ exit 0
     }
     Invoke-FixtureGit reset -q --hard $tip | Out-Null
 
+    # A push that moves a PowerShell file needs every tracked one to parse: a helper no suite or
+    # build reads, with a "$name:" PowerShell takes for a scoped variable, stops it before anything
+    # is built, and the same push with the name delimited goes through.
+    Write-FixtureFile 'scripts/stand-in-helper.ps1' ('param([string]$Label)' + "`n" + 'Write-Host "$Label: done"' + "`n")
+    $unparsed = New-FixtureCommit 'add a helper that does not parse'
+    $run = Invoke-Push -Tip $unparsed -Base $tip
+    Assert-True ($run.Exit -ne 0 -and $run.Output -like '*scripts/stand-in-helper.ps1:2 *' -and
+        $run.Output -like '*refused: 1 parse error(s) in the tracked PowerShell files*' -and (Get-GradleRuns).Count -eq 0) `
+        "A push with a script that doesn't parse went through: $($run.Output)"
+    Write-FixtureFile 'scripts/stand-in-helper.ps1' ('param([string]$Label)' + "`n" + 'Write-Host "${Label}: done"' + "`n")
+    $mended = New-FixtureCommit 'delimit the helper''s label'
+    $run = Invoke-Push -Tip $mended -Base $tip
+    Assert-True ($run.Exit -eq 0 -and $run.Output -like '*tracked PowerShell files parse*') `
+        "A push whose scripts all parse was refused: $($run.Output)"
+    Invoke-FixtureGit reset -q --hard $tip | Out-Null
+
     # Only the newest runs are kept, and a folder still being written is left alone for a while.
     $pruneCache = Join-Path $scratch 'prune-cache'
     $env:HUSHGRAM_GATE_CACHE = $pruneCache

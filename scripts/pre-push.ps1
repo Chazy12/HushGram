@@ -10,7 +10,8 @@
     Every push gets the commit checks: who committed each published commit, trailers or authors
     naming an AI tool, and tracked files that name the maintainer's machine or a phone. A tag, or
     a commit that adds or changes patches-bundle.json (the index Morphe Manager reads), is a
-    release, and a release needs HUSHGRAM_ALLOW_RELEASE=1 set for that one push.
+    release, and a release needs HUSHGRAM_ALLOW_RELEASE=1 set for that one push. A push that moves
+    a PowerShell file has every tracked one parsed, and one that doesn't parse stops it.
 
     When a pushed commit changes the build, the patches, the extension or a root file their tests
     read, the tip is checked out into a clean worktree and built there: the unit tests, both lints,
@@ -153,6 +154,30 @@ if ($hits.Count -gt 0) {
     Stop-Push "$($hits.Count) line(s) name this machine or a phone"
 }
 Write-Step "$($published.Count) commit(s): committer, trailers and machine names are clean"
+
+# Every tracked PowerShell file parses, once a push moves one. Most of these scripts run only for a
+# release or with a phone, and no suite reads them all, so a syntax slip would otherwise turn up
+# there first. Read as UTF-8, since Windows PowerShell's ParseFile reads a file with no byte order
+# mark as ANSI.
+if (@($changed | Where-Object { $_ -like '*.ps1' }).Count -gt 0) {
+    $unparsed = New-Object System.Collections.Generic.List[string]
+    $trackedScripts = @(Invoke-Git ls-files -- '*.ps1' | Where-Object { $_ })
+    foreach ($trackedScript in $trackedScripts) {
+        $scriptPath = Join-Path $Root $trackedScript
+        if (-not (Test-Path -LiteralPath $scriptPath -PathType Leaf)) { continue }
+        $parseErrors = $null
+        [void][System.Management.Automation.Language.Parser]::ParseInput(
+            [IO.File]::ReadAllText($scriptPath, [Text.Encoding]::UTF8), $scriptPath, [ref]$null, [ref]$parseErrors)
+        foreach ($parseError in @($parseErrors)) {
+            $unparsed.Add("${trackedScript}:$($parseError.Extent.StartLineNumber) $($parseError.Message)")
+        }
+    }
+    if ($unparsed.Count -gt 0) {
+        $unparsed | Select-Object -First 20 | ForEach-Object { Write-Host "  $_" }
+        Stop-Push "$($unparsed.Count) parse error(s) in the tracked PowerShell files, and a script that doesn't parse stops wherever it's next run"
+    }
+    Write-Step "the $($trackedScripts.Count) tracked PowerShell files parse"
+}
 
 if (@($changed | Where-Object { $_ -match $ledgerPaths }).Count -gt 0) {
     Write-Step 'the source ledger or its rules changed, running them'
