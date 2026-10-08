@@ -306,12 +306,16 @@ public final class FlagNames {
 
     /**
      * Reads a picked file and, when it names something, keeps it as HushGram's copy in place of
-     * any earlier one and puts it in use. A file that can't be read or names nothing changes nothing.
+     * any earlier one and puts it in use. A file that can't be read or names nothing changes nothing,
+     * and so does one whose copy would come out past {@link #MAX_BYTES}: the copy is read back under
+     * that limit, and repeats each config number on every line, so it can outgrow the file it came from.
      */
     public static Names importNames(Context context, byte[] bytes) throws IOException {
         Names names = parse(bytes);
+        byte[] copy = text(names).getBytes(StandardCharsets.UTF_8);
+        if (copy.length > MAX_BYTES) throw new Unreadable();
         synchronized (LOCK) {
-            replace(store(context), text(names).getBytes(StandardCharsets.UTF_8));
+            replace(store(context), copy);
             loaded = names;
         }
         Logger.printInfo(() -> "Flag names: imported " + names.size() + ", left out " + names.leftOut);

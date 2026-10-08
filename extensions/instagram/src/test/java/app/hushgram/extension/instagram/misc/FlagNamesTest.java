@@ -221,6 +221,35 @@ public class FlagNamesTest {
         assertEquals(4, FlagNames.count());
     }
 
+    /**
+     * Instagram's format names a parameter in fewer bytes than HushGram's copy, which repeats the
+     * config number on every line, so a list just under the limit can make a copy past it. That
+     * copy wouldn't read back after a restart, so the import is refused and nothing is written.
+     */
+    @Test
+    public void anImportWhoseCopyWouldOutgrowTheLimitIsRefused() throws IOException {
+        StringBuilder name = new StringBuilder();
+        for (int i = 0; i < 240; i++) name.append('n');
+        int config = 1_000_000, index = 0;
+        StringBuilder file = new StringBuilder("[\"").append(config).append(':');
+        while (file.length() + name.length() + 64 < FlagNames.MAX_BYTES) {
+            if (index == FlagNames.INDEX_LIMIT) {
+                file.append("\", \"").append(++config).append(':');
+                index = 0;
+            }
+            file.append(':').append(index++).append(':').append(name);
+        }
+        byte[] list = bytes(file.append("\"]").toString());
+        assertTrue(list.length <= FlagNames.MAX_BYTES);
+        assertTrue("the copy outgrows the limit",
+                FlagNames.text(FlagNames.parse(list)).getBytes(StandardCharsets.UTF_8).length > FlagNames.MAX_BYTES);
+
+        assertThrows(FlagNames.Unreadable.class, () -> FlagNames.importNames(context(), list));
+
+        assertFalse("nothing written", FlagNames.store(context()).exists());
+        assertEquals(0, FlagNames.count());
+    }
+
     /** A copy that no longer reads means no names, not a broken MetaConfig. */
     @Test
     public void aDamagedCopyIsNoNames() throws IOException {
