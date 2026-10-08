@@ -83,7 +83,7 @@ public final class LinkCleaner {
      * so this only covers a key that could ever carry a base64 id by chance.
      */
     private static final Set<String> REAL_FOUR_LETTER_KEYS = keys("next", "lang", "page", "from", "type",
-            "mode", "text", "code", "name", "user", "view", "tab");
+            "mode", "text", "code", "name", "user", "view");
 
     /** Meta's click id alone, which a link to another site loses on its way out of the in-app browser. */
     private static final Set<String> CLICK_ID = keys("fbclid");
@@ -395,7 +395,7 @@ public final class LinkCleaner {
             if (c < 'a' || c > 'z') return false;
         }
         if (REAL_FOUR_LETTER_KEYS.contains(pair.substring(0, 4))) return false;
-        String value = pair.substring(5);
+        String value = percentDecoded(pair.substring(5));
         if (!value.matches("[A-Za-z0-9+/]{8,40}={0,2}")) return false;
         try {
             byte[] decoded = Base64.getDecoder().decode(value);
@@ -407,6 +407,28 @@ public final class LinkCleaner {
         } catch (IllegalArgumentException notBase64) {
             return false;
         }
+    }
+
+    /**
+     * {@code value} with each valid %XX turned into its character, so the padding and the + and /
+     * of a base64 id read the same whether the link escaped them or not. A % that doesn't start
+     * two hex digits stays as it is, which keeps the value from passing as base64. Only the
+     * shape test reads this; the link itself is rewritten from the pairs as written.
+     */
+    private static String percentDecoded(String value) {
+        if (value.indexOf('%') < 0) return value;
+        StringBuilder out = new StringBuilder(value.length());
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c == '%' && i + 2 < value.length() && Character.digit(value.charAt(i + 1), 16) >= 0
+                    && Character.digit(value.charAt(i + 2), 16) >= 0) {
+                out.append((char) Integer.parseInt(value.substring(i + 1, i + 3), 16));
+                i += 2;
+            } else {
+                out.append(c);
+            }
+        }
+        return out.toString();
     }
 
     /**

@@ -204,6 +204,23 @@ public class LinkCleanerTest {
     }
 
     @Test
+    public void aShareIdWithEscapedPaddingGoesToo() {
+        // %3D is "=": a 13 or 14 character id always pads, so the link carries it escaped.
+        assertEquals("https://www.instagram.com/reel/Abc123xyz_Q/",
+                LinkCleaner.clean("https://www.instagram.com/reel/Abc123xyz_Q/?obrf=MXY5Z21sZmQwZnZldg%3D%3D"));
+        assertEquals("https://www.instagram.com/reel/Abc123xyz_Q/?img_index=2",
+                LinkCleaner.clean("https://www.instagram.com/reel/Abc123xyz_Q/?img_index=2&obrf=MXY5Z21sZmQwZnZldg%3d%3d"));
+    }
+
+    @Test
+    public void aValueWithAMalformedEscapeStays() {
+        for (String pair : new String[] {"obrf=MXY5Z21sZmQwZnZldg%G1", "obrf=MXY5Z21sZmQwZnZldg%3", "obrf=MXY5Z21sZmQwZnZldg%"}) {
+            String link = "https://www.instagram.com/p/Abc123xyz_Q/?" + pair;
+            assertEquals(pair, link, LinkCleaner.clean(link));
+        }
+    }
+
+    @Test
     public void cleaningTheRotatingKeyTwiceChangesNothing() {
         String once = LinkCleaner.clean("https://www.instagram.com/reel/Abc123xyz_Q/?mdxt=MXY5Z21sZmQwZnZldg==");
         assertEquals(once, LinkCleaner.clean(once));
