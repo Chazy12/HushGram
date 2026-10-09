@@ -37,7 +37,8 @@ import app.morphe.patches.instagram.misc.extension.originalName
 import app.morphe.patches.instagram.misc.extension.requireLocals
 import app.morphe.patches.instagram.misc.extension.requireStatusMethod
 import app.morphe.patches.instagram.misc.extension.typesMarked
-import app.morphe.patches.instagram.media.quality.target
+import app.morphe.patches.instagram.misc.extension.classesLoading
+import app.morphe.patches.instagram.misc.settings.EXTENSION_ROOT
 import app.morphe.patches.instagram.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
@@ -81,6 +82,10 @@ private const val POST_INFO = "$EXTENSION_PACKAGE/download/PostInfo;"
 internal const val OFFER_DETAILS = "$POST_INFO->offer(Ljava/lang/Object;Ljava/util/ArrayList;)V"
 internal const val DETAILS_OPTION = "$POST_INFO->option()Ljava/lang/Object;"
 internal const val SHOW_DETAILS = "$POST_INFO->show(Ljava/lang/Object;Ljava/lang/Object;Landroid/app/Activity;)V"
+
+internal const val FEED_DOWNLOAD_BUTTON = "$EXTENSION_PACKAGE/download/FeedDownloadButton;->onUfiBound(Landroid/view/View;)V"
+internal const val REPOSTS_UFI_ICON_ID = 0x7f0b3614
+internal const val BOUNCY_UFI_BUTTON = "Lcom/instagram/ui/widget/bouncyufibutton/IgBouncyUfiButtonImageView;"
 
 /** The options the short feed menu's list of kept options reads first and last: "Why you're seeing this" and Report. */
 internal const val WHY_OPTION = "$OPTION->WHY_AM_I_SEEING_THIS:$OPTION"
@@ -164,6 +169,7 @@ val downloadVideoPatch = bytecodePatch(
     execute {
         requireStatusMethod("videoDownload")
         offerDownloadOnEveryVideo()
+        hookFeedDownloadButton()
         enableStatus("videoDownload")
     }
 }
@@ -811,3 +817,58 @@ private fun BytecodePatchContext.mutable(method: Method): MutableMethod =
         it.name == method.name && it.returnType == method.returnType &&
             it.parameterTypes.map(Any::toString) == method.parameterTypes.map(Any::toString)
     }
+
+internal fun BytecodePatchContext.hookFeedDownloadButton() {
+    val loading = classesLoading(REPOSTS_UFI_ICON_ID.toLong()).mapTo(HashSet()) { it.type }
+    classDefForEach { classDef ->
+        if (classDef.type !in loading || classDef.type.startsWith(EXTENSION_ROOT)) return@classDefForEach
+        classDef.methods.forEach { method ->
+            val code = method.implementation?.instructions?.toList() ?: return@forEach
+            val iconId = code.indexOfFirst {
+                it is NarrowLiteralInstruction && it.opcode == Opcode.CONST && it.narrowLiteral == REPOSTS_UFI_ICON_ID
+            }
+            if (iconId < 0) return@forEach
+            var iconField: FieldReference? = null
+            var iconAt = -1
+            for (at in iconId + 1 until minOf(code.size, iconId + 12)) {
+                val inst = code[at]
+                if (inst.opcode == Opcode.IPUT_OBJECT && inst is TwoRegisterInstruction) {
+                    val field = (inst as? ReferenceInstruction)?.reference as? FieldReference
+                    if (field?.type == BOUNCY_UFI_BUTTON) {
+                        iconField = field
+                        iconAt = at
+                        break
+                    }
+                }
+            }
+            if (iconField == null || iconAt < 0) return@forEach
+
+            var bouncyReadAt = -1
+            var bouncyReg = -1
+            for (at in iconAt + 1 until code.size) {
+                val inst = code[at]
+                if (inst.opcode == Opcode.IGET_OBJECT && inst is TwoRegisterInstruction) {
+                    val field = (inst as? ReferenceInstruction)?.reference as? FieldReference
+                    if (field?.type == BOUNCY_UFI_BUTTON && field.toString() != iconField.toString()) {
+                        bouncyReadAt = at
+                        bouncyReg = inst.registerA
+                        break
+                    }
+                }
+            }
+            if (bouncyReadAt >= 0 && bouncyReg >= 0) {
+                val targetMethod = mutableClassDefBy(classDef.type).methods.single {
+                    it.name == method.name && it.returnType == method.returnType &&
+                        it.parameterTypes.map(CharSequence::toString) == method.parameterTypes.map(CharSequence::toString)
+                }
+                targetMethod.addInstructions(
+                    bouncyReadAt + 1,
+                    """
+                        invoke-static { v$bouncyReg }, $FEED_DOWNLOAD_BUTTON
+                    """,
+                )
+            }
+        }
+    }
+}
+

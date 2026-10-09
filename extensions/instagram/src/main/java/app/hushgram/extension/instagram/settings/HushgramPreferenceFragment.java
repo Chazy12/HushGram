@@ -492,6 +492,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                 explore.addPreference(toggle(context, Settings.HIDE_EXPLORE_GRID, L10n.t("Hide the Explore grid"),
                         L10n.t("The posts and reels under the Search tab's bar. Search, your recent searches and "
                                 + "search results stay.")));
+                explore.addPreference(toggle(context, Settings.HIDE_SEARCH_SUGGESTED, L10n.t("Hide suggested in search"),
+                        L10n.t("Hides suggested accounts and suggested searches in the search tab.")));
             }
             if (build.contains(PatchFamily.RECENT_SEARCHES)) {
                 explore.addPreference(toggle(context, Settings.DONT_SAVE_RECENT_SEARCHES,
@@ -542,6 +544,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             if (build.contains(PatchFamily.KEEP_IN_CHAT)) {
                 messages.addPreference(toggle(context, Settings.KEEP_IN_CHAT, L10n.t("Keep in chat"),
                         L10n.t("View once and replayable photos and videos you get stay in the chat, as if they'd been sent with Keep in chat, so you can open them again. Turning it on or off reaches the ones already loaded once the chat loads again.")));
+                messages.addPreference(toggle(context, Settings.VIEW_ONCE_DOWNLOAD, L10n.t("Download disappearing media"),
+                        L10n.t("Saves disappearing (view-once) photos and videos to your gallery instead of taking screenshots.")));
             }
             if (build.contains(PatchFamily.ASK_BEFORE_CALL)) {
                 messages.addPreference(toggle(context, Settings.ASK_BEFORE_CALL, L10n.t("Ask before a call"),
@@ -722,6 +726,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
                 || build.contains(PatchFamily.PLAYBACK_QUALITY) || build.contains(PatchFamily.DATA_SAVER)) {
             PreferenceCategory playback = category(screen, L10n.t("Playback"));
             if (build.contains(PatchFamily.TAP_TO_PLAY)) {
+                playback.addPreference(toggle(context, Settings.START_WITH_SOUND, L10n.t("Start with sound"),
+                        L10n.t("Plays videos, reels and stories with sound turned on immediately.")));
                 playback.addPreference(toggle(context, Settings.TAP_TO_PLAY, L10n.t("Tap to play"),
                         L10n.t("Videos wait for your tap where the choice below says. Feed videos show a play button, "
                                 + "as they do when you use less mobile data.")));
@@ -886,6 +892,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             PreferenceCategory downloads = category(screen, L10n.t("Downloads"));
             this.downloads = downloads;
             if (build.contains(PatchFamily.VIDEO_DOWNLOAD)) {
+                downloads.addPreference(toggle(context, Settings.FEED_DOWNLOAD_BUTTON, L10n.t("Download button on feed"),
+                        L10n.t("Shows a direct download button on each post in the feed to save videos and photos immediately.")));
                 downloads.addPreference(toggle(context, Settings.DOWNLOAD_VIDEOS, L10n.t("Download feed videos"),
                         L10n.t("Adds Download to the menu of a post in your feed with a video. Uses the quality below. "
                                 + "Off or paused, Instagram's own menu returns.")));

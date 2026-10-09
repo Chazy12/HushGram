@@ -647,3 +647,15 @@ Entries left out because they repeat or don't fit: %1$d.	중복되거나 맞지 
 That file has no flag names in it. Nothing changed.	해당 파일에 플래그 이름이 없습니다. 변경된 내용이 없습니다
 Couldn't remove the flag names. Try again.	플래그 이름을 제거할 수 없습니다. 다시 시도하세요
 Couldn't save the flag names. Nothing changed.	플래그 이름을 저장할 수 없습니다. 변경된 내용이 없습니다
+Download button on feed	피드에 다운로드 버튼 표시
+Shows a direct download button on each post in the feed to save videos and photos immediately.	피드의 각 게시물에 직접 다운로드 버튼을 표시하여 동영상과 사진을 즉시 저장합니다.
+Download disappearing media	사라지는 미디어 다운로드
+Saves disappearing (view-once) photos and videos to your gallery instead of taking screenshots.	스크린샷을 찍는 대신 일회성 사진과 동영상을 갤러리에 저장합니다.
+Hide suggested in search	검색 탭에서 추천 숨기기
+Hides suggested accounts and suggested searches in the search tab.	검색 탭에서 추천 계정 및 추천 검색어를 숨깁니다.
+Start with sound	소리 켠 채로 바로 재생
+Plays videos, reels and stories with sound turned on immediately.	동영상, 릴스 및 스토리를 소리가 켜진 상태로 즉시 재생합니다.
+Download started	다운로드 시작됨
+Downloading...	다운로드 중...
+Saving all items...	모든 항목 저장 중...
+Saving disappearing media...	사라지는 미디어 저장 중...

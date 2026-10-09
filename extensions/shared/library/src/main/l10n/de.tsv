@@ -648,3 +648,15 @@ Entries left out because they repeat or don't fit: %1$d.	Ausgelassene Einträge,
 That file has no flag names in it. Nothing changed.	Diese Datei enthält keine Flag-Namen. Nichts wurde geändert.
 Couldn't remove the flag names. Try again.	Die Flag-Namen konnten nicht entfernt werden. Versuche es erneut.
 Couldn't save the flag names. Nothing changed.	Die Flag-Namen konnten nicht gespeichert werden. Nichts wurde geändert.
+Download button on feed	Download-Button im Feed
+Shows a direct download button on each post in the feed to save videos and photos immediately.	Zeigt einen direkten Download-Button bei jedem Beitrag im Feed an, um Videos und Fotos sofort zu speichern.
+Download disappearing media	Selbstlöschende Medien herunterladen
+Saves disappearing (view-once) photos and videos to your gallery instead of taking screenshots.	Speichert selbstlöschende (Einmalansicht) Fotos und Videos in Ihrer Galerie, anstatt Screenshots zu machen.
+Hide suggested in search	Vorschläge in der Suche ausblenden
+Hides suggested accounts and suggested searches in the search tab.	Blendet vorgeschlagene Konten und Suchanfragen im Such-Tab aus.
+Start with sound	Direkt mit Ton starten
+Plays videos, reels and stories with sound turned on immediately.	Spielt Videos, Reels und Storys sofort mit aktiviertem Ton ab.
+Download started	Download gestartet
+Downloading...	Wird heruntergeladen...
+Saving all items...	Alle Elemente werden gespeichert...
+Saving disappearing media...	Selbstlöschende Medien werden gespeichert...

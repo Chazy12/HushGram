@@ -648,3 +648,15 @@ Entries left out because they repeat or don't fit: %1$d.	Entri yang dilewati kar
 That file has no flag names in it. Nothing changed.	Berkas itu tidak berisi nama flag. Tidak ada yang berubah.
 Couldn't remove the flag names. Try again.	Nama flag tidak dapat dihapus. Coba lagi.
 Couldn't save the flag names. Nothing changed.	Nama flag tidak dapat disimpan. Tidak ada yang berubah.
+Download button on feed	Tombol unduh di feed
+Shows a direct download button on each post in the feed to save videos and photos immediately.	Menampilkan tombol unduh langsung pada setiap postingan di feed untuk langsung menyimpan video dan foto.
+Download disappearing media	Unduh media sekali lihat
+Saves disappearing (view-once) photos and videos to your gallery instead of taking screenshots.	Menyimpan foto dan video sekali lihat ke galeri Anda alih-alih mengambil tangkapan layar.
+Hide suggested in search	Sembunyikan saran dalam pencarian
+Hides suggested accounts and suggested searches in the search tab.	Menyembunyikan akun dan pencarian yang disarankan di tab pencarian.
+Start with sound	Mulai langsung dengan suara
+Plays videos, reels and stories with sound turned on immediately.	Memutar video, reel, dan cerita dengan suara langsung aktif.
+Download started	Unduhan dimulai
+Downloading...	Mengunduh...
+Saving all items...	Menyimpan semua item...
+Saving disappearing media...	Menyimpan media sekali lihat...
