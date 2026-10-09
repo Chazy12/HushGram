@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-10-09T17:00:00",
-  "description": "HushGram v0.0.8 per Instagram 450.0.0.50.77 (com.instagram.android).\n\nNovità:\n- Traduzione italiana completa del menù delle impostazioni e delle patch.\n- Pulsante di download sul feed posizionato a sinistra del segnalibro.\n- Nuovi interruttori: Download button on feed, Start directly with sound, Download disappearing media, Hide suggested in search.\n- Risolto blocco del feed al cambio account.",
-  "download_url": "https://github.com/Chazy12/HushGram/releases/download/v0.0.8/patches-0.0.8.mpp",
+  "created_at": "2026-10-09T17:30:00",
+  "description": "HushGram v0.0.9 per Instagram 450.0.0.50.77 (com.instagram.android).\n\nNovità:\n- Traduzione italiana completa del menù delle impostazioni e delle patch.\n- Pulsante di download sul feed posizionato a sinistra del segnalibro.\n- Nuovi interruttori: Download button on feed, Start directly with sound, Download disappearing media, Hide suggested in search, Anonymous stories.\n- Risolto blocco del feed al cambio account.",
+  "download_url": "https://github.com/Chazy12/HushGram/releases/download/v0.0.9/patches-0.0.9.mpp",
   "signature_download_url": "",
-  "version": "0.0.8"
+  "version": "0.0.9"
 }
