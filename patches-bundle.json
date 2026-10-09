@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-10-09T17:30:00",
-  "description": "HushGram v0.0.9 per Instagram 450.0.0.50.77 (com.instagram.android).\n\nNovità:\n- Traduzione italiana completa del menù delle impostazioni e delle patch.\n- Pulsante di download sul feed posizionato a sinistra del segnalibro.\n- Nuovi interruttori: Download button on feed, Start directly with sound, Download disappearing media, Hide suggested in search, Anonymous stories.\n- Risolto blocco del feed al cambio account.",
-  "download_url": "https://github.com/Chazy12/HushGram/releases/download/v0.0.9/patches-0.0.9.mpp",
+  "created_at": "2026-10-09T17:50:00",
+  "description": "HushGram v0.0.10 per Instagram 450.0.0.50.77 (com.instagram.android).\n\nNovità e Fix:\n- Risolto crash di Morphe Patcher (errore registri v19/v21 in Download any video su Instagram 450).\n- Traduzione italiana completa al 100% di tutte le impostazioni e patch.\n- Pulsante di download diretto sul feed a sinistra del segnalibro.\n- Nuovi interruttori: Download sul feed, Avvio diretto con audio, Download media visualizza una volta, Nascondi suggeriti in ricerca, Visualizzazione storie anonima, Nascondi reel nel feed.\n- Risolto mancato caricamento del feed al cambio account.",
+  "download_url": "https://github.com/Chazy12/HushGram/releases/download/v0.0.10/patches-0.0.10.mpp",
   "signature_download_url": "",
-  "version": "0.0.9"
+  "version": "0.0.10"
 }
