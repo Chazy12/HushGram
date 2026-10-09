@@ -24,7 +24,9 @@ import androidx.annotation.Nullable;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -46,6 +48,7 @@ public final class FeedDownloadButton {
     private static final String SOURCE = "FeedDownloadButton";
     private static final String VIEW_TAG = "hushgram_feed_download_btn";
     private static final Map<View, Object> BOUND_MEDIA = Collections.synchronizedMap(new WeakHashMap<>());
+    private static final List<Object> RECENT_MEDIA = Collections.synchronizedList(new ArrayList<>());
 
     private FeedDownloadButton() {}
 
@@ -54,6 +57,73 @@ public final class FeedDownloadButton {
      */
     public static boolean isEnabled() {
         return Utils.settingsReady() && Settings.FEED_DOWNLOAD_BUTTON.get();
+    }
+
+    /**
+     * Records a recently encountered Instagram Media object.
+     */
+    public static void recordRecentMedia(@Nullable Object media) {
+        if (media == null || !isInstagramMedia(media)) return;
+        try {
+            RECENT_MEDIA.remove(media);
+            RECENT_MEDIA.add(0, media);
+            if (RECENT_MEDIA.size() > 50) {
+                RECENT_MEDIA.remove(RECENT_MEDIA.size() - 1);
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    /**
+     * Injected by bytecode into IgBouncyUfiButtonImageView constructors.
+     */
+    public static void onBouncyButtonCreated(@Nullable View bouncy) {
+        if (bouncy == null || !isEnabled()) return;
+        try {
+            bouncy.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+                @Override
+                public void onViewAttachedToWindow(View v) {
+                    v.post(() -> attach(v, null, null));
+                }
+
+                @Override
+                public void onViewDetachedFromWindow(View v) {}
+            });
+            bouncy.post(() -> attach(bouncy, null, null));
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "bouncy created", t);
+        }
+    }
+
+    /**
+     * Injected by bytecode into IgBouncyUfiButtonImageView onAttachedToWindow or setImageDrawable.
+     */
+    public static void onBouncyButtonAttached(@Nullable View bouncy) {
+        if (bouncy == null || !isEnabled()) return;
+        try {
+            attach(bouncy, null, null);
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "bouncy attached", t);
+        }
+    }
+
+    /**
+     * Injected by bytecode when setOnClickListener is called on an UFI button.
+     */
+    public static void onBouncyButtonListenerSet(@Nullable View bouncy, @Nullable View.OnClickListener listener) {
+        if (bouncy == null || !isEnabled()) return;
+        try {
+            Object media = extractMediaFromObject(listener);
+            if (media != null) {
+                BOUND_MEDIA.put(bouncy, media);
+                recordRecentMedia(media);
+                if (bouncy.getParent() instanceof View) {
+                    BOUND_MEDIA.put((View) bouncy.getParent(), media);
+                }
+            }
+            attach(bouncy, media, null);
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "bouncy listener", t);
+        }
     }
 
     /**
@@ -79,10 +149,6 @@ public final class FeedDownloadButton {
 
     /**
      * Attaches the direct download button to a feed UFI row.
-     *
-     * @param anchorView Any view in the UFI row (e.g. Save/Bookmark icon, Share icon, or Repost icon)
-     * @param media The Instagram Media object for the post (if available)
-     * @param itemState The feed state (e.g. for carousel page index)
      */
     public static void attach(@Nullable View anchorView, @Nullable Object media, @Nullable Object itemState) {
         if (anchorView == null || !isEnabled()) return;
@@ -91,43 +157,54 @@ public final class FeedDownloadButton {
 
             if (media != null) {
                 BOUND_MEDIA.put(anchorView, media);
+                recordRecentMedia(media);
             }
 
             // Find parent ViewGroup of the UFI row
             ViewGroup container = findUfiContainer(anchorView);
-            if (container == null) return;
-
-            // Find the Save/Bookmark button in the container
-            View bookmarkView = findBookmarkView(container, anchorView);
-
-            // Setup long-press shortcut on the bookmark view
-            if (bookmarkView != null) {
-                bookmarkView.setOnLongClickListener(v -> {
-                    Object targetMedia = media != null ? media : findMedia(v, container);
-                    if (targetMedia != null) {
-                        Activity activity = getActivity(v);
-                        boolean saved = VideoDownload.save(targetMedia, itemState, activity);
-                        if (saved) {
-                            Feedback.show(v.getContext(), L10n.t(v.getContext(), "Downloading..."), false);
-                        }
-                        return true;
+            if (container == null) {
+                // If not yet attached to container, try after a short delay
+                anchorView.post(() -> {
+                    ViewGroup c = findUfiContainer(anchorView);
+                    if (c != null) {
+                        injectDownloadButton(c, anchorView, media, itemState);
                     }
-                    return false;
                 });
+                return;
             }
 
-            // Inject the dedicated download icon immediately to the left of the bookmark
-            injectDownloadButton(container, bookmarkView != null ? bookmarkView : anchorView, media, itemState);
+            injectDownloadButton(container, anchorView, media, itemState);
         } catch (Throwable t) {
-            HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "feed download button", t);
+            HookStatus.threw(FamilyNames.VIDEO_DOWNLOAD, "feed download button attach", t);
         }
     }
 
     /**
-     * Injects the download ImageView into the container beside the anchor/bookmark view.
+     * Injects the download ImageView into the container beside the bookmark view.
      */
     private static void injectDownloadButton(@NonNull ViewGroup container, @NonNull View anchor,
                                             @Nullable Object media, @Nullable Object itemState) {
+        // Find the Save/Bookmark button in the container
+        View bookmarkView = findBookmarkView(container, anchor);
+
+        // Long-press shortcut on the bookmark view as well
+        if (bookmarkView != null) {
+            bookmarkView.setOnLongClickListener(v -> {
+                Object targetMedia = media != null ? media : findMedia(v, container);
+                if (targetMedia != null) {
+                    Activity activity = getActivity(v);
+                    boolean saved = VideoDownload.save(targetMedia, itemState, activity);
+                    if (saved) {
+                        Feedback.show(v.getContext(), L10n.t(v.getContext(), "Download started"), false);
+                    }
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        View targetAnchor = bookmarkView != null ? bookmarkView : anchor;
+
         View existing = container.findViewWithTag(VIEW_TAG);
         if (existing instanceof ImageView) {
             ImageView downloadBtn = (ImageView) existing;
@@ -144,16 +221,15 @@ public final class FeedDownloadButton {
         downloadBtn.setTag(VIEW_TAG);
 
         // Vector download icon with automatic theme tint
-        DownloadIconDrawable iconDrawable = new DownloadIconDrawable(context);
+        DownloadIconDrawable iconDrawable = new DownloadIconDrawable(context, targetAnchor);
         downloadBtn.setImageDrawable(iconDrawable);
 
-        // Size and LayoutParams cloned safely from anchor view
         int density = (int) context.getResources().getDisplayMetrics().density;
-        int size = (int) (24 * density);
-        int padding = (int) (4 * density);
+        int size = (int) (40 * density);
+        int padding = (int) (8 * density);
         downloadBtn.setPadding(padding, padding, padding, padding);
 
-        ViewGroup.LayoutParams anchorParams = anchor.getLayoutParams();
+        ViewGroup.LayoutParams anchorParams = targetAnchor.getLayoutParams();
         ViewGroup.LayoutParams params = createSafeLayoutParams(anchorParams, size, density);
         downloadBtn.setLayoutParams(params);
 
@@ -169,7 +245,7 @@ public final class FeedDownloadButton {
         downloadBtn.setOnLongClickListener(v -> handleDownloadLongClick(v, media, container));
 
         // Insert at the position of the bookmark view (to its immediate left)
-        int index = container.indexOfChild(anchor);
+        int index = container.indexOfChild(targetAnchor);
         if (index >= 0) {
             container.addView(downloadBtn, index);
         } else {
@@ -209,13 +285,26 @@ public final class FeedDownloadButton {
      */
     @Nullable
     private static ViewGroup findUfiContainer(View view) {
-        if (view instanceof ViewGroup && ((ViewGroup) view).getChildCount() > 1) {
-            return (ViewGroup) view;
+        View current = view;
+        ViewGroup bestContainer = null;
+        for (int i = 0; i < 4 && current != null; i++) {
+            if (current instanceof ViewGroup && ((ViewGroup) current).getChildCount() >= 2) {
+                return (ViewGroup) current;
+            }
+            if (current.getParent() instanceof ViewGroup) {
+                ViewGroup parent = (ViewGroup) current.getParent();
+                if (parent.getChildCount() >= 2) {
+                    return parent;
+                }
+                if (bestContainer == null) {
+                    bestContainer = parent;
+                }
+                current = parent;
+            } else {
+                break;
+            }
         }
-        if (view.getParent() instanceof ViewGroup) {
-            return (ViewGroup) view.getParent();
-        }
-        return null;
+        return bestContainer;
     }
 
     /**
@@ -226,27 +315,42 @@ public final class FeedDownloadButton {
         int count = container.getChildCount();
         for (int i = count - 1; i >= 0; i--) {
             View child = container.getChildAt(i);
-            if (child == null || child.getTag() != null && child.getTag().equals(VIEW_TAG)) continue;
+            if (child == null || (child.getTag() != null && VIEW_TAG.equals(child.getTag()))) continue;
             CharSequence desc = child.getContentDescription();
             if (desc != null) {
                 String d = desc.toString().toLowerCase();
-                if (d.contains("save") || d.contains("salva") || d.contains("guardar") || d.contains("bookmark")) {
+                if (d.contains("save") || d.contains("salva") || d.contains("guardar") || d.contains("bookmark")
+                        || d.contains("speichern") || d.contains("enregistrer")) {
                     return child;
                 }
             }
+            if (child instanceof ViewGroup) {
+                ViewGroup vg = (ViewGroup) child;
+                for (int j = 0; j < vg.getChildCount(); j++) {
+                    View sub = vg.getChildAt(j);
+                    if (sub != null && sub.getContentDescription() != null) {
+                        String sd = sub.getContentDescription().toString().toLowerCase();
+                        if (sd.contains("save") || sd.contains("salva") || sd.contains("guardar") || sd.contains("bookmark")) {
+                            return child;
+                        }
+                    }
+                }
+            }
         }
-        // Typically the bookmark is the rightmost child
+        // Rightmost non-download view is typically the bookmark
         if (count > 0) {
-            View last = container.getChildAt(count - 1);
-            if (last != null && !(VIEW_TAG.equals(last.getTag()))) {
-                return last;
+            for (int i = count - 1; i >= 0; i--) {
+                View last = container.getChildAt(i);
+                if (last != null && !(VIEW_TAG.equals(last.getTag()))) {
+                    return last;
+                }
             }
         }
         return fallback;
     }
 
     /**
-     * Attempts to find the Instagram Media object by inspecting bound caches, View tags, and listeners.
+     * Finds the Instagram Media object by inspecting bound caches, view tags, listeners and recent items.
      */
     @Nullable
     private static Object findMedia(View view, @Nullable ViewGroup container) {
@@ -257,18 +361,29 @@ public final class FeedDownloadButton {
             cached = BOUND_MEDIA.get(container);
             if (cached != null) return cached;
             for (int i = 0; i < container.getChildCount(); i++) {
-                Object cMedia = BOUND_MEDIA.get(container.getChildAt(i));
+                View child = container.getChildAt(i);
+                Object cMedia = BOUND_MEDIA.get(child);
                 if (cMedia != null) return cMedia;
+                // Check listener on child view
+                Object fromListener = extractMediaFromViewListener(child);
+                if (fromListener != null) {
+                    BOUND_MEDIA.put(container, fromListener);
+                    return fromListener;
+                }
             }
         }
 
-        // Check view tags in hierarchy
+        // Check view tags and listeners in hierarchy
         View current = view;
-        for (int depth = 0; depth < 5 && current != null; depth++) {
+        for (int depth = 0; depth < 6 && current != null; depth++) {
             Object tag = current.getTag();
             if (isInstagramMedia(tag)) return tag;
-            Object fromFields = findMediaInObject(tag);
+            Object fromFields = extractMediaFromObject(tag);
             if (fromFields != null) return fromFields;
+
+            Object fromListener = extractMediaFromViewListener(current);
+            if (fromListener != null) return fromListener;
+
             if (current.getParent() instanceof View) {
                 current = (View) current.getParent();
             } else {
@@ -276,6 +391,62 @@ public final class FeedDownloadButton {
             }
         }
 
+        // Fallback to most recent media if available
+        synchronized (RECENT_MEDIA) {
+            if (!RECENT_MEDIA.isEmpty()) {
+                return RECENT_MEDIA.get(0);
+            }
+        }
+
+        return null;
+    }
+
+    @Nullable
+    private static Object extractMediaFromViewListener(View view) {
+        if (view == null) return null;
+        try {
+            Field listenerInfoField = View.class.getDeclaredField("mListenerInfo");
+            listenerInfoField.setAccessible(true);
+            Object listenerInfo = listenerInfoField.get(view);
+            if (listenerInfo != null) {
+                Field onClickField = listenerInfo.getClass().getDeclaredField("mOnClickListener");
+                onClickField.setAccessible(true);
+                Object listener = onClickField.get(listenerInfo);
+                Object media = extractMediaFromObject(listener);
+                if (media != null) return media;
+            }
+        } catch (Throwable ignored) {}
+        return null;
+    }
+
+    @Nullable
+    private static Object extractMediaFromObject(Object target) {
+        if (target == null) return null;
+        if (isInstagramMedia(target)) return target;
+        try {
+            Class<?> clazz = target.getClass();
+            for (Field f : clazz.getDeclaredFields()) {
+                if (isInstagramMedia(f.getType())) {
+                    f.setAccessible(true);
+                    Object val = f.get(target);
+                    if (val != null) return val;
+                }
+            }
+            // Check one level deeper for delegates/holders
+            for (Field f : clazz.getDeclaredFields()) {
+                f.setAccessible(true);
+                Object sub = f.get(target);
+                if (sub != null && !sub.getClass().getName().startsWith("android.") && !sub.getClass().getName().startsWith("java.")) {
+                    for (Field subF : sub.getClass().getDeclaredFields()) {
+                        if (isInstagramMedia(subF.getType())) {
+                            subF.setAccessible(true);
+                            Object val = subF.get(sub);
+                            if (val != null) return val;
+                        }
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
         return null;
     }
 
@@ -285,19 +456,10 @@ public final class FeedDownloadButton {
         return name.contains("feed.media.Media") || name.equals("com.instagram.feed.media.Media");
     }
 
-    @Nullable
-    private static Object findMediaInObject(Object target) {
-        if (target == null) return null;
-        try {
-            for (Field f : target.getClass().getDeclaredFields()) {
-                if (isInstagramMedia(f.getType())) {
-                    f.setAccessible(true);
-                    Object val = f.get(target);
-                    if (val != null) return val;
-                }
-            }
-        } catch (Throwable ignored) {}
-        return null;
+    private static boolean isInstagramMedia(Class<?> clazz) {
+        if (clazz == null) return false;
+        String name = clazz.getName();
+        return name.contains("feed.media.Media") || name.equals("com.instagram.feed.media.Media");
     }
 
     /**
@@ -305,14 +467,13 @@ public final class FeedDownloadButton {
      */
     @NonNull
     private static ViewGroup.LayoutParams createSafeLayoutParams(@Nullable ViewGroup.LayoutParams anchorParams, int size, int density) {
-        int margin = 8 * density;
+        int margin = 4 * density;
         if (anchorParams != null) {
             try {
-                // Try copying the specific LayoutParams class (e.g. LinearLayout$LayoutParams)
                 Constructor<?> ctor = anchorParams.getClass().getConstructor(anchorParams.getClass());
                 ViewGroup.LayoutParams lp = (ViewGroup.LayoutParams) ctor.newInstance(anchorParams);
-                lp.width = anchorParams.width > 0 ? anchorParams.width : size;
-                lp.height = anchorParams.height > 0 ? anchorParams.height : size;
+                lp.width = size;
+                lp.height = size;
                 if (lp instanceof ViewGroup.MarginLayoutParams) {
                     ((ViewGroup.MarginLayoutParams) lp).setMargins(margin, 0, margin, 0);
                 }
@@ -322,8 +483,8 @@ public final class FeedDownloadButton {
             try {
                 if (anchorParams instanceof ViewGroup.MarginLayoutParams) {
                     ViewGroup.MarginLayoutParams mlp = new ViewGroup.MarginLayoutParams((ViewGroup.MarginLayoutParams) anchorParams);
-                    mlp.width = anchorParams.width > 0 ? anchorParams.width : size;
-                    mlp.height = anchorParams.height > 0 ? anchorParams.height : size;
+                    mlp.width = size;
+                    mlp.height = size;
                     mlp.setMargins(margin, 0, margin, 0);
                     return mlp;
                 }
@@ -355,14 +516,26 @@ public final class FeedDownloadButton {
         private final Path path = new Path();
         private int color;
 
-        DownloadIconDrawable(Context context) {
+        DownloadIconDrawable(Context context, @Nullable View anchor) {
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeCap(Paint.Cap.ROUND);
             paint.setStrokeJoin(Paint.Join.ROUND);
 
-            boolean isDark = (context.getResources().getConfiguration().uiMode
-                    & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
-            this.color = isDark ? Color.WHITE : Color.parseColor("#262626");
+            int resolvedColor = 0;
+            if (anchor instanceof ImageView) {
+                ColorStateList tint = ((ImageView) anchor).getImageTintList();
+                if (tint != null) {
+                    resolvedColor = tint.getDefaultColor();
+                }
+            }
+
+            if (resolvedColor == 0) {
+                boolean isDark = (context.getResources().getConfiguration().uiMode
+                        & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+                resolvedColor = isDark ? Color.WHITE : Color.parseColor("#262626");
+            }
+
+            this.color = resolvedColor;
             paint.setColor(this.color);
         }
 
@@ -373,7 +546,7 @@ public final class FeedDownloadButton {
 
             float w = b.width();
             float h = b.height();
-            float stroke = Math.max(2.0f, w * 0.08f);
+            float stroke = Math.max(2.2f, w * 0.085f);
             paint.setStrokeWidth(stroke);
             paint.setColor(color);
 

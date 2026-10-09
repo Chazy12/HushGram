@@ -703,6 +703,8 @@ public final class HushgramPreferenceFragment extends AbstractPreferenceFragment
             stories.add(toggle(context, Settings.VIEW_STORIES_ANONYMOUSLY, L10n.t("View stories anonymously"),
                     L10n.t("Instagram isn't told which stories you watch, so you stay off their viewer lists. "
                             + "Replying or reacting still shows you, and stories you've watched keep showing as new.")));
+            stories.add(toggle(context, Settings.MARK_STORIES_SEEN_LOCALLY, L10n.t("Mark stories seen locally"),
+                    L10n.t("Keep watched stories marked as seen on your account while staying anonymous to authors.")));
             stories.add(toggle(context, Settings.MARK_STORIES_SEEN, L10n.t("Mark as seen button"),
                     L10n.t("Adds an eye button to the top of each story while you view anonymously. Tap it to show up "
                             + "on that story's viewer list. The other stories stay hidden.")));

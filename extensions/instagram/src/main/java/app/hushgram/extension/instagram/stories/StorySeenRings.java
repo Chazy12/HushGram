@@ -18,6 +18,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 
 import app.hushgram.extension.instagram.settings.FamilyNames;
+import app.hushgram.extension.instagram.settings.Settings;
 import app.hushgram.extension.shared.Logger;
 import app.hushgram.extension.shared.Utils;
 import app.hushgram.extension.shared.diagnostics.HookStatus;
@@ -154,6 +155,10 @@ public final class StorySeenRings {
      * back and makes it otherwise. Throws only what Instagram's own write throws.
      */
     public static void seen(Object reel, Object session, long at, Object item) {
+        if (Utils.settingsReady() && Settings.MARK_STORIES_SEEN_LOCALLY.get()) {
+            markSeen(reel, session, at);
+            return;
+        }
         if (!RINGS.keep(reel, session, at, item, ANONYMOUS, PATCHED, StorySeen.MARKS, COUNTED)) markSeen(reel, session, at);
     }
 

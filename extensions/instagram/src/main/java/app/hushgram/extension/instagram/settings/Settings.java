@@ -176,6 +176,13 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting VIEW_STORIES_ANONYMOUSLY =
             new BooleanSetting("hushgram_view_stories_anonymously", TRUE);
 
+    /**
+     * Mark stories as seen locally on your own account when watched anonymously,
+     * while keeping you completely hidden from the author's viewer list.
+     */
+    public static final BooleanSetting MARK_STORIES_SEEN_LOCALLY =
+            new BooleanSetting("hushgram_mark_stories_seen_locally", TRUE);
+
     /** A separate opt-in for the direct visual-media receipt. Ordinary chat receipts stay native. */
     public static final BooleanSetting VIEW_DM_MEDIA_ANONYMOUSLY =
             new BooleanSetting("hushgram_view_dm_media_anonymously", FALSE);

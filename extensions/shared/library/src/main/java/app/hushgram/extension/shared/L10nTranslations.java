@@ -5389,6 +5389,10 @@ public final class L10nTranslations {
                 "Attiva Dimensione anello storie per usare questa opzione.");
         table.put("Turn on Tap to play to use this choice.",
                 "Attiva Tocca per riprodurre per usare questa opzione.");
+        table.put("Mark stories seen locally",
+                "Segna storie come viste localmente");
+        table.put("Keep watched stories marked as seen on your account while staying anonymous to authors.",
+                "Mostra le storie guardate come viste sul tuo account senza inviare la visualizzazione all'autore.");
         table.put("Turns the switches that keep what you do to yourself on or off in one go, like View stories anonymously and Hide that you're typing. Each one keeps its own switch.",
                 "Attiva o disattiva con un solo comando le opzioni che mantengono riservate le tue attivit\u00e0, come Guarda le storie in modo anonimo e Nascondi che stai scrivendo. Ciascuna mantiene comunque il proprio interruttore.");
         table.put("Undo cleared positions",

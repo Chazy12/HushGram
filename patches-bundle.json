@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-10-09T17:50:00",
-  "description": "HushGram v0.0.10 per Instagram 450.0.0.50.77 (com.instagram.android).\n\nNovità e Fix:\n- Risolto crash di Morphe Patcher (errore registri v19/v21 in Download any video su Instagram 450).\n- Traduzione italiana completa al 100% di tutte le impostazioni e patch.\n- Pulsante di download diretto sul feed a sinistra del segnalibro.\n- Nuovi interruttori: Download sul feed, Avvio diretto con audio, Download media visualizza una volta, Nascondi suggeriti in ricerca, Visualizzazione storie anonima, Nascondi reel nel feed.\n- Risolto mancato caricamento del feed al cambio account.",
-  "download_url": "https://github.com/Chazy12/HushGram/releases/download/v0.0.10/patches-0.0.10.mpp",
+  "created_at": "2026-10-09T18:50:00",
+  "description": "HushGram v0.0.11 per Instagram 450.0.0.50.77 (com.instagram.android).\n\nNovità e Correzioni:\n- Pulsante di download diretto sul Feed: agganciato e visibile accanto al segnalibro (a sinistra) su tutti i post del feed.\n- Storie anonime segnate come viste sul tuo account: quando guardi le storie in anonimo, vengono salvate localmente come già viste (cerchio grigio), senza inviare la visualizzazione al server di Instagram.\n- Nuovo toggle 'Segna storie come viste localmente' attivo di default nel menù Storie.\n- Traduzione italiana completa al 100% di tutte le patch e impostazioni.",
+  "download_url": "https://github.com/Chazy12/HushGram/releases/download/v0.0.11/patches-0.0.11.mpp",
   "signature_download_url": "",
-  "version": "0.0.10"
+  "version": "0.0.11"
 }

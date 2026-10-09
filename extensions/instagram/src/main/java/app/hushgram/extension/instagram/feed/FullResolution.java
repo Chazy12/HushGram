@@ -96,6 +96,9 @@ public final class FullResolution {
      * from the post's sizes or the picker's. Never throws.
      */
     public static Object photo(Object media, Object chosen) {
+        try {
+            app.hushgram.extension.instagram.download.FeedDownloadButton.recordRecentMedia(media);
+        } catch (Throwable ignored) {}
         return photo(media, chosen, FullResolution::switchedOn, FullResolution::sizesOf, FullResolution::pickerSizesOf,
                 INSTAGRAM);
     }
