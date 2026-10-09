@@ -637,6 +637,32 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushgram_download_voice_messages", FALSE);
 
     /**
+     * Shows a direct download button on feed posts next to the action buttons (Like, Comment, Share).
+     * Tapping it downloads the current post or carousel page immediately.
+     */
+    public static final BooleanSetting FEED_DOWNLOAD_BUTTON =
+            new BooleanSetting("hushgram_feed_download_button", TRUE);
+
+    /**
+     * Starts videos in the feed and in stories with audio on immediately, instead of muted.
+     */
+    public static final BooleanSetting START_WITH_SOUND =
+            new BooleanSetting("hushgram_start_with_sound", TRUE);
+
+    /**
+     * Hides suggested accounts and suggested searches in the search tab when searching.
+     */
+    public static final BooleanSetting HIDE_SEARCH_SUGGESTED =
+            new BooleanSetting("hushgram_hide_search_suggested", TRUE);
+
+    /**
+     * Allows saving View-Once and disappearing photos/videos directly to your device rather than
+     * having to take screenshots or screen recordings.
+     */
+    public static final BooleanSetting VIEW_ONCE_DOWNLOAD =
+            new BooleanSetting("hushgram_view_once_download", TRUE);
+
+    /**
      * Feed's action rows leave out the Comment button and the comment count
      * ({@link app.hushgram.extension.instagram.feed.CommentsButton}). Read as each row's state is
      * built, so a post already drawn changes the next time Feed draws it. Off to start.

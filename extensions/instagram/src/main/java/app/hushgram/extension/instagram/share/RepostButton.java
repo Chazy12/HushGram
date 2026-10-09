@@ -84,9 +84,11 @@ public final class RepostButton {
      */
     public static void feedUfi(@Nullable View icon, @Nullable View count) {
         try {
-            if (!hidden("feed UFI")) return;
-            hide(icon);
-            hide(count);
+            if (hidden("feed UFI")) {
+                hide(icon);
+                hide(count);
+            }
+            app.hushgram.extension.instagram.download.FeedDownloadButton.attach(icon, null, null);
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REPOST_BUTTON, "feed UFI", failure);
         }

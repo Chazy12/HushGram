@@ -174,7 +174,7 @@ public final class StorySeenRings {
             }
         } catch (Throwable failure) {
             report(counts, failure);
-            return false;
+            return anonymous.getAsBoolean();
         }
         try {
             counts.keptNew();

@@ -163,12 +163,20 @@ public final class TapToPlay {
      * playInternal returns at once, before it marks the video as playing.
      */
     public static boolean allowStart(@Nullable Object player, @Nullable String reason, int reels) {
-        return allow(player, reason, reels != 0, "player start", "");
+        boolean allowed = allow(player, reason, reels != 0, "player start", "");
+        if (allowed && player != null) {
+            AutoplaySound.onPlayerStart(player);
+        }
+        return allowed;
     }
 
     /** The hook, first thing in IgGrootPlayer's play. False, and the play returns at once. */
     public static boolean allowDirectStart(@Nullable Object player, @Nullable String reason) {
-        return allow(player, reason, null, "direct start", " (direct)");
+        boolean allowed = allow(player, reason, null, "direct start", " (direct)");
+        if (allowed && player != null) {
+            AutoplaySound.onPlayerStart(player);
+        }
+        return allowed;
     }
 
     /**

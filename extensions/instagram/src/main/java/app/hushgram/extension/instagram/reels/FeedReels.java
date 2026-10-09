@@ -50,7 +50,14 @@ public final class FeedReels {
         try {
             HookStatus.invoked(FamilyNames.FEED_REELS);
             String kind = reelUnitOf(item);
-            if (kind == null) return item;
+            if (kind == null) {
+                if (Utils.settingsReady() && Settings.HIDE_FEED_REELS.get() && isReelPost(item)) {
+                    FeedFilterCounters.removed(ROUTE, 1, "POST_REEL");
+                    Logger.printDebug(() -> "Feed reels: took out a reel post");
+                    return null;
+                }
+                return item;
+            }
             FeedFilterCounters.sawKind(ROUTE, kind);
             if (!Utils.settingsReady() || !Settings.HIDE_FEED_REELS.get()) return item;
             FeedFilterCounters.removed(ROUTE, 1, kind);
@@ -65,5 +72,26 @@ public final class FeedReels {
     /** The name of [item]'s kind when it's one of {@link #REEL_UNITS}, or null. */
     static String reelUnitOf(Object item) throws IllegalAccessException {
         return FeedItemKinds.kindIn(item, REEL_UNITS, FamilyNames.FEED_REELS);
+    }
+
+    /** Checks whether an item's media is a Reel video. */
+    static boolean isReelPost(Object item) {
+        if (item == null) return false;
+        try {
+            for (java.lang.reflect.Field field : item.getClass().getDeclaredFields()) {
+                field.setAccessible(true);
+                Object val = field.get(item);
+                if (val != null && val.getClass().getName().contains("Media")) {
+                    if (app.hushgram.extension.instagram.download.InstagramMedia.clipsMetadata(val) != null) {
+                        return true;
+                    }
+                    Integer origType = app.hushgram.extension.instagram.download.InstagramMedia.originalMediaType(val);
+                    if (origType != null && origType == 2) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
+        return false;
     }
 }

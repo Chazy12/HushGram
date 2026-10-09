@@ -81,4 +81,19 @@ public final class ExploreGrid {
             return show;
         }
     }
+
+    /**
+     * Filters out suggested accounts and recommendations from the search tab.
+     */
+    public static List<?> filterSearchSuggestions(List<?> items) {
+        try {
+            HookStatus.invoked(FamilyNames.EXPLORE_GRID);
+            if (!Utils.settingsReady() || !Settings.HIDE_SEARCH_SUGGESTED.get()) return items;
+            Logger.printDebug(() -> "ExploreGrid: hidden search suggested items");
+            return Collections.emptyList();
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.EXPLORE_GRID, "search suggestions", failure);
+            return items;
+        }
+    }
 }

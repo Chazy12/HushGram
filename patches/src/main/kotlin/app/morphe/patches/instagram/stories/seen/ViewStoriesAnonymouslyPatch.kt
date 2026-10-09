@@ -31,7 +31,7 @@ val viewStoriesAnonymouslyPatch = bytecodePatch(
     name = "View stories anonymously",
     description = "Holds story-view reports while its switch is on. Replying or reacting still shows you, " +
         "and stories you've watched keep showing as new. An optional Mark as seen button selects stories to send.",
-    default = false,
+    default = true,
 ) {
     category("Privacy")
     dependsOn(settingsPatch)
