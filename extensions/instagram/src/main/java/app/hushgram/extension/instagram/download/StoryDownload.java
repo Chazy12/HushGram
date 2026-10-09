@@ -203,7 +203,7 @@ public final class StoryDownload {
     }
 
     /** The sizes [media] lists for its picture, with the size each states. Never null. */
-    static List<MediaSave.Rendition> pictures(Object media) {
+    public static List<MediaSave.Rendition> pictures(Object media) {
         Object versions = InstagramMedia.imageVersions(media);
         List<?> candidates = versions == null ? null : InstagramMedia.imageCandidates(versions);
         if (candidates == null) return Collections.emptyList();

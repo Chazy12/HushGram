@@ -507,7 +507,7 @@ public final class ReelDownload {
     }
 
     /** The single files [media] lists for its video, with the size each states. Never null. */
-    static List<MediaSave.Rendition> renditions(Object media) {
+    public static List<MediaSave.Rendition> renditions(Object media) {
         List<?> versions = InstagramMedia.videoVersions(media);
         if (versions == null) return Collections.emptyList();
         List<MediaSave.Rendition> renditions = new ArrayList<>(versions.size());

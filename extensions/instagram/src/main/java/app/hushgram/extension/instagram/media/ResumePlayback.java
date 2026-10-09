@@ -374,6 +374,7 @@ public final class ResumePlayback {
     public static void sessionEnded(Object session) {
         try {
             HookStatus.invoked(FAMILY);
+            app.hushgram.extension.instagram.feed.FeedSuggestions.reset();
             if (session == null) return;
             HookStatus.bound(FAMILY, "session end");
             forgetAccount(sessions.userId(session), sessions.loggedOut(session), System.currentTimeMillis());

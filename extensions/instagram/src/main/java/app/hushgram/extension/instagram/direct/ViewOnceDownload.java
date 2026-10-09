@@ -9,7 +9,7 @@ import android.content.Context;
 import java.util.Collections;
 import java.util.List;
 
-import app.hushgram.extension.instagram.download.Downloader;
+import app.hushgram.extension.instagram.download.Feedback;
 import app.hushgram.extension.instagram.download.InstagramMedia;
 import app.hushgram.extension.instagram.download.MediaSave;
 import app.hushgram.extension.instagram.download.PostDetails;
@@ -17,7 +17,6 @@ import app.hushgram.extension.instagram.download.ReelDownload;
 import app.hushgram.extension.instagram.download.StoryDownload;
 import app.hushgram.extension.instagram.settings.FamilyNames;
 import app.hushgram.extension.instagram.settings.Settings;
-import app.hushgram.extension.shared.Feedback;
 import app.hushgram.extension.shared.L10n;
 import app.hushgram.extension.shared.Logger;
 import app.hushgram.extension.shared.Utils;

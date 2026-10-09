@@ -47,7 +47,7 @@ public final class AutoplaySound {
 
             unmute(player);
         } catch (Throwable t) {
-            HookStatus.threw(FamilyNames.SETTINGS, "start with sound", t);
+            HookStatus.threw(FamilyNames.TAP_TO_PLAY, "start with sound", t);
         }
     }
 

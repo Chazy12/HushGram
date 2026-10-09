@@ -78,6 +78,10 @@ public final class HomeFeed {
         }
     }
 
+    public static void reset() {
+        tookOut = false;
+    }
+
     private static boolean switchedOn() {
         return Utils.settingsReady() && Settings.HIDE_HOME_FEED.get();
     }

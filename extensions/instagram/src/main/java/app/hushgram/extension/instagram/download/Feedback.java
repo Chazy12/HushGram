@@ -26,14 +26,14 @@ import app.hushgram.extension.shared.diagnostics.DiagnosticCategory;
  * phone's language, rather than taken from the app: Meta's apps keep the words for their own menus
  * in a pack they download, not in the resources of the APK, so there is nothing to borrow.
  */
-final class Feedback {
+public final class Feedback {
 
     private Feedback() {}
 
     /** The source a message that couldn't be shown carries in the diagnostic report. */
     private static final String SOURCE = "Feedback";
 
-    static void show(Context applicationContext, String text, boolean longToast) {
+    public static void show(Context applicationContext, String text, boolean longToast) {
         if (applicationContext == null || text == null) return;
 
         try {

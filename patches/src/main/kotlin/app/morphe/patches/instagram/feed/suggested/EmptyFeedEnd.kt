@@ -97,9 +97,20 @@ internal fun BytecodePatchContext.findFeedEnd(): FeedEnd {
  * keeps what it draws. An emptied feed then gets Instagram's own empty feed card instead of its
  * loading placeholder, which it would keep for good: nothing asks for the next page of an empty feed.
  */
+internal const val FEED_RESET = "$EXTENSION_PACKAGE/feed/FeedSuggestions;->reset()V"
+
 internal fun BytecodePatchContext.endEmptiedFeed(end: FeedEnd) {
     var hooked = 0
-    mutableClassDefBy(end.adapter).methods.forEach { method ->
+    val adapterClass = mutableClassDefBy(end.adapter)
+    adapterClass.methods.filter { it.name == "<init>" }.forEach { constructor ->
+        constructor.addInstructions(
+            0,
+            """
+                invoke-static { }, $FEED_RESET
+            """,
+        )
+    }
+    adapterClass.methods.forEach { method ->
         val code = method.implementation?.instructions?.toList() ?: return@forEach
         code.indices.filter { code[it].opcode == Opcode.IGET_BOOLEAN && code[it].reads(end.flag) }.reversed().forEach { at ->
             val flag = (code[at] as TwoRegisterInstruction).registerA

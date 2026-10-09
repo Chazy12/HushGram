@@ -136,12 +136,22 @@ public final class FeedSuggestions {
      *
      * <p>The suggestion switches end Home only once they can have emptied it ({@link #suggestionsEmptiedHome}).
      */
+    public static void reset() {
+        tookOut = false;
+        typesTookOut = false;
+        homeLost = false;
+        homeKept = false;
+        HomeFeed.reset();
+        Logger.printDebug(() -> "Feed suggestions: reset state on account switch or new feed adapter");
+    }
+
     public static int feedEnded(int noMorePages) {
         if (noMorePages != 0) return noMorePages;
         if (HomeFeed.emptied()) return 1;
         if (!tookOut && !typesTookOut) return noMorePages;
         try {
             if (!Utils.settingsReady()) return noMorePages;
+            if (!homeKept && !HomeFeed.emptied()) return noMorePages;
             if (tookOut && suggestionsEmptiedHome() && (Settings.HIDE_SUGGESTED_POSTS.get()
                     || Settings.HIDE_SUGGESTED_ACCOUNTS.get() || Settings.HIDE_THREADS_POSTS.get())) return 1;
             return typesTookOut && (Settings.HIDE_FEED_VIDEOS.get() || Settings.HIDE_FEED_PHOTOS.get()
@@ -192,6 +202,7 @@ public final class FeedSuggestions {
      */
     public static int moreAfterFollowing(int hasMore) {
         if (hasMore == 0 || !suggestionsGone()) return hasMore;
+        if (!homeKept) return hasMore;
         Logger.printDebug(() -> "Feed suggestions: no next page past the end card");
         return 0;
     }
